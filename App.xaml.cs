@@ -147,6 +147,11 @@ namespace LibmpvIptvClient
         {
             try
             {
+                LibmpvIptvClient.Services.WebRemote.WebRemoteManager.Shutdown();
+            }
+            catch { }
+            try
+            {
                 SrcBoxArchitectureHost.ShutdownAsync().GetAwaiter().GetResult();
             }
             catch { }

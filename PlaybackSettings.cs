@@ -87,6 +87,7 @@ namespace LibmpvIptvClient
         
         public TimeOverrideConfig TimeOverride { get; set; } = new TimeOverrideConfig();
         public WebDavConfig WebDav { get; set; } = new WebDavConfig();
+        public WebRemoteConfig WebRemote { get; set; } = new WebRemoteConfig();
         public string RecordingLocalDir { get; set; } = "recordings/{channel}";
         public RecordingConfig Recording { get; set; } = new RecordingConfig();
 
@@ -182,7 +183,18 @@ namespace LibmpvIptvClient
         public bool? MoveSupported { get; set; }
         public bool? CopySupported { get; set; }
     }
-    
+
+    public class WebRemoteConfig
+    {
+        public bool Enabled { get; set; } = false;
+        public int HttpPort { get; set; } = 8899;
+        public bool RequirePassword { get; set; } = false;
+        public string Password { get; set; } = "";
+        public bool ShowChannelList { get; set; } = true;
+        public bool ShowEpgList { get; set; } = true;
+        public int MaxEpgItems { get; set; } = 20;
+    }
+
     public class TimeOverrideConfig
     {
         public bool Enabled { get; set; } = false;

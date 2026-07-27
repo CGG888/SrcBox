@@ -369,6 +369,48 @@
               <controls:RecordingDrawer x:Name="RecordingSettingsControl"/>
           </TabItem>
 
+          <!-- Web Remote Settings -->
+          <TabItem x:Name="TabWebRemote" Header="{DynamicResource UI_WebRemote_Tab}">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
+              <Grid Margin="16,8,16,8">
+                <Grid.RowDefinitions>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                  <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+                <Grid.ColumnDefinitions>
+                  <ColumnDefinition Width="Auto"/>
+                  <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <!-- Enable/Disable -->
+                <CheckBox x:Name="CbWebRemoteEnabled" Grid.Row="0" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebRemote_Enable}" Margin="0,0,0,16"/>
+
+                <!-- Port -->
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource UI_WebRemote_Port}" VerticalAlignment="Center" Margin="0,0,16,8"/>
+                <TextBox x:Name="TbWebRemotePort" Grid.Row="1" Grid.Column="1" Width="100" Height="30" HorizontalAlignment="Left" Margin="0,0,0,8"/>
+
+                <!-- Password -->
+                <CheckBox x:Name="CbWebRemotePassword" Grid.Row="2" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebRemote_RequirePassword}" Margin="0,16,0,8"/>
+                <TextBox x:Name="TbWebRemotePassword" Grid.Row="3" Grid.ColumnSpan="2" Height="30" Margin="0,0,0,16"/>
+
+                <!-- Show Channel List -->
+                <CheckBox x:Name="CbWebRemoteShowChannels" Grid.Row="4" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebRemote_ShowChannels}" IsChecked="True" Margin="0,0,0,8"/>
+
+                <!-- Show EPG List -->
+                <CheckBox x:Name="CbWebRemoteShowEpg" Grid.Row="5" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebRemote_ShowEpg}" IsChecked="True" Margin="0,0,0,16"/>
+
+                <TextBlock Grid.Row="6" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" TextWrapping="Wrap">
+                  <Run Text="{DynamicResource UI_WebRemote_Hint}"/>
+                </TextBlock>
+              </Grid>
+            </ScrollViewer>
+          </TabItem>
+
           <!-- 时间覆盖（仅替换时间片段） -->
           <TabItem x:Name="TabTimeOverride" Header="{DynamicResource UI_TimeOverride_Tab}">
             <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">

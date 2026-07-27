@@ -249,6 +249,13 @@
   <sys:String x:Key="UI_Logo_Config">Logo Config</sys:String>
   <sys:String x:Key="UI_Logo_Desc">Configure channel logo source</sys:String>
   <sys:String x:Key="UI_Recording_Settings">Recording Settings</sys:String>
+  <sys:String x:Key="UI_WebRemote_Tab">Remote</sys:String>
+  <sys:String x:Key="UI_WebRemote_Enable">Enable Web Remote</sys:String>
+  <sys:String x:Key="UI_WebRemote_Port">Port</sys:String>
+  <sys:String x:Key="UI_WebRemote_RequirePassword">Require Password</sys:String>
+  <sys:String x:Key="UI_WebRemote_ShowChannels">Show Channel List</sys:String>
+  <sys:String x:Key="UI_WebRemote_ShowEpg">Show EPG</sys:String>
+  <sys:String x:Key="UI_WebRemote_Hint">When enabled, control the player from your phone browser at http://PC-IP:port on the same local network.</sys:String>
   <sys:String x:Key="UI_UploadQueue_Tab">Upload Queue</sys:String>
   <sys:String x:Key="UI_UploadQueue_View">View Upload Queue</sys:String>
   <sys:String x:Key="UI_Refresh">Refresh</sys:String>

@@ -60,7 +60,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                     var neighbors = new List<string> { url };
                     if (_shell.CurrentSources != null && _shell.CurrentSources.Count > 0)
                     {
-                        foreach (var s in _shell.CurrentSources) 
+                        foreach (var s in _shell.CurrentSources)
                             if (!string.IsNullOrWhiteSpace(s?.Url)) neighbors.Add(s.Url);
                     }
                     DnsPrefetcher.PrefetchForUrls(neighbors);
@@ -79,9 +79,9 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 try
                 {
                     _shell.PlayerEngine.SetPropertyString("cache", "yes");
-                    _shell.PlayerEngine.SetPropertyString("demuxer-max-bytes", "512MiB"); 
+                    _shell.PlayerEngine.SetPropertyString("demuxer-max-bytes", "512MiB");
                     _shell.PlayerEngine.SetPropertyString("demuxer-max-back-bytes", "256MiB");
-                    _shell.PlayerEngine.SetPropertyString("cache-pause", "no"); 
+                    _shell.PlayerEngine.SetPropertyString("cache-pause", "no");
                     _shell.PlayerEngine.SetPropertyString("force-seekable", "yes");
                     LibmpvIptvClient.Diagnostics.Logger.Debug($"[Live] mpv properties set: cache=yes, demuxer-max-bytes=512MiB");
                 }
@@ -89,11 +89,11 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 {
                     LibmpvIptvClient.Diagnostics.Logger.Warn($"[Live] Failed to set mpv properties: {ex.Message}");
                 }
-                
+
                 _shell.CurrentChannel = ch;
                 _shell.CurrentSources = _shell.SourceLoader.BuildSourcesForChannel(ch, _shell.Channels);
                 _shell.CurrentUrl = url;
-                
+
                 _sourceTimeoutTimer.Stop();
                 _sourceTimeoutTimer.Interval = TimeSpan.FromSeconds(Math.Max(1, AppSettings.Current.SourceTimeoutSec));
                 _sourceTimeoutTimer.Start();
@@ -137,18 +137,26 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                     RequestHistoryRefresh?.Invoke();
                 }
                 catch { }
-                
-                try 
-                { 
+
+                try
+                {
+                    LibmpvIptvClient.Diagnostics.Logger.Info($"[Live] RequestVideoShow called, PlaceholderPanel will be hidden");
                     RequestVideoShow?.Invoke();
                     _shell.DispatchPlaybackEvent(new StartLivePlayback(
                         ch.TvgId ?? ch.Id ?? ch.Name ?? "",
                         _shell.CurrentPlayingProgram,
                         url));
-                } 
-                catch { }
+                }
+                catch (Exception ex)
+                {
+                    LibmpvIptvClient.Diagnostics.Logger.Error($"[Live] RequestVideoShow error: {ex.Message}");
+                }
 
                 RequestEpgReload?.Invoke(ch, null);
+            }
+            else
+            {
+                LibmpvIptvClient.Diagnostics.Logger.Warn($"[Live] PlayChannel skipped: ch.Tag is not Source (ch.Tag={(ch.Tag == null ? "null" : ch.Tag.GetType().Name)}, ch.Name={ch.Name}, ch.Id={ch.Id})");
             }
         }
 

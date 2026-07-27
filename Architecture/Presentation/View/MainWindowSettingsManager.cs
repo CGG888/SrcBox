@@ -142,6 +142,23 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 }
             }
             catch { }
+            // Web Remote settings
+            try
+            {
+                if (settings.WebRemote != null)
+                {
+                    AppSettings.Current.WebRemote.Enabled = settings.WebRemote.Enabled;
+                    AppSettings.Current.WebRemote.HttpPort = settings.WebRemote.HttpPort;
+                    AppSettings.Current.WebRemote.RequirePassword = settings.WebRemote.RequirePassword;
+                    AppSettings.Current.WebRemote.Password = settings.WebRemote.Password ?? "";
+                    AppSettings.Current.WebRemote.ShowChannelList = settings.WebRemote.ShowChannelList;
+                    AppSettings.Current.WebRemote.ShowEpgList = settings.WebRemote.ShowEpgList;
+                    AppSettings.Current.WebRemote.MaxEpgItems = settings.WebRemote.MaxEpgItems;
+                }
+                // Restart Web Remote server if settings changed
+                LibmpvIptvClient.Services.WebRemote.WebRemoteManager.RestartIfNeeded();
+            }
+            catch { }
             try
             {
                 if (settings.TimeOverride != null)

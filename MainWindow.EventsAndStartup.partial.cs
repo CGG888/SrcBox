@@ -423,6 +423,10 @@ namespace LibmpvIptvClient
                 (cursor, max, seeking) => { try { _overlayManager.OverlayWpf?.SetTimeshiftLabels(cursor, max, seeking); } catch { } }
             );
 
+            // 初始化 Web 遥控器服务
+            try { LibmpvIptvClient.Services.WebRemote.WebRemoteManager.Initialize(_shell); } catch { }
+            try { LibmpvIptvClient.Services.WebRemote.WebRemoteManager.SetToggleFullscreenCallback(ToggleFullscreenFromManager); } catch { }
+
             _shell.ChannelPlaybackActions.RequestEpgRefresh += () => { try { ListEpg.Items.Refresh(); } catch { } };
             _shell.ChannelPlaybackActions.RequestHistoryRefresh += () => { try { ListHistory.ItemsSource = _userDataStore.GetHistory(); } catch { } };
             _shell.ChannelPlaybackActions.RequestEpgReload += (ch, focusTime) =>
@@ -435,7 +439,7 @@ namespace LibmpvIptvClient
                 }
                 catch { }
             };
-            _shell.ChannelPlaybackActions.RequestVideoShow += () => { try { PlaceholderPanel.Visibility = Visibility.Collapsed; VideoHost.Visibility = Visibility.Visible; } catch { } };
+            _shell.ChannelPlaybackActions.RequestVideoShow += () => { try { PlaceholderPanel.Visibility = Visibility.Collapsed; VideoHost.Visibility = Visibility.Visible; Diagnostics.Logger.Info($"[WebRemote] RequestVideoShow: PlaceholderPanel=Collapsed, VideoHost=Visible (PlaceholderNow={PlaceholderPanel.Visibility})"); } catch (Exception ex) { Diagnostics.Logger.Error($"[WebRemote] RequestVideoShow error: {ex.Message}"); } };
 
             _shell.RecordingPlaybackActions.RequestEpgRefresh += () => { try { ListEpg.Items.Refresh(); } catch { } };
             _shell.RecordingPlaybackActions.RequestVideoShow += () => { try { PlaceholderPanel.Visibility = Visibility.Collapsed; VideoHost.Visibility = Visibility.Visible; } catch { } };

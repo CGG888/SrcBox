@@ -281,6 +281,13 @@
   
   <sys:String x:Key="UI_Logo_Config">台标设置</sys:String>
   <sys:String x:Key="UI_Recording_Settings">录播设置</sys:String>
+  <sys:String x:Key="UI_WebRemote_Tab">遥控器</sys:String>
+  <sys:String x:Key="UI_WebRemote_Enable">启用 Web 遥控器</sys:String>
+  <sys:String x:Key="UI_WebRemote_Port">端口</sys:String>
+  <sys:String x:Key="UI_WebRemote_RequirePassword">需要访问密码</sys:String>
+  <sys:String x:Key="UI_WebRemote_ShowChannels">显示频道列表</sys:String>
+  <sys:String x:Key="UI_WebRemote_ShowEpg">显示节目单</sys:String>
+  <sys:String x:Key="UI_WebRemote_Hint">启用后，在同一局域网内可通过手机浏览器访问 http://电脑IP:端口 来控制播放器。</sys:String>
   <sys:String x:Key="UI_UploadQueue_Tab">上传队列</sys:String>
   <sys:String x:Key="UI_UploadQueue_View">查看上传队列</sys:String>
   <sys:String x:Key="UI_Refresh">刷新</sys:String>

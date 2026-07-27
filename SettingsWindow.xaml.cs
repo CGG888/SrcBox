@@ -216,6 +216,19 @@ namespace LibmpvIptvClient
                     UpdateTimeOverrideKeyFieldsVisibility();
                 }
                 catch { }
+
+                // Web Remote settings
+                try
+                {
+                    var wr = current.WebRemote ?? new WebRemoteConfig();
+                    if (CbWebRemoteEnabled != null) CbWebRemoteEnabled.IsChecked = wr.Enabled;
+                    if (TbWebRemotePort != null) TbWebRemotePort.Text = wr.HttpPort.ToString();
+                    if (CbWebRemotePassword != null) CbWebRemotePassword.IsChecked = wr.RequirePassword;
+                    if (TbWebRemotePassword != null) TbWebRemotePassword.Text = wr.Password ?? "";
+                    if (CbWebRemoteShowChannels != null) CbWebRemoteShowChannels.IsChecked = wr.ShowChannelList;
+                    if (CbWebRemoteShowEpg != null) CbWebRemoteShowEpg.IsChecked = wr.ShowEpgList;
+                }
+                catch { }
             }
             catch { }
 
@@ -469,6 +482,21 @@ namespace LibmpvIptvClient
                 s.DeinterlaceAlgorithm = GetComboTag(CbDeinterlaceAlgo, "yadif");
                 // 场序固定为 auto（与 mpv 行为一致；如需更细粒度可后续扩展 UI）
                 s.DeinterlaceFieldParity = "auto";
+            }
+            catch { }
+
+            // Web Remote settings
+            try
+            {
+                s.WebRemote = new WebRemoteConfig
+                {
+                    Enabled = CbWebRemoteEnabled?.IsChecked == true,
+                    HttpPort = int.TryParse(TbWebRemotePort?.Text, out var port) ? port : 8899,
+                    RequirePassword = CbWebRemotePassword?.IsChecked == true,
+                    Password = TbWebRemotePassword?.Text ?? "",
+                    ShowChannelList = CbWebRemoteShowChannels?.IsChecked == true,
+                    ShowEpgList = CbWebRemoteShowEpg?.IsChecked == true
+                };
             }
             catch { }
 
