@@ -59,6 +59,14 @@ namespace LibmpvIptvClient
         public int FccPrefetchCount { get; set; } = 2;
         public bool EnableUdpOptimization { get; set; } = false; // Added
         public int SourceTimeoutSec { get; set; } = 3;
+
+        // 反交错 (Deinterlace) - 针对 1080i/720i 隔行扫描流
+        // 模式: "no"=关闭 / "yes"=强制 / "auto"=自动检测(推荐, 零副作用)
+        public string Deinterlace { get; set; } = "auto";
+        // 场序: "auto"=自动 / "tff"=顶场优先 / "bff"=底场优先
+        public string DeinterlaceFieldParity { get; set; } = "auto";
+        // 去隔行算法: "yadif"=默认(质量好) / "bwdif"=更优 / "none"=仅用 deinterlace flag 不挂 vf
+        public string DeinterlaceAlgorithm { get; set; } = "yadif";
             
             // Adaptive per-protocol tuning
             public bool EnableProtocolAdaptive { get; set; } = true;

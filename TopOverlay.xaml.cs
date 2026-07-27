@@ -27,6 +27,7 @@ namespace LibmpvIptvClient
         public event Action<bool>? EpgToggled;
         public event Action<bool>? DrawerToggled;
         public event Action<bool>? MinimalModeChanged;
+        public event Action<bool>? DeinterlaceChanged;
         public Func<bool>? IsUdpEnabled;
         public Func<bool>? IsTopmost;
         public Func<bool>? IsEpgVisible;
@@ -124,6 +125,7 @@ namespace LibmpvIptvClient
                 toggleEpg: (on) => EpgToggled?.Invoke(on),
                 toggleDrawer: (on) => DrawerToggled?.Invoke(on),
                 toggleMinimal: (on) => MinimalModeChanged?.Invoke(on),
+                toggleDeinterlace: (on) => DeinterlaceChanged?.Invoke(on),
                 isEpgChecked: IsEpgVisible?.Invoke() ?? false,
                 isDrawerChecked: IsDrawerVisible?.Invoke() ?? false,
                 isMinimalChecked: IsMinimalMode?.Invoke() ?? false);

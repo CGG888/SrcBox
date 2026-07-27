@@ -52,6 +52,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 toggleEpg: (on) => _shell.MenuActions.ToggleEpg(on),
                 toggleDrawer: (on) => _shell.MenuActions.ToggleDrawer(on),
                 toggleMinimal: (on) => _shell.MenuActions.ToggleMinimalMode(on),
+                toggleDeinterlace: (on) => _shell.MenuActions.ToggleDeinterlace(on),
                 isEpgChecked: _window.CbEpg.IsChecked == true,
                 isDrawerChecked: !_shell.IsDrawerCollapsed,
                 isMinimalChecked: _shell.IsMinimalMode

@@ -22,6 +22,7 @@ namespace LibmpvIptvClient.Helpers
             Action<bool>? toggleEpg,
             Action<bool>? toggleDrawer,
             Action<bool>? toggleMinimal,
+            Action<bool>? toggleDeinterlace,
             bool isEpgChecked,
             bool isDrawerChecked,
             bool isMinimalChecked)
@@ -76,14 +77,25 @@ namespace LibmpvIptvClient.Helpers
             miFcc.Click += (s, args) => toggleFcc?.Invoke(miFcc.IsChecked);
             miPerf.Items.Add(miFcc);
 
-            var miUdp = new MenuItem 
-            { 
-                Header = Localizer.S("Menu_UDP", "UDP (组播优化)"), 
-                IsCheckable = true, 
+            var miUdp = new MenuItem
+            {
+                Header = Localizer.S("Menu_UDP", "UDP (组播优化)"),
+                IsCheckable = true,
                 IsChecked = AppSettings.Current.EnableUdpOptimization
             };
             miUdp.Click += (s, args) => toggleUdp?.Invoke(miUdp.IsChecked);
             miPerf.Items.Add(miUdp);
+
+            // 反交错 (针对 1080i/720i 隔行扫描流)
+            // 勾选状态: 当 Deinterlace != "no" 时视为开启
+            var miDeinterlace = new MenuItem
+            {
+                Header = Localizer.S("Menu_Deinterlace", "反交错 (1080i/720i)"),
+                IsCheckable = true,
+                IsChecked = !string.Equals(AppSettings.Current.Deinterlace, "no", StringComparison.OrdinalIgnoreCase)
+            };
+            miDeinterlace.Click += (s, args) => toggleDeinterlace?.Invoke(miDeinterlace.IsChecked);
+            miPerf.Items.Add(miDeinterlace);
             cm.Items.Add(miPerf);
 
             // 4. List Management

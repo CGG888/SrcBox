@@ -178,6 +178,7 @@
   <sys:String x:Key="Menu_Performance">效能</sys:String>
   <sys:String x:Key="Menu_FCC">FCC（快速切台）</sys:String>
   <sys:String x:Key="Menu_UDP">UDP（組播優化）</sys:String>
+  <sys:String x:Key="Menu_Deinterlace">反交錯 (1080i/720i)</sys:String>
   <sys:String x:Key="Menu_List">列表</sys:String>
   <sys:String x:Key="Menu_EPG">EPG</sys:String>
   <sys:String x:Key="Menu_Channel">頻道</sys:String>
@@ -394,4 +395,14 @@
   <sys:String x:Key="Msg_TestUrlRequired">請輸入測試 URL</sys:String>
   <sys:String x:Key="Msg_TestHttpStarted">HTTP 測試已啟動，請檢視播放器的偵錯記錄</sys:String>
   <sys:String x:Key="Msg_TestRtspStarted">RTSP 測試已啟動，請檢視播放器的偵錯記錄</sys:String>
+
+  <!-- Deinterlace (反交錯) -->
+  <sys:String x:Key="UI_Deinterlace_Section">反交錯（針對 1080i/720i 隔行掃描串流）</sys:String>
+  <sys:String x:Key="UI_Deinterlace_Mode">反交錯模式</sys:String>
+  <sys:String x:Key="UI_Deinterlace_Algorithm">去交錯演算法</sys:String>
+  <sys:String x:Key="UI_Deinterlace_Hint">Auto 僅對真正隔行的串流啟用（建議，零副作用）。Force On 強制開啟（可能影響逐行串流）。Off 關閉。建議使用 yadif。</sys:String>
+  <sys:String x:Key="Overlay_Deinterlace">反交錯</sys:String>
+  <sys:String x:Key="Menu_Deinterlace_Auto">自動（建議）</sys:String>
+  <sys:String x:Key="Menu_Deinterlace_On">強制開啟</sys:String>
+  <sys:String x:Key="Menu_Deinterlace_Off">關閉</sys:String>
 </ResourceDictionary>

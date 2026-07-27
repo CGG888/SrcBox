@@ -178,6 +178,7 @@
   <sys:String x:Key="Menu_Performance">Производительность</sys:String>
   <sys:String x:Key="Menu_FCC">FCC (быстрое переключение)</sys:String>
   <sys:String x:Key="Menu_UDP">UDP (оптимизация мульткаста)</sys:String>
+  <sys:String x:Key="Menu_Deinterlace">Деинтерлейсинг (1080i/720i)</sys:String>
   <sys:String x:Key="Menu_List">Список</sys:String>
   <sys:String x:Key="Menu_EPG">EPG</sys:String>
   <sys:String x:Key="Menu_Channel">Каналы</sys:String>
@@ -395,4 +396,14 @@
   <sys:String x:Key="Msg_TestUrlRequired">Введите тестовый URL</sys:String>
   <sys:String x:Key="Msg_TestHttpStarted">HTTP тест запущен. Проверьте журнал отладки проигрывателя.</sys:String>
   <sys:String x:Key="Msg_TestRtspStarted">RTSP тест запущен. Проверьте журнал отладки проигрывателя.</sys:String>
+
+  <!-- Deinterlace (Деинтерлейсинг) -->
+  <sys:String x:Key="UI_Deinterlace_Section">Деинтерлейсинг (для чересстрочных потоков 1080i/720i)</sys:String>
+  <sys:String x:Key="UI_Deinterlace_Mode">Режим деинтерлейсинга</sys:String>
+  <sys:String x:Key="UI_Deinterlace_Algorithm">Алгоритм деинтерлейсинга</sys:String>
+  <sys:String x:Key="UI_Deinterlace_Hint">Auto включает только для реально чересстрочных потоков (рекомендуется, без побочных эффектов). Force On принудительно включает (может повлиять на прогрессивные потоки). Off отключает. Рекомендуется yadif.</sys:String>
+  <sys:String x:Key="Overlay_Deinterlace">Деинтерлейсинг</sys:String>
+  <sys:String x:Key="Menu_Deinterlace_Auto">Авто (рекомендуется)</sys:String>
+  <sys:String x:Key="Menu_Deinterlace_On">Принудительно вкл.</sys:String>
+  <sys:String x:Key="Menu_Deinterlace_Off">Выкл.</sys:String>
 </ResourceDictionary>

@@ -188,6 +188,7 @@
   <sys:String x:Key="Menu_Performance">Performance</sys:String>
   <sys:String x:Key="Menu_FCC">FCC (Fast channel change)</sys:String>
   <sys:String x:Key="Menu_UDP">UDP (Multicast optimization)</sys:String>
+  <sys:String x:Key="Menu_Deinterlace">Deinterlace (1080i/720i)</sys:String>
   <sys:String x:Key="Menu_List">List</sys:String>
   <sys:String x:Key="Menu_EPG">EPG</sys:String>
   <sys:String x:Key="Menu_Channel">Channels</sys:String>
@@ -408,4 +409,14 @@
   <sys:String x:Key="Msg_TestUrlRequired">Please enter a test URL</sys:String>
   <sys:String x:Key="Msg_TestHttpStarted">HTTP test started. Check the player's debug log for details.</sys:String>
   <sys:String x:Key="Msg_TestRtspStarted">RTSP test started. Check the player's debug log for details.</sys:String>
+
+  <!-- Deinterlace -->
+  <sys:String x:Key="UI_Deinterlace_Section">Deinterlace (for 1080i/720i interlaced streams)</sys:String>
+  <sys:String x:Key="UI_Deinterlace_Mode">Deinterlace mode</sys:String>
+  <sys:String x:Key="UI_Deinterlace_Algorithm">Deinterlace algorithm</sys:String>
+  <sys:String x:Key="UI_Deinterlace_Hint">Auto only enables for actually interlaced streams (recommended, zero side-effect). Force On may affect progressive streams. Off disables. yadif is recommended.</sys:String>
+  <sys:String x:Key="Overlay_Deinterlace">Deinterlace</sys:String>
+  <sys:String x:Key="Menu_Deinterlace_Auto">Auto (Recommended)</sys:String>
+  <sys:String x:Key="Menu_Deinterlace_On">Force On</sys:String>
+  <sys:String x:Key="Menu_Deinterlace_Off">Off</sys:String>
 </ResourceDictionary>

@@ -455,6 +455,7 @@ namespace LibmpvIptvClient
             _shell.MenuActions.RequestLoadSingleStream += (url) => { try { _shell.LoadSingleStream(url); } catch { } };
             _shell.MenuActions.RequestFccUpdate += (on) => { try { _overlayManager.OverlayWpf?.SetFcc(on); } catch { } };
             _shell.MenuActions.RequestUdpUpdate += (on) => { try { _overlayManager.OverlayWpf?.SetUdp(on); } catch { } };
+            _shell.MenuActions.RequestDeinterlaceUpdate += (on) => { try { /* 立即生效已在 ToggleDeinterlace 完成 */ } catch { } };
             _shell.MenuActions.RequestEpgToggle += (on) => { try { CbEpg.IsChecked = on; CbEpg_Click(CbEpg, new RoutedEventArgs()); } catch { } };
             _shell.MenuActions.RequestMinimalToggle += (on) => { try { _shell.IsMinimalMode = on; } catch { } };
             _shell.ShortcutActions.RequestDebugWindow += () => BtnDebug_Click(this, new RoutedEventArgs());
@@ -551,6 +552,7 @@ namespace LibmpvIptvClient
                                 EpgToggled: (val) => { CbEpg.IsChecked = val; CbEpg_Click(CbEpg, new RoutedEventArgs()); },
                                 DrawerToggled: (visible) => SetDrawerCollapsed(!visible),
                                 MinimalModeChanged: (val) => _shell.MenuActions.ToggleMinimalMode(val),
+                                DeinterlaceChanged: (val) => _shell.MenuActions.ToggleDeinterlace(val),
                                 TopmostChanged: (val) => { Topmost = val; if (_shell.WindowStateActions.TopOverlay != null) _shell.WindowStateActions.TopOverlay.Topmost = true; },
                                 IsUdpEnabled: () => AppSettings.Current.EnableUdpOptimization,
                                 IsTopmost: () => Topmost,

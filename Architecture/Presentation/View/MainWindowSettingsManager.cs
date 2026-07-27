@@ -38,6 +38,9 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             dlg.DebugRequested += () => _window.OpenDebugWindowFromManager();
             try { dlg.Topmost = _shell.WindowStateActions.IsFullscreen; } catch { }
 
+            // 注入播放器引擎引用，用于反交错"预览即生效"
+            try { dlg.SetPreviewPlayerEngine(_shell.PlayerEngine); } catch { }
+
             dlg.ApplySettingsRequested += ApplySettings;
             dlg.Show();
         }
@@ -59,7 +62,10 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 || old.HlsReadaheadSecs != settings.HlsReadaheadSecs
                 || (old.Alang ?? "") != (settings.Alang ?? "")
                 || (old.Slang ?? "") != (settings.Slang ?? "")
-                || old.MpvNetworkTimeoutSec != settings.MpvNetworkTimeoutSec;
+                || old.MpvNetworkTimeoutSec != settings.MpvNetworkTimeoutSec
+                || !string.Equals(old.Deinterlace, settings.Deinterlace, StringComparison.OrdinalIgnoreCase)
+                || !string.Equals(old.DeinterlaceFieldParity, settings.DeinterlaceFieldParity, StringComparison.OrdinalIgnoreCase)
+                || !string.Equals(old.DeinterlaceAlgorithm, settings.DeinterlaceAlgorithm, StringComparison.OrdinalIgnoreCase);
             try
             {
                 if (_window.PlayerInterop != null)
@@ -165,6 +171,16 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 _window.PlayerInterop.SetSettings(AppSettings.Current);
                 _window.PlayerInterop.Initialize();
             }
+
+            // 反交错 (Deinterlace) 立即应用：即使 mpv 不重 init，也需更新 deinterlace/vf
+            try
+            {
+                _shell.PlayerEngine?.SetDeinterlace(
+                    AppSettings.Current.Deinterlace,
+                    AppSettings.Current.DeinterlaceFieldParity,
+                    AppSettings.Current.DeinterlaceAlgorithm);
+            }
+            catch { }
             try
             {
                 App.ApplyLanguage(AppSettings.Current.Language);

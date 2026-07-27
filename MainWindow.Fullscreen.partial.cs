@@ -75,6 +75,7 @@ namespace LibmpvIptvClient
                             EpgToggled: (val) => _shell.MenuActions.ToggleEpg(val),
                             DrawerToggled: (val) => _shell.MenuActions.ToggleDrawer(val),
                             MinimalModeChanged: (val) => _shell.MenuActions.ToggleMinimalMode(val),
+                            DeinterlaceChanged: (val) => _shell.MenuActions.ToggleDeinterlace(val),
                             TopmostChanged: (val) =>
                             {
                                 Topmost = val;

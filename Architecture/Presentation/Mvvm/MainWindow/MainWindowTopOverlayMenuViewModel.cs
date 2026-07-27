@@ -19,6 +19,7 @@ public sealed class MainWindowTopOverlayMenuViewModel : ViewModelBase
         Action<bool>? toggleEpg,
         Action<bool>? toggleDrawer,
         Action<bool>? toggleMinimal,
+        Action<bool>? toggleDeinterlace,
         bool isEpgChecked,
         bool isDrawerChecked,
         bool isMinimalChecked)
@@ -38,6 +39,7 @@ public sealed class MainWindowTopOverlayMenuViewModel : ViewModelBase
             toggleEpg: toggleEpg,
             toggleDrawer: toggleDrawer,
             toggleMinimal: toggleMinimal,
+            toggleDeinterlace: toggleDeinterlace,
             isEpgChecked: isEpgChecked,
             isDrawerChecked: isDrawerChecked,
             isMinimalChecked: isMinimalChecked);

@@ -43,6 +43,27 @@ namespace LibmpvIptvClient
             if (!string.IsNullOrWhiteSpace(_settings.Slang)) SetString("slang", _settings.Slang);
             if (_settings.MpvNetworkTimeoutSec > 0) SetString("network-timeout", _settings.MpvNetworkTimeoutSec.ToString(System.Globalization.CultureInfo.InvariantCulture));
             Logger.Debug($"[mpv] init alang={_settings.Alang} slang={_settings.Slang} net_to={_settings.MpvNetworkTimeoutSec}");
+
+            // 反交错（针对 1080i/720i 隔行流）
+            // 在 Initialize 阶段设置，对后续所有 loadfile 自动生效
+            try
+            {
+                var diMode = string.IsNullOrWhiteSpace(_settings.Deinterlace) ? "no" : _settings.Deinterlace;
+                SetString("deinterlace", diMode);
+                if (!string.Equals(diMode, "no", StringComparison.OrdinalIgnoreCase))
+                {
+                    var diParity = string.IsNullOrWhiteSpace(_settings.DeinterlaceFieldParity) ? "auto" : _settings.DeinterlaceFieldParity;
+                    SetString("deinterlace-field-parity", diParity);
+                    var diAlgo = string.IsNullOrWhiteSpace(_settings.DeinterlaceAlgorithm) ? "yadif" : _settings.DeinterlaceAlgorithm;
+                    if (!string.Equals(diAlgo, "none", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // yadif=mode=1: 无延迟；bwdif=mode=1: 无延迟
+                        SetString("vf", $"{diAlgo}=mode=1");
+                    }
+                }
+                Logger.Debug($"[mpv] init deinterlace={diMode} parity={_settings.DeinterlaceFieldParity} algo={_settings.DeinterlaceAlgorithm}");
+            }
+            catch { /* 静默 */ }
         }
         public void SetSpeed(double speed)
         {

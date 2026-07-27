@@ -11,6 +11,11 @@ namespace LibmpvIptvClient.Architecture.Application.Player
         void SetMute(bool muted);
         void SetSpeed(double speed);
         void SetAspectRatio(string ratio);
+
+        /// <summary>
+        /// 应用反交错设置（deinterlace + field-parity + vf）
+        /// </summary>
+        void SetDeinterlace(string mode, string? fieldParity = null, string? algorithm = null);
         double? GetTimePos();
         double? GetDuration();
         void EnsureReadyForLoad();

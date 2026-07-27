@@ -39,6 +39,7 @@ public sealed record TopOverlayBindingContext(
     Action<bool>? EpgToggled,
     Action<bool>? DrawerToggled,
     Action<bool>? MinimalModeChanged,
+    Action<bool>? DeinterlaceChanged,
     Action<bool>? TopmostChanged,
     Func<bool>? IsUdpEnabled,
     Func<bool>? IsTopmost,

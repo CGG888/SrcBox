@@ -22,6 +22,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         public event Action<bool>? RequestUdpUpdate;
         public event Action<bool>? RequestEpgToggle;
         public event Action<bool>? RequestMinimalToggle;
+        public event Action<bool>? RequestDeinterlaceUpdate;
 
         public MainWindowMenuActionsViewModel(MainShellViewModel shell)
         {
@@ -237,6 +238,44 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             AppSettings.Current.EnableUdpOptimization = on;
             AppSettings.Current.Save();
             RequestUdpUpdate?.Invoke(on);
+        }
+
+        /// <summary>
+        /// 切换反交错（右键菜单快速开关）：
+        /// - on=true  → "auto"（自动检测，仅对真正隔行的流启用）
+        /// - on=false → "no"（关闭）
+        /// 立即生效到当前 mpv 实例
+        /// </summary>
+        public void ToggleDeinterlace(bool on)
+        {
+            AppSettings.Current.Deinterlace = on ? "auto" : "no";
+            AppSettings.Current.Save();
+            ApplyDeinterlaceImmediate();
+            RequestDeinterlaceUpdate?.Invoke(on);
+            try
+            {
+                LibmpvIptvClient.Diagnostics.Logger.Info($"[Deinterlace] 切换: {(on ? "auto" : "no")}");
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// 立即将 PlaybackSettings 中的反交错配置应用到当前 mpv 实例
+        /// 供菜单 / 设置页 / 启动初始化共用
+        /// </summary>
+        public void ApplyDeinterlaceImmediate()
+        {
+            try
+            {
+                _shell.PlayerEngine?.SetDeinterlace(
+                    AppSettings.Current.Deinterlace,
+                    AppSettings.Current.DeinterlaceFieldParity,
+                    AppSettings.Current.DeinterlaceAlgorithm);
+            }
+            catch (Exception ex)
+            {
+                try { LibmpvIptvClient.Diagnostics.Logger.Warn($"[Deinterlace] 应用失败: {ex.Message}"); } catch { }
+            }
         }
 
         public void ToggleEpg(bool on)

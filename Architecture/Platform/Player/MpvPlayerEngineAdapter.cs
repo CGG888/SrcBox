@@ -56,6 +56,51 @@ namespace LibmpvIptvClient.Architecture.Platform.Player
             _mpv.SetAspectRatio(ratio);
         }
 
+        /// <summary>
+        /// 立即应用反交错设置到当前 mpv 实例。
+        /// mode: "no" / "yes" / "auto"
+        /// fieldParity: "auto" / "tff" / "bff"
+        /// algorithm: "yadif" / "bwdif" / "none"
+        /// 行为: 关闭时同时清空 vf，避免残留滤镜
+        /// </summary>
+        public void SetDeinterlace(string mode, string? fieldParity = null, string? algorithm = null)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(mode)) mode = "no";
+                _mpv.SetString("deinterlace", mode);
+
+                // 场序（仅在 deinterlace != no 时才有意义）
+                if (!string.Equals(mode, "no", StringComparison.OrdinalIgnoreCase))
+                {
+                    var parity = string.IsNullOrWhiteSpace(fieldParity) ? "auto" : fieldParity;
+                    _mpv.SetString("deinterlace-field-parity", parity);
+                }
+
+                // 算法：关闭时清空 vf
+                if (string.Equals(mode, "no", StringComparison.OrdinalIgnoreCase))
+                {
+                    // 清空 vf（mpv 支持 video-params/vo 直接置空）
+                    _mpv.SetString("vf", "");
+                }
+                else
+                {
+                    var algo = string.IsNullOrWhiteSpace(algorithm) ? "yadif" : algorithm;
+                    if (!string.Equals(algo, "none", StringComparison.OrdinalIgnoreCase))
+                    {
+                        // 模式 1: 无延迟，但可能闪烁；模式 0: 一帧延迟，更稳定
+                        var vfArg = $"{algo}=mode=1";
+                        _mpv.SetString("vf", vfArg);
+                    }
+                    else
+                    {
+                        _mpv.SetString("vf", "");
+                    }
+                }
+            }
+            catch { /* 静默失败，不影响播放 */ }
+        }
+
         public double? GetTimePos()
         {
             return _mpv.GetTimePos();

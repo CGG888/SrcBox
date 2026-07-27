@@ -235,6 +235,11 @@
                   <RowDefinition Height="Auto"/><!-- 23: Test URL -->
                   <RowDefinition Height="Auto"/><!-- 24: Test buttons -->
                   <RowDefinition Height="Auto"/><!-- 25: Test hint -->
+                  <!-- Deinterlace -->
+                  <RowDefinition Height="Auto"/><!-- 26: Deinterlace section header -->
+                  <RowDefinition Height="Auto"/><!-- 27: Deinterlace mode -->
+                  <RowDefinition Height="Auto"/><!-- 28: Deinterlace algo -->
+                  <RowDefinition Height="Auto"/><!-- 29: Deinterlace hint -->
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                   <ColumnDefinition Width="Auto"/>
@@ -316,6 +321,25 @@
                 </StackPanel>
                 <TextBlock Grid.Row="25" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,4,0,0"
                            Text="{DynamicResource UI_HttpHeader_TestHint}" TextWrapping="Wrap"/>
+
+                <!-- Deinterlace (反交错) - 针对 1080i/720i 隔行扫描流 -->
+                <TextBlock Grid.Row="26" Grid.ColumnSpan="2" Text="{DynamicResource UI_Deinterlace_Section}" FontWeight="SemiBold" Margin="0,16,0,8"/>
+                <TextBlock Grid.Row="27" Grid.Column="0" Text="{DynamicResource UI_Deinterlace_Mode}" VerticalAlignment="Center" Margin="0,4,16,0"/>
+                <ComboBox x:Name="CbDeinterlaceMode" Grid.Row="27" Grid.Column="1" Height="30" Width="200" HorizontalAlignment="Left" Margin="0,4,0,0"
+                          SelectionChanged="CbDeinterlaceMode_SelectionChanged">
+                  <ComboBoxItem Content="Auto" Tag="auto"/>
+                  <ComboBoxItem Content="Force On" Tag="yes"/>
+                  <ComboBoxItem Content="Off" Tag="no"/>
+                </ComboBox>
+                <TextBlock Grid.Row="28" Grid.Column="0" Text="{DynamicResource UI_Deinterlace_Algorithm}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                <ComboBox x:Name="CbDeinterlaceAlgo" Grid.Row="28" Grid.Column="1" Height="30" Width="200" HorizontalAlignment="Left" Margin="0,8,0,0"
+                          SelectionChanged="CbDeinterlaceAlgo_SelectionChanged">
+                  <ComboBoxItem Content="yadif" Tag="yadif"/>
+                  <ComboBoxItem Content="bwdif" Tag="bwdif"/>
+                  <ComboBoxItem Content="none" Tag="none"/>
+                </ComboBox>
+                <TextBlock Grid.Row="29" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,4,0,0"
+                           Text="{DynamicResource UI_Deinterlace_Hint}" TextWrapping="Wrap"/>
               </Grid>
             </ScrollViewer>
           </TabItem>

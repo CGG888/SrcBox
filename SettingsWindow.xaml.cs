@@ -111,6 +111,14 @@ namespace LibmpvIptvClient
             TbMaxBackBytes.Text = current.DemuxerMaxBackBytesMiB.ToString(CultureInfo.InvariantCulture);
             TbFccPrefetch.Text = current.FccPrefetchCount.ToString(CultureInfo.InvariantCulture);
             TbSourceTimeout.Text = current.SourceTimeoutSec.ToString(CultureInfo.InvariantCulture);
+
+            // Deinterlace (反交错) - 三选一下拉框 + 算法下拉
+            try
+            {
+                SetComboByTag(CbDeinterlaceMode, string.IsNullOrWhiteSpace(current.Deinterlace) ? "auto" : current.Deinterlace);
+                SetComboByTag(CbDeinterlaceAlgo, string.IsNullOrWhiteSpace(current.DeinterlaceAlgorithm) ? "yadif" : current.DeinterlaceAlgorithm);
+            }
+            catch { }
             // New playback options
             try
             {
@@ -453,6 +461,17 @@ namespace LibmpvIptvClient
             }
             // Save HTTP/RTSP Header settings
             s.HttpHeaders = ReadHttpHeaderFormState();
+
+            // Deinterlace (反交错) - 三选一 + 算法
+            try
+            {
+                s.Deinterlace = GetComboTag(CbDeinterlaceMode, "auto");
+                s.DeinterlaceAlgorithm = GetComboTag(CbDeinterlaceAlgo, "yadif");
+                // 场序固定为 auto（与 mpv 行为一致；如需更细粒度可后续扩展 UI）
+                s.DeinterlaceFieldParity = "auto";
+            }
+            catch { }
+
             Result = s;
             ApplySettingsRequested?.Invoke(s);
 
@@ -931,6 +950,80 @@ namespace LibmpvIptvClient
                 }
             }
             catch { }
+        }
+
+        // ---- Deinterlace (反交错) 设置 ----
+
+        /// <summary>
+        /// 根据 ComboBox 的 SelectedItem.Tag 返回字符串值，缺省返回 fallback
+        /// </summary>
+        private static string GetComboTag(System.Windows.Controls.ComboBox? cb, string fallback)
+        {
+            try
+            {
+                if (cb == null) return fallback;
+                if (cb.SelectedItem is System.Windows.Controls.ComboBoxItem item && item.Tag is string s && !string.IsNullOrEmpty(s))
+                    return s;
+            }
+            catch { }
+            return fallback;
+        }
+
+        /// <summary>
+        /// 根据 tag 值选中 ComboBox 对应项，若无匹配保留当前
+        /// </summary>
+        private static void SetComboByTag(System.Windows.Controls.ComboBox? cb, string tag)
+        {
+            try
+            {
+                if (cb == null || string.IsNullOrEmpty(tag)) return;
+                foreach (var obj in cb.Items)
+                {
+                    if (obj is System.Windows.Controls.ComboBoxItem item &&
+                        string.Equals(item.Tag as string, tag, StringComparison.OrdinalIgnoreCase))
+                    {
+                        cb.SelectedItem = item;
+                        return;
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private void CbDeinterlaceMode_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            try
+            {
+                var mode = GetComboTag(CbDeinterlaceMode, "auto");
+                LibmpvIptvClient.Diagnostics.Logger.Debug($"[Deinterlace] 设置页变更模式: {mode}");
+                // 立即生效：仅预览，不保存（用户在 BtnSave 时才落盘）
+                _previewPlayerEngine?.SetDeinterlace(
+                    mode,
+                    "auto",
+                    GetComboTag(CbDeinterlaceAlgo, "yadif"));
+            }
+            catch { }
+        }
+
+        private void CbDeinterlaceAlgo_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            try
+            {
+                var algo = GetComboTag(CbDeinterlaceAlgo, "yadif");
+                LibmpvIptvClient.Diagnostics.Logger.Debug($"[Deinterlace] 设置页变更算法: {algo}");
+                _previewPlayerEngine?.SetDeinterlace(
+                    GetComboTag(CbDeinterlaceMode, "auto"),
+                    "auto",
+                    algo);
+            }
+            catch { }
+        }
+
+        // 预览引擎引用（由 MainWindow 在打开设置时注入，避免循环依赖）
+        private Architecture.Application.Player.IPlayerEngine? _previewPlayerEngine;
+        public void SetPreviewPlayerEngine(Architecture.Application.Player.IPlayerEngine? engine)
+        {
+            _previewPlayerEngine = engine;
         }
 
     }
