@@ -12,13 +12,26 @@ namespace LibmpvIptvClient.Controls
     public partial class VolumeSlider : UserControl
     {
         public static readonly DependencyProperty VolumeProperty =
-            DependencyProperty.Register("Volume", typeof(double), typeof(VolumeSlider), 
+            DependencyProperty.Register("Volume", typeof(double), typeof(VolumeSlider),
                 new FrameworkPropertyMetadata(50.0, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, OnVolumeChanged));
 
         public double Volume
         {
             get { return (double)GetValue(VolumeProperty); }
             set { SetValue(VolumeProperty, value); }
+        }
+
+        public static readonly DependencyProperty IsMutedProperty =
+            DependencyProperty.Register("IsMuted", typeof(bool), typeof(VolumeSlider),
+                new FrameworkPropertyMetadata(false, FrameworkPropertyMetadataOptions.BindsTwoWayByDefault, OnIsMutedChanged));
+
+        /// <summary>
+        /// 静音状态。true 时音量条变为 MutedBrush（灰色），false 时为 AccentBrush（绿色）。
+        /// </summary>
+        public bool IsMuted
+        {
+            get { return (bool)GetValue(IsMutedProperty); }
+            set { SetValue(IsMutedProperty, value); }
         }
 
         public static readonly RoutedEvent VolumeChangedEvent =
@@ -35,6 +48,23 @@ namespace LibmpvIptvClient.Controls
         {
             var control = (VolumeSlider)d;
             control.RaiseEvent(new RoutedPropertyChangedEventArgs<double>((double)e.OldValue, (double)e.NewValue, VolumeChangedEvent));
+        }
+
+        private static void OnIsMutedChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+        {
+            // 触发 Slider 样式的 DataTrigger 重新评估
+            var control = (VolumeSlider)d;
+            try
+            {
+                if (control.PART_Slider != null)
+                {
+                    // 强制 Slider 重新应用样式（让 DataTrigger 重新评估）
+                    var style = control.PART_Slider.Style;
+                    control.PART_Slider.Style = null;
+                    control.PART_Slider.Style = style;
+                }
+            }
+            catch { }
         }
 
         public VolumeSlider()

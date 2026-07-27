@@ -28,6 +28,7 @@
 
   <!-- Slider -->
   <SolidColorBrush x:Key="AccentBrush" Color="#FF35C759"/>
+  <SolidColorBrush x:Key="MutedBrush" Color="#FF8E8E93"/>
   <SolidColorBrush x:Key="SliderInactiveBrush" Color="#AAAAAA"/>
   <SolidColorBrush x:Key="SliderThumbFillBrush" Color="#FFFFFF"/>
   <SolidColorBrush x:Key="SliderThumbStrokeBrush" Color="#DDDDDD"/>

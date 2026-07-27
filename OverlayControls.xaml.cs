@@ -44,6 +44,9 @@ namespace LibmpvIptvClient
             try
             {
                 IconMute.Symbol = _muted ? ModernWpf.Controls.Symbol.Mute : ModernWpf.Controls.Symbol.Volume;
+                BtnMute.Background = _muted
+                    ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(0x33, 0xFF, 0x45, 0x3A))
+                    : null;
             }
             catch { }
         }
@@ -162,6 +165,10 @@ namespace LibmpvIptvClient
         {
             _muted = !_muted;
             IconMute.Symbol = _muted ? ModernWpf.Controls.Symbol.Mute : ModernWpf.Controls.Symbol.Volume;
+            // 静音时按钮背景变为浅红色
+            BtnMute.Background = _muted
+                ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(0x33, 0xFF, 0x45, 0x3A))
+                : null;
             VolumeChanged?.Invoke(SliderVolume.Volume);
             MuteChanged?.Invoke(_muted);
         }
@@ -328,9 +335,39 @@ namespace LibmpvIptvClient
         {
             int step = 5;
             int dir = e.Delta > 0 ? 1 : -1;
+            // 静音时滚动，取消静音
+            if (_muted)
+            {
+                _muted = false;
+                IconMute.Symbol = ModernWpf.Controls.Symbol.Volume;
+                BtnMute.Background = null;
+                MuteChanged?.Invoke(_muted);
+            }
             var v = Math.Max(0, Math.Min(100, SliderVolume.Volume + dir * step));
             SliderVolume.Volume = v;
+            // 显示百分比提示
+            ShowVolumeTooltip(v);
             e.Handled = true;
+        }
+
+        System.Windows.Threading.DispatcherTimer? _volumeTooltipTimer;
+        public void ShowVolumeTooltip(double value)
+        {
+            // 通过 ToolTip 显示百分比
+            BtnMute.ToolTip = $"音量: {(int)value}%";
+            // 自动隐藏
+            if (_volumeTooltipTimer != null)
+            {
+                _volumeTooltipTimer.Stop();
+                _volumeTooltipTimer = null;
+            }
+            _volumeTooltipTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+            _volumeTooltipTimer.Tick += (s, e2) =>
+            {
+                _volumeTooltipTimer?.Stop();
+                BtnMute.ToolTip = "静音";
+            };
+            _volumeTooltipTimer.Start();
         }
     }
 }

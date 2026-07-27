@@ -14,10 +14,19 @@
                 Value="{Binding Volume, ElementName=Root, Mode=TwoWay}"
                 IsMoveToPointEnabled="True"
                 VerticalAlignment="Center"
-                Style="{DynamicResource ThickSlider}"
-                Foreground="{DynamicResource AccentBrush}"
                 MouseMove="PART_Slider_MouseMove"
-                MouseLeave="PART_Slider_MouseLeave"/>
+                MouseLeave="PART_Slider_MouseLeave">
+            <Slider.Style>
+                <Style TargetType="Slider" BasedOn="{StaticResource ThickSlider}">
+                    <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+                    <Style.Triggers>
+                        <DataTrigger Binding="{Binding IsMuted, ElementName=Root}" Value="True">
+                            <Setter Property="Foreground" Value="{DynamicResource MutedBrush}"/>
+                        </DataTrigger>
+                    </Style.Triggers>
+                </Style>
+            </Slider.Style>
+        </Slider>
         
         <Popup x:Name="VolumeTooltip" 
                Placement="Top" 

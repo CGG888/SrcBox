@@ -77,65 +77,6 @@
         </Style.Triggers>
       </Style>
 
-      <!-- 进度条样式 -->
-      <Style x:Key="ThickSlider" TargetType="Slider">
-        <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
-        <Setter Property="Template">
-          <Setter.Value>
-            <ControlTemplate TargetType="Slider">
-              <Grid Height="20" Background="Transparent">
-                <Border Height="2" CornerRadius="1" Background="{DynamicResource SliderInactiveBrush}" VerticalAlignment="Center"/>
-                <Border Height="8" CornerRadius="4" Background="{DynamicResource AccentBrush}" VerticalAlignment="Center" HorizontalAlignment="Left">
-                  <Border.Width>
-                    <MultiBinding Converter="{StaticResource RangeToWidth}">
-                      <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="ActualWidth"/>
-                      <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="Value"/>
-                      <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="Minimum"/>
-                      <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="Maximum"/>
-                    </MultiBinding>
-                  </Border.Width>
-                </Border>
-                <Track x:Name="PART_Track">
-                  <Track.DecreaseRepeatButton>
-                    <!-- 隐藏原生填充，避免与自定义进度条重复 -->
-                    <RepeatButton Command="Slider.DecreaseLarge" Background="#00FFFFFF">
-                      <RepeatButton.Template>
-                        <ControlTemplate TargetType="RepeatButton">
-                          <Border Height="0" Background="#00FFFFFF"/>
-                        </ControlTemplate>
-                      </RepeatButton.Template>
-                    </RepeatButton>
-                  </Track.DecreaseRepeatButton>
-                  <Track.Thumb>
-                    <Thumb Width="14" Height="14" VerticalAlignment="Center">
-                      <Thumb.Template>
-                        <ControlTemplate TargetType="Thumb">
-                            <Grid>
-                                <Ellipse Fill="{DynamicResource SliderThumbFillBrush}" Stroke="{DynamicResource SliderThumbStrokeBrush}" StrokeThickness="1">
-                                    <Ellipse.Effect>
-                                        <DropShadowEffect ShadowDepth="0" BlurRadius="4" Opacity="0.5"/>
-                                    </Ellipse.Effect>
-                                </Ellipse>
-                            </Grid>
-                        </ControlTemplate>
-                      </Thumb.Template>
-                    </Thumb>
-                  </Track.Thumb>
-                  <Track.IncreaseRepeatButton>
-                    <RepeatButton Command="Slider.IncreaseLarge" Background="#00FFFFFF">
-                      <RepeatButton.Template>
-                        <ControlTemplate TargetType="RepeatButton">
-                          <Border Height="8" CornerRadius="4" Background="#00FFFFFF" VerticalAlignment="Center"/>
-                        </ControlTemplate>
-                      </RepeatButton.Template>
-                    </RepeatButton>
-                  </Track.IncreaseRepeatButton>
-                </Track>
-              </Grid>
-            </ControlTemplate>
-          </Setter.Value>
-        </Setter>
-      </Style>
     </Window.Resources>
 
   <Border Background="{DynamicResource OverlayBackgroundBrush}" CornerRadius="8" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1">
@@ -180,8 +121,9 @@
                 <Button x:Name="BtnMute" Grid.Column="0" Style="{StaticResource OverlayIconButton}" ToolTip="{DynamicResource Overlay_Mute}" Click="BtnMute_Click" Width="32" Height="20" Margin="0,0,6,0">
                     <ui:SymbolIcon x:Name="IconMute" Symbol="Volume" />
                 </Button>
-                <controls:VolumeSlider Grid.Column="1" x:Name="SliderVolume" 
-                                       VolumeChanged="SliderVolume_VolumeChanged" 
+                <controls:VolumeSlider Grid.Column="1" x:Name="SliderVolume"
+                                       IsMuted="{Binding IsMuted, Mode=OneWay}"
+                                       VolumeChanged="SliderVolume_VolumeChanged"
                                        VerticalAlignment="Center"/>
             </Grid>
         </Grid>

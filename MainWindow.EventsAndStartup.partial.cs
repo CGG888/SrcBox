@@ -233,8 +233,16 @@ namespace LibmpvIptvClient
         {
             int step = 5;
             int dir = delta > 0 ? 1 : -1;
+            // 静音时滚动，取消静音
+            if (_shell.IsMuted)
+            {
+                _shell.IsMuted = false;
+                _overlayManager.OverlayWpf?.SetMuted(false);
+            }
             var newVol = _shell.Volume + dir * step;
             _shell.Volume = Math.Max(0, Math.Min(100, newVol));
+            // 显示百分比提示
+            _overlayManager.OverlayWpf?.ShowVolumeTooltip(_shell.Volume);
         }
 
         void BtnPin_Click(object sender, RoutedEventArgs e)

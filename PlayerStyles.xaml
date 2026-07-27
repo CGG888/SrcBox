@@ -2,6 +2,60 @@
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:local="clr-namespace:LibmpvIptvClient">
   <local:RangeToWidthConverter x:Key="RangeToWidth"/>
+  <Style x:Key="ThickSlider" TargetType="Slider">
+    <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
+    <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+    <Setter Property="Template">
+      <Setter.Value>
+        <ControlTemplate TargetType="Slider">
+          <Grid Height="20" Background="Transparent">
+            <Border Height="2" CornerRadius="1" Background="{DynamicResource SliderInactiveBrush}" VerticalAlignment="Center"/>
+            <Border Height="8" CornerRadius="4" Background="{TemplateBinding Foreground}" VerticalAlignment="Center" HorizontalAlignment="Left">
+              <Border.Width>
+                <MultiBinding Converter="{StaticResource RangeToWidth}">
+                  <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="ActualWidth"/>
+                  <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="Value"/>
+                  <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="Minimum"/>
+                  <Binding RelativeSource="{RelativeSource TemplatedParent}" Path="Maximum"/>
+                </MultiBinding>
+              </Border.Width>
+            </Border>
+            <Track x:Name="PART_Track">
+              <Track.DecreaseRepeatButton>
+                <RepeatButton Command="Slider.DecreaseLarge" Background="#00FFFFFF">
+                  <RepeatButton.Template>
+                    <ControlTemplate TargetType="RepeatButton">
+                      <Border Height="0" Background="#00FFFFFF"/>
+                    </ControlTemplate>
+                  </RepeatButton.Template>
+                </RepeatButton>
+              </Track.DecreaseRepeatButton>
+              <Track.Thumb>
+                <Thumb Width="14" Height="14" VerticalAlignment="Center">
+                  <Thumb.Template>
+                    <ControlTemplate TargetType="Thumb">
+                      <Grid>
+                        <Ellipse Fill="{DynamicResource SliderThumbFillBrush}" Stroke="{DynamicResource SliderThumbStrokeBrush}" StrokeThickness="1"/>
+                      </Grid>
+                    </ControlTemplate>
+                  </Thumb.Template>
+                </Thumb>
+              </Track.Thumb>
+              <Track.IncreaseRepeatButton>
+                <RepeatButton Command="Slider.IncreaseLarge" Background="#00FFFFFF">
+                  <RepeatButton.Template>
+                    <ControlTemplate TargetType="RepeatButton">
+                      <Border Height="8" CornerRadius="4" Background="#00FFFFFF" VerticalAlignment="Center"/>
+                    </ControlTemplate>
+                  </RepeatButton.Template>
+                </RepeatButton>
+              </Track.IncreaseRepeatButton>
+            </Track>
+          </Grid>
+        </ControlTemplate>
+      </Setter.Value>
+    </Setter>
+  </Style>
   <Style x:Key="UnifiedThickSlider" TargetType="Slider">
     <Setter Property="Background" Value="{DynamicResource AccentBrush}"/>
     <Setter Property="Template">
