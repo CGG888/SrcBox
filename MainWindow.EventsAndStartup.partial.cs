@@ -597,6 +597,16 @@ namespace LibmpvIptvClient
                         }
                     }
                     catch { }
+
+                    // 修复 Bug #2：精简模式退出时强制刷新频道列表
+                    // 解决 ListBox 虚拟化（Recycling）在 DrawerPanel 隐藏→显示后容器未重新生成的问题
+                    try
+                    {
+                        _shell.ApplyChannelFilter();
+                        if (ListChannels != null) ListChannels.Items.Refresh();
+                        if (ListGroups != null) ListGroups.Items.Refresh();
+                    }
+                    catch { }
                 }
             }
             finally

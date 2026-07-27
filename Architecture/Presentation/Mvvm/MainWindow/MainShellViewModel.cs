@@ -759,6 +759,26 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             Favorites = ChannelInteractionActions.BuildFavoriteList(Channels, c => UserDataStore.ComputeKey(c));
         }
 
+        /// <summary>
+        /// 修复 Bug #1：从 UserDataStore 的持久化收藏列表还原所有 Channel.Favorite 标记。
+        /// 必须在 LoadChannels 后、UpdateFavorites 前调用。
+        /// 之前漏掉了这一步，导致重启后 Channel.Favorite 全部为 false，收藏目录永远为空。
+        /// </summary>
+        public void ApplyFavoritesFromStore()
+        {
+            if (UserDataStore == null || Channels == null) return;
+            foreach (var c in Channels)
+            {
+                if (c == null) continue;
+                try
+                {
+                    var key = UserDataStore.ComputeKey(c);
+                    c.Favorite = UserDataStore.IsFavorite(key);
+                }
+                catch { /* 单个频道失败不影响其他 */ }
+            }
+        }
+
         public void LoadHistory()
         {
             if (UserDataStore != null)
@@ -785,9 +805,13 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 LibmpvIptvClient.Diagnostics.Logger.Log("开始加载频道: " + url);
                 
                 Channels = await SourceLoader.LoadChannelsAsync(ChannelService, url, msg => LibmpvIptvClient.Diagnostics.Logger.Log(msg));
-                
+
                 ChannelListActions.ComputeGlobalIndices(Channels);
-                
+
+                // 修复 Bug #1：从持久化的 UserDataStore 还原所有 Channel.Favorite 标记
+                // 必须在 ComputeGlobalIndices 之后、UpdateFavorites 之前调用
+                ApplyFavoritesFromStore();
+
                 ApplyChannelFilter();
                 
                 if (Channels.Count == 0)

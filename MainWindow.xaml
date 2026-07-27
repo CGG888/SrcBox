@@ -870,13 +870,13 @@
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
                                 <TextBlock x:Name="TxtCount" Grid.Row="0" Margin="10,0,10,5" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11"/>
-                                <ListBox x:Name="ListChannels" Grid.Row="1" Background="Transparent" BorderThickness="0" 
+                                <ListBox x:Name="ListChannels" Grid.Row="1" Background="Transparent" BorderThickness="0"
                                          ScrollViewer.CanContentScroll="True"
                                          ScrollViewer.VerticalScrollBarVisibility="Auto"
                                          VirtualizingPanel.IsVirtualizing="True"
                                          VirtualizingPanel.VirtualizationMode="Recycling"
                                          MouseEnter="ListChannels_MouseEnter"
-                                         AlternationCount="999999">
+                                         AlternationCount="2">
                                     <ListBox.ItemContainerStyle>
                                         <Style TargetType="ListBoxItem">
                                             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
@@ -985,7 +985,7 @@
                                                     <TextBlock Text="{Binding Count, StringFormat=(\{0\})}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" DockPanel.Dock="Right"/>
                                                 </DockPanel>
                                             </Expander.Header>
-                                            <ItemsControl ItemsSource="{Binding Items}" AlternationCount="999999">
+                                            <ItemsControl ItemsSource="{Binding Items}" AlternationCount="2">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
                                                         <Border Margin="6,8,6,0" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="6" PreviewMouseLeftButtonDown="OnPreviewMouseLeftButtonDown">
