@@ -81,35 +81,46 @@ This project is developed using **C# / WPF**. The core architecture is as follow
 
 ## Features & Changelog
 
-Version note: verifiable Git tags in this repository are `1.0.1` to `1.1.2`; the current branch describes as `1.1.2-6-gedf98b6`, while the project version is `1.1.4` (see `LibmpvIptvClient.csproj` / `setup.iss`). The table only keeps tag-verifiable mappings; items not mappable to a released tag are marked as “Post-1.1.2 (untagged)”.
+Version note: verifiable Git tags in this repository are `1.0.1` to `1.1.2`; the current branch describes as `1.1.6`, and the project version is `1.1.6` (see `LibmpvIptvClient.csproj` / `setup.iss`).
 
 ### Core Playback
 
 | Feature | Description | Params/Example | Changelog |
 | :--- | :--- | :--- | :--- |
-| **Playback Control** | Play/Pause, Stop, Seek, Fast Forward/Rewind | No default hotkeys yet; mouse supported | Since 1.0.1 |
-| **Volume Control** | Slider adjustment, mute support | Range 0-100 | Since 1.0.7 |
+| **Playback Control** | Play/Pause, Stop, Seek, Fast Forward/Rewind | Hotkeys: Space/S/Arrow keys | Since 1.0.1 |
+| **Volume Control** | Slider adjustment, mute support | Range 0-100, hotkey M | Since 1.0.7 |
+| **Audio Settings** | Volume gain, max volume limit, audio delay | -200dB～+60dB, hotkey Ctrl+PgUp/PgDn | Since 1.1.6 |
 | **Status Indicators** | Live/Replay/Timeshift status in overlay | Auto-detection | Since 1.0.5 |
 | **Scheduled Reminder & Auto Play** | Program reminder and scheduled autoplay policy | Supports “remind-only / auto-play” modes | Since 1.1.2 |
-| **Minimal Mode** | Compact player window mode with dedicated interactions | Synchronized behavior in window/fullscreen states | Post-1.1.2 (untagged) |
+| **Minimal Mode** | Compact player window mode with dedicated interactions | Synchronized in window/fullscreen, hotkey W | Post-1.1.2 (untagged) |
 
 ### IPTV Specifics
 
 | Feature | Description | Params/Example | Changelog |
 | :--- | :--- | :--- | :--- |
 | **M3U Parsing** | Local/Remote M3U, UTF-8/GB18030 compatible | Supports `#EXTINF` attributes | Since 1.0.1 |
-| **EPG** | XMLTV (gz) support, day switching | Auto-match `tvg-id` | Since 1.0.1 |
+| **EPG** | XMLTV (gz) support, day switching | Auto-match `tvg-id`, hotkey E | Since 1.0.1 |
 | **Catchup (Replay)** | Template-based catchup URL generation | `{utc:yyyyMMddHHmmss}` etc. | Since 1.0.1 |
-| **Timeshift** | Seek back in live stream history | Depends on `catchup-source` | Since 1.0.2 |
-| **Channel Mgmt** | Grouping, Search, Favorites, History | Favorites and history are persisted locally | Group/Search/Favorites: since 1.0.1; History: since 1.0.4 |
+| **Timeshift** | Seek back in live stream history, hotkey T | Depends on `catchup-source` | Since 1.0.2 |
+| **Channel Mgmt** | Grouping, Search, Favorites, History | Persisted locally, hotkeys L/F | Group/Search/Favorites: since 1.0.1; History: since 1.0.4 |
 | **FCC/UDP** | Fast Channel Change & Multicast optimization | Toggle in Settings | Since 1.0.1 |
-| **Recording & Upload** | Local recording, WebDAV upload, upload queue | Local/remote save modes | Post-1.1.2 (untagged) |
+| **Deinterlace** | Optimized for 1080i/720i interlaced video | Auto-detection, multiple algorithms | Since 1.1.6 |
+| **Web Remote** | Control player through browser | Playback, volume, channel switching | Since 1.1.6 |
+| **Recording & Upload** | Local recording, WebDAV upload, upload queue | Local/remote modes, hotkey R | Post-1.1.2 (untagged) |
 
 ### Fullscreen & Overlay
 
-- **Double-click Fullscreen**: Toggle fullscreen by double-clicking the video area.
+- **Double-click/Enter Fullscreen**: Toggle fullscreen by double-clicking or pressing Enter.
 - **Overlay Bar**: Auto-shows at bottom on mouse move; supports controls & EPG toggle.
 - **Side Drawer**: Auto-shows channel list (right) or EPG (left) on mouse hover near edges.
+- **Escape Key**: Exit fullscreen mode.
+
+### v1.1.6 New Features
+- **Web Remote Control**: Control the player through a browser, with playback control, volume, channel switching and status view
+- **Audio Settings**: Volume gain (-200dB～+60dB), max volume limit (100%～1000%), audio delay (-100s～+100s)
+- **Deinterlace**: Optimized for 1080i/720i interlaced video streams with auto-detection and multiple algorithms (yadif/bwdif)
+- **Keyboard Shortcuts**: Full keyboard shortcut support including playback control, channel switching, volume, fullscreen toggle, etc.
+- **Resizable Settings Window**: Settings window can now be freely resized
 
 ### v1.1.2+ Interaction Highlights (Synced from VitePress)
 - **EPG status chips**: Live red chip and Replay green chip; clicking Live chip switches back to live immediately.
@@ -148,7 +159,11 @@ We are dedicated to continuously improving the IPTV viewing experience. Here are
 - [x] **Recording**: Local recording, recording index, upload queue, and WebDAV integration.
 - [x] **Scheduling**: Program reminders, reminder list, and scheduled autoplay policy.
 - [x] **Minimal Mode**: Compact player mode, top-bar interactions, and state synchronization across window/fullscreen.
-- [x] **UI/UX**: Fullscreen overlay, side drawer, multi-language support (ZH/EN/ZH-TW/RU).
+- [x] **Web Remote Control**: Browser-based player control with playback, volume, and channel switching.
+- [x] **Audio Settings**: Volume gain, max volume limit, and audio delay adjustment.
+- [x] **Deinterlace**: Smart processing for 1080i/720i interlaced video.
+- [x] **Keyboard Shortcuts**: Full keyboard shortcut support for blind operation.
+- [x] **UI/UX**: Fullscreen overlay, side drawer, multi-language support (ZH/EN/ZH-TW/RU), resizable settings window.
 
 ---
 
@@ -174,11 +189,35 @@ For detailed internationalization guides and how to contribute translations, ple
 - **Center**: Video playback area.
 - **Bottom/Overlay**: Progress bar, volume, toggles (EPG/List).
 
-### Shortcuts
+### Keyboard Shortcuts
 
-Currently relies mostly on mouse interaction.
-- **Esc**: Exit fullscreen.
-- **Double-click**: Toggle fullscreen.
+| Shortcut | Function | Description |
+|----------|----------|-------------|
+| `Space` | Play/Pause | Toggle playback state |
+| `S` | Stop | Stop current playback |
+| `↑` | Previous Channel | Switch to previous channel |
+| `↓` | Next Channel | Switch to next channel |
+| `←` | Previous Source / Rewind | Live mode: switch source; Timeshift/Replay mode: rewind |
+| `→` | Next Source / Fast Forward | Live mode: switch source; Timeshift/Replay mode: fast forward |
+| `M` | Mute | Toggle mute state |
+| `Enter` | Toggle Fullscreen | Enter/exit fullscreen mode |
+| `L` | Channel List | Show/hide channel list sidebar |
+| `E` | EPG | Show/hide EPG program guide |
+| `Escape` | Exit Fullscreen | Return to window mode from fullscreen |
+| `F1` | Debug Window | Open debug information window |
+
+For detailed information, please refer to the **[Keyboard Shortcuts Documentation](https://srcbox.top/en/guide/keyboard-shortcuts)**.
+
+### Official Documentation
+
+>> **[Visit Official Documentation Website](https://srcbox.top/en)** <<
+
+| Language | Documentation Link |
+|----------|-------------------|
+| 简体中文 | [srcbox.top](https://srcbox.top) |
+| 繁體中文 | [srcbox.top/zh-TW](https://srcbox.top/zh-TW) |
+| English | [srcbox.top/en](https://srcbox.top/en) |
+| Русский | [srcbox.top/ru](https://srcbox.top/ru) |
 
 ---
 

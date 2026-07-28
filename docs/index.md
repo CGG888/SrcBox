@@ -149,8 +149,11 @@ video::-webkit-media-controls-volume-panel {
 ## 获取帮助
 
 - 📖 [使用指南](/guide/) - 详细的功能介绍和配置说明
+- ⌨️ [键盘快捷键](/guide/keyboard-shortcuts) - 快速上手操作指南
 - 🐛 [问题反馈](https://github.com/CGG888/SrcBox/issues) - 报告 Bug 或提出建议
 - 📦 [下载安装](https://github.com/CGG888/SrcBox/releases) - 获取最新版本
+
+>> **[访问官方文档网站](https://srcbox.top)** <<
 
 <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--vp-c-divider); font-size: 14px; color: var(--vp-c-text-2);">
   <p><strong>免责声明：</strong> 本页面展示的所有视频、截图及演示画面仅作功能展示用途，并非实际可播放或可用的媒体资源。<strong>本项目不提供任何 m3u 播放列表文件及其中包含的频道数据，亦不对第三方数据源负责。</strong></p>

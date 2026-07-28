@@ -149,8 +149,11 @@ Built on the powerful **libmpv** playback engine and combined with **WPF**'s mod
 ## Get Help
 
 - 📖 [User Guide](/guide/) - Detailed features and configuration
+- ⌨️ [Keyboard Shortcuts](/guide/keyboard-shortcuts) - Quick operation guide
 - 🐛 [Report Issues](https://github.com/CGG888/SrcBox/issues) - Bug reports and suggestions
 - 📦 [Downloads](https://github.com/CGG888/SrcBox/releases) - Get the latest version
+
+>> **[Visit Official Documentation Website](https://srcbox.top/en)** <<
 
 <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--vp-c-divider); font-size: 14px; color: var(--vp-c-text-2);">
   <p><strong>Disclaimer:</strong> The videos, screenshots, and demos shown are for functional demonstration only and are not actual playable media resources. <strong>This project does not provide any m3u playlist files or channel data.</strong></p>

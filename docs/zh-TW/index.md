@@ -149,8 +149,11 @@ video::-webkit-media-controls-volume-panel {
 ## 獲取幫助
 
 - 📖 [使用指南](/zh-TW/guide/) - 詳細的功能介紹和配置說明
+- ⌨️ [鍵盤快捷鍵](/zh-TW/guide/keyboard-shortcuts) - 快速操作指南
 - 🐛 [問題反饋](https://github.com/CGG888/SrcBox/issues) - 報告 Bug 或提出建議
 - 📦 [下載安裝](https://github.com/CGG888/SrcBox/releases) - 獲取最新版本
+
+>> **[訪問官方文檔網站](https://srcbox.top/zh-TW)** <<
 
 <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--vp-c-divider); font-size: 14px; color: var(--vp-c-text-2);">
   <p><strong>免責聲明：</strong> 本頁面展示的所有影片、截圖及演示畫面僅作功能展示用途，並非實際可播放或可用的媒體資源。<strong>本專案不提供任何 m3u 播放清單檔案及其中包含的頻道數據，亦不對第三方數據源負責。</strong></p>
