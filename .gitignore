@@ -66,3 +66,8 @@ replace_shell.ps1
 进度条与布局解耦_实施方案.md
 托盘信息与录播状态解耦实施方案.md
 md/*
+check_exit.py
+fix_exit.py
+fix_dup.py
+Services/WebRemote/fix_remote.py
+Services/WebRemote/repair_remote.py

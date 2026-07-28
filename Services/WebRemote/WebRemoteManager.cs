@@ -37,7 +37,11 @@ namespace LibmpvIptvClient.Services.WebRemote
                 _server.PlayCallback = DoPlay;
                 _server.PauseCallback = DoPause;
                 _server.StopCallback = DoStop;
-                _server.SetVolumeCallback = (v) => { if (_shell != null) _shell.Volume = v; };
+                _server.SetVolumeCallback = (v) => {
+                    if (_shell == null) return;
+                    _shell.Volume = v;
+                    _shell.IsMuted = v <= 0;
+                };
                 _server.ChangeChannelCallback = ChangeChannel;
                 _server.ExitCallback = ExitApp;
                 _server.FullscreenCallback = ToggleFullscreen;
@@ -361,29 +365,11 @@ namespace LibmpvIptvClient.Services.WebRemote
         {
             try
             {
-                if (_shell == null || _shell.CurrentChannel == null) return;
-
-                // Build the source list as the menu does
-                var channels = _shell.Channels?.ToList() ?? new List<Channel>();
-                if (_shell.CurrentSources == null || _shell.CurrentSources.Count == 0)
+                System.Windows.Application.Current?.Dispatcher.Invoke(() =>
                 {
-                    _shell.CurrentSources = _shell.SourceLoader.BuildSourcesForChannel(_shell.CurrentChannel, channels);
-                }
-
-                var sources = _shell.CurrentSources;
-                if (sources == null || sources.Count <= 1) return;
-
-                var currentUrl = _shell.SourceLoader.SanitizeUrl(_shell.CurrentUrl ?? "");
-                var currentIndex = sources.FindIndex(s => _shell.SourceLoader.SanitizeUrl(s.Url) == currentUrl);
-
-                // Cycle to next source
-                var nextIndex = (currentIndex + 1) % sources.Count;
-                var nextSource = sources[nextIndex];
-
-                _shell.CurrentChannel.Tag = nextSource;
-                var newUrl = _shell.SourceLoader.SanitizeUrl(nextSource.Url);
-                Logger.Info($"[WebRemote] SwitchSource via web remote to {nextIndex + 1}/{sources.Count}: {newUrl}");
-                _shell.PlayerEngine?.Play(newUrl);
+                    if (_shell?.MenuActions == null) return;
+                    _shell.MenuActions.SwitchSourceViaRemote();
+                });
             }
             catch (Exception ex)
             {

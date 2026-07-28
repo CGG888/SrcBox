@@ -336,7 +336,28 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             _shell.CurrentChannel.Tag = newSrc;
             var u = _shell.SourceLoader.SanitizeUrl(newSrc.Url);
             LibmpvIptvClient.Diagnostics.Logger.Log("切换源 " + u);
+            _shell.CurrentUrl = u;
             _shell.PlayerEngine?.Play(u);
+        }
+
+        public void SwitchSourceViaRemote()
+        {
+            if (_shell.CurrentChannel == null) return;
+            var channels = _shell.Channels?.ToList() ?? new List<Channel>();
+            if (_shell.CurrentSources == null || _shell.CurrentSources.Count == 0)
+            {
+                _shell.CurrentSources = _shell.SourceLoader.BuildSourcesForChannel(_shell.CurrentChannel, channels);
+            }
+            var sources = _shell.CurrentSources;
+            if (sources == null || sources.Count <= 1) return;
+
+            var currentUrl = _shell.SourceLoader.SanitizeUrl(_shell.CurrentUrl ?? "");
+            var currentIndex = sources.FindIndex(s => _shell.SourceLoader.SanitizeUrl(s.Url) == currentUrl);
+
+            var nextIndex = (currentIndex + 1) % sources.Count;
+            var nextSource = sources[nextIndex];
+            LibmpvIptvClient.Diagnostics.Logger.Log($"[Remote] SwitchSource cycle {currentIndex + 1}→{nextIndex + 1}/{sources.Count}");
+            SwitchSource(nextSource);
         }
 
         public List<MenuItemViewModel> BuildRatioMenuItems()

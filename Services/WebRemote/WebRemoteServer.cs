@@ -331,15 +331,57 @@ namespace LibmpvIptvClient.Services.WebRemote
         body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: linear-gradient(135deg, #0f0c29 0%, #1a1a2e 50%, #24243e 100%); color: #eee; min-height: 100vh; overflow-x: hidden; }
         .container { max-width: 100%; margin: 0 auto; padding: 12px; }
 
+        /* Light Theme */
+        body.light-theme { background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 50%, #d0d5dc 100%); color: #222; }
+        body.light-theme .header { background: rgba(0,0,0,0.08); }
+        body.light-theme .header h1 { color: #111; }
+        .theme-toggle { background: #333; border: none; border-radius: 8px; padding: 8px 12px; cursor: pointer; font-size: 14px; color: #fff; transition: all 0.2s; }
+        .theme-toggle:hover { background: #444; }
+        body.light-theme .theme-toggle { background: rgba(0,0,0,0.12); color: #222; }
+        body.light-theme .theme-toggle:hover { background: rgba(0,0,0,0.2); }
+        body.light-theme .now-playing { background: rgba(0,0,0,0.08); }
+        body.light-theme .now-playing-channel { color: #333; font-weight: 600; }
+        body.light-theme .now-playing-sep { color: #666; }
+        body.light-theme .now-playing-program { color: #555; font-weight: 500; }
+        body.light-theme .now-playing-program-time { color: #777; }
+        body.light-theme .controls-wrapper { background: rgba(0,0,0,0.06); border-radius: 12px; }
+        body.light-theme .btn { background: rgba(0,0,0,0.12) !important; color: #000 !important; font-weight: 600; }
+        body.light-theme .btn:active { background: rgba(0,0,0,0.18) !important; }
+        body.light-theme .btn span { color: #000 !important; }
+        body.light-theme .btn svg { fill: #000 !important; }
+        body.light-theme .btn svg path { fill: #000 !important; }
+        body.light-theme .volume-control { background: rgba(0,0,0,0.08); }
+        body.light-theme .volume-value { color: #1a6b3a; }
+        body.light-theme .channel-section { background: rgba(0,0,0,0.06); }
+        body.light-theme .section-title { color: #555; font-weight: 600; }
+        body.light-theme .channel-item { background: rgba(0,0,0,0.08); }
+        body.light-theme .channel-item:hover { background: rgba(0,0,0,0.14); }
+        body.light-theme .channel-item .name { color: #333; font-weight: 500; }
+        body.light-theme .epg-section { background: rgba(0,0,0,0.06); }
+        body.light-theme .epg-header-title { color: #555; font-weight: 600; }
+        body.light-theme .epg-channel-name { color: #1a6b3a; font-weight: 600; }
+        body.light-theme .epg-timeline { color: #555; }
+        body.light-theme .epg-current-time { color: #cc3344; font-weight: 600; }
+        body.light-theme .epg-list { }
+        body.light-theme .epg-item { background: rgba(0,0,0,0.04); }
+        body.light-theme .epg-item:hover { background: rgba(0,0,0,0.1); }
+        body.light-theme .epg-item.current { background: rgba(46,213,115,0.25); }
+        body.light-theme .epg-name { color: #222; font-weight: 500; }
+        body.light-theme .epg-desc { color: #666; }
+        body.light-theme .loading { color: #666; }
+        body.light-theme .epg-time { color: #555; }
+        body.light-theme .epg-time-end { color: #777; }
+        body.light-theme .epg-badge-current { background: #1a6b3a; }
+        body.light-theme .epg-badge-next { background: #8b5a00; }
+
         /* Header */
-        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 8px 12px; background: rgba(255,255,255,0.05); border-radius: 12px; }
+        .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 8px 12px; background: #000; border-radius: 12px; }
         .header h1 { font-size: 16px; margin: 0; display: flex; align-items: center; gap: 8px; }
         .live-badge { background: #ff4757; color: white; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: bold; animation: pulse 2s infinite; }
         @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
 
         /* Now Playing Card */
-        .now-playing { background: linear-gradient(145deg, #1e3a5f, #16213e); border-radius: 16px; padding: 16px; margin-bottom: 12px; position: relative; overflow: hidden; }
-        .now-playing::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: linear-gradient(90deg, #ff4757, #ffa502, #2ed573, #1e90ff); }
+        .now-playing { background: #000; border-radius: 10px; padding: 16px; margin-bottom: 12px; position: relative; overflow: hidden; }
         .now-playing-info { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
         .now-playing-left { display: flex; flex-direction: column; gap: 2px; }
         .now-playing-channel-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
@@ -353,38 +395,34 @@ namespace LibmpvIptvClient.Services.WebRemote
         .mode-timeshift { background: #1e90ff; } .mode-stopped { background: #57606f; }
 
         /* Control Buttons */
-        .controls { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 12px; }
-        .btn { padding: 12px 8px; border: none; border-radius: 12px; font-size: 18px; cursor: pointer; transition: all 0.2s; background: rgba(255,255,255,0.1); color: #fff; display: flex; flex-direction: column; align-items: center; gap: 2px; }
-        .btn:active { transform: scale(0.95); background: rgba(255,255,255,0.2); }
-        .btn span { font-size: 10px; color: #aaa; }
-        .btn-play { background: rgba(46,213,115,0.3); } .btn-play:active { background: rgba(46,213,115,0.5); }
-        .btn-pause { background: rgba(255,165,2,0.3); } .btn-pause:active { background: rgba(255,165,2,0.5); }
-        .btn-stop { background: rgba(255,71,87,0.3); } .btn-stop:active { background: rgba(255,71,87,0.5); }
-        .btn-mute { background: rgba(87,96,111,0.3); } .btn-mute:active { background: rgba(87,96,111,0.5); }
-        .btn-fullscreen { background: rgba(30,144,255,0.3); } .btn-fullscreen:active { background: rgba(30,144,255,0.5); }
-        .btn-switch { background: rgba(155,89,182,0.3); } .btn-switch:active { background: rgba(155,89,182,0.5); }
-        .btn-exit { background: rgba(238,90,36,0.3); } .btn-exit:active { background: rgba(238,90,36,0.5); }
-        .btn-nav { background: rgba(55,66,250,0.3); } .btn-nav:active { background: rgba(55,66,250,0.5); }
+        .controls-wrapper { background: #000; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
+        .controls { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; }
+        .controls + .controls { margin-top: 6px; }
+        .btn { padding: 12px 8px; border: none; border-radius: 10px; cursor: pointer; transition: all 0.2s; background: #1a1a1a; color: #fff; display: flex; flex-direction: column; align-items: center; gap: 2px; }
+        .btn:active { transform: scale(0.95); background: #2a2a2a; }
+        .btn span { font-size: 10px; color: #fff; }
+        .icon { width: 20px; height: 20px; fill: currentColor; }
+        .volume-icon { width: 20px; height: 20px; fill: currentColor; }
 
         /* Volume */
-        .volume-control { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 12px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+        .volume-control { background: #000; border-radius: 12px; padding: 12px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
         .volume-icon { font-size: 20px; }
         .volume-bar { flex: 1; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; cursor: pointer; position: relative; }
         .volume-fill { height: 100%; background: linear-gradient(90deg, #2ed573, #7bed9f); border-radius: 3px; transition: width 0.3s; }
         .volume-value { min-width: 40px; text-align: right; font-size: 12px; color: #7bed9f; }
 
         /* Channel Grid */
-        .channel-section { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 12px; margin-bottom: 12px; }
+        .channel-section { background: #000; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
         .section-title { font-size: 12px; color: #888; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
         .channel-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; max-height: 250px; overflow-y: auto; }
-        .channel-item { background: rgba(255,255,255,0.08); border-radius: 10px; padding: 10px 6px; text-align: center; cursor: pointer; transition: all 0.2s; border: 2px solid transparent; }
-        .channel-item:hover { background: rgba(255,255,255,0.15); }
+        .channel-item { background: #1a1a1a; border-radius: 10px; padding: 10px 6px; text-align: center; cursor: pointer; transition: all 0.2s; border: 2px solid transparent; }
+        .channel-item:hover { background: #2a2a2a; }
         .channel-item.active { background: rgba(46,213,115,0.2); border-color: #2ed573; }
         .channel-item .logo { font-size: 22px; margin-bottom: 4px; }
         .channel-item .name { font-size: 10px; color: #ccc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         /* EPG Section - TV Guide Style */
-        .epg-section { background: rgba(255,255,255,0.05); border-radius: 12px; padding: 12px; }
+        .epg-section { background: #000; border-radius: 12px; padding: 12px; }
         .epg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
         .epg-header-title { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
         .epg-channel-name { font-size: 14px; color: #7bed9f; font-weight: bold; }
@@ -425,7 +463,8 @@ namespace LibmpvIptvClient.Services.WebRemote
 <body>
     <div class=""container"">
         <div class=""header"">
-            <h1>📺 SrcBox <span class=""live-badge"" id=""liveBadge"" style=""display:none;"">LIVE</span></h1>
+            <h1>📺 SrcBox遥控器 <span class=""live-badge"" id=""liveBadge"" style=""display:none;"">LIVE</span></h1>
+            <button class=""theme-toggle"" id=""themeToggle"" onclick=""toggleTheme()"">🌙 深色</button>
         </div>
 
         <div class=""now-playing"">
@@ -442,23 +481,25 @@ namespace LibmpvIptvClient.Services.WebRemote
             </div>
         </div>
 
+        <div class=""controls-wrapper"">
         <div class=""controls"">
-            <button class=""btn btn-nav"" onclick=""prevChannel()"">⏮<span>上一台</span></button>
-            <button class=""btn btn-play"" onclick=""play()"">▶<span>播放</span></button>
-            <button class=""btn btn-pause"" onclick=""pause()"">⏸<span>暂停</span></button>
-            <button class=""btn btn-stop"" onclick=""stop()"">⏹<span>停止</span></button>
-            <button class=""btn btn-mute"" onclick=""toggleMute()"">🔊<span>静音</span></button>
+            <button class=""btn btn-fullscreen"" onclick=""fullscreen()""><svg class=""icon"" viewBox=""0 0 24 24""><path d=""M7 14H5v5h5v-2H7v-3zm-2-4h2V7h3V5H5v5zm12 7h-3v2h5v-5h-2v3zM14 5v2h3v3h2V5h-5z""/></svg><span>全屏</span></button>
+            <button class=""btn btn-play"" onclick=""play()""><svg class=""icon"" viewBox=""0 0 24 24""><path d=""M8 5v14l11-7z""/></svg><span>播放</span></button>
+            <button class=""btn btn-pause"" onclick=""pause()""><svg class=""icon"" viewBox=""0 0 24 24""><path d=""M6 19h4V5H6v14zm8-14v14h4V5h-4z""/></svg><span>暂停</span></button>
+            <button class=""btn btn-stop"" onclick=""stop()""><svg class=""icon"" viewBox=""0 0 24 24""><path d=""M6 6h12v12H6z""/></svg><span>停止</span></button>
+            <button class=""btn btn-mute"" onclick=""toggleMute()""><svg class=""icon"" id=""muteIcon"" viewBox=""0 0 24 24""><path d=""M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z""/></svg><span>静音</span></button>
         </div>
         <div class=""controls"">
-            <button class=""btn btn-fullscreen"" onclick=""fullscreen()"">⛶<span>全屏</span></button>
-            <button class=""btn btn-nav"" onclick=""nextChannel()"">⏭<span>下一台</span></button>
-            <button class=""btn btn-switch"" onclick=""switchSource()"">🔀<span>换源</span></button>
-            <button class=""btn btn-exit"" onclick=""exitApp()"">✕<span>退出</span></button>
-            <button class=""btn"" onclick=""refreshData()"">🔄<span>刷新</span></button>
+            <button class=""btn btn-nav"" onclick=""prevChannel()""><svg class=""icon"" viewBox=""0 0 24 24""><path d=""M6 6h2v12H6zm3.5 6l8.5 6V6z""/></svg><span>上一台</span></button>
+            <button class=""btn btn-nav"" onclick=""nextChannel()""><svg class=""icon"" viewBox=""0 0 24 24""><path d=""M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z""/></svg><span>下一台</span></button>
+            <button class=""btn btn-switch"" onclick=""switchSource()""><svg class=""icon"" viewBox=""0 0 24 24""><path d=""M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z""/></svg><span>换源</span></button>
+            <button class=""btn btn-exit"" onclick=""exitApp()""><svg class=""icon"" viewBox=""0 0 24 24""><path d=""M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z""/></svg><span>退出</span></button>
+            <button class=""btn"" onclick=""refreshData()""><svg class=""icon"" viewBox=""0 0 24 24""><path d=""M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z""/></svg><span>刷新</span></button>
+        </div>
         </div>
 
         <div class=""volume-control"">
-            <span class=""volume-icon"" id=""volIcon"">🔊</span>
+            <svg class=""icon volume-icon"" id=""volIcon"" viewBox=""0 0 24 24""><path d=""M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z""/></svg>
             <div class=""volume-bar"" id=""volBar"" onclick=""setVolumeFromClick(event)""><div class=""volume-fill"" id=""volFill"" style=""width:70%""></div></div>
             <span class=""volume-value"" id=""volValue"">70%</span>
         </div>
@@ -484,14 +525,16 @@ namespace LibmpvIptvClient.Services.WebRemote
         let ws;
         let currentChannelId = '';
         let currentVolume = 70;
+        let previousVolume = 70;
         let isMuted = false;
         let channelList = [];
         let statusInterval;
+        let isDarkTheme = true;
 
         function connect() {
             const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
             ws = new WebSocket(protocol + '//' + location.host);
-            ws.onopen = () => { loadStatus(); loadChannels(); statusInterval = setInterval(loadStatus, 5000); };
+            ws.onopen = () => { loadTheme(); loadStatus(); loadChannels(); statusInterval = setInterval(loadStatus, 5000); };
             ws.onclose = () => { clearInterval(statusInterval); setTimeout(connect, 3000); };
             ws.onerror = () => { document.getElementById('channelName').textContent = '连接失败'; };
             ws.onmessage = (e) => {
@@ -510,6 +553,31 @@ namespace LibmpvIptvClient.Services.WebRemote
         function loadEpg(channelId) { send('getEpg', { channelId }); }
         function refreshData() { loadStatus(); loadChannels(); if (currentChannelId) loadEpg(currentChannelId); }
 
+        function toggleTheme() {
+            isDarkTheme = !isDarkTheme;
+            document.body.classList.toggle('light-theme', !isDarkTheme);
+            document.getElementById('themeToggle').textContent = isDarkTheme ? '🌙 深色' : '☀️ 浅色';
+            localStorage.setItem('remote-theme', isDarkTheme ? 'dark' : 'light');
+        }
+
+        function loadTheme() {
+            const saved = localStorage.getItem('remote-theme');
+            isDarkTheme = saved !== 'light';
+            document.body.classList.toggle('light-theme', !isDarkTheme);
+            document.getElementById('themeToggle').textContent = isDarkTheme ? '🌙 深色' : '☀️ 浅色';
+        }
+
+        function updateVolumeUI() {
+            document.getElementById('volFill').style.width = (isMuted ? 0 : currentVolume) + '%';
+            document.getElementById('volValue').textContent = isMuted ? '✕' : currentVolume + '%';
+            // Update mute icon path dynamically
+            var volPath = isMuted
+                ? 'M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z'
+                : 'M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z';
+            document.getElementById('volIcon').querySelector('path').setAttribute('d', volPath);
+            document.getElementById('muteIcon').querySelector('path').setAttribute('d', volPath);
+        }
+
         function updateStatus(s) {
             const modeMap = { Live:'直播', Replay:'回看', Timeshift:'时移', Recording:'录播', LocalFile:'本地', Stopped:'已停止' };
             const modeClass = { Live:'mode-live', Replay:'mode-replay', Timeshift:'mode-timeshift', Recording:'mode-recording', LocalFile:'mode-local', Stopped:'mode-stopped' };
@@ -521,7 +589,11 @@ namespace LibmpvIptvClient.Services.WebRemote
             document.getElementById('programTime').textContent = s.currentProgram ? (s.currentProgram.start + ' - ' + s.currentProgram.end) : '';
             document.getElementById('liveBadge').style.display = s.mode === 'Live' ? 'inline' : 'none';
             currentChannelId = s.channel?.id || '';
-            currentVolume = s.volume || 0;
+            // 保存静音前的音量
+            if (!s.muted && s.volume > 0) {
+                previousVolume = s.volume;
+            }
+            currentVolume = s.muted ? previousVolume : (s.volume || 0);
             isMuted = s.muted || false;
             updateVolumeUI();
             updateChannelActive();
@@ -580,8 +652,13 @@ namespace LibmpvIptvClient.Services.WebRemote
 
         function updateVolumeUI() {
             document.getElementById('volFill').style.width = (isMuted ? 0 : currentVolume) + '%';
-            document.getElementById('volValue').textContent = isMuted ? '🔇' : currentVolume + '%';
-            document.getElementById('volIcon').textContent = isMuted ? '🔇' : (currentVolume > 50 ? '🔊' : '🔉');
+            document.getElementById('volValue').textContent = isMuted ? '✕' : currentVolume + '%';
+            // Update mute icon path dynamically
+            var volPath = isMuted
+                ? 'M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z'
+                : 'M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z';
+            document.getElementById('volIcon').querySelector('path').setAttribute('d', volPath);
+            document.getElementById('muteIcon').querySelector('path').setAttribute('d', volPath);
         }
 
         function updateChannelActive() {
@@ -591,10 +668,11 @@ namespace LibmpvIptvClient.Services.WebRemote
         async function play() { send('play'); await loadStatus(); }
         async function pause() { send('pause'); await loadStatus(); }
         async function stop() { send('stop'); await loadStatus(); }
-        async function toggleMute() { send('volume', { volume: isMuted ? currentVolume : 0 }); await loadStatus(); }
+        async function toggleMute() { send('volume', { volume: isMuted ? previousVolume : 0 }); await loadStatus(); }
         async function setVolumeFromClick(e) {
             const bar = document.getElementById('volBar');
             const pct = Math.round((e.clientX - bar.getBoundingClientRect().left) / bar.offsetWidth * 100);
+            previousVolume = pct;
             send('volume', { volume: pct }); await loadStatus();
         }
         async function changeChannel(id) { send('channel', { channelId: id }); await loadStatus(); }
