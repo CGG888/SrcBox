@@ -406,4 +406,10 @@
   <sys:String x:Key="Menu_Deinterlace_Auto">Авто (рекомендуется)</sys:String>
   <sys:String x:Key="Menu_Deinterlace_On">Принудительно вкл.</sys:String>
   <sys:String x:Key="Menu_Deinterlace_Off">Выкл.</sys:String>
+
+  <!-- Audio -->
+  <sys:String x:Key="UI_Audio_Section">Настройки аудио</sys:String>
+  <sys:String x:Key="UI_Audio_VolumeGain">Усиление громкости</sys:String>
+  <sys:String x:Key="UI_Audio_VolumeMax">Макс. громкость</sys:String>
+  <sys:String x:Key="UI_Audio_Delay">Аудио задержка</sys:String>
 </ResourceDictionary>

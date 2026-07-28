@@ -64,6 +64,22 @@ namespace LibmpvIptvClient
                 Logger.Debug($"[mpv] init deinterlace={diMode} parity={_settings.DeinterlaceFieldParity} algo={_settings.DeinterlaceAlgorithm}");
             }
             catch { /* 静默 */ }
+
+            // 音频设置
+            try
+            {
+                // volume-gain: 音量增益 (dB), -200 ~ +60
+                var gain = Math.Max(-200, Math.Min(60, _settings.VolumeGain));
+                SetString("volume-gain", gain.ToString(CultureInfo.InvariantCulture));
+                // volume-max: 最大音量 (%), 100 ~ 1000
+                var volMax = Math.Max(100, Math.Min(1000, _settings.VolumeMax));
+                SetString("volume-max", volMax.ToString(CultureInfo.InvariantCulture));
+                // audio-delay: 音频延迟 (秒), -100 ~ 100
+                var delay = Math.Max(-100.0, Math.Min(100.0, _settings.AudioDelay));
+                SetString("audio-delay", delay.ToString(CultureInfo.InvariantCulture));
+                Logger.Debug($"[mpv] init volume-gain={gain}dB volume-max={volMax}% audio-delay={delay}s");
+            }
+            catch { /* 静默 */ }
         }
         public void SetSpeed(double speed)
         {

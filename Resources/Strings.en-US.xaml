@@ -426,4 +426,10 @@
   <sys:String x:Key="Menu_Deinterlace_Auto">Auto (Recommended)</sys:String>
   <sys:String x:Key="Menu_Deinterlace_On">Force On</sys:String>
   <sys:String x:Key="Menu_Deinterlace_Off">Off</sys:String>
+
+  <!-- Audio -->
+  <sys:String x:Key="UI_Audio_Section">Audio Settings</sys:String>
+  <sys:String x:Key="UI_Audio_VolumeGain">Volume Gain</sys:String>
+  <sys:String x:Key="UI_Audio_VolumeMax">Max Volume</sys:String>
+  <sys:String x:Key="UI_Audio_Delay">Audio Delay</sys:String>
 </ResourceDictionary>

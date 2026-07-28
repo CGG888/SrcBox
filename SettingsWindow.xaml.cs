@@ -119,6 +119,17 @@ namespace LibmpvIptvClient
                 SetComboByTag(CbDeinterlaceAlgo, string.IsNullOrWhiteSpace(current.DeinterlaceAlgorithm) ? "yadif" : current.DeinterlaceAlgorithm);
             }
             catch { }
+            // 音频设置
+            try
+            {
+                SliderVolumeGain.Value = current.VolumeGain;
+                SliderVolumeMax.Value = current.VolumeMax;
+                SliderAudioDelay.Value = current.AudioDelay;
+                TxtVolumeGain.Text = $"{current.VolumeGain:0} dB";
+                TxtVolumeMax.Text = $"{current.VolumeMax:0}%";
+                TxtAudioDelay.Text = $"{current.AudioDelay:0.0} s";
+            }
+            catch { }
             // New playback options
             try
             {
@@ -482,6 +493,15 @@ namespace LibmpvIptvClient
                 s.DeinterlaceAlgorithm = GetComboTag(CbDeinterlaceAlgo, "yadif");
                 // 场序固定为 auto（与 mpv 行为一致；如需更细粒度可后续扩展 UI）
                 s.DeinterlaceFieldParity = "auto";
+            }
+            catch { }
+
+            // 音频设置
+            try
+            {
+                s.VolumeGain = SliderVolumeGain.Value;
+                s.VolumeMax = (int)SliderVolumeMax.Value;
+                s.AudioDelay = SliderAudioDelay.Value;
             }
             catch { }
 
@@ -1045,6 +1065,24 @@ namespace LibmpvIptvClient
                     algo);
             }
             catch { }
+        }
+
+        private void SliderVolumeGain_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (TxtVolumeGain == null) return;
+            TxtVolumeGain.Text = $"{e.NewValue:0} dB";
+        }
+
+        private void SliderVolumeMax_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (TxtVolumeMax == null) return;
+            TxtVolumeMax.Text = $"{e.NewValue:0}%";
+        }
+
+        private void SliderAudioDelay_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        {
+            if (TxtAudioDelay == null) return;
+            TxtAudioDelay.Text = $"{e.NewValue:0.0} s";
         }
 
         // 预览引擎引用（由 MainWindow 在打开设置时注入，避免循环依赖）

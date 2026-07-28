@@ -423,4 +423,10 @@
   <sys:String x:Key="Menu_Deinterlace_Auto">自动 (推荐)</sys:String>
   <sys:String x:Key="Menu_Deinterlace_On">强制开启</sys:String>
   <sys:String x:Key="Menu_Deinterlace_Off">关闭</sys:String>
+
+  <!-- Audio (音频) -->
+  <sys:String x:Key="UI_Audio_Section">音频设置</sys:String>
+  <sys:String x:Key="UI_Audio_VolumeGain">音量增益</sys:String>
+  <sys:String x:Key="UI_Audio_VolumeMax">最大音量</sys:String>
+  <sys:String x:Key="UI_Audio_Delay">音频延迟</sys:String>
 </ResourceDictionary>

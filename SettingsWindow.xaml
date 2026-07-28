@@ -240,6 +240,11 @@
                   <RowDefinition Height="Auto"/><!-- 27: Deinterlace mode -->
                   <RowDefinition Height="Auto"/><!-- 28: Deinterlace algo -->
                   <RowDefinition Height="Auto"/><!-- 29: Deinterlace hint -->
+                  <!-- 音频设置 -->
+                  <RowDefinition Height="Auto"/><!-- 30: Audio section header -->
+                  <RowDefinition Height="Auto"/><!-- 31: Volume gain -->
+                  <RowDefinition Height="Auto"/><!-- 32: Volume max -->
+                  <RowDefinition Height="Auto"/><!-- 33: Audio delay -->
                 </Grid.RowDefinitions>
                 <Grid.ColumnDefinitions>
                   <ColumnDefinition Width="Auto"/>
@@ -340,6 +345,36 @@
                 </ComboBox>
                 <TextBlock Grid.Row="29" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,4,0,0"
                            Text="{DynamicResource UI_Deinterlace_Hint}" TextWrapping="Wrap"/>
+
+                <!-- 音频设置 -->
+                <TextBlock Grid.Row="30" Grid.ColumnSpan="2" Text="{DynamicResource UI_Audio_Section}" FontWeight="SemiBold" Margin="0,16,0,8"/>
+                <TextBlock Grid.Row="31" Grid.Column="0" Text="{DynamicResource UI_Audio_VolumeGain}" VerticalAlignment="Center" Margin="0,4,16,0"/>
+                <Grid Grid.Row="31" Grid.Column="1" Margin="0,4,0,0">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                  </Grid.ColumnDefinitions>
+                  <Slider x:Name="SliderVolumeGain" Grid.Column="0" Minimum="-200" Maximum="60" Value="0" TickFrequency="10" IsSnapToTickEnabled="True" VerticalAlignment="Center" ValueChanged="SliderVolumeGain_ValueChanged"/>
+                  <TextBlock Grid.Column="1" x:Name="TxtVolumeGain" Text="0 dB" VerticalAlignment="Center" Margin="12,0,0,0" MinWidth="60"/>
+                </Grid>
+                <TextBlock Grid.Row="32" Grid.Column="0" Text="{DynamicResource UI_Audio_VolumeMax}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                <Grid Grid.Row="32" Grid.Column="1" Margin="0,8,0,0">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                  </Grid.ColumnDefinitions>
+                  <Slider x:Name="SliderVolumeMax" Grid.Column="0" Minimum="100" Maximum="1000" Value="130" TickFrequency="10" IsSnapToTickEnabled="True" VerticalAlignment="Center" ValueChanged="SliderVolumeMax_ValueChanged"/>
+                  <TextBlock Grid.Column="1" x:Name="TxtVolumeMax" Text="130%" VerticalAlignment="Center" Margin="12,0,0,0" MinWidth="60"/>
+                </Grid>
+                <TextBlock Grid.Row="33" Grid.Column="0" Text="{DynamicResource UI_Audio_Delay}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                <Grid Grid.Row="33" Grid.Column="1" Margin="0,8,0,0">
+                  <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                  </Grid.ColumnDefinitions>
+                  <Slider x:Name="SliderAudioDelay" Grid.Column="0" Minimum="-10" Maximum="10" Value="0" TickFrequency="0.5" IsSnapToTickEnabled="True" VerticalAlignment="Center" ValueChanged="SliderAudioDelay_ValueChanged"/>
+                  <TextBlock Grid.Column="1" x:Name="TxtAudioDelay" Text="0.0 s" VerticalAlignment="Center" Margin="12,0,0,0" MinWidth="60"/>
+                </Grid>
               </Grid>
             </ScrollViewer>
           </TabItem>

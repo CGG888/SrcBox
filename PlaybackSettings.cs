@@ -78,7 +78,17 @@ namespace LibmpvIptvClient
             public string Slang { get; set; } = "";
             // mpv network timeout (seconds). 0 = keep default
             public int MpvNetworkTimeoutSec { get; set; } = 0;
-        
+
+            // 音频设置
+            // 音量增益 (dB): -200 ~ +60 dB，默认 0
+            public double VolumeGain { get; set; } = 0;
+            // 最大音量 (%): 100 ~ 1000，默认 130
+            public int VolumeMax { get; set; } = 130;
+            // 初始音量 (0~100): 默认 50
+            public double Volume { get; set; } = 50;
+            // 音频延迟 (秒): -100 ~ 100，默认 0
+            public double AudioDelay { get; set; } = 0;
+
         public EpgConfig Epg { get; set; } = new EpgConfig();
         public LogoConfig Logo { get; set; } = new LogoConfig();
         public ReplayConfig Replay { get; set; } = new ReplayConfig();
