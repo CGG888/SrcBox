@@ -85,6 +85,18 @@ namespace LibmpvIptvClient.Services.WebRemote
             _server = null;
         }
 
+        private static string GetLocalizedFavGroupName()
+        {
+            var lang = AppSettings.Current.Language ?? "";
+            if (lang.StartsWith("en", StringComparison.OrdinalIgnoreCase))
+                return WebRemoteStrings.Get("en-US").TryGetValue("fav_group", out var en) ? en : "Favorites";
+            if (lang.StartsWith("ru", StringComparison.OrdinalIgnoreCase))
+                return WebRemoteStrings.Get("ru-RU").TryGetValue("fav_group", out var ru) ? ru : "Избранное";
+            if (lang.StartsWith("zh-TW", StringComparison.OrdinalIgnoreCase) || lang.StartsWith("zh-HK", StringComparison.OrdinalIgnoreCase))
+                return WebRemoteStrings.Get("zh-TW").TryGetValue("fav_group", out var tw) ? tw : "我的收藏";
+            return WebRemoteStrings.Get("zh-CN").TryGetValue("fav_group", out var cn) ? cn : "我的收藏";
+        }
+
         private static string MakeBadgeHtml(string? badge)
         {
             if (string.IsNullOrEmpty(badge)) return "";
@@ -259,7 +271,7 @@ namespace LibmpvIptvClient.Services.WebRemote
             {
                 var favGroup = new WebRemoteChannelGroup
                 {
-                    Name = "我的收藏",
+                    Name = GetLocalizedFavGroupName(),
                     Channels = favorites.Select(c => new WebRemoteChannel
                     {
                         Id = c.Id ?? c.TvgId ?? "",

@@ -1,9 +1,9 @@
 <UserControl x:Class="LibmpvIptvClient.Controls.RecordingDrawer"
              xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
-             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
-             mc:Ignorable="d" 
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="400"
              Background="Transparent">
     <Grid Margin="16,8,16,8">
@@ -13,62 +13,62 @@
         </Grid.RowDefinitions>
         <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
             <StackPanel>
-                <CheckBox x:Name="CbEnabled" Content="启用录播" IsChecked="True" Margin="0,0,0,16"/>
-                
-                <TextBlock Text="默认播放选择" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                <CheckBox x:Name="CbEnabled" Content="{DynamicResource UI_Recording_Enable}" IsChecked="True" Margin="0,0,0,16"/>
+
+                <TextBlock Text="{DynamicResource UI_Recording_DefaultPlayChoice}" FontWeight="SemiBold" Margin="0,0,0,8"/>
                 <ComboBox x:Name="CbPlayChoice" Height="30" Width="240">
-                    <ComboBoxItem Content="每次询问" Tag="prompt"/>
-                    <ComboBoxItem Content="优先本地" Tag="local"/>
-                    <ComboBoxItem Content="优先网络" Tag="remote"/>
-                    <ComboBoxItem Content="记住上次" Tag="remember"/>
+                    <ComboBoxItem Content="{DynamicResource UI_Recording_PlayChoice_Prompt}" Tag="prompt"/>
+                    <ComboBoxItem Content="{DynamicResource UI_Recording_PlayChoice_Local}" Tag="local"/>
+                    <ComboBoxItem Content="{DynamicResource UI_Recording_PlayChoice_Remote}" Tag="remote"/>
+                    <ComboBoxItem Content="{DynamicResource UI_Recording_PlayChoice_Remember}" Tag="remember"/>
                 </ComboBox>
-                
-                <TextBlock Text="保存方式" FontWeight="SemiBold" Margin="0,12,0,8"/>
+
+                <TextBlock Text="{DynamicResource UI_Recording_SaveMode}" FontWeight="SemiBold" Margin="0,12,0,8"/>
                 <ComboBox x:Name="CbSaveMode" Height="30" Width="260">
-                    <ComboBoxItem Content="仅本地" Tag="local_only"/>
-                    <ComboBoxItem Content="仅网络（结束后上传）" Tag="remote_only"/>
-                    <ComboBoxItem Content="本地+结束后上传" Tag="local_then_upload"/>
-                    <ComboBoxItem Content="同时保存（实验）" Tag="dual_realtime"/>
+                    <ComboBoxItem Content="{DynamicResource UI_Recording_SaveMode_LocalOnly}" Tag="local_only"/>
+                    <ComboBoxItem Content="{DynamicResource UI_Recording_SaveMode_RemoteOnly}" Tag="remote_only"/>
+                    <ComboBoxItem Content="{DynamicResource UI_Recording_SaveMode_LocalThenUpload}" Tag="local_then_upload"/>
+                    <ComboBoxItem Content="{DynamicResource UI_Recording_SaveMode_DualRealtime}" Tag="dual_realtime"/>
                 </ComboBox>
-                
-                <TextBlock Text="本地目录模板" FontWeight="SemiBold" Margin="0,12,0,8"/>
+
+                <TextBlock Text="{DynamicResource UI_Recording_DirTemplate}" FontWeight="SemiBold" Margin="0,12,0,8"/>
                 <TextBox x:Name="TbDirTemplate" Height="32" Padding="4"/>
-                <TextBlock Text="文件名模板" FontWeight="SemiBold" Margin="0,12,0,8"/>
+                <TextBlock Text="{DynamicResource UI_Recording_FileTemplate}" FontWeight="SemiBold" Margin="0,12,0,8"/>
                 <TextBox x:Name="TbFileTemplate" Height="32" Padding="4"/>
-                
-                <TextBlock Text="可靠性" FontWeight="SemiBold" Margin="0,16,0,8"/>
-                <CheckBox x:Name="CbVerifyDir" Content="录制前验证目录可写" IsChecked="True"/>
+
+                <TextBlock Text="{DynamicResource UI_Recording_Reliability}" FontWeight="SemiBold" Margin="0,16,0,8"/>
+                <CheckBox x:Name="CbVerifyDir" Content="{DynamicResource UI_Recording_VerifyDir}" IsChecked="True"/>
                 <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                    <TextBlock Text="首字节超时(秒)" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <TextBlock Text="{DynamicResource UI_Recording_GrowthTimeout}" VerticalAlignment="Center" Margin="0,0,12,0"/>
                     <TextBox x:Name="TbGrowthTimeout" Width="80" Height="30"/>
-                    <TextBlock Text="自动重试次数" VerticalAlignment="Center" Margin="16,0,12,0"/>
+                    <TextBlock Text="{DynamicResource UI_Recording_RetryCount}" VerticalAlignment="Center" Margin="16,0,12,0"/>
                     <TextBox x:Name="TbRetryCount" Width="80" Height="30"/>
                 </StackPanel>
-                
-                <TextBlock Text="上传" FontWeight="SemiBold" Margin="0,16,0,8"/>
+
+                <TextBlock Text="{DynamicResource UI_Recording_Upload}" FontWeight="SemiBold" Margin="0,16,0,8"/>
                 <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="并发数" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <TextBlock Text="{DynamicResource UI_Recording_UploadConcurrency}" VerticalAlignment="Center" Margin="0,0,12,0"/>
                     <TextBox x:Name="TbUploadCc" Width="60" Height="30"/>
-                    <TextBlock Text="重试次数" VerticalAlignment="Center" Margin="16,0,12,0"/>
+                    <TextBlock Text="{DynamicResource UI_Recording_UploadRetry}" VerticalAlignment="Center" Margin="16,0,12,0"/>
                     <TextBox x:Name="TbUploadRetry" Width="60" Height="30"/>
-                    <TextBlock Text="限速(KB/s)" VerticalAlignment="Center" Margin="16,0,12,0"/>
+                    <TextBlock Text="{DynamicResource UI_Recording_UploadKbps}" VerticalAlignment="Center" Margin="16,0,12,0"/>
                     <TextBox x:Name="TbUploadKbps" Width="80" Height="30"/>
                 </StackPanel>
                 <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                    <TextBlock Text="实时上传间隔(秒)" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <TextBlock Text="{DynamicResource UI_Recording_RealtimeInterval}" VerticalAlignment="Center" Margin="0,0,12,0"/>
                     <TextBox x:Name="TbRealtimeInterval" Width="80" Height="30"/>
-                    <TextBlock Text="临时后缀" VerticalAlignment="Center" Margin="16,0,12,0"/>
+                    <TextBlock Text="{DynamicResource UI_Recording_RemoteTempSuffix}" VerticalAlignment="Center" Margin="16,0,12,0"/>
                     <TextBox x:Name="TbRemoteTempSuffix" Width="100" Height="30"/>
                 </StackPanel>
-                <CheckBox x:Name="CbFinalize" Content="停止后延迟转正（PUT）" Margin="0,8,0,0"/>
+                <CheckBox x:Name="CbFinalize" Content="{DynamicResource UI_Recording_Finalize}" Margin="0,8,0,0"/>
                 <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                    <TextBlock Text="延迟(秒)" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                    <TextBlock Text="{DynamicResource UI_Recording_FinalizeDelay}" VerticalAlignment="Center" Margin="0,0,12,0"/>
                     <TextBox x:Name="TbFinalizeDelay" Width="80" Height="30"/>
-                    <TextBlock Text="转正限速(KB/s)" VerticalAlignment="Center" Margin="16,0,12,0"/>
+                    <TextBlock Text="{DynamicResource UI_Recording_FinalizeKbps}" VerticalAlignment="Center" Margin="16,0,12,0"/>
                     <TextBox x:Name="TbFinalizeKbps" Width="100" Height="30"/>
                 </StackPanel>
-                <CheckBox x:Name="CbResume" Content="启用断点续传（实验）" Margin="0,8,0,0"/>
-                
+                <CheckBox x:Name="CbResume" Content="{DynamicResource UI_Recording_Resume}" Margin="0,8,0,0"/>
+
                 <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                     <Button x:Name="BtnOpenUploadQueue" Content="{DynamicResource UI_UploadQueue_View}" Width="120" Height="30" Click="BtnOpenUploadQueue_Click"/>
                 </StackPanel>

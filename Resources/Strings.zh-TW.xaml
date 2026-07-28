@@ -242,6 +242,35 @@
   <sys:String x:Key="UI_Recording_Settings">錄播設定</sys:String>
   <sys:String x:Key="UI_UploadQueue_Tab">上傳佇列</sys:String>
   <sys:String x:Key="UI_UploadQueue_View">查看上傳佇列</sys:String>
+
+  <!-- Recording Settings -->
+  <sys:String x:Key="UI_Recording_Enable">啟用錄播</sys:String>
+  <sys:String x:Key="UI_Recording_DefaultPlayChoice">預設播放選擇</sys:String>
+  <sys:String x:Key="UI_Recording_PlayChoice_Prompt">每次詢問</sys:String>
+  <sys:String x:Key="UI_Recording_PlayChoice_Local">優先本地</sys:String>
+  <sys:String x:Key="UI_Recording_PlayChoice_Remote">優先網路</sys:String>
+  <sys:String x:Key="UI_Recording_PlayChoice_Remember">記住上次</sys:String>
+  <sys:String x:Key="UI_Recording_SaveMode">儲存方式</sys:String>
+  <sys:String x:Key="UI_Recording_SaveMode_LocalOnly">僅本地</sys:String>
+  <sys:String x:Key="UI_Recording_SaveMode_RemoteOnly">僅網路（結束後上傳）</sys:String>
+  <sys:String x:Key="UI_Recording_SaveMode_LocalThenUpload">本地+結束後上傳</sys:String>
+  <sys:String x:Key="UI_Recording_SaveMode_DualRealtime">同時儲存（實驗）</sys:String>
+  <sys:String x:Key="UI_Recording_DirTemplate">本地目錄範本</sys:String>
+  <sys:String x:Key="UI_Recording_FileTemplate">檔名範本</sys:String>
+  <sys:String x:Key="UI_Recording_Reliability">可靠性</sys:String>
+  <sys:String x:Key="UI_Recording_VerifyDir">錄製前驗證目錄可寫入</sys:String>
+  <sys:String x:Key="UI_Recording_GrowthTimeout">首位元組逾時(秒)</sys:String>
+  <sys:String x:Key="UI_Recording_RetryCount">自動重試次數</sys:String>
+  <sys:String x:Key="UI_Recording_Upload">上傳</sys:String>
+  <sys:String x:Key="UI_Recording_UploadConcurrency">並行數</sys:String>
+  <sys:String x:Key="UI_Recording_UploadRetry">重試次數</sys:String>
+  <sys:String x:Key="UI_Recording_UploadKbps">限速(KB/s)</sys:String>
+  <sys:String x:Key="UI_Recording_RealtimeInterval">即時上傳間隔(秒)</sys:String>
+  <sys:String x:Key="UI_Recording_RemoteTempSuffix">臨時後綴</sys:String>
+  <sys:String x:Key="UI_Recording_Finalize">停止後延遲轉正（PUT）</sys:String>
+  <sys:String x:Key="UI_Recording_FinalizeDelay">延遲(秒)</sys:String>
+  <sys:String x:Key="UI_Recording_FinalizeKbps">轉正限速(KB/s)</sys:String>
+  <sys:String x:Key="UI_Recording_Resume">啟用斷點續傳（實驗）</sys:String>
   <sys:String x:Key="UI_Refresh">重新整理</sys:String>
   <sys:String x:Key="UI_Retry">重試</sys:String>
   <sys:String x:Key="UI_Remove">移除</sys:String>
@@ -411,4 +440,13 @@
   <sys:String x:Key="UI_Audio_VolumeGain">音量增益</sys:String>
   <sys:String x:Key="UI_Audio_VolumeMax">最大音量</sys:String>
   <sys:String x:Key="UI_Audio_Delay">音訊延遲</sys:String>
+
+  <!-- Web Remote -->
+  <sys:String x:Key="UI_WebRemote_Tab">遙控器</sys:String>
+  <sys:String x:Key="UI_WebRemote_Enable">啟用 Web 遙控器</sys:String>
+  <sys:String x:Key="UI_WebRemote_Port">埠</sys:String>
+  <sys:String x:Key="UI_WebRemote_RequirePassword">需要存取密碼</sys:String>
+  <sys:String x:Key="UI_WebRemote_ShowChannels">顯示頻道列表</sys:String>
+  <sys:String x:Key="UI_WebRemote_ShowEpg">顯示節目單</sys:String>
+  <sys:String x:Key="UI_WebRemote_Hint">啟用後，在同一區域網內可透過手機瀏覽器存取 http://電腦IP:埠 來控制播放器。</sys:String>
 </ResourceDictionary>

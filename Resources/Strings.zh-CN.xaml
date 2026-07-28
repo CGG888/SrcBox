@@ -290,6 +290,35 @@
   <sys:String x:Key="UI_WebRemote_Hint">启用后，在同一局域网内可通过手机浏览器访问 http://电脑IP:端口 来控制播放器。</sys:String>
   <sys:String x:Key="UI_UploadQueue_Tab">上传队列</sys:String>
   <sys:String x:Key="UI_UploadQueue_View">查看上传队列</sys:String>
+
+  <!-- Recording (录播设置) -->
+  <sys:String x:Key="UI_Recording_Enable">启用录播</sys:String>
+  <sys:String x:Key="UI_Recording_DefaultPlayChoice">默认播放选择</sys:String>
+  <sys:String x:Key="UI_Recording_PlayChoice_Prompt">每次询问</sys:String>
+  <sys:String x:Key="UI_Recording_PlayChoice_Local">优先本地</sys:String>
+  <sys:String x:Key="UI_Recording_PlayChoice_Remote">优先网络</sys:String>
+  <sys:String x:Key="UI_Recording_PlayChoice_Remember">记住上次</sys:String>
+  <sys:String x:Key="UI_Recording_SaveMode">保存方式</sys:String>
+  <sys:String x:Key="UI_Recording_SaveMode_LocalOnly">仅本地</sys:String>
+  <sys:String x:Key="UI_Recording_SaveMode_RemoteOnly">仅网络（结束后上传）</sys:String>
+  <sys:String x:Key="UI_Recording_SaveMode_LocalThenUpload">本地+结束后上传</sys:String>
+  <sys:String x:Key="UI_Recording_SaveMode_DualRealtime">同时保存（实验）</sys:String>
+  <sys:String x:Key="UI_Recording_DirTemplate">本地目录模板</sys:String>
+  <sys:String x:Key="UI_Recording_FileTemplate">文件名模板</sys:String>
+  <sys:String x:Key="UI_Recording_Reliability">可靠性</sys:String>
+  <sys:String x:Key="UI_Recording_VerifyDir">录制前验证目录可写</sys:String>
+  <sys:String x:Key="UI_Recording_GrowthTimeout">首字节超时(秒)</sys:String>
+  <sys:String x:Key="UI_Recording_RetryCount">自动重试次数</sys:String>
+  <sys:String x:Key="UI_Recording_Upload">上传</sys:String>
+  <sys:String x:Key="UI_Recording_UploadConcurrency">并发数</sys:String>
+  <sys:String x:Key="UI_Recording_UploadRetry">重试次数</sys:String>
+  <sys:String x:Key="UI_Recording_UploadKbps">限速(KB/s)</sys:String>
+  <sys:String x:Key="UI_Recording_RealtimeInterval">实时上传间隔(秒)</sys:String>
+  <sys:String x:Key="UI_Recording_RemoteTempSuffix">临时后缀</sys:String>
+  <sys:String x:Key="UI_Recording_Finalize">停止后延迟转正（PUT）</sys:String>
+  <sys:String x:Key="UI_Recording_FinalizeDelay">延迟(秒)</sys:String>
+  <sys:String x:Key="UI_Recording_FinalizeKbps">转正限速(KB/s)</sys:String>
+  <sys:String x:Key="UI_Recording_Resume">启用断点续传（实验）</sys:String>
   <sys:String x:Key="UI_Refresh">刷新</sys:String>
   <sys:String x:Key="UI_Retry">重试</sys:String>
   <sys:String x:Key="UI_Remove">移除</sys:String>

@@ -242,6 +242,35 @@
   <sys:String x:Key="UI_Recording_Settings">Настройки записи</sys:String>
   <sys:String x:Key="UI_UploadQueue_Tab">Очередь загрузки</sys:String>
   <sys:String x:Key="UI_UploadQueue_View">Открыть очередь загрузки</sys:String>
+
+  <!-- Recording Settings -->
+  <sys:String x:Key="UI_Recording_Enable">Включить запись</sys:String>
+  <sys:String x:Key="UI_Recording_DefaultPlayChoice">Выбор воспроизведения по умолчанию</sys:String>
+  <sys:String x:Key="UI_Recording_PlayChoice_Prompt">Спрашивать каждый раз</sys:String>
+  <sys:String x:Key="UI_Recording_PlayChoice_Local">Сначала локально</sys:String>
+  <sys:String x:Key="UI_Recording_PlayChoice_Remote">Сначала удалённо</sys:String>
+  <sys:String x:Key="UI_Recording_PlayChoice_Remember">Запомнить последний</sys:String>
+  <sys:String x:Key="UI_Recording_SaveMode">Способ сохранения</sys:String>
+  <sys:String x:Key="UI_Recording_SaveMode_LocalOnly">Только локально</sys:String>
+  <sys:String x:Key="UI_Recording_SaveMode_RemoteOnly">Только удалённо (загрузка после окончания)</sys:String>
+  <sys:String x:Key="UI_Recording_SaveMode_LocalThenUpload">Локально + загрузка после окончания</sys:String>
+  <sys:String x:Key="UI_Recording_SaveMode_DualRealtime">Двойное сохранение (эксперимент)</sys:String>
+  <sys:String x:Key="UI_Recording_DirTemplate">Шаблон локальной папки</sys:String>
+  <sys:String x:Key="UI_Recording_FileTemplate">Шаблон имени файла</sys:String>
+  <sys:String x:Key="UI_Recording_Reliability">Надёжность</sys:String>
+  <sys:String x:Key="UI_Recording_VerifyDir">Проверить доступность папки перед записью</sys:String>
+  <sys:String x:Key="UI_Recording_GrowthTimeout">Таймаут первого байта (сек)</sys:String>
+  <sys:String x:Key="UI_Recording_RetryCount">Количество автоповторов</sys:String>
+  <sys:String x:Key="UI_Recording_Upload">Загрузка</sys:String>
+  <sys:String x:Key="UI_Recording_UploadConcurrency">Параллелизм</sys:String>
+  <sys:String x:Key="UI_Recording_UploadRetry">Повторы</sys:String>
+  <sys:String x:Key="UI_Recording_UploadKbps">Лимит скорости (КБ/с)</sys:String>
+  <sys:String x:Key="UI_Recording_RealtimeInterval">Интервал загрузки (сек)</sys:String>
+  <sys:String x:Key="UI_Recording_RemoteTempSuffix">Временный суффикс</sys:String>
+  <sys:String x:Key="UI_Recording_Finalize">Отложенная финализация (PUT)</sys:String>
+  <sys:String x:Key="UI_Recording_FinalizeDelay">Задержка (сек)</sys:String>
+  <sys:String x:Key="UI_Recording_FinalizeKbps">Лимит скорости финализации (КБ/с)</sys:String>
+  <sys:String x:Key="UI_Recording_Resume">Возобновляемая загрузка (эксперимент)</sys:String>
   <sys:String x:Key="UI_Refresh">Обновить</sys:String>
   <sys:String x:Key="UI_Retry">Повтор</sys:String>
   <sys:String x:Key="UI_Remove">Удалить</sys:String>
@@ -412,4 +441,13 @@
   <sys:String x:Key="UI_Audio_VolumeGain">Усиление громкости</sys:String>
   <sys:String x:Key="UI_Audio_VolumeMax">Макс. громкость</sys:String>
   <sys:String x:Key="UI_Audio_Delay">Аудио задержка</sys:String>
+
+  <!-- Web Remote -->
+  <sys:String x:Key="UI_WebRemote_Tab">Пульт</sys:String>
+  <sys:String x:Key="UI_WebRemote_Enable">Включить Web-пульт</sys:String>
+  <sys:String x:Key="UI_WebRemote_Port">Порт</sys:String>
+  <sys:String x:Key="UI_WebRemote_RequirePassword">Требовать пароль</sys:String>
+  <sys:String x:Key="UI_WebRemote_ShowChannels">Показывать список каналов</sys:String>
+  <sys:String x:Key="UI_WebRemote_ShowEpg">Показывать программу</sys:String>
+  <sys:String x:Key="UI_WebRemote_Hint">После включения управляйте плеером из браузера телефона по адресу http://IP-ПК:порт в той же локальной сети.</sys:String>
 </ResourceDictionary>

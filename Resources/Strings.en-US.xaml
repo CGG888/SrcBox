@@ -258,6 +258,35 @@
   <sys:String x:Key="UI_WebRemote_Hint">When enabled, control the player from your phone browser at http://PC-IP:port on the same local network.</sys:String>
   <sys:String x:Key="UI_UploadQueue_Tab">Upload Queue</sys:String>
   <sys:String x:Key="UI_UploadQueue_View">View Upload Queue</sys:String>
+
+  <!-- Recording Settings -->
+  <sys:String x:Key="UI_Recording_Enable">Enable Recording</sys:String>
+  <sys:String x:Key="UI_Recording_DefaultPlayChoice">Default Play Choice</sys:String>
+  <sys:String x:Key="UI_Recording_PlayChoice_Prompt">Ask Each Time</sys:String>
+  <sys:String x:Key="UI_Recording_PlayChoice_Local">Prefer Local</sys:String>
+  <sys:String x:Key="UI_Recording_PlayChoice_Remote">Prefer Remote</sys:String>
+  <sys:String x:Key="UI_Recording_PlayChoice_Remember">Remember Last</sys:String>
+  <sys:String x:Key="UI_Recording_SaveMode">Save Mode</sys:String>
+  <sys:String x:Key="UI_Recording_SaveMode_LocalOnly">Local Only</sys:String>
+  <sys:String x:Key="UI_Recording_SaveMode_RemoteOnly">Remote Only (Upload After End)</sys:String>
+  <sys:String x:Key="UI_Recording_SaveMode_LocalThenUpload">Local + Upload After End</sys:String>
+  <sys:String x:Key="UI_Recording_SaveMode_DualRealtime">Dual Save (Experimental)</sys:String>
+  <sys:String x:Key="UI_Recording_DirTemplate">Local Dir Template</sys:String>
+  <sys:String x:Key="UI_Recording_FileTemplate">File Name Template</sys:String>
+  <sys:String x:Key="UI_Recording_Reliability">Reliability</sys:String>
+  <sys:String x:Key="UI_Recording_VerifyDir">Verify Directory Writable Before Recording</sys:String>
+  <sys:String x:Key="UI_Recording_GrowthTimeout">First Byte Timeout (sec)</sys:String>
+  <sys:String x:Key="UI_Recording_RetryCount">Auto Retry Count</sys:String>
+  <sys:String x:Key="UI_Recording_Upload">Upload</sys:String>
+  <sys:String x:Key="UI_Recording_UploadConcurrency">Concurrency</sys:String>
+  <sys:String x:Key="UI_Recording_UploadRetry">Retry Count</sys:String>
+  <sys:String x:Key="UI_Recording_UploadKbps">Speed Limit (KB/s)</sys:String>
+  <sys:String x:Key="UI_Recording_RealtimeInterval">Realtime Upload Interval (sec)</sys:String>
+  <sys:String x:Key="UI_Recording_RemoteTempSuffix">Temp Suffix</sys:String>
+  <sys:String x:Key="UI_Recording_Finalize">Delayed Finalize After Stop (PUT)</sys:String>
+  <sys:String x:Key="UI_Recording_FinalizeDelay">Delay (sec)</sys:String>
+  <sys:String x:Key="UI_Recording_FinalizeKbps">Finalize Speed Limit (KB/s)</sys:String>
+  <sys:String x:Key="UI_Recording_Resume">Enable Resumable Upload (Experimental)</sys:String>
   <sys:String x:Key="UI_Refresh">Refresh</sys:String>
   <sys:String x:Key="UI_Retry">Retry</sys:String>
   <sys:String x:Key="UI_Remove">Remove</sys:String>
