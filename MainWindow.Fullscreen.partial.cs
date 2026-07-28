@@ -104,7 +104,7 @@ namespace LibmpvIptvClient
                         EpgPanel.Visibility = Visibility.Collapsed;
                         EpgColumn.Width = new GridLength(0);
                     }
-                    
+
                     if (!_shell.IsDrawerCollapsed)
                     {
                         DrawerPanel.Visibility = Visibility.Visible;
@@ -113,6 +113,16 @@ namespace LibmpvIptvClient
                     {
                         DrawerPanel.Visibility = Visibility.Collapsed;
                     }
+                },
+                HandleShortcutKey = (key) =>
+                {
+                    var action = _shell.ShortcutActions.ResolveAction(key);
+                    if (action != MainWindowShortcutAction.None)
+                    {
+                        _shell.ShortcutActions.ExecuteAction(action);
+                        return true;
+                    }
+                    return false;
                 }
             };
 

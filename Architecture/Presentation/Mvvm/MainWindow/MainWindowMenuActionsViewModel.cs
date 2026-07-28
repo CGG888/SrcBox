@@ -342,6 +342,11 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 
         public void SwitchSourceViaRemote()
         {
+            SwitchSourceCycle(true);
+        }
+
+        public void SwitchSourceCycle(bool next)
+        {
             if (_shell.CurrentChannel == null) return;
             var channels = _shell.Channels?.ToList() ?? new List<Channel>();
             if (_shell.CurrentSources == null || _shell.CurrentSources.Count == 0)
@@ -354,7 +359,15 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             var currentUrl = _shell.SourceLoader.SanitizeUrl(_shell.CurrentUrl ?? "");
             var currentIndex = sources.FindIndex(s => _shell.SourceLoader.SanitizeUrl(s.Url) == currentUrl);
 
-            var nextIndex = (currentIndex + 1) % sources.Count;
+            int nextIndex;
+            if (next)
+            {
+                nextIndex = (currentIndex + 1) % sources.Count;
+            }
+            else
+            {
+                nextIndex = (currentIndex - 1 + sources.Count) % sources.Count;
+            }
             var nextSource = sources[nextIndex];
             LibmpvIptvClient.Diagnostics.Logger.Log($"[Remote] SwitchSource cycle {currentIndex + 1}→{nextIndex + 1}/{sources.Count}");
             SwitchSource(nextSource);

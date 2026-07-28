@@ -471,6 +471,17 @@ namespace LibmpvIptvClient
             _shell.MenuActions.RequestEpgToggle += (on) => { try { CbEpg.IsChecked = on; CbEpg_Click(CbEpg, new RoutedEventArgs()); } catch { } };
             _shell.MenuActions.RequestMinimalToggle += (on) => { try { _shell.IsMinimalMode = on; } catch { } };
             _shell.ShortcutActions.RequestDebugWindow += () => BtnDebug_Click(this, new RoutedEventArgs());
+            _shell.ShortcutActions.RequestToggleFullscreen += (on) => ToggleFullscreen(on);
+            _shell.ShortcutActions.RequestToggleDrawer += () =>
+            {
+                CbDrawer.IsChecked = !(CbDrawer.IsChecked == true);
+                CbDrawer_Click(CbDrawer, new RoutedEventArgs());
+            };
+            _shell.ShortcutActions.RequestToggleEpg += () =>
+            {
+                CbEpg.IsChecked = !(CbEpg.IsChecked == true);
+                CbEpg_Click(CbEpg, new RoutedEventArgs());
+            };
 
             _timer.Interval = TimeSpan.FromMilliseconds(500);
             _timer.Tick += OnTick;

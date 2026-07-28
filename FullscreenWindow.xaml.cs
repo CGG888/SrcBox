@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Forms.Integration;
 using System.Windows.Forms;
 using System.Windows.Interop;
+using System.Windows.Input;
 
 namespace LibmpvIptvClient
 {
@@ -12,6 +13,7 @@ namespace LibmpvIptvClient
         public event System.Action? ExitRequested;
         public event System.Action? PlayPauseRequested;
         public event System.Action<int>? SeekRequested; // -1 left, +1 right
+        public event System.Func<Key, bool>? ShortcutKeyPressed;
         public FullscreenWindow()
         {
             InitializeComponent();
@@ -31,24 +33,10 @@ namespace LibmpvIptvClient
             if (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN)
             {
                 int vk = wParam.ToInt32();
-                if (vk == 0x1B)
-                {
-                    ExitRequested?.Invoke();
-                    handled = true;
-                }
-                else if (vk == 0x20)
+                // 只处理 Space，其他所有键都让 OnKeyDown 处理
+                if (vk == 0x20)
                 {
                     PlayPauseRequested?.Invoke();
-                    handled = true;
-                }
-                else if (vk == 0x25)
-                {
-                    SeekRequested?.Invoke(-1);
-                    handled = true;
-                }
-                else if (vk == 0x27)
-                {
-                    SeekRequested?.Invoke(1);
                     handled = true;
                 }
             }
@@ -56,25 +44,27 @@ namespace LibmpvIptvClient
         }
         void OnKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
-            if (e.Key == System.Windows.Input.Key.Escape)
+            // 所有快捷键都通过 ShortcutKeyPressed 处理
+            bool handledByShortcut = ShortcutKeyPressed?.Invoke(e.Key) ?? false;
+            if (handledByShortcut)
             {
-                ExitRequested?.Invoke();
                 e.Handled = true;
+                return;
             }
-            else if (e.Key == System.Windows.Input.Key.Space)
+
+            // 未被快捷键系统处理的特殊键
+            switch (e.Key)
             {
-                PlayPauseRequested?.Invoke();
-                e.Handled = true;
-            }
-            else if (e.Key == System.Windows.Input.Key.Left)
-            {
-                SeekRequested?.Invoke(-1);
-                e.Handled = true;
-            }
-            else if (e.Key == System.Windows.Input.Key.Right)
-            {
-                SeekRequested?.Invoke(1);
-                e.Handled = true;
+                case Key.Escape:
+                    ExitRequested?.Invoke();
+                    e.Handled = true;
+                    break;
+                case Key.Space:
+                    PlayPauseRequested?.Invoke();
+                    e.Handled = true;
+                    break;
+                // Left/Right 由快捷键系统处理（切换源）
+                // 不再默认处理快进快退
             }
         }
     }
