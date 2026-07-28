@@ -3,7 +3,7 @@
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         xmlns:controls="clr-namespace:LibmpvIptvClient.Controls"
         x:Class="LibmpvIptvClient.SettingsWindow"
-        Title="{DynamicResource UI_SettingsTitle}" Width="800" Height="600" WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
+        Title="{DynamicResource UI_SettingsTitle}" Width="850" Height="650" WindowStartupLocation="CenterOwner" ResizeMode="CanResize" MinWidth="750" MinHeight="550"
         WindowStyle="None" Icon="pack://application:,,,/srcbox.ico"
         Background="{DynamicResource AppBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}">
   <WindowChrome.WindowChrome>
