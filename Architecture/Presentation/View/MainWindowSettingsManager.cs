@@ -95,6 +95,9 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             AppSettings.Current.VolumeMax = settings.VolumeMax;
             AppSettings.Current.Volume = settings.Volume;
             AppSettings.Current.AudioDelay = settings.AudioDelay;
+            AppSettings.Current.Deinterlace = settings.Deinterlace;
+            AppSettings.Current.DeinterlaceFieldParity = settings.DeinterlaceFieldParity;
+            AppSettings.Current.DeinterlaceAlgorithm = settings.DeinterlaceAlgorithm;
             try
             {
                 if (settings.Replay != null)
@@ -161,6 +164,46 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 }
                 // Restart Web Remote server if settings changed
                 LibmpvIptvClient.Services.WebRemote.WebRemoteManager.RestartIfNeeded();
+            }
+            catch { }
+            // HTTP/RTSP Header settings
+            try
+            {
+                if (settings.HttpHeaders != null)
+                {
+                    AppSettings.Current.HttpHeaders.Headers = settings.HttpHeaders.Headers ?? "";
+                    AppSettings.Current.HttpHeaders.RtspUserAgent = settings.HttpHeaders.RtspUserAgent ?? "";
+                    AppSettings.Current.HttpHeaders.RtspUser = settings.HttpHeaders.RtspUser ?? "";
+                    AppSettings.Current.HttpHeaders.EncryptedRtspPassword = settings.HttpHeaders.EncryptedRtspPassword ?? "";
+                    AppSettings.Current.HttpHeaders.RtspTransport = settings.HttpHeaders.RtspTransport ?? "tcp";
+                }
+            }
+            catch { }
+            // Recording settings
+            try
+            {
+                if (settings.Recording != null)
+                {
+                    AppSettings.Current.Recording.Enabled = settings.Recording.Enabled;
+                    AppSettings.Current.Recording.DefaultPlayChoice = settings.Recording.DefaultPlayChoice ?? "prompt";
+                    AppSettings.Current.Recording.LastPlayChoice = settings.Recording.LastPlayChoice ?? "";
+                    AppSettings.Current.Recording.SaveMode = settings.Recording.SaveMode ?? "local_then_upload";
+                    AppSettings.Current.Recording.DirTemplate = settings.Recording.DirTemplate ?? "recordings/{channel}";
+                    AppSettings.Current.Recording.FileTemplate = settings.Recording.FileTemplate ?? "{yyyyMMdd_HHmmss}.ts";
+                    AppSettings.Current.Recording.VerifyDirReady = settings.Recording.VerifyDirReady;
+                    AppSettings.Current.Recording.GrowthTimeoutSec = settings.Recording.GrowthTimeoutSec;
+                    AppSettings.Current.Recording.RetryCount = settings.Recording.RetryCount;
+                    AppSettings.Current.Recording.UploadMaxConcurrency = settings.Recording.UploadMaxConcurrency;
+                    AppSettings.Current.Recording.UploadRetry = settings.Recording.UploadRetry;
+                    AppSettings.Current.Recording.UploadRetryBackoffMs = settings.Recording.UploadRetryBackoffMs;
+                    AppSettings.Current.Recording.UploadMaxKBps = settings.Recording.UploadMaxKBps;
+                    AppSettings.Current.Recording.ResumeUpload = settings.Recording.ResumeUpload;
+                    AppSettings.Current.Recording.RealtimeUploadIntervalSec = settings.Recording.RealtimeUploadIntervalSec;
+                    AppSettings.Current.Recording.RemoteTempSuffix = settings.Recording.RemoteTempSuffix ?? ".part";
+                    AppSettings.Current.Recording.RealtimeFinalizeEnabled = settings.Recording.RealtimeFinalizeEnabled;
+                    AppSettings.Current.Recording.RealtimeFinalizeDelaySec = settings.Recording.RealtimeFinalizeDelaySec;
+                    AppSettings.Current.Recording.RealtimeFinalizeMaxKBps = settings.Recording.RealtimeFinalizeMaxKBps;
+                }
             }
             catch { }
             try
