@@ -3,8 +3,8 @@ layout: home
 
 hero:
   name: "SrcBox"
-  text: "High Performance MPV-Based IPTV Client"
-  tagline: "Modern, lightweight, and efficient IPTV client with advanced EPG and timeshift features."
+  text: "High Performance Windows IPTV Player"
+  tagline: "Based on libmpv, supporting EPG, timeshift, Web remote control, and ultra-fast channel switching."
   image:
     src: /logo.svg
     alt: SrcBox Logo
@@ -13,41 +13,53 @@ hero:
       text: Get Started
       link: /guide/
     - theme: alt
-      text: View on GitHub
+      text: GitHub
       link: https://github.com/CGG888/SrcBox
 
 features:
   - title: Modern UI
-    details: Built with WPF/ModernWpf for a fluid and native Windows experience, supporting both Dark and Light themes.
+    details: Built with WPF/ModernWpf, perfect dark/light theme adaptation for Windows 10/11.
     icon: 🎨
   - title: High Performance
-    details: Powered by libmpv for smooth playback, hardware acceleration (d3d11va), and low resource usage.
+    details: Powered by libmpv, hardware decoding (d3d11va), low resource usage, millisecond-level channel switching.
     icon: 🚀
-  - title: Fast Zapping
-    details: Optimized for instant channel switching with FCC technology, delivering a seamless TV experience.
+  - title: Fast Zapping (FCC)
+    details: Optimized for IPTV with FCC technology, delivering seamless channel switching.
     icon: ⚡
-  - title: EPG Support
+  - title: Smart EPG
     details: Full XMLTV (gz) support with automatic day switching and intelligent program matching.
     icon: 📅
   - title: Timeshift & Catchup
-    details: Never miss a moment with real-time seeking in live streams and auto-generated catchup replay URLs.
+    details: Real-time seeking in live streams and auto-generated catchup replay URLs.
     icon: ⏪
   - title: Scheduling & Alerts
-    details: Program reminders with remind-only or auto-play actions, plus list management and batch operations.
+    details: Program reminders with remind-only or auto-play actions, batch management.
     icon: ⏰
   - title: Recording & Upload
-    details: Local recording, recording index, and WebDAV upload queue for local/remote workflows.
+    details: Local recording, recording index, and WebDAV upload queue.
     icon: ⬆️
+  - title: Web Remote Control
+    details: Control the player through browser, playback, volume, channel switching.
+    icon: 📱
+  - title: Audio Settings
+    details: Volume gain, max volume limit, and audio delay adjustment.
+    icon: 🔊
+  - title: Deinterlace
+    details: Optimized for 1080i/720i interlaced video with auto-detection.
+    icon: 🖼️
   - title: Channel Management
-    details: Organize channels with grouping, search, favorites, and persisted history.
+    details: Grouping, search, favorites, and history with local persistence.
     icon: 📺
+  - title: Multi-language
+    details: Support for Simplified/Traditional Chinese, English, Russian.
+    icon: 🌍
 ---
 
 <script setup>
 import { onMounted } from 'vue'
 
 onMounted(() => {
-  // Redirect logic if needed, or custom scripts
+  // Custom logic
 })
 </script>
 
@@ -65,14 +77,26 @@ video::-webkit-media-controls-volume-panel {
 
 **SrcBox** is a high-performance, modern IPTV player designed for the Windows platform.
 
-Built on the powerful **libmpv** playback core and combined with a modern **WPF** interface, it delivers a smooth and stable live viewing experience. It supports core features like M3U playlists, EPG (Electronic Program Guide), and Catchup (Replay), while offering deep optimizations for IPTV scenarios (such as FCC fast channel switching and UDP multicast optimization), making it the ideal choice for watching live TV on your PC.
+Built on the powerful **libmpv** playback engine and combined with **WPF**'s modern UI design, it delivers a smooth and stable live viewing experience. It supports M3U playlists, EPG, catchup, timeshift, recording and more, with deep optimization for IPTV scenarios (FCC fast channel switching, UDP multicast).
+
+### Core Features
+
+- **libmpv Engine**: High performance, low resource, hardware acceleration
+- **FCC Fast Zapping**: Millisecond-level channel switching optimized for IPTV
+- **EPG**: Full XMLTV support with intelligent matching
+- **Timeshift & Catchup**: Live seeking and template-based catchup
+- **Web Remote**: Browser-based player control
+- **Audio Optimization**: Volume gain, max volume, audio delay
+- **Deinterlace**: Smart processing for interlaced video
+- **WebDAV Recording**: Local recording with cloud sync
+- **Multi-language**: Chinese (Simplified/Traditional), English, Russian
 
 ## Feature Demos
 
 <div style="display: flex; flex-direction: column; gap: 60px; align-items: center; padding-bottom: 40px;">
   <div style="width: 100%; max-width: 800px; text-align: center;">
-    <h3>Fast Zapping</h3>
-    <p style="opacity: 0.6; margin-bottom: 10px;">Instant channel switching with FCC optimization</p>
+    <h3>Fast Zapping (FCC)</h3>
+    <p style="opacity: 0.6; margin-bottom: 10px;">Millisecond-level ultra-fast channel switching</p>
     <ClientOnly>
       <video controls muted preload="metadata" playsinline width="100%" style="border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.15); background-color: #000;">
         <source src="/screenshots/fast-zapping.mp4" type="video/mp4">
@@ -83,7 +107,7 @@ Built on the powerful **libmpv** playback core and combined with a modern **WPF*
   
   <div style="width: 100%; max-width: 800px; text-align: center;">
     <h3>Catchup / Replay</h3>
-    <p style="opacity: 0.6; margin-bottom: 10px;">Watch past programs with auto-generated catchup URLs</p>
+    <p style="opacity: 0.6; margin-bottom: 10px;">Auto-generated catchup URLs from templates</p>
     <ClientOnly>
       <video controls muted preload="metadata" playsinline width="100%" style="border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.15); background-color: #000;">
         <source src="/screenshots/catchup.mp4" type="video/mp4">
@@ -94,7 +118,7 @@ Built on the powerful **libmpv** playback core and combined with a modern **WPF*
   
   <div style="width: 100%; max-width: 800px; text-align: center;">
     <h3>Timeshift</h3>
-    <p style="opacity: 0.6; margin-bottom: 10px;">Seek back in live streams seamlessly</p>
+    <p style="opacity: 0.6; margin-bottom: 10px;">Real-time seeking back in live streams</p>
     <ClientOnly>
       <video controls muted preload="metadata" playsinline width="100%" style="border-radius: 12px; box-shadow: 0 8px 16px rgba(0,0,0,0.15); background-color: #000;">
         <source src="/screenshots/timeshift.mp4" type="video/mp4">
@@ -112,6 +136,22 @@ Built on the powerful **libmpv** playback core and combined with a modern **WPF*
   <img src="/screenshots/settings.png" alt="Settings" style="height: 350px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
 </div>
 
+## Tech Stack
+
+| Component | Technology |
+|-----------|------------|
+| Playback Engine | libmpv |
+| UI Framework | WPF + ModernWpf |
+| Language | C# (.NET 8) |
+| Recording Sync | WebDAV |
+| Remote Control | WebSocket + HTTP |
+
+## Get Help
+
+- 📖 [User Guide](/guide/) - Detailed features and configuration
+- 🐛 [Report Issues](https://github.com/CGG888/SrcBox/issues) - Bug reports and suggestions
+- 📦 [Downloads](https://github.com/CGG888/SrcBox/releases) - Get the latest version
+
 <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--vp-c-divider); font-size: 14px; color: var(--vp-c-text-2);">
-  <p><strong>Disclaimer:</strong> The videos, screenshots, and demos shown on this page are for functional demonstration purposes only and are not actual playable media resources. <strong>This project does not provide any m3u playlist files or channel data, nor is it responsible for any third-party data sources.</strong></p>
+  <p><strong>Disclaimer:</strong> The videos, screenshots, and demos shown are for functional demonstration only and are not actual playable media resources. <strong>This project does not provide any m3u playlist files or channel data.</strong></p>
 </div>

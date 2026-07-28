@@ -44,8 +44,9 @@ export default defineConfig({
           {
             text: '指南',
             items: [
-              { text: '项目介绍', link: '/guide/' },
+              { text: '项目介绍', link: '/guide/introduction' },
               { text: '功能特性', link: '/guide/features' },
+              { text: 'Web 远程控制', link: '/guide/web-remote' },
               { text: 'EPG 节目单', link: '/guide/epg' },
               { text: 'HTTP/RTSP Header', link: '/guide/http-headers' },
               { text: '回看与时移', link: '/guide/catchup-timeshift' },
@@ -91,8 +92,9 @@ export default defineConfig({
           {
             text: '指南',
             items: [
-              { text: '專案介紹', link: '/zh-TW/guide/' },
+              { text: '專案介紹', link: '/zh-TW/guide/introduction' },
               { text: '功能特性', link: '/zh-TW/guide/features' },
+              { text: 'Web 遠程控制', link: '/zh-TW/guide/web-remote' },
               { text: 'EPG 節目單', link: '/zh-TW/guide/epg' },
               { text: 'HTTP/RTSP Header', link: '/zh-TW/guide/http-headers' },
               { text: '回看與時移', link: '/zh-TW/guide/catchup-timeshift' },
@@ -152,8 +154,9 @@ export default defineConfig({
           {
             text: 'Guide',
             items: [
-              { text: 'Introduction', link: '/en/guide/' },
+              { text: 'Introduction', link: '/en/guide/introduction' },
               { text: 'Features', link: '/en/guide/features' },
+              { text: 'Web Remote', link: '/en/guide/web-remote' },
               { text: 'EPG', link: '/en/guide/epg' },
               { text: 'HTTP/RTSP Header', link: '/en/guide/http-headers' },
               { text: 'Catchup & Timeshift', link: '/en/guide/catchup-timeshift' },
@@ -189,8 +192,9 @@ export default defineConfig({
           {
             text: 'Руководство',
             items: [
-              { text: 'Обзор', link: '/ru/guide/' },
+              { text: 'Обзор', link: '/ru/guide/introduction' },
               { text: 'Возможности', link: '/ru/guide/features' },
+              { text: 'Веб-пульт', link: '/ru/guide/web-remote' },
               { text: 'EPG', link: '/ru/guide/epg' },
               { text: 'HTTP/RTSP Header', link: '/ru/guide/http-headers' },
               { text: 'Архив и Timeshift', link: '/ru/guide/catchup-timeshift' },

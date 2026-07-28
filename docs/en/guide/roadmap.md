@@ -1,40 +1,48 @@
 # Roadmap
 
-We are dedicated to continuously improving the IPTV viewing experience.
+We are committed to continuously improving the IPTV viewing experience.
 
 ## Future Plans
 
-- [ ] **AI Recommendation**: Personalized content suggestions based on viewing habits.
-- [ ] **Multi-view**: Picture-in-Picture (PiP) and Mosaic view support.
-- [ ] **Cloud PVR**: Remote recording to connected cloud storage.
-- [ ] **Advanced A/V**: HDR10+ dynamic metadata support, 8K 120fps decoding optimization.
-- [ ] **Interactive Features**: Voice barrage (Speech-to-Text), low-latency cloud gaming entry.
-- [ ] **Copyright Protection**: Blockchain-based copyright verification.
+- [ ] **Smart Recommendations**: AI-powered program recommendations based on viewing habits
+- [ ] **Multi-View**: Support for multiple source picture-in-picture / quad-screen viewing
+- [ ] **Cloud Recording (PVR)**: Record programs to remote storage
+- [ ] **Advanced AV Experience**: HDR10+ dynamic metadata support, 8K 120fps decoding optimization
+- [ ] **Interactive Features**: Voice comments (speech-to-text), low-latency cloud gaming entry
+- [ ] **Copyright Protection**: Blockchain copyright verification (tamper-proof traceability)
+- [ ] **Notification Animations**: Fade-in/slide-in reminder notifications, centered popup animations
+- [ ] **Customizable Chips**:外观模板化 for live/replay chip icons/colors/corners
 
-## Completed Features
+## Implemented Features
 
-- [x] **Timeshift**: Replay-based timeshifting via `catchup-source` with real-time seeking.
+- [x] **Timeshift**: Catchup-source based playback with real-time dragging.
 - [x] **EPG**: XMLTV (gz) parsing and display.
-- [x] **Catchup**: Template-based automatic replay URL generation.
-- [x] **M3U Parsing**: Local/Remote playlist support with `#EXTINF` attributes.
-- [x] **Channel Mgmt**: Grouping, search, and favorites.
-- [x] **Live Optimization**: FCC fast switching, UDP multicast optimization, auto-source switching.
-- [x] **Hardware Decoding**: Enabled `d3d11va` by default.
-- [x] **Scheduling**: Program reminders, reminder list, and scheduled autoplay policy.
-- [x] **Minimal Mode**: Compact player mode, top-bar interactions, and synchronized window/fullscreen states.
-- [x] **UI/UX**: Fullscreen overlay, side drawer, multi-language support (CN/EN).
+- [x] **Catchup**: Template-based automatic catchup URL generation.
+- [x] **M3U Parsing**: Local/remote playlist and `#EXTINF` support.
+- [x] **Channel Management**: Grouping, search, favorites.
+- [x] **Live Optimization**: FCC fast channel change, UDP multicast, auto source switching.
+- [x] **Hardware Decoding**: `d3d11va` enabled by default.
+- [x] **Scheduling**: Reminders, reminder list, auto-play policies.
+- [x] **Minimal Mode**: Compact window, top bar interaction, state sync.
+- [x] **UI/UX**: Fullscreen overlay, side drawer, multi-language (ZH/EN/RU/TW).
 
-- [x] **v1.1.2+ Interaction Updates**:
-  - EPG status chips: Live = red-filled; Replay = green-filled; clicking the Live chip plays the current channel immediately
-  - Current playing indicator: row highlight; green left stripe when replaying (more visible in dark theme)
-  - Reminders: single-instance list; centers on first open; checkbox + Select All/Invert for batch deletion; accessible from Tray/Dropdown/Right-click with consistent behavior
-  - M3U Management: batch delete and single edit; tray entry; visible above the player in fullscreen
-  - Persistent System Tray: Open/Reminders/Manage M3U/Settings/Exit
-  - Close Confirmation: ×/ESC only dismisses dialog; “No” minimizes to tray (exit fullscreen first)
-  - Dark/Light title bars: Reminders, M3U Manager, Reminder Dialog, and Exit Dialog apply theme immediately after window creation
-  - Playback speed: speed control for Timeshift/Replay (incl. 3×/5×) with automatic audio pitch correction; Live not supported
+- [x] **v1.1.2+ Updates**:
+  - EPG status chips: Live=red, Catchup=green; click to play
+  - Current indicator: full row highlight; green left stripe for catchup
+  - Reminders: single list; centered first open; checkboxes; tray/menu
+  - M3U management: batch delete; edit; tray entry
+  - System tray: Open/Reminders/M3U/Settings/Exit
+  - Close confirmation: ×/ESC=dialog; "No"=minimize to tray
+  - Theme sync: title bars apply instantly
+  - Speed control: 3×/5× with pitch correction for timeshift/catchup
 
-## Preview / Experimental Features
+- [x] **v1.1.6 Updates**:
+  - Web Remote Control: browser-based player control
+  - Audio Settings: volume gain, max volume, audio delay
+  - Deinterlace: 1080i/720i optimization
+  - UI improvements: resizable settings window
 
-- [~] Reminder/notification animations: styles and motion are designed; to be enabled in later versions
-- [~] Replay chip clickable: under UX evaluation; planned to coexist with “click program title to replay”
+## Preview / Experimental
+
+- [~] Reminder/notification animations: designed, future release
+- [~] Clickable catchup chip: UX evaluation in progress

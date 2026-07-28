@@ -4,7 +4,7 @@ layout: home
 hero:
   name: "源匣 (SrcBox)"
   text: "高性能 Windows IPTV 播放器"
-  tagline: "基于 libmpv 内核，支持 EPG、时移回看、快速切台的现代化 IPTV 播放工具。"
+  tagline: "基于 libmpv 内核，支持 EPG、时移回看、Web 远程控制、极速切台的现代化 IPTV 播放工具。"
   image:
     src: /logo.svg
     alt: 源匣 Logo
@@ -38,9 +38,21 @@ features:
   - title: 录播与上传
     details: 支持本地录播、录播索引与 WebDAV 上传队列，适配本地/远端双模式。
     icon: ⬆️
+  - title: Web 远程控制
+    details: 通过浏览器远程控制播放器，支持播放控制、音量调节、频道切换和状态查看。
+    icon: 📱
+  - title: 音频设置
+    details: 支持音量增益、最大音量限制和音频延迟调节，打造最佳听感体验。
+    icon: 🔊
+  - title: 去交错处理
+    details: 针对 1080i/720i 隔行扫描视频流优化，支持自动检测和多种去交错算法。
+    icon: 🖼️
   - title: 频道管理
     details: 提供频道分组、搜索、收藏与历史记录，本地持久化管理播放列表。
     icon: 📺
+  - title: 多语言支持
+    details: 支持简体中文、繁体中文、英文、俄文等多种语言界面。
+    icon: 🌍
 ---
 
 <script setup>
@@ -61,11 +73,23 @@ video::-webkit-media-controls-volume-panel {
 }
 </style>
 
-## 项目概览
+## 项目简介
 
 **源匣 (SrcBox)** 是一款专为 Windows 平台打造的高性能、现代化的 IPTV 播放器。
 
-它基于强大的 **libmpv** 播放内核构建，结合 **WPF** 的现代化界面设计，为您带来流畅、稳定的直播观看体验。不仅支持 M3U 播放列表、EPG 电子节目单、回看等核心功能，还针对 IPTV 场景进行了深度优化（如 FCC 快速切台、UDP 组播优化），是您在 PC 上观看电视直播的理想选择。
+它基于强大的 **libmpv** 播放内核构建，结合 **WPF** 的现代化界面设计，为您带来流畅、稳定的直播观看体验。不仅支持 M3U 播放列表、EPG 电子节目单、回看、时移、录播等核心功能，还针对 IPTV 场景进行了深度优化（如 FCC 快速切台、UDP 组播优化）。
+
+### 核心特性
+
+- **libmpv 播放内核**：高性能、低资源占用，支持硬件加速解码
+- **FCC 快速切台**：针对 IPTV 场景优化的毫秒级极速切台
+- **EPG 节目单**：完整支持 XMLTV 格式，智能节目匹配
+- **时移回看**：支持直播时移和基于模板的 Catchup 回放
+- **Web 远程控制**：通过浏览器远程操控播放器
+- **音频优化**：音量增益、最大音量限制、音频延迟调节
+- **去交错处理**：针对隔行扫描视频流的智能处理
+- **WebDAV 录播**：本地录播配合云端同步
+- **多语言界面**：支持中文（简/繁）、英文、俄文
 
 ## 功能演示
 
@@ -111,6 +135,22 @@ video::-webkit-media-controls-volume-panel {
   <img src="/screenshots/fullscreen-overlay.png" alt="全屏悬浮" style="height: 350px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
   <img src="/screenshots/settings.png" alt="设置" style="height: 350px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);">
 </div>
+
+## 技术栈
+
+| 组件 | 技术 |
+|------|------|
+| 播放内核 | libmpv |
+| UI 框架 | WPF + ModernWpf |
+| 语言 | C# (.NET 8) |
+| 录播同步 | WebDAV |
+| 远程控制 | WebSocket + HTTP |
+
+## 获取帮助
+
+- 📖 [使用指南](/guide/) - 详细的功能介绍和配置说明
+- 🐛 [问题反馈](https://github.com/CGG888/SrcBox/issues) - 报告 Bug 或提出建议
+- 📦 [下载安装](https://github.com/CGG888/SrcBox/releases) - 获取最新版本
 
 <div style="margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--vp-c-divider); font-size: 14px; color: var(--vp-c-text-2);">
   <p><strong>免责声明：</strong> 本页面展示的所有视频、截图及演示画面仅作功能展示用途，并非实际可播放或可用的媒体资源。<strong>本项目不提供任何 m3u 播放列表文件及其中包含的频道数据，亦不对第三方数据源负责。</strong></p>

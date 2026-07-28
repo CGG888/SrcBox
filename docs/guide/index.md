@@ -4,9 +4,9 @@
 
 ## 主题
 
-- [项目介绍](./)
+- [项目介绍](./introduction)
 - [功能特性](./features)
+- [Web 远程控制](./web-remote)
 - [EPG 节目单](./epg)
 - [回看与时移](./catchup-timeshift)
 - [配置说明](./configuration)
-- [常见问题](./faq)

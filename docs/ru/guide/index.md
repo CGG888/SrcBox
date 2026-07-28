@@ -4,9 +4,10 @@
 
 ## Темы
 
-- [Обзор проекта](./)
-- [Функциональные возможности](./features)
+- [Обзор](./introduction)
+- [Возможности](./features)
+- [Веб-пульт](./web-remote)
 - [EPG](./epg)
 - [Архив и Timeshift](./catchup-timeshift)
 - [Настройка](./configuration)
-- [Часто задаваемые вопросы (FAQ)](./faq)
+- [FAQ](./faq)

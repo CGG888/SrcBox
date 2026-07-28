@@ -4,8 +4,9 @@ Welcome to the SrcBox documentation. Please select a topic from the sidebar or u
 
 ## Topics
 
-- [Introduction](./)
+- [Introduction](./introduction)
 - [Features](./features)
+- [Web Remote](./web-remote)
 - [EPG](./epg)
 - [Catchup & Timeshift](./catchup-timeshift)
 - [Configuration](./configuration)
