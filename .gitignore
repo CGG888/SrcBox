@@ -73,3 +73,4 @@ Services/WebRemote/fix_remote.py
 Services/WebRemote/repair_remote.py
 do_replace.py
 gen_replacement.py
+RELEASE_1.1.6.md
