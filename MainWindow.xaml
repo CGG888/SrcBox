@@ -1297,7 +1297,7 @@
         </Border>
 
         <!-- 底部控制栏 -->
-        <Border x:Name="BottomBar" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Background="{DynamicResource TitleBarBrush}" Height="64" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="0,1,0,0" PreviewMouseWheel="BottomBar_PreviewMouseWheel">
+        <Border x:Name="BottomBar" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Background="{DynamicResource TopOverlayScrimBrush}" Height="64" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="0,1,0,0" PreviewMouseWheel="BottomBar_PreviewMouseWheel">
             <Border.Style>
                 <Style TargetType="Border">
                     <Setter Property="Visibility" Value="Visible"/>

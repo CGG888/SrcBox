@@ -130,6 +130,13 @@ namespace LibmpvIptvClient
                 RestoreDrawerEpgLayoutForWindow();
                 _timer.Start();
                 _overlayManager.StartTimers();
+                // 延迟刷新，等 layout 完成后再刷新频道列表
+                Dispatcher.InvokeAsync(() =>
+                {
+                    try { _shell.ApplyChannelFilter(); } catch { }
+                    try { if (ListChannels != null) ListChannels.Items.Refresh(); } catch { }
+                    try { if (ListGroups != null) ListGroups.Items.Refresh(); } catch { }
+                }, System.Windows.Threading.DispatcherPriority.Loaded);
             }
         }
 

@@ -52,8 +52,5 @@
   <SolidColorBrush x:Key="StatusReplayFillBrush" Color="#00A000"/>
   <SolidColorBrush x:Key="StatusTimeshiftFillBrush" Color="#00A8A8"/>
   
-  <LinearGradientBrush x:Key="TopOverlayScrimBrush" StartPoint="0,0" EndPoint="0,1">
-    <GradientStop Color="#BF000000" Offset="0"/>
-    <GradientStop Color="#00000000" Offset="1"/>
-  </LinearGradientBrush>
+  <SolidColorBrush x:Key="TopOverlayScrimBrush" Color="#FAFAFA"/>
 </ResourceDictionary>

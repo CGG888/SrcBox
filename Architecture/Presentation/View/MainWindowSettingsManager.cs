@@ -210,7 +210,9 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 if (_window.CbEpg != null)
                 {
                     _window.CbEpg.IsChecked = epgOn;
-                    _window.CbEpg_Click(_window.CbEpg, new RoutedEventArgs());
+                    // Do NOT call CbEpg_Click here — it would toggle the EPG panel state
+                    // based on the checkbox, overriding the user's manual open/close action.
+                    // The checkbox state is already synced via IsChecked = epgOn above.
                 }
             }
             catch { }

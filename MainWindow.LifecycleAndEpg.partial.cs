@@ -116,6 +116,14 @@ namespace LibmpvIptvClient
         {
             if (_shell.IsDrawerCollapsed == collapsed) return;
             _shell.IsDrawerCollapsed = collapsed;
+            DrawerPanel.Visibility = collapsed ? Visibility.Collapsed : Visibility.Visible;
+            // 频道列表从隐藏→显示时，强制刷新 ListBox 解决虚拟化容器未重建导致的空白问题
+            if (!collapsed)
+            {
+                try { _shell.ApplyChannelFilter(); } catch { }
+                try { ListChannels.Items.Refresh(); } catch { }
+                try { ListGroups.Items.Refresh(); } catch { }
+            }
         }
         void BtnDrawerCollapse_Click(object sender, RoutedEventArgs e)
         {

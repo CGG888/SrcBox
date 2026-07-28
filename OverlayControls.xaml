@@ -79,7 +79,7 @@
 
     </Window.Resources>
 
-  <Border Background="{DynamicResource OverlayBackgroundBrush}" CornerRadius="8" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1">
+  <Border Background="{DynamicResource TopOverlayScrimBrush}" CornerRadius="8" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1">
       <Grid Margin="12,0">
         <!-- Status Indicator (Moved to separate Canvas/Popup if needed, but here it's part of controls) -->
         <!-- Actually, user wants it in the bottom-left of video area. OverlayControls is bottom bar. -->
