@@ -47,7 +47,7 @@ namespace LibmpvIptvClient.Services.WebRemote
                 _server.FullscreenCallback = ToggleFullscreen;
                 _server.SwitchSourceCallback = DoSwitchSource;
 
-                _server.Start(config.HttpPort);
+                _server.Start(config.HttpPort, config.RequirePassword, config.Password);
                 Logger.Info($"[WebRemote] Manager initialized on port {config.HttpPort}");
             }
             catch (Exception ex)
@@ -83,6 +83,19 @@ namespace LibmpvIptvClient.Services.WebRemote
             _server?.Stop();
             _server?.Dispose();
             _server = null;
+        }
+
+        private static string MakeBadgeHtml(string? badge)
+        {
+            if (string.IsNullOrEmpty(badge)) return "";
+            return badge switch
+            {
+                "live" => "<span class=\"epg-badge epg-badge-current\">正在播出</span>",
+                "replay" => "<span class=\"epg-badge epg-badge-replay\">回看</span>",
+                "reminder" => "<span class=\"epg-badge epg-badge-reminder\">预约</span>",
+                "next" => "<span class=\"epg-badge epg-badge-next\">下一节目</span>",
+                _ => ""
+            };
         }
 
         private static void TogglePlayPause()
@@ -281,12 +294,57 @@ namespace LibmpvIptvClient.Services.WebRemote
 
                 var programs = _shell.EpgService.GetPrograms(channelId, tvgName, channelName);
                 var now = DateTime.Now;
-                return programs.Take(AppSettings.Current.WebRemote.MaxEpgItems).Select(p => new WebRemoteProgram
+
+                // 判断当前频道是否在回看某个节目
+                var replayTitle = (_shell.CurrentPlayingProgram != null &&
+                    _shell.CurrentChannel != null &&
+                    (_shell.CurrentChannel.Id == channelId || _shell.CurrentChannel.TvgId == channelId))
+                    ? _shell.CurrentPlayingProgram.Title : null;
+
+                // 检查预约列表中哪些节目被预约了（按节目时间匹配）
+                var reminderTitles = new HashSet<string>();
+                var reminders = AppSettings.Current.ScheduledReminders ?? new List<ScheduledReminder>();
+                var channelObj = channels.FirstOrDefault(c => c.Id == channelId || c.TvgId == channelId);
+                foreach (var r in reminders)
+                {
+                    if (r.ChannelId == channelId || r.ChannelId == channelObj?.Id || r.ChannelId == channelObj?.TvgId)
+                    {
+                        // 匹配节目名且时间相近（前后5分钟容差）
+                        foreach (var p2 in programs)
+                        {
+                            if (r.ChannelName == p2.Title &&
+                                Math.Abs((r.StartAtUtc - p2.Start).TotalMinutes) < 5)
+                            {
+                                reminderTitles.Add(p2.Title);
+                            }
+                        }
+                    }
+                }
+
+                // 找出正在播出和下一个节目的索引
+                int currentIdx = -1, nextIdx = -1;
+                for (int i = 0; i < programs.Count; i++)
+                {
+                    if (currentIdx < 0 && programs[i].Start <= now && programs[i].End > now)
+                        currentIdx = i;
+                    else if (currentIdx >= 0 && nextIdx < 0 && programs[i].Start > now)
+                        nextIdx = i;
+                }
+
+                return programs.Take(AppSettings.Current.WebRemote.MaxEpgItems).Select((p, idx) => new WebRemoteProgram
                 {
                     Name = p.Title ?? "",
                     Start = p.Start.ToString("HH:mm"),
                     End = p.End.ToString("HH:mm"),
-                    IsCurrent = p.Start <= now && p.End > now
+                    IsCurrent = p.Start <= now && p.End > now,
+                    Badge =
+                        (replayTitle != null && p.Title == replayTitle) ? "replay" :
+                        (reminderTitles.Contains(p.Title)) ? "reminder" :
+                        (idx == currentIdx ? "live" : (idx == nextIdx ? "next" : null)),
+                    BadgeHtml = MakeBadgeHtml(
+                        (replayTitle != null && p.Title == replayTitle) ? "replay" :
+                        (reminderTitles.Contains(p.Title)) ? "reminder" :
+                        (idx == currentIdx ? "live" : (idx == nextIdx ? "next" : null)))
                 }).ToList();
             }
             catch (Exception ex)

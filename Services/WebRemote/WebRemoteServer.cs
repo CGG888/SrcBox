@@ -24,6 +24,11 @@ namespace LibmpvIptvClient.Services.WebRemote
         public bool IsRunning { get; private set; }
         public int Port { get; private set; }
 
+        // 密码保护
+        private bool _requirePassword;
+        private string _password = "";
+        private readonly HashSet<string> _authenticatedTokens = new();
+
         public Func<WebRemoteStatus>? GetStatusCallback { get; set; }
         public Func<List<WebRemoteChannelGroup>>? GetChannelsCallback { get; set; }
         public Func<string, List<WebRemoteProgram>>? GetEpgCallback { get; set; }
@@ -36,11 +41,14 @@ namespace LibmpvIptvClient.Services.WebRemote
         public Action? FullscreenCallback { get; set; }
         public Action? SwitchSourceCallback { get; set; }
 
-        public void Start(int port)
+        public void Start(int port, bool requirePassword = false, string password = "")
         {
             if (IsRunning) return;
 
             Port = port;
+            _requirePassword = requirePassword;
+            _password = password ?? "";
+            _authenticatedTokens.Clear();
             _cts = new CancellationTokenSource();
 
             try
@@ -231,10 +239,50 @@ namespace LibmpvIptvClient.Services.WebRemote
                 var action = actionElem.GetString() ?? "";
                 Logger.Info($"[WebRemote] Action: {action}");
 
+                // 密码验证：除了 auth 动作外都需要验证
+                if (_requirePassword && action != "auth")
+                {
+                    var token = ws.SubProtocol ?? "";
+                    bool isAuth;
+                    lock (_clientsLock)
+                    {
+                        isAuth = _authenticatedTokens.Contains(token);
+                    }
+                    if (!isAuth)
+                    {
+                        Logger.Warn($"[WebRemote] Unauthorized access attempt: {action}");
+                        var unauthorizedResp = JsonSerializer.Serialize(new { error = "Unauthorized", requireAuth = true });
+                        await ws.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(unauthorizedResp)), WebSocketMessageType.Text, true, ct);
+                        return;
+                    }
+                }
+
                 object? result = null;
 
                 switch (action)
                 {
+                    case "auth":
+                    {
+                        string? pwd = null;
+                        if (json.TryGetProperty("password", out var pwdElem))
+                            pwd = pwdElem.GetString();
+                        bool ok = !string.IsNullOrEmpty(_password) && pwd == _password;
+                        if (ok)
+                        {
+                            lock (_clientsLock)
+                            {
+                                _authenticatedTokens.Add(ws.SubProtocol ?? "");
+                            }
+                            Logger.Info("[WebRemote] Client authenticated successfully");
+                        }
+                        else
+                        {
+                            Logger.Warn($"[WebRemote] Authentication failed with password: {pwd}");
+                        }
+                        result = new { success = ok, requireAuth = _requirePassword };
+                        break;
+                    }
+
                     case "getStatus":
                         result = GetStatusCallback?.Invoke() ?? new WebRemoteStatus();
                         break;
@@ -442,11 +490,21 @@ namespace LibmpvIptvClient.Services.WebRemote
         .epg-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold; margin-left: 6px; }
         .epg-badge-current { background: #2ed573; color: #fff; }
         .epg-badge-next { background: #ffa502; color: #fff; }
+        .epg-badge-replay { background: #a855f7; color: #fff; }
+        .epg-badge-reminder { background: #ff4757; color: #fff; }
 
         /* Loading */
         .loading { text-align: center; padding: 30px; color: #666; font-size: 12px; }
         .loading::after { content: '...'; animation: dots 1.5s infinite; }
         @keyframes dots { 0%,20% { content: '.'; } 40% { content: '..'; } 60%,100% { content: '...'; } }
+
+        /* Password Overlay */
+        #passwordOverlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); display: flex; align-items: center; justify-content: center; z-index: 9999; flex-direction: column; gap: 16px; }
+        #passwordOverlay h2 { color: #fff; font-size: 18px; margin: 0; }
+        #passwordOverlay input { padding: 10px 16px; font-size: 14px; border: none; border-radius: 8px; width: 200px; text-align: center; }
+        #passwordOverlay button { padding: 8px 24px; font-size: 14px; border: none; border-radius: 8px; background: #2ed573; color: #fff; cursor: pointer; }
+        #passwordOverlay button:hover { background: #26b863; }
+        #passwordOverlay .error { color: #ff4757; font-size: 12px; display: none; }
 
         /* Scrollbar */
         ::-webkit-scrollbar { width: 4px; }
@@ -461,6 +519,12 @@ namespace LibmpvIptvClient.Services.WebRemote
     </style>
 </head>
 <body>
+    <div id=""passwordOverlay"" style=""display:none;"">
+        <h2>请输入访问密码</h2>
+        <input type=""password"" id=""pwdInput"" placeholder=""密码"" onkeydown=""if(event.key==='Enter')doAuth()""/>
+        <button onclick=""doAuth()"">确认</button>
+        <div class=""error"" id=""authError"">密码错误，请重试</div>
+    </div>
     <div class=""container"">
         <div class=""header"">
             <h1>📺 SrcBox遥控器 <span class=""live-badge"" id=""liveBadge"" style=""display:none;"">LIVE</span></h1>
@@ -530,16 +594,29 @@ namespace LibmpvIptvClient.Services.WebRemote
         let channelList = [];
         let statusInterval;
         let isDarkTheme = true;
+        let isAuthenticated = false;
 
         function connect() {
             const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
             ws = new WebSocket(protocol + '//' + location.host);
             ws.onopen = () => { loadTheme(); loadStatus(); loadChannels(); statusInterval = setInterval(loadStatus, 5000); };
-            ws.onclose = () => { clearInterval(statusInterval); setTimeout(connect, 3000); };
+            ws.onclose = () => { clearInterval(statusInterval); isAuthenticated = false; setTimeout(connect, 3000); };
             ws.onerror = () => { document.getElementById('channelName').textContent = '连接失败'; };
             ws.onmessage = (e) => {
                 try {
                     const data = JSON.parse(e.data);
+                    // 密码验证响应
+                    if (data.requireAuth !== undefined && !data.success && !isAuthenticated) {
+                        document.getElementById('passwordOverlay').style.display = 'flex';
+                    } else if (data.success !== undefined && data.requireAuth !== undefined) {
+                        if (data.success) {
+                            isAuthenticated = true;
+                            document.getElementById('passwordOverlay').style.display = 'none';
+                        } else {
+                            document.getElementById('authError').style.display = 'block';
+                        }
+                        return;
+                    }
                     if (data.groups !== undefined) renderChannels(data);
                     else if (data.programs !== undefined) renderEpg(data);
                     else if (data.channel !== undefined || data.mode !== undefined) updateStatus(data);
@@ -549,9 +626,14 @@ namespace LibmpvIptvClient.Services.WebRemote
 
         function send(action, data = {}) { if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ action, ...data })); }
         function loadStatus() { send('getStatus'); }
+        function doAuth() {
+            const pwd = document.getElementById('pwdInput').value;
+            if (!pwd) return;
+            send('auth', { password: pwd });
+        }
         function loadChannels() { send('getChannels'); }
         function loadEpg(channelId) { send('getEpg', { channelId }); }
-        function refreshData() { loadStatus(); loadChannels(); if (currentChannelId) loadEpg(currentChannelId); }
+        function refreshData() { if (!isAuthenticated) return; loadStatus(); loadChannels(); if (currentChannelId) loadEpg(currentChannelId); }
 
         function toggleTheme() {
             isDarkTheme = !isDarkTheme;
@@ -643,8 +725,9 @@ namespace LibmpvIptvClient.Services.WebRemote
                 div.className = 'epg-item' + (p.isCurrent ? ' current' : '');
                 const isPast = p.end && new Date('2000/1/1 ' + p.end) < now;
                 if (isPast) div.classList.add('past');
+                var badge = p.badgeHtml || '';
                 div.innerHTML = '<div class=""epg-time""><span>' + p.start + '</span><span class=""epg-time-end"">' + p.end + '</span></div>' +
-                    '<div class=""epg-content""><div class=""epg-name"">' + p.name + (p.isCurrent ? '<span class=""epg-badge epg-badge-current"">正在播出</span>' : (i === 1 ? '<span class=""epg-badge epg-badge-next"">下一节目</span>' : '')) + '</div></div>';
+                    '<div class=""epg-content""><div class=""epg-name"">' + p.name + badge + '</div></div>';
                 div.onclick = () => changeChannel(data.channelId);
                 list.appendChild(div);
             });
@@ -715,6 +798,9 @@ namespace LibmpvIptvClient.Services.WebRemote
         public string Start { get; set; } = "";
         public string End { get; set; } = "";
         public bool IsCurrent { get; set; }
+        // 微标类型: "live"=正在播出 "replay"=回看 "reminder"=预约 "next"=下一节目
+        public string? Badge { get; set; }
+        public string? BadgeHtml { get; set; }
     }
 
     public class WebRemoteTimeshift
