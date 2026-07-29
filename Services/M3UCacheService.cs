@@ -17,6 +17,7 @@ public class M3UCacheEntry
     public string? LastModified { get; set; }
     public DateTime CachedAt { get; set; }
     public double CacheTtlHours { get; set; } = 24;
+    public string? TvgUrl { get; set; }
 }
 
 public class M3UCacheService
@@ -70,9 +71,9 @@ public class M3UCacheService
         return Convert.ToHexString(bytes);
     }
 
-    public async Task<(List<Channel>? channels, bool fromCache)> LoadFromCacheAsync(string url)
+    public async Task<(List<Channel>? channels, bool fromCache, string? tvgUrl)> LoadFromCacheAsync(string url)
     {
-        if (string.IsNullOrWhiteSpace(url)) return (null, false);
+        if (string.IsNullOrWhiteSpace(url)) return (null, false, null);
 
         var cachePath = GetCacheFilePath(url);
         var metaPath = GetMetaFilePath(url);
@@ -81,7 +82,7 @@ public class M3UCacheService
         {
             if (!File.Exists(cachePath) || !File.Exists(metaPath))
             {
-                return (null, false);
+                return (null, false, null);
             }
 
             M3UCacheEntry? meta = null;
@@ -92,16 +93,16 @@ public class M3UCacheService
             }
             catch
             {
-                return (null, false);
+                return (null, false, null);
             }
 
-            if (meta == null) return (null, false);
+            if (meta == null) return (null, false, null);
 
             var ttl = AppSettings.Current?.M3uCacheTtlHours ?? meta.CacheTtlHours;
             if ((DateTime.Now - meta.CachedAt).TotalHours > ttl)
             {
                 Logger.Info($"M3U缓存已过期 (TTL={ttl}h)，将刷新");
-                return (null, false);
+                return (null, false, null);
             }
 
             bool needRefresh = false;
@@ -161,7 +162,7 @@ public class M3UCacheService
 
             if (needRefresh)
             {
-                return (null, false);
+                return (null, false, null);
             }
 
             try
@@ -175,7 +176,7 @@ public class M3UCacheService
                 if (channels != null)
                 {
                     Logger.Info($"从缓存加载了 {channels.Count} 个频道");
-                    return (channels, true);
+                    return (channels, true, meta.TvgUrl);
                 }
             }
             catch (Exception ex)
@@ -188,10 +189,10 @@ public class M3UCacheService
             Logger.Warn($"[M3U Cache] Load failed: {ex.Message}");
         }
 
-        return (null, false);
+        return (null, false, null);
     }
 
-    public async Task SaveToCacheAsync(string url, List<Channel> channels, string? etag = null, string? lastModified = null)
+    public async Task SaveToCacheAsync(string url, List<Channel> channels, string? etag = null, string? lastModified = null, string? tvgUrl = null)
     {
         if (string.IsNullOrWhiteSpace(url) || channels == null || channels.Count == 0) return;
 
@@ -219,7 +220,8 @@ public class M3UCacheService
                 ETag = etag,
                 LastModified = lastModified,
                 CachedAt = DateTime.Now,
-                CacheTtlHours = AppSettings.Current?.M3uCacheTtlHours ?? 24
+                CacheTtlHours = AppSettings.Current?.M3uCacheTtlHours ?? 24,
+                TvgUrl = tvgUrl
             };
             var metaJson = JsonSerializer.Serialize(meta, new JsonSerializerOptions { WriteIndented = false });
             await File.WriteAllTextAsync(metaPath, metaJson);

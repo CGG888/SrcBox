@@ -10,16 +10,16 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 {
     public class MainWindowSourceLoaderViewModel : ViewModelBase
     {
-        public async Task<List<Channel>> LoadChannelsAsync(
+        public async Task<(List<Channel> channels, string? tvgUrl)> LoadChannelsAsync(
             ChannelService channelService,
             string m3uUrl,
             Action<string> logAction)
         {
             if (channelService == null || string.IsNullOrWhiteSpace(m3uUrl))
-                return new List<Channel>();
+                return (new List<Channel>(), null);
 
             logAction?.Invoke("加载频道 " + m3uUrl);
-            var channels = await channelService.LoadChannelsAsync(m3uUrl, true);
+            var (channels, tvgUrl) = await channelService.LoadChannelsAsync(m3uUrl, true);
             
             if (channels.Count == 0)
             {
@@ -30,7 +30,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 logAction?.Invoke("解析频道数量 " + channels.Count);
             }
 
-            return channels;
+            return (channels, tvgUrl);
         }
 
         public List<Channel> LoadSingleStream(string url, string streamLabel)

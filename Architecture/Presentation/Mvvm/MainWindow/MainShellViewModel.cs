@@ -804,7 +804,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             {
                 LibmpvIptvClient.Diagnostics.Logger.Info("正在加载频道...");
 
-                var loadedChannels = await SourceLoader.LoadChannelsAsync(ChannelService, url, msg => LibmpvIptvClient.Diagnostics.Logger.Log(msg));
+                var (loadedChannels, loadedTvgUrl) = await SourceLoader.LoadChannelsAsync(ChannelService, url, msg => LibmpvIptvClient.Diagnostics.Logger.Log(msg));
 
                 ChannelListActions.ComputeGlobalIndices(loadedChannels);
                 ApplyFavoritesFromStore(loadedChannels);
@@ -816,9 +816,9 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 }
 
                 var epgUrl = AppSettings.Current.CustomEpgUrl;
-                if (string.IsNullOrWhiteSpace(epgUrl) && M3UParser != null)
+                if (string.IsNullOrWhiteSpace(epgUrl))
                 {
-                    epgUrl = M3UParser.TvgUrl;
+                    epgUrl = loadedTvgUrl;
                 }
 
                 await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>

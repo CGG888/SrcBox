@@ -17,7 +17,7 @@ namespace LibmpvIptvClient.Services
             _m3u = m3u;
             _checker = checker;
         }
-        public async Task<List<Channel>> LoadChannelsAsync(string? m3uUrl, bool m3uPriority)
+        public async Task<(List<Channel> channels, string? tvgUrl)> LoadChannelsAsync(string? m3uUrl, bool m3uPriority)
         {
             var fromM3u = new List<Channel>();
             if (!string.IsNullOrWhiteSpace(m3uUrl))
@@ -30,17 +30,21 @@ namespace LibmpvIptvClient.Services
 
                         if (cacheEnabled)
                         {
-                            var (cached, fromCache) = await M3UCacheService.Instance.LoadFromCacheAsync(m3uUrl);
+                            var (cached, fromCache, cachedTvgUrl) = await M3UCacheService.Instance.LoadFromCacheAsync(m3uUrl);
                             if (cached != null && cached.Count > 0)
                             {
                                 fromM3u = cached;
+                                if (string.IsNullOrEmpty(_m3u.TvgUrl) && !string.IsNullOrEmpty(cachedTvgUrl))
+                                {
+                                    _m3u.TvgUrl = cachedTvgUrl;
+                                }
                             }
                             else
                             {
                                 fromM3u = await _m3u.ParseFromUrlAsync(m3uUrl);
                                 if (fromM3u.Count > 0)
                                 {
-                                    await M3UCacheService.Instance.SaveToCacheAsync(m3uUrl, fromM3u);
+                                    await M3UCacheService.Instance.SaveToCacheAsync(m3uUrl, fromM3u, null, null, _m3u.TvgUrl);
                                 }
                             }
                         }
@@ -55,10 +59,14 @@ namespace LibmpvIptvClient.Services
 
                         if (cacheEnabled)
                         {
-                            var (cached, fromCache) = await M3UCacheService.Instance.LoadFromCacheAsync(m3uUrl);
+                            var (cached, fromCache, cachedTvgUrl) = await M3UCacheService.Instance.LoadFromCacheAsync(m3uUrl);
                             if (cached != null && cached.Count > 0)
                             {
                                 fromM3u = cached;
+                                if (string.IsNullOrEmpty(_m3u.TvgUrl) && !string.IsNullOrEmpty(cachedTvgUrl))
+                                {
+                                    _m3u.TvgUrl = cachedTvgUrl;
+                                }
                             }
                             else
                             {
@@ -66,7 +74,7 @@ namespace LibmpvIptvClient.Services
                                 if (fromM3u.Count > 0)
                                 {
                                     var fileInfo = new System.IO.FileInfo(m3uUrl);
-                                    await M3UCacheService.Instance.SaveToCacheAsync(m3uUrl, fromM3u, null, fileInfo.LastWriteTimeUtc.ToString("O"));
+                                    await M3UCacheService.Instance.SaveToCacheAsync(m3uUrl, fromM3u, null, fileInfo.LastWriteTimeUtc.ToString("O"), _m3u.TvgUrl);
                                 }
                             }
                         }
@@ -86,7 +94,7 @@ namespace LibmpvIptvClient.Services
                     _ = LibmpvIptvClient.Services.LogoCacheService.Instance.WarmupAndSwapAsync(fromM3u);
                 }
                 catch { }
-                return fromM3u;
+                return (fromM3u, _m3u.TvgUrl);
             }
             var fromChecker = new List<Channel>();
             try
@@ -124,7 +132,7 @@ namespace LibmpvIptvClient.Services
                 _ = LibmpvIptvClient.Services.LogoCacheService.Instance.WarmupAndSwapAsync(merged);
             }
             catch { }
-            return merged;
+            return (merged, _m3u.TvgUrl);
         }
         List<Channel> MergeChannels(List<Channel> a, List<Channel> b, bool aPriority)
         {

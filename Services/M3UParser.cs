@@ -15,7 +15,7 @@ namespace LibmpvIptvClient.Services
     public class M3UParser
     {
         private HttpClient _http => HttpClientService.Instance.Client;
-        public string TvgUrl { get; private set; } = "";
+        public string TvgUrl { get; set; } = "";
         
         public M3UParser()
         {
