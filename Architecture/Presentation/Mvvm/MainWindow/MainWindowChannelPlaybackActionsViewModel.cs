@@ -140,7 +140,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 
                 try
                 {
-                    LibmpvIptvClient.Diagnostics.Logger.Info($"[Live] RequestVideoShow called, PlaceholderPanel will be hidden");
+                    LibmpvIptvClient.Diagnostics.Logger.Info("[Live] 请求显示视频画面");
                     RequestVideoShow?.Invoke();
                     _shell.DispatchPlaybackEvent(new StartLivePlayback(
                         ch.TvgId ?? ch.Id ?? ch.Name ?? "",

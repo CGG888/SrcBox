@@ -439,7 +439,7 @@ namespace LibmpvIptvClient
                 }
                 catch { }
             };
-            _shell.ChannelPlaybackActions.RequestVideoShow += () => { try { PlaceholderPanel.Visibility = Visibility.Collapsed; VideoHost.Visibility = Visibility.Visible; Diagnostics.Logger.Info($"[WebRemote] RequestVideoShow: PlaceholderPanel=Collapsed, VideoHost=Visible (PlaceholderNow={PlaceholderPanel.Visibility})"); } catch (Exception ex) { Diagnostics.Logger.Error($"[WebRemote] RequestVideoShow error: {ex.Message}"); } };
+            _shell.ChannelPlaybackActions.RequestVideoShow += () => { try { PlaceholderPanel.Visibility = Visibility.Collapsed; VideoHost.Visibility = Visibility.Visible; Diagnostics.Logger.Info($"[WebRemote] 视频画面已显示"); } catch (Exception ex) { Diagnostics.Logger.Error($"[WebRemote] RequestVideoShow error: {ex.Message}"); } };
 
             _shell.RecordingPlaybackActions.RequestEpgRefresh += () => { try { ListEpg.Items.Refresh(); } catch { } };
             _shell.RecordingPlaybackActions.RequestVideoShow += () => { try { PlaceholderPanel.Visibility = Visibility.Collapsed; VideoHost.Visibility = Visibility.Visible; } catch { } };

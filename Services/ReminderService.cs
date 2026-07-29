@@ -26,7 +26,7 @@ namespace LibmpvIptvClient.Services
                 _list = AppSettings.Current.ScheduledReminders ?? new List<ScheduledReminder>();
                 try
                 {
-                    LibmpvIptvClient.Diagnostics.Logger.Info($"[Reminder] start loaded={_list.Count} enabled={_list.Count(x=>x.Enabled && !x.Completed)}");
+                    LibmpvIptvClient.Diagnostics.Logger.Debug($"[Reminder] start loaded={_list.Count} enabled={_list.Count(x=>x.Enabled && !x.Completed)}");
                 }
                 catch { }
             }
@@ -76,7 +76,7 @@ namespace LibmpvIptvClient.Services
                 try
                 {
                     var act = next.Item?.Action ?? "";
-                    LibmpvIptvClient.Diagnostics.Logger.Info($"[Reminder] next={due.ToLocalTime():yyyy-MM-dd HH:mm:ss} action={act} count={_list.Count(r=>r.Enabled && !r.Completed)}");
+                    LibmpvIptvClient.Diagnostics.Logger.Debug($"[Reminder] next={due.ToLocalTime():yyyy-MM-dd HH:mm:ss} action={act} count={_list.Count(r=>r.Enabled && !r.Completed)}");
                 }
                 catch { }
             }
@@ -123,7 +123,7 @@ namespace LibmpvIptvClient.Services
                         catch { }
                         // 预提醒即进入倒计时与自动播放流程，标记完成防止开始时间再次触发
                         r.Completed = true; ok++;
-                        try { LibmpvIptvClient.Diagnostics.Logger.Info($"[Reminder] pre-alert scheduled autoplay id={r.Id} ch={r.ChannelName} at={preAt.ToLocalTime():yyyy-MM-dd HH:mm:ss}"); } catch { }
+                        try { LibmpvIptvClient.Diagnostics.Logger.Debug($"[Reminder] pre-alert scheduled autoplay id={r.Id} ch={r.ChannelName} at={preAt.ToLocalTime():yyyy-MM-dd HH:mm:ss}"); } catch { }
                     }
                     catch { }
                     continue;
@@ -134,7 +134,7 @@ namespace LibmpvIptvClient.Services
                     var delta = (now - triggerAt).TotalSeconds;
                     // 允许一定抖动（调度/挂起/线程切换导致的轻微延迟）
                     if (!includeGrace && delta > 5) continue;
-                    if (includeGrace && delta > GraceSeconds) { r.Completed = true; miss++; try { LibmpvIptvClient.Diagnostics.Logger.Info($"[Reminder] missed id={r.Id} ch={r.ChannelName} action={r.Action} due={triggerAt.ToLocalTime():yyyy-MM-dd HH:mm:ss} delta={delta:F1}s"); } catch { } continue; }
+                    if (includeGrace && delta > GraceSeconds) { r.Completed = true; miss++; try { LibmpvIptvClient.Diagnostics.Logger.Debug($"[Reminder] missed id={r.Id} ch={r.ChannelName} action={r.Action} due={triggerAt.ToLocalTime():yyyy-MM-dd HH:mm:ss} delta={delta:F1}s"); } catch { } continue; }
                     try
                     {
                         var local = r.StartAtUtc.ToLocalTime();
@@ -163,7 +163,7 @@ namespace LibmpvIptvClient.Services
                         r.Completed = true; ok++;
                         try
                         {
-                            LibmpvIptvClient.Diagnostics.Logger.Info($"[Reminder] fired id={r.Id} ch={r.ChannelName} action={r.Action} local={local:yyyy-MM-dd HH:mm:ss}");
+                            LibmpvIptvClient.Diagnostics.Logger.Debug($"[Reminder] fired id={r.Id} ch={r.ChannelName} action={r.Action} local={local:yyyy-MM-dd HH:mm:ss}");
                         }
                         catch { }
                     }
@@ -173,7 +173,7 @@ namespace LibmpvIptvClient.Services
                 {
                     try
                     {
-                        LibmpvIptvClient.Diagnostics.Logger.Info($"[Reminder] pending id={r.Id} action={r.Action} due={triggerAt.ToLocalTime():yyyy-MM-dd HH:mm:ss}");
+                        LibmpvIptvClient.Diagnostics.Logger.Debug($"[Reminder] pending id={r.Id} action={r.Action} due={triggerAt.ToLocalTime():yyyy-MM-dd HH:mm:ss}");
                     }
                     catch { }
                 }
@@ -182,7 +182,7 @@ namespace LibmpvIptvClient.Services
             {
                 if (ok + miss > 0)
                 {
-                    LibmpvIptvClient.Diagnostics.Logger.Info($"[Reminder] summary ok={ok} missed={miss}");
+                    LibmpvIptvClient.Diagnostics.Logger.Debug($"[Reminder] summary ok={ok} missed={miss}");
                 }
             }
             catch { }

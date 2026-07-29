@@ -461,4 +461,15 @@
   <sys:String x:Key="UI_Audio_VolumeGain">音量增益</sys:String>
   <sys:String x:Key="UI_Audio_VolumeMax">最大音量</sys:String>
   <sys:String x:Key="UI_Audio_Delay">音频延迟</sys:String>
+
+  <!-- User-facing Logs -->
+  <sys:String x:Key="Log_Live_Start">开始直播 - {0}</sys:String>
+  <sys:String x:Key="Log_Catchup_Start">开始回看 - {0}</sys:String>
+  <sys:String x:Key="Log_Timeshift_Start">开始时移 - {0}</sys:String>
+  <sys:String x:Key="Log_Deinterlace_Changed">反交错: {0}</sys:String>
+  <sys:String x:Key="Log_Settings_Saved">设置已保存</sys:String>
+  <sys:String x:Key="Log_Record_Start">开始录制</sys:String>
+  <sys:String x:Key="Log_Record_Stop">停止录制</sys:String>
+  <sys:String x:Key="Log_Update_Paused">下载已暂停</sys:String>
+  <sys:String x:Key="Log_Update_Resumed">下载继续</sys:String>
 </ResourceDictionary>

@@ -48,7 +48,7 @@ namespace LibmpvIptvClient.Services.WebRemote
                 _server.SwitchSourceCallback = DoSwitchSource;
 
                 _server.Start(config.HttpPort, config.RequirePassword, config.Password);
-                Logger.Info($"[WebRemote] Manager initialized on port {config.HttpPort}");
+                Logger.Debug($"[WebRemote] Manager initialized on port {config.HttpPort}");
             }
             catch (Exception ex)
             {
@@ -61,7 +61,7 @@ namespace LibmpvIptvClient.Services.WebRemote
             _server?.Stop();
             _server?.Dispose();
             _server = null;
-            Logger.Info("[WebRemote] Manager shutdown");
+            Logger.Debug("[WebRemote] Manager shutdown");
         }
 
         public static void RestartIfNeeded()
@@ -379,7 +379,7 @@ namespace LibmpvIptvClient.Services.WebRemote
                         c.Id == channelId || c.TvgId == channelId);
                     if (channel != null)
                     {
-                        Logger.Info($"[WebRemote] ChangeChannel via web remote: {channel.Name}");
+                        Logger.Debug($"[WebRemote] ChangeChannel via web remote: {channel.Name}");
                         _shell.ChannelPlaybackActions?.PlayChannel(channel);
                     }
                 }
@@ -394,7 +394,7 @@ namespace LibmpvIptvClient.Services.WebRemote
         {
             try
             {
-                Logger.Info("[WebRemote] Exit requested via web remote");
+                Logger.Debug("[WebRemote] Exit requested via web remote");
                 System.Windows.Application.Current?.Dispatcher.Invoke(() =>
                 {
                     System.Windows.Application.Current?.Shutdown();
@@ -421,7 +421,7 @@ namespace LibmpvIptvClient.Services.WebRemote
                 {
                     if (_shell == null) return;
                     var isCurrentlyFullscreen = _shell.WindowStateActions?.IsFullscreen ?? false;
-                    Logger.Info($"[WebRemote] Fullscreen toggled via web remote (currently: {(isCurrentlyFullscreen ? "fullscreen" : "windowed")})");
+                    Logger.Debug($"[WebRemote] Fullscreen toggled via web remote (currently: {(isCurrentlyFullscreen ? "fullscreen" : "windowed")})");
                     _toggleFullscreenCallback?.Invoke(!isCurrentlyFullscreen);
                 });
             }

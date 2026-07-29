@@ -280,7 +280,7 @@ namespace LibmpvIptvClient
                 var loadNext = new string[] { "loadfile", n, "append-play", null! };
                 mpv_command(_handle, loadNext);
             }
-            Logger.Log("mpv loadfile + multi-prefetch 调用完成");
+            Logger.Log("播放加载完成");
         }
         public void Pause(bool pause)
         {

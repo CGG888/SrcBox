@@ -17,7 +17,7 @@ namespace LibmpvIptvClient.Services
                 var resp = await http.SendAsync(req, HttpCompletionOption.ResponseHeadersRead, token);
                 if (!resp.IsSuccessStatusCode) return;
                 var ct = resp.Content.Headers.ContentType?.MediaType ?? "";
-                try { Logger.Info($"[RecordHTTP] start url={url} type={ct} -> {filePath}"); } catch { }
+                try { Logger.Debug($"[RecordHTTP] start url={url} type={ct} -> {filePath}"); } catch { }
                 using var src = await resp.Content.ReadAsStreamAsync(token);
                 Directory.CreateDirectory(Path.GetDirectoryName(filePath)!);
                 using var dst = new FileStream(filePath, FileMode.Create, FileAccess.Write, FileShare.Read, 1024 * 64, useAsync: true);
@@ -29,11 +29,11 @@ namespace LibmpvIptvClient.Services
                     await dst.WriteAsync(buf.AsMemory(0, n), token);
                 }
                 await dst.FlushAsync(token);
-                try { Logger.Info($"[RecordHTTP] done size={new FileInfo(filePath).Length}"); } catch { }
+                try { Logger.Debug($"[RecordHTTP] done size={new FileInfo(filePath).Length}"); } catch { }
             }
             catch (OperationCanceledException)
             {
-                try { Logger.Info("[RecordHTTP] canceled"); } catch { }
+                try { Logger.Debug("[RecordHTTP] canceled"); } catch { }
             }
             catch (Exception ex)
             {

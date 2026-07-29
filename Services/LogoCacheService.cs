@@ -182,7 +182,7 @@ namespace LibmpvIptvClient.Services
             try
             {
                 var dir = EnsureCacheDir();
-                LibmpvIptvClient.Diagnostics.Logger.Info($"[LogoCache] summary dir={dir} ok={ok} fail={fail} neg={neg}");
+                LibmpvIptvClient.Diagnostics.Logger.Debug($"[LogoCache] summary dir={dir} ok={ok} fail={fail} neg={neg}");
             }
             catch { }
         }

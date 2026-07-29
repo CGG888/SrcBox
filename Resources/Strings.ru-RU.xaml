@@ -445,6 +445,17 @@
   <sys:String x:Key="UI_Audio_VolumeMax">Макс. громкость</sys:String>
   <sys:String x:Key="UI_Audio_Delay">Аудио задержка</sys:String>
 
+  <!-- User-facing Logs -->
+  <sys:String x:Key="Log_Live_Start">Прямой эфир - {0}</sys:String>
+  <sys:String x:Key="Log_Catchup_Start">Сatchup - {0}</sys:String>
+  <sys:String x:Key="Log_Timeshift_Start">Таймшифт - {0}</sys:String>
+  <sys:String x:Key="Log_Deinterlace_Changed">Деинтерлейс: {0}</sys:String>
+  <sys:String x:Key="Log_Settings_Saved">Настройки сохранены</sys:String>
+  <sys:String x:Key="Log_Record_Start">Запись началась</sys:String>
+  <sys:String x:Key="Log_Record_Stop">Запись остановлена</sys:String>
+  <sys:String x:Key="Log_Update_Paused">Загрузка приостановлена</sys:String>
+  <sys:String x:Key="Log_Update_Resumed">Загрузка возобновлена</sys:String>
+
   <!-- Web Remote -->
   <sys:String x:Key="UI_WebRemote_Tab">Пульт</sys:String>
   <sys:String x:Key="UI_WebRemote_Enable">Включить Web-пульт</sys:String>

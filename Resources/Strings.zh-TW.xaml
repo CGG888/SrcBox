@@ -444,6 +444,17 @@
   <sys:String x:Key="UI_Audio_VolumeMax">最大音量</sys:String>
   <sys:String x:Key="UI_Audio_Delay">音訊延遲</sys:String>
 
+  <!-- User-facing Logs -->
+  <sys:String x:Key="Log_Live_Start">直播 - {0}</sys:String>
+  <sys:String x:Key="Log_Catchup_Start">回看 - {0}</sys:String>
+  <sys:String x:Key="Log_Timeshift_Start">時移 - {0}</sys:String>
+  <sys:String x:Key="Log_Deinterlace_Changed">解交織: {0}</sys:String>
+  <sys:String x:Key="Log_Settings_Saved">設定已保存</sys:String>
+  <sys:String x:Key="Log_Record_Start">錄製已開始</sys:String>
+  <sys:String x:Key="Log_Record_Stop">錄製已停止</sys:String>
+  <sys:String x:Key="Log_Update_Paused">下載已暫停</sys:String>
+  <sys:String x:Key="Log_Update_Resumed">下載已恢復</sys:String>
+
   <!-- Web Remote -->
   <sys:String x:Key="UI_WebRemote_Tab">遙控器</sys:String>
   <sys:String x:Key="UI_WebRemote_Enable">啟用 Web 遙控器</sys:String>

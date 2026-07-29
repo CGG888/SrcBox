@@ -57,7 +57,7 @@ namespace LibmpvIptvClient.Services.WebRemote
                 _tcpListener.Start();
                 IsRunning = true;
                 _ = Task.Run(() => AcceptClientsAsync(_cts.Token));
-                Logger.Info($"[WebRemote] Server started on port {port}");
+                Logger.Debug($"[WebRemote] Server started on port {port}");
             }
             catch (Exception ex)
             {
@@ -82,7 +82,7 @@ namespace LibmpvIptvClient.Services.WebRemote
             _tcpListener?.Stop();
             _tcpListener = null;
             IsRunning = false;
-            Logger.Info("[WebRemote] Server stopped");
+            Logger.Debug("[WebRemote] Server stopped");
         }
 
         private async Task AcceptClientsAsync(CancellationToken ct)
@@ -107,7 +107,7 @@ namespace LibmpvIptvClient.Services.WebRemote
                 {
                     var stream = tcpClient.GetStream();
                     stream.ReadTimeout = 5000;
-                    Logger.Info($"[WebRemote] Client connected from {tcpClient.Client.RemoteEndPoint}");
+                    Logger.Debug($"[WebRemote] Client connected from {tcpClient.Client.RemoteEndPoint}");
 
                     // Read all HTTP headers first
                     var sb = new StringBuilder();
@@ -121,11 +121,11 @@ namespace LibmpvIptvClient.Services.WebRemote
                     }
 
                     var request = sb.ToString();
-                    Logger.Info($"[WebRemote] Request length: {request.Length}, starts with: {request.Substring(0, Math.Min(20, request.Length)).Replace("\r\n", "\\r\\n")}");
+                    Logger.Debug($"[WebRemote] Request length: {request.Length}, starts with: {request.Substring(0, Math.Min(20, request.Length)).Replace("\r\n", "\\r\\n")}");
 
                     // Check if it's a WebSocket upgrade request
                     bool isWebSocket = request.Contains("Upgrade:") && request.Contains("websocket");
-                    Logger.Info($"[WebRemote] Is WebSocket upgrade: {isWebSocket}");
+                    Logger.Debug($"[WebRemote] Is WebSocket upgrade: {isWebSocket}");
 
                     if (isWebSocket)
                     {
@@ -144,7 +144,7 @@ namespace LibmpvIptvClient.Services.WebRemote
         {
             try
             {
-                Logger.Info("[WebRemote] Sending HTML page");
+                Logger.Debug("[WebRemote] Sending HTML page");
                 var lang = ParseAcceptLanguage(request);
                 var html = GetRemoteHtml(lang);
                 var header = $"HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: {Encoding.UTF8.GetByteCount(html)}\r\nConnection: close\r\n\r\n";
@@ -152,7 +152,7 @@ namespace LibmpvIptvClient.Services.WebRemote
                 var bodyBuf = Encoding.UTF8.GetBytes(html);
                 await stream.WriteAsync(headerBuf, ct);
                 await stream.WriteAsync(bodyBuf, ct);
-                Logger.Info("[WebRemote] HTML page sent");
+                Logger.Debug("[WebRemote] HTML page sent");
             }
             catch (Exception ex)
             {
@@ -177,7 +177,7 @@ namespace LibmpvIptvClient.Services.WebRemote
                     }
                 }
 
-                Logger.Info($"[WebRemote] WebSocket key: {(string.IsNullOrEmpty(key) ? "NOT FOUND" : "found")}");
+                Logger.Debug($"[WebRemote] WebSocket key: {(string.IsNullOrEmpty(key) ? "NOT FOUND" : "found")}");
 
                 if (string.IsNullOrEmpty(key))
                 {
@@ -195,7 +195,7 @@ namespace LibmpvIptvClient.Services.WebRemote
                 ws = WebSocket.CreateFromStream(stream, true, null, TimeSpan.FromMinutes(30));
 
                 lock (_clientsLock) { _clients.Add(ws); }
-                Logger.Info($"[WebRemote] WebSocket client connected, state: {ws.State}");
+                Logger.Debug($"[WebRemote] WebSocket client connected, state: {ws.State}");
 
                 // Receive messages
                 var receiveBuf = new byte[8192];
@@ -234,11 +234,11 @@ namespace LibmpvIptvClient.Services.WebRemote
         {
             try
             {
-                Logger.Info($"[WebRemote] Received message: {message}");
+                Logger.Debug($"[WebRemote] Received message: {message}");
                 var json = JsonSerializer.Deserialize<JsonElement>(message);
                 if (!json.TryGetProperty("action", out var actionElem)) return;
                 var action = actionElem.GetString() ?? "";
-                Logger.Info($"[WebRemote] Action: {action}");
+                Logger.Debug($"[WebRemote] Action: {action}");
 
                 // 密码验证：除了 auth 动作外都需要验证
                 if (_requirePassword && action != "auth")
@@ -274,7 +274,7 @@ namespace LibmpvIptvClient.Services.WebRemote
                             {
                                 _authenticatedTokens.Add(ws.SubProtocol ?? "");
                             }
-                            Logger.Info("[WebRemote] Client authenticated successfully");
+                            Logger.Debug("[WebRemote] Client authenticated successfully");
                         }
                         else
                         {
@@ -290,10 +290,10 @@ namespace LibmpvIptvClient.Services.WebRemote
 
                     case "getChannels":
                         var groups = GetChannelsCallback?.Invoke() ?? new List<WebRemoteChannelGroup>();
-                        Logger.Info($"[WebRemote] getChannels returned {groups.Count} groups");
+                        Logger.Debug($"[WebRemote] getChannels returned {groups.Count} groups");
                         if (groups.Count > 0)
                         {
-                            Logger.Info($"[WebRemote] First group: {groups[0].Name}, channels: {groups[0].Channels.Count}");
+                            Logger.Debug($"[WebRemote] First group: {groups[0].Name}, channels: {groups[0].Channels.Count}");
                         }
                         result = new { groups, favorites = groups.FirstOrDefault(g => g.Name == "我的收藏")?.Channels ?? new List<WebRemoteChannel>() };
                         break;
@@ -353,7 +353,7 @@ namespace LibmpvIptvClient.Services.WebRemote
                 }
 
                 var response = JsonSerializer.Serialize(result, new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
-                Logger.Info($"[WebRemote] Sending response for {action}, length: {response.Length}, preview: {response.Substring(0, Math.Min(100, response.Length))}");
+                Logger.Debug($"[WebRemote] Sending response for {action}, length: {response.Length}, preview: {response.Substring(0, Math.Min(100, response.Length))}");
                 await ws.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(response)), WebSocketMessageType.Text, true, ct);
             }
             catch (Exception ex)

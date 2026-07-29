@@ -148,7 +148,7 @@ namespace LibmpvIptvClient.Services
                     }
                     try
                     {
-                        LibmpvIptvClient.Diagnostics.Logger.Info($"[Recordings.Remote] channel={channelIdOrName} total={hrefs.Count} video={videoCount} withMeta={withMetaCount}");
+                        LibmpvIptvClient.Diagnostics.Logger.Debug($"[Recordings.Remote] channel={channelIdOrName} total={hrefs.Count} video={videoCount} withMeta={withMetaCount}");
                     }
                     catch { }
                 }

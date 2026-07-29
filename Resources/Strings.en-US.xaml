@@ -464,4 +464,15 @@
   <sys:String x:Key="UI_Audio_VolumeGain">Volume Gain</sys:String>
   <sys:String x:Key="UI_Audio_VolumeMax">Max Volume</sys:String>
   <sys:String x:Key="UI_Audio_Delay">Audio Delay</sys:String>
+
+  <!-- User-facing Logs -->
+  <sys:String x:Key="Log_Live_Start">Live - {0}</sys:String>
+  <sys:String x:Key="Log_Catchup_Start">Catchup - {0}</sys:String>
+  <sys:String x:Key="Log_Timeshift_Start">Timeshift - {0}</sys:String>
+  <sys:String x:Key="Log_Deinterlace_Changed">Deinterlace: {0}</sys:String>
+  <sys:String x:Key="Log_Settings_Saved">Settings saved</sys:String>
+  <sys:String x:Key="Log_Record_Start">Recording started</sys:String>
+  <sys:String x:Key="Log_Record_Stop">Recording stopped</sys:String>
+  <sys:String x:Key="Log_Update_Paused">Download paused</sys:String>
+  <sys:String x:Key="Log_Update_Resumed">Download resumed</sys:String>
 </ResourceDictionary>

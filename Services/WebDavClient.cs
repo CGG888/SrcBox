@@ -94,14 +94,14 @@ namespace LibmpvIptvClient.Services
                 {
                     var code = (int)resp.StatusCode;
                     var cls = Classify(code);
-                    Logger.Info($"[WebDAV] TEST {SanUrl(baseUrl)} depth=0 status={code} class={cls} reason={resp.ReasonPhrase} elapsed={t0.ElapsedMilliseconds}ms selfSigned={_allowSelfSigned} {_authHint}");
+                    Logger.Debug($"[WebDAV] TEST {SanUrl(baseUrl)} depth=0 status={code} class={cls} reason={resp.ReasonPhrase} elapsed={t0.ElapsedMilliseconds}ms selfSigned={_allowSelfSigned} {_authHint}");
                 }
                 catch { }
                 return resp.IsSuccessStatusCode;
             }
             catch
             {
-                try { Logger.Info($"[WebDAV] TEST {SanUrl(baseUrl)} class=exception {_authHint}"); } catch { }
+                try { Logger.Debug($"[WebDAV] TEST {SanUrl(baseUrl)} class=exception {_authHint}"); } catch { }
                 return false;
             }
         }
@@ -117,14 +117,14 @@ namespace LibmpvIptvClient.Services
                 {
                     var code = (int)resp.StatusCode;
                     var cls = Classify(code);
-                    Logger.Info($"[WebDAV] MKCOL {SanUrl(url)} status={code} class={cls} reason={resp.ReasonPhrase} elapsed={t0.ElapsedMilliseconds}ms {_authHint}");
+                    Logger.Debug($"[WebDAV] MKCOL {SanUrl(url)} status={code} class={cls} reason={resp.ReasonPhrase} elapsed={t0.ElapsedMilliseconds}ms {_authHint}");
                 }
                 catch { }
                 return resp.IsSuccessStatusCode || (int)resp.StatusCode == 405 || (int)resp.StatusCode == 409;
             }
             catch
             {
-                try { Logger.Info($"[WebDAV] MKCOL {SanUrl(url)} class=exception {_authHint}"); } catch { }
+                try { Logger.Debug($"[WebDAV] MKCOL {SanUrl(url)} class=exception {_authHint}"); } catch { }
                 return false;
             }
         }
@@ -165,14 +165,14 @@ namespace LibmpvIptvClient.Services
                 {
                     var code = (int)resp.StatusCode;
                     var cls = Classify(code);
-                    Logger.Info($"[WebDAV] PUT {SanUrl(url)} size={data?.Length ?? 0} status={code} class={cls} reason={resp.ReasonPhrase} elapsed={t0.ElapsedMilliseconds}ms {_authHint}");
+                    Logger.Debug($"[WebDAV] PUT {SanUrl(url)} size={data?.Length ?? 0} status={code} class={cls} reason={resp.ReasonPhrase} elapsed={t0.ElapsedMilliseconds}ms {_authHint}");
                 }
                 catch { }
                 return resp.IsSuccessStatusCode;
             }
             catch
             {
-                try { Logger.Info($"[WebDAV] PUT {SanUrl(url)} class=exception {_authHint}"); } catch { }
+                try { Logger.Debug($"[WebDAV] PUT {SanUrl(url)} class=exception {_authHint}"); } catch { }
                 return false;
             }
         }
@@ -205,7 +205,7 @@ namespace LibmpvIptvClient.Services
                             {
                                 var code = (int)resp.StatusCode;
                                 var cls = Classify(code);
-                                Logger.Info($"[WebDAV] PUT {SanUrl(url)} size={fi.Length} status={code} class={cls} reason={resp.ReasonPhrase} elapsed={t0.ElapsedMilliseconds}ms kbps={(maxKBps>0?maxKBps:0)} {_authHint}");
+                                Logger.Debug($"[WebDAV] PUT {SanUrl(url)} size={fi.Length} status={code} class={cls} reason={resp.ReasonPhrase} elapsed={t0.ElapsedMilliseconds}ms kbps={(maxKBps>0?maxKBps:0)} {_authHint}");
                             }
                             catch { }
                             return resp.IsSuccessStatusCode;
@@ -215,7 +215,7 @@ namespace LibmpvIptvClient.Services
             }
             catch
             {
-                try { Logger.Info($"[WebDAV] PUT {SanUrl(url)} class=exception {_authHint}"); } catch { }
+                try { Logger.Debug($"[WebDAV] PUT {SanUrl(url)} class=exception {_authHint}"); } catch { }
                 return false;
             }
         }
@@ -266,14 +266,14 @@ namespace LibmpvIptvClient.Services
                 {
                     var code = (int)resp.StatusCode;
                     var cls = Classify(code);
-                    Logger.Info($"[WebDAV] DELETE {SanUrl(url)} status={code} class={cls} reason={resp.ReasonPhrase} elapsed={t0.ElapsedMilliseconds}ms {_authHint}");
+                    Logger.Debug($"[WebDAV] DELETE {SanUrl(url)} status={code} class={cls} reason={resp.ReasonPhrase} elapsed={t0.ElapsedMilliseconds}ms {_authHint}");
                 }
                 catch { }
                 return resp.IsSuccessStatusCode || (int)resp.StatusCode == 404;
             }
             catch
             {
-                try { Logger.Info($"[WebDAV] DELETE {SanUrl(url)} class=exception {_authHint}"); } catch { }
+                try { Logger.Debug($"[WebDAV] DELETE {SanUrl(url)} class=exception {_authHint}"); } catch { }
                 return false;
             }
         }
@@ -295,14 +295,14 @@ namespace LibmpvIptvClient.Services
                 {
                     var code = (int)resp.StatusCode;
                     var cls = Classify(code);
-                    Logger.Info($"[WebDAV] MOVE {SanUrl(srcUrl)} -> {SanUrl(dstUrl)} status={code} class={cls} reason={resp.ReasonPhrase} elapsed={t0.ElapsedMilliseconds}ms {_authHint}");
+                    Logger.Debug($"[WebDAV] MOVE {SanUrl(srcUrl)} -> {SanUrl(dstUrl)} status={code} class={cls} reason={resp.ReasonPhrase} elapsed={t0.ElapsedMilliseconds}ms {_authHint}");
                 }
                 catch { }
                 return resp.IsSuccessStatusCode;
             }
             catch
             {
-                try { Logger.Info($"[WebDAV] MOVE {SanUrl(srcUrl)} -> {SanUrl(dstUrl)} class=exception {_authHint}"); } catch { }
+                try { Logger.Debug($"[WebDAV] MOVE {SanUrl(srcUrl)} -> {SanUrl(dstUrl)} class=exception {_authHint}"); } catch { }
                 return false;
             }
         }
@@ -323,14 +323,14 @@ namespace LibmpvIptvClient.Services
                 {
                     var code = (int)resp.StatusCode;
                     var cls = Classify(code);
-                    Logger.Info($"[WebDAV] COPY {SanUrl(srcUrl)} -> {SanUrl(dstUrl)} status={code} class={cls} reason={resp.ReasonPhrase} elapsed={t0.ElapsedMilliseconds}ms {_authHint}");
+                    Logger.Debug($"[WebDAV] COPY {SanUrl(srcUrl)} -> {SanUrl(dstUrl)} status={code} class={cls} reason={resp.ReasonPhrase} elapsed={t0.ElapsedMilliseconds}ms {_authHint}");
                 }
                 catch { }
                 return resp.IsSuccessStatusCode;
             }
             catch
             {
-                try { Logger.Info($"[WebDAV] COPY {SanUrl(srcUrl)} -> {SanUrl(dstUrl)} class=exception {_authHint}"); } catch { }
+                try { Logger.Debug($"[WebDAV] COPY {SanUrl(srcUrl)} -> {SanUrl(dstUrl)} class=exception {_authHint}"); } catch { }
                 return false;
             }
         }
@@ -368,14 +368,14 @@ namespace LibmpvIptvClient.Services
                 {
                     var code = (int)resp.StatusCode;
                     var cls = Classify(code);
-                    Logger.Info($"[WebDAV] GET {SanUrl(url)} status={code} class={cls} reason={resp.ReasonPhrase} size={buf.Length} elapsed={t0.ElapsedMilliseconds}ms {_authHint}");
+                    Logger.Debug($"[WebDAV] GET {SanUrl(url)} status={code} class={cls} reason={resp.ReasonPhrase} size={buf.Length} elapsed={t0.ElapsedMilliseconds}ms {_authHint}");
                 }
                 catch { }
                 return (ok, buf);
             }
             catch
             {
-                try { Logger.Info($"[WebDAV] GET {SanUrl(url)} class=exception {_authHint}"); } catch { }
+                try { Logger.Debug($"[WebDAV] GET {SanUrl(url)} class=exception {_authHint}"); } catch { }
                 return (false, Array.Empty<byte>());
             }
         }
@@ -396,14 +396,14 @@ namespace LibmpvIptvClient.Services
                 {
                     var code = (int)resp.StatusCode;
                     var cls = Classify(code);
-                    Logger.Info($"[WebDAV] HEAD {SanUrl(url)} status={code} class={cls} reason={resp.ReasonPhrase} elapsed={t0.ElapsedMilliseconds}ms {_authHint}");
+                    Logger.Debug($"[WebDAV] HEAD {SanUrl(url)} status={code} class={cls} reason={resp.ReasonPhrase} elapsed={t0.ElapsedMilliseconds}ms {_authHint}");
                 }
                 catch { }
                 return (resp.IsSuccessStatusCode, size, lastmod);
             }
             catch
             {
-                try { Logger.Info($"[WebDAV] HEAD {SanUrl(url)} class=exception {_authHint}"); } catch { }
+                try { Logger.Debug($"[WebDAV] HEAD {SanUrl(url)} class=exception {_authHint}"); } catch { }
                 return (false, 0, null);
             }
         }
@@ -486,7 +486,7 @@ namespace LibmpvIptvClient.Services
                 {
                     var code = (int)resp.StatusCode;
                     var cls = Classify(code);
-                    Logger.Info($"[WebDAV] HEAD {SanUrl(url)} status={code} class={cls} size={size} lastmod={lm} elapsed={t0.ElapsedMilliseconds}ms {_authHint}");
+                    Logger.Debug($"[WebDAV] HEAD {SanUrl(url)} status={code} class={cls} size={size} lastmod={lm} elapsed={t0.ElapsedMilliseconds}ms {_authHint}");
                 }
                 catch { }
                 if (ok)
@@ -498,7 +498,7 @@ namespace LibmpvIptvClient.Services
             }
             catch
             {
-                try { Logger.Info($"[WebDAV] HEAD {SanUrl(url)} class=exception {_authHint}"); } catch { }
+                try { Logger.Debug($"[WebDAV] HEAD {SanUrl(url)} class=exception {_authHint}"); } catch { }
                 return (false, 0, null);
             }
         }
@@ -521,7 +521,7 @@ namespace LibmpvIptvClient.Services
                 {
                     var code = (int)resp.StatusCode;
                     var cls = Classify(code);
-                    Logger.Info($"[WebDAV] LIST {SanUrl(url)} depth={depth} status={code} class={cls} reason={resp.ReasonPhrase} elapsed={t0.ElapsedMilliseconds}ms {_authHint}");
+                    Logger.Debug($"[WebDAV] LIST {SanUrl(url)} depth={depth} status={code} class={cls} reason={resp.ReasonPhrase} elapsed={t0.ElapsedMilliseconds}ms {_authHint}");
                 }
                 catch { }
                 if (!ok) return res;
@@ -536,7 +536,7 @@ namespace LibmpvIptvClient.Services
             }
             catch
             {
-                try { Logger.Info($"[WebDAV] LIST {SanUrl(url)} class=exception {_authHint}"); } catch { }
+                try { Logger.Debug($"[WebDAV] LIST {SanUrl(url)} class=exception {_authHint}"); } catch { }
             }
             return res;
         }
@@ -559,7 +559,7 @@ namespace LibmpvIptvClient.Services
                 {
                     var code = (int)resp.StatusCode;
                     var cls = Classify(code);
-                    Logger.Info($"[WebDAV] LIST+ {SanUrl(url)} depth={depth} status={code} class={cls} reason={resp.ReasonPhrase} elapsed={t0.ElapsedMilliseconds}ms {_authHint}");
+                    Logger.Debug($"[WebDAV] LIST+ {SanUrl(url)} depth={depth} status={code} class={cls} reason={resp.ReasonPhrase} elapsed={t0.ElapsedMilliseconds}ms {_authHint}");
                 }
                 catch { }
                 if (!ok) return res;
@@ -602,7 +602,7 @@ namespace LibmpvIptvClient.Services
             }
             catch
             {
-                try { Logger.Info($"[WebDAV] LIST+ {SanUrl(url)} class=exception {_authHint}"); } catch { }
+                try { Logger.Debug($"[WebDAV] LIST+ {SanUrl(url)} class=exception {_authHint}"); } catch { }
             }
             return res;
         }

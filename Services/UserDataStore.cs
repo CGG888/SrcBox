@@ -39,7 +39,7 @@ namespace LibmpvIptvClient.Services
                 if (_data.Version <= 0) _data.Version = CurrentVersion;
                 if (_data.Favorites == null) _data.Favorites = new List<string>();
                 if (_data.History == null) _data.History = new List<HistoryItem>();
-                Logger.Info($"[UserDataStore.Load] favorites={_data.Favorites.Count} history={_data.History.Count}");
+                Logger.Debug($"[UserDataStore.Load] favorites={_data.Favorites.Count} history={_data.History.Count}");
             }
             catch (Exception ex)
             {
