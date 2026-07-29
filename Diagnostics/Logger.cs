@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 
 namespace LibmpvIptvClient.Diagnostics
@@ -26,11 +27,10 @@ namespace LibmpvIptvClient.Diagnostics
         private static readonly object _fileLock = new object();
         private static string _logDirectory = "";
         private static string _logFilePath = "";
-        private static int _logFileIndex = 1;
-        private static long _currentFileSize = 0;
+        private static string _debugLogFilePath = "";
+        private static string _currentDate = "";
 
-        private const long MAX_FILE_SIZE_BYTES = 5 * 1024 * 1024;
-        private const int MAX_LOG_FILES = 5;
+        private const int MAX_LOG_FILES = 14;
 
         public static void InitializeFileLogging(string logDir)
         {
@@ -42,27 +42,25 @@ namespace LibmpvIptvClient.Diagnostics
                 try { Directory.CreateDirectory(_logDirectory); } catch { return; }
             }
 
-            FindNextLogFileIndex();
-            _logFilePath = Path.Combine(_logDirectory, $"iptv_{DateTime.Now:yyyyMMdd}_{_logFileIndex:D2}.log");
-            _currentFileSize = 0;
+            _currentDate = DateTime.Now.ToString("yyyyMMdd");
+            _logFilePath = Path.Combine(_logDirectory, $"SrcBox-{_currentDate}.log");
+            _debugLogFilePath = Path.Combine(_logDirectory, $"SrcBox-{_currentDate}.debug.log");
 
             WriteToFile($"[SYSTEM] 日志文件创建: {_logFilePath}");
+            if (DebugEnabled)
+            {
+                WriteToDebugFile($"[SYSTEM] Debug日志文件创建: {_debugLogFilePath}");
+            }
         }
 
-        private static void FindNextLogFileIndex()
+        private static void EnsureLogPath()
         {
-            _logFileIndex = 1;
-            if (!Directory.Exists(_logDirectory)) return;
-
-            var existingFiles = Directory.GetFiles(_logDirectory, "iptv_*.log");
-            foreach (var f in existingFiles)
+            var today = DateTime.Now.ToString("yyyyMMdd");
+            if (today != _currentDate)
             {
-                var name = Path.GetFileNameWithoutExtension(f);
-                var parts = name.Split('_');
-                if (parts.Length >= 3 && int.TryParse(parts[2], out int idx))
-                {
-                    if (idx >= _logFileIndex) _logFileIndex = idx + 1;
-                }
+                _currentDate = today;
+                _logFilePath = Path.Combine(_logDirectory, $"SrcBox-{_currentDate}.log");
+                _debugLogFilePath = Path.Combine(_logDirectory, $"SrcBox-{_currentDate}.debug.log");
             }
         }
 
@@ -74,41 +72,51 @@ namespace LibmpvIptvClient.Diagnostics
             {
                 try
                 {
-                    if (_currentFileSize >= MAX_FILE_SIZE_BYTES)
-                    {
-                        _logFileIndex++;
-                        _logFilePath = Path.Combine(_logDirectory, $"iptv_{DateTime.Now:yyyyMMdd}_{_logFileIndex:D2}.log");
-                        _currentFileSize = 0;
-
-                        CleanupOldLogFiles();
-                    }
-
+                    EnsureLogPath();
                     var bytes = System.Text.Encoding.UTF8.GetBytes(message + Environment.NewLine);
                     using (var fs = new FileStream(_logFilePath, FileMode.Append, FileAccess.Write, FileShare.Read))
                     {
                         fs.Write(bytes, 0, bytes.Length);
                     }
-                    _currentFileSize += bytes.Length;
                 }
                 catch { }
             }
         }
 
-        private static void CleanupOldLogFiles()
+        private static void WriteToDebugFile(string message)
+        {
+            if (string.IsNullOrEmpty(_logDirectory)) return;
+
+            lock (_fileLock)
+            {
+                try
+                {
+                    EnsureLogPath();
+                    var bytes = System.Text.Encoding.UTF8.GetBytes(message + Environment.NewLine);
+                    using (var fs = new FileStream(_debugLogFilePath, FileMode.Append, FileAccess.Write, FileShare.Read))
+                    {
+                        fs.Write(bytes, 0, bytes.Length);
+                    }
+                }
+                catch { }
+            }
+        }
+
+        public static void CleanupOldLogFiles()
         {
             try
             {
                 if (!Directory.Exists(_logDirectory)) return;
 
-                var files = Directory.GetFiles(_logDirectory, "iptv_*.log");
+                var files = Directory.GetFiles(_logDirectory, "SrcBox-*.log");
                 if (files.Length <= MAX_LOG_FILES) return;
 
                 var sortedFiles = files
                     .Select(f => new FileInfo(f))
-                    .OrderBy(f => f.CreationTime)
+                    .OrderByDescending(f => f.CreationTime)
                     .ToList();
 
-                var toDelete = sortedFiles.Take(sortedFiles.Count - MAX_LOG_FILES);
+                var toDelete = sortedFiles.Skip(MAX_LOG_FILES);
                 foreach (var file in toDelete)
                 {
                     try { file.Delete(); } catch { }
@@ -121,10 +129,16 @@ namespace LibmpvIptvClient.Diagnostics
         {
             if (string.IsNullOrEmpty(_logDirectory) || !Directory.Exists(_logDirectory)) return null;
 
-            var files = Directory.GetFiles(_logDirectory, "iptv_*.log");
-            if (files.Length == 0) return null;
+            EnsureLogPath();
+            return _logFilePath;
+        }
 
-            return files.OrderByDescending(f => new FileInfo(f).CreationTime).FirstOrDefault();
+        public static string? GetLatestDebugLogFile()
+        {
+            if (string.IsNullOrEmpty(_logDirectory) || !Directory.Exists(_logDirectory)) return null;
+
+            EnsureLogPath();
+            return _debugLogFilePath;
         }
 
         public static string? GetLogDirectory() => _logDirectory;
@@ -177,15 +191,17 @@ namespace LibmpvIptvClient.Diagnostics
                 _ => "INFO"
             };
 
-            var tag = GetTag(message);
             var displayMsg = GetDisplayMessage(message);
-            var displayMsg2 = string.IsNullOrEmpty(tag) ? displayMsg : message.Contains("]") ? message.Substring(message.IndexOf(']') + 1).TrimStart(' ', ']') : message;
-
-            var displayFormat = $"[{DateTime.Now:HH:mm:ss}] [{prefix}] {displayMsg2}";
+            var displayFormat = $"[{DateTime.Now:HH:mm:ss}] [{prefix}] {displayMsg}";
             var fileFormat = $"[{DateTime.Now:HH:mm:ss.fff}][{prefix}][{fileName}.{caller}] {LogRedactor.Redact(message)}";
 
             OnMessage?.Invoke(displayFormat);
             OnMessageLeveled?.Invoke(level, fileFormat);
+
+            if (level == LogLevel.Debug || level == LogLevel.Trace)
+            {
+                WriteToDebugFile(fileFormat);
+            }
             WriteToFile(fileFormat);
         }
 

@@ -1,5 +1,6 @@
 using System;
 using System.IO;
+using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using LibmpvIptvClient.Diagnostics;
@@ -18,6 +19,28 @@ namespace LibmpvIptvClient
             Closed += OnClosed;
             PreviewKeyDown += OnPreviewKeyDown;
             UpdateDebugButton();
+            LoadRecentLog();
+        }
+
+        private void LoadRecentLog()
+        {
+            try
+            {
+                var latestLog = Logger.GetLatestLogFile();
+                if (!string.IsNullOrEmpty(latestLog) && File.Exists(latestLog))
+                {
+                    var lines = File.ReadAllLines(latestLog);
+                    foreach (var line in lines)
+                    {
+                        if (!string.IsNullOrWhiteSpace(line))
+                        {
+                            TxtLog.AppendText(line + Environment.NewLine);
+                        }
+                    }
+                    TxtLog.ScrollToEnd();
+                }
+            }
+            catch { }
         }
 
         void OnLog(string msg)
@@ -92,8 +115,15 @@ namespace LibmpvIptvClient
                     return;
                 }
 
-                var files = Directory.GetFiles(logDir, "iptv_*.log");
+                var files = Directory.GetFiles(logDir, "SrcBox-*.log");
                 if (files.Length == 0)
+                {
+                    WinDialog.Show("没有找到日志文件", "导出失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
+                var latestLog = Logger.GetLatestLogFile();
+                if (string.IsNullOrEmpty(latestLog) || !File.Exists(latestLog))
                 {
                     WinDialog.Show("没有找到日志文件", "导出失败", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
@@ -102,26 +132,14 @@ namespace LibmpvIptvClient
                 var saveDialog = new Microsoft.Win32.SaveFileDialog
                 {
                     Filter = "日志文件 (*.log)|*.log|所有文件 (*.*)|*.*",
-                    FileName = $"iptv_log_{DateTime.Now:yyyyMMdd_HHmmss}.log",
+                    FileName = $"SrcBox-{DateTime.Now:yyyyMMdd}.log",
                     Title = "导出日志"
                 };
 
                 if (saveDialog.ShowDialog() == true)
                 {
-                    var latestLog = Logger.GetLatestLogFile();
-                    if (!string.IsNullOrEmpty(latestLog) && File.Exists(latestLog))
-                    {
-                        File.Copy(latestLog, saveDialog.FileName, true);
-                        WinDialog.Show($"日志已导出到:\n{saveDialog.FileName}", "导出成功", MessageBoxButton.OK, MessageBoxImage.Information);
-                    }
-                    else
-                    {
-                        using (var writer = new StreamWriter(saveDialog.FileName))
-                        {
-                            writer.Write(TxtLog.Text);
-                        }
-                        WinDialog.Show($"当前会话日志已导出到:\n{saveDialog.FileName}", "导出成功", MessageBoxButton.OK, MessageBoxImage.Information);
-                    }
+                    File.Copy(latestLog, saveDialog.FileName, true);
+                    WinDialog.Show($"日志已导出到:\n{saveDialog.FileName}", "导出成功", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
             catch (Exception ex)

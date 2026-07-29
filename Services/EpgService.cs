@@ -309,7 +309,7 @@ namespace LibmpvIptvClient.Services
 
         public EpgProgram? GetCurrentProgram(string tvgId, string? channelName = null)
         {
-            var list = GetPrograms(tvgId, channelName);
+            var list = GetPrograms(tvgId, null, channelName);
             var now = DateTime.Now;
             // 优化：节目表可能跨越日期，或者节目时间存在时区偏差
             // 1. 直接查找包含当前时间的节目
@@ -328,7 +328,7 @@ namespace LibmpvIptvClient.Services
         public EpgProgram? GetProgramAt(string tvgId, DateTime timeLocal, string? channelName = null)
         {
             if (!ValidateTimeRange(timeLocal)) return null;
-            var list = GetPrograms(tvgId, channelName);
+            var list = GetPrograms(tvgId, null, channelName);
             var hit = list.FirstOrDefault(p => timeLocal >= p.Start && timeLocal < p.End);
             if (hit != null) return hit;
             var recent = list.LastOrDefault(p => p.End <= timeLocal && (timeLocal - p.End).TotalMinutes < 15);
