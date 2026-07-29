@@ -26,7 +26,28 @@ namespace LibmpvIptvClient.Services
                 {
                     if (Uri.TryCreate(m3uUrl, UriKind.Absolute, out var u) && (u.Scheme == Uri.UriSchemeHttp || u.Scheme == Uri.UriSchemeHttps))
                     {
-                        fromM3u = await _m3u.ParseFromUrlAsync(m3uUrl);
+                        bool cacheEnabled = AppSettings.Current?.EnableM3uCache ?? true;
+
+                        if (cacheEnabled)
+                        {
+                            var (cached, fromCache) = await M3UCacheService.Instance.LoadFromCacheAsync(m3uUrl);
+                            if (cached != null && cached.Count > 0)
+                            {
+                                fromM3u = cached;
+                            }
+                            else
+                            {
+                                fromM3u = await _m3u.ParseFromUrlAsync(m3uUrl);
+                                if (fromM3u.Count > 0)
+                                {
+                                    await M3UCacheService.Instance.SaveToCacheAsync(m3uUrl, fromM3u);
+                                }
+                            }
+                        }
+                        else
+                        {
+                            fromM3u = await _m3u.ParseFromUrlAsync(m3uUrl);
+                        }
                     }
                     else if (System.IO.File.Exists(m3uUrl))
                     {
