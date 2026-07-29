@@ -61,7 +61,7 @@ namespace LibmpvIptvClient.Services
             {
                 UseProxy = true,
                 Proxy = proxy,
-                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate,
+                AutomaticDecompression = DecompressionMethods.GZip | DecompressionMethods.Deflate | DecompressionMethods.Brotli,
                 AllowAutoRedirect = true,
                 ConnectTimeout = TimeSpan.FromSeconds(10)
             };
