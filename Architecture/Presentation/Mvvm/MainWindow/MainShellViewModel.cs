@@ -764,10 +764,10 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         /// 必须在 LoadChannels 后、UpdateFavorites 前调用。
         /// 之前漏掉了这一步，导致重启后 Channel.Favorite 全部为 false，收藏目录永远为空。
         /// </summary>
-        public void ApplyFavoritesFromStore()
+        public void ApplyFavoritesFromStore(List<Channel> channels)
         {
-            if (UserDataStore == null || Channels == null) return;
-            foreach (var c in Channels)
+            if (UserDataStore == null || channels == null) return;
+            foreach (var c in channels)
             {
                 if (c == null) continue;
                 try
@@ -775,7 +775,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                     var key = UserDataStore.ComputeKey(c);
                     c.Favorite = UserDataStore.IsFavorite(key);
                 }
-                catch { /* 单个频道失败不影响其他 */ }
+                catch { }
             }
         }
 
@@ -799,70 +799,68 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         public async System.Threading.Tasks.Task LoadChannels(string url)
         {
             if (ChannelService == null) return;
-            
+
             try
             {
                 LibmpvIptvClient.Diagnostics.Logger.Log("开始加载频道: " + url);
-                
-                Channels = await SourceLoader.LoadChannelsAsync(ChannelService, url, msg => LibmpvIptvClient.Diagnostics.Logger.Log(msg));
 
-                ChannelListActions.ComputeGlobalIndices(Channels);
+                var loadedChannels = await SourceLoader.LoadChannelsAsync(ChannelService, url, msg => LibmpvIptvClient.Diagnostics.Logger.Log(msg));
 
-                // 修复 Bug #1：从持久化的 UserDataStore 还原所有 Channel.Favorite 标记
-                // 必须在 ComputeGlobalIndices 之后、UpdateFavorites 之前调用
-                ApplyFavoritesFromStore();
+                ChannelListActions.ComputeGlobalIndices(loadedChannels);
 
-                ApplyChannelFilter();
-                
-                if (Channels.Count == 0)
+                ApplyFavoritesFromStore(loadedChannels);
+
+                var filterResult = ChannelListActions.BuildChannelFilterResult(loadedChannels, SearchText, SelectedGroup);
+                var groupsResult = ChannelListActions.BuildGroups(loadedChannels);
+                var favoritesResult = ChannelInteractionActions.BuildFavoriteList(loadedChannels, c => UserDataStore.ComputeKey(c));
+
+                if (loadedChannels.Count == 0)
                 {
                     LibmpvIptvClient.Diagnostics.Logger.Log("未解析到频道");
                 }
 
-                // EPG URL logic
                 var epgUrl = AppSettings.Current.CustomEpgUrl;
                 if (string.IsNullOrWhiteSpace(epgUrl) && M3UParser != null)
                 {
                     epgUrl = M3UParser.TvgUrl;
                 }
-                
-                // DNS/Preheat
-                try 
-                { 
-                    LibmpvIptvClient.Services.DnsPrefetcher.PrefetchForChannels(Channels, maxHosts: 60); 
-                    LibmpvIptvClient.Services.ConnectionPreheater.PreheatForChannels(Channels, maxHosts: 30);
-                } 
+
+                try
+                {
+                    LibmpvIptvClient.Services.DnsPrefetcher.PrefetchForChannels(loadedChannels, maxHosts: 60);
+                    LibmpvIptvClient.Services.ConnectionPreheater.PreheatForChannels(loadedChannels, maxHosts: 30);
+                }
                 catch { }
-                
-                UpdateGroups();
-                UpdateFavorites();
-                LoadHistory();
-                
-                // EPG Load
+
+                await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    Channels = loadedChannels;
+                    FilteredChannels = filterResult.Channels;
+                    FilterCountText = filterResult.CountText;
+                    ChannelGroups = groupsResult;
+                    Favorites = favoritesResult;
+                    LoadHistory();
+                });
+
                 if (!string.IsNullOrEmpty(epgUrl) && _epgService != null)
                 {
                     LibmpvIptvClient.Diagnostics.Logger.Log("正在加载 EPG: " + epgUrl);
-                    _ = System.Threading.Tasks.Task.Run(async () => 
+                    _ = System.Threading.Tasks.Task.Run(async () =>
                     {
-                        try 
+                        try
                         {
                             await _epgService.LoadEpgAsync(epgUrl);
-                            System.Windows.Application.Current.Dispatcher.Invoke(() => 
+                            System.Windows.Application.Current.Dispatcher.Invoke(() =>
                             {
-                                EpgActions.SyncChannelCurrentProgramTitles(Channels, ch => _epgService.GetCurrentProgram(ch.TvgId, ch.Name));
+                                EpgActions.SyncChannelCurrentProgramTitles(loadedChannels, ch => _epgService.GetCurrentProgram(ch.TvgId, ch.Name));
                             });
-                            System.Windows.Application.Current.Dispatcher.Invoke(async () => 
-                            { 
-                                try { await RecordingActions.LoadRecordingsLocalGroupedAsync(Channels, _epgService); } catch { } 
+                            System.Windows.Application.Current.Dispatcher.Invoke(async () =>
+                            {
+                                try { await RecordingActions.LoadRecordingsLocalGroupedAsync(loadedChannels, _epgService); } catch { }
                             });
                         }
                         catch (Exception ex) { LibmpvIptvClient.Diagnostics.Logger.Log("EPG 加载失败: " + ex.Message); }
                     });
-                }
-                
-                if (_epgService != null)
-                {
-                    await RecordingActions.LoadRecordingsLocalGroupedAsync(Channels, _epgService);
                 }
             }
             catch (Exception ex)
