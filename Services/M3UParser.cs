@@ -88,7 +88,7 @@ namespace LibmpvIptvClient.Services
             if (startIdx >= 0 && lines[startIdx].StartsWith("#EXTM3U", StringComparison.OrdinalIgnoreCase))
             {
                 var header = lines[startIdx];
-                var headerAttrs = ParseAttributes(header.Substring("#EXTM3U".Length));
+                var headerAttrs = ParseAttributes(header.AsSpan().Slice("#EXTM3U".Length));
                 if (headerAttrs.TryGetValue("x-tvg-url", out var tvg)) TvgUrl = tvg;
                 else if (headerAttrs.TryGetValue("url-tvg", out var utvg)) TvgUrl = utvg;
             }
@@ -105,7 +105,7 @@ namespace LibmpvIptvClient.Services
                 {
                     if (currentInf != null)
                     {
-                        var ch = BuildChannel(currentInf, line, baseUri);
+                        var ch = BuildChannel(currentInf.AsSpan(), line, baseUri);
                         if (ch != null) channels.Add(ch);
                     }
                     currentInf = null;
@@ -113,28 +113,26 @@ namespace LibmpvIptvClient.Services
             }
             return channels;
         }
-        Channel? BuildChannel(string extinf, string url, Uri? baseUri)
+        Channel? BuildChannel(ReadOnlySpan<char> extinf, string url, Uri? baseUri)
         {
             var attrs = ParseAttributes(extinf);
             var name = ParseDisplayName(extinf);
             var groupTitle = attrs.GetValueOrDefault("group-title") ?? "";
             var logoValue = attrs.GetValueOrDefault("tvg-logo") ?? attrs.GetValueOrDefault("logo") ?? "";
-            var ch = new Channel
-            {
-                Id = attrs.TryGetValue("tvg-id", out var tid) ? tid : "",
-                Name = name ?? "",
-                Group = string.Intern(groupTitle),
-                Logo = string.Intern(logoValue),
-                TvgId = attrs.TryGetValue("tvg-id", out var tid2) ? tid2 : "",
-                TvgName = attrs.GetValueOrDefault("tvg-name") ?? "",
-                Catchup = attrs.GetValueOrDefault("catchup") ?? "",
-                CatchupSource = attrs.GetValueOrDefault("catchup-source") ?? ""
-            };
+            var ch = ChannelPool.Rent();
+            ch.Id = attrs.TryGetValue("tvg-id", out var tid) ? tid : "";
+            ch.Name = name ?? "";
+            ch.Group = string.Intern(groupTitle);
+            ch.Logo = string.Intern(logoValue);
+            ch.TvgId = attrs.TryGetValue("tvg-id", out var tid2) ? tid2 : "";
+            ch.TvgName = attrs.GetValueOrDefault("tvg-name") ?? "";
+            ch.Catchup = attrs.GetValueOrDefault("catchup") ?? "";
+            ch.CatchupSource = attrs.GetValueOrDefault("catchup-source") ?? "";
 
             // Fallback: If logo is empty, try to extract from #EXTINF: -1 logo="http://..."
             if (string.IsNullOrEmpty(ch.Logo))
             {
-                var logoMatch = Regex.Match(extinf, @"logo=[""']([^""']+)[""']");
+                var logoMatch = Regex.Match(extinf.ToString(), @"logo=[""']([^""']+)[""']");
                 if (logoMatch.Success)
                 {
                     ch.Logo = logoMatch.Groups[1].Value;
@@ -188,7 +186,7 @@ namespace LibmpvIptvClient.Services
             var src = new Source
             {
                 Id = Convert.ToHexString(Encoding.UTF8.GetBytes(ch.Id + "|" + u)),
-                Name = suffix, // 将 $ 后面的内容作为源名称（如“组播高清”）
+                Name = suffix,
                 ChannelId = ch.Id,
                 Url = u,
                 Protocol = GuessProtocol(u),
@@ -197,13 +195,6 @@ namespace LibmpvIptvClient.Services
             };
             ch.Tag = src;
             ch.Sources.Add(src);
-
-            // 确保 Logo 不为空，使用默认图标
-            if (string.IsNullOrWhiteSpace(ch.Logo))
-            {
-                // 可以设置为特定的默认图标 URL，或者留空让前端处理
-                // ch.Logo = "pack://application:,,,/srcbox.png"; 
-            }
 
             return ch;
         }
@@ -243,16 +234,11 @@ namespace LibmpvIptvClient.Services
         static string NormalizeUrl(string input, Uri? baseUri)
         {
             var s = input.Trim();
-            // 先尝试移除后缀（$及其后面的内容）
             var idxDollar = s.IndexOf('$');
             if (idxDollar > 0) s = s.Substring(0, idxDollar).Trim();
 
-            // 移除尾部逗号
             if (s.EndsWith(",")) s = s.TrimEnd(',');
 
-            // 检查是否已经是有效 URL
-            // 对于 rtp2httpd 等本地代理地址，可能包含中文或特殊字符，IsValidAbsoluteUrl 可能会失败
-            // 只要看起来像 HTTP/RTP 协议，就应该保留
             if (s.StartsWith("http", StringComparison.OrdinalIgnoreCase) || 
                 s.StartsWith("rtp", StringComparison.OrdinalIgnoreCase) || 
                 s.StartsWith("udp", StringComparison.OrdinalIgnoreCase) ||
@@ -263,7 +249,6 @@ namespace LibmpvIptvClient.Services
 
             if (IsValidAbsoluteUrl(s)) return s;
 
-            // Fallback: 尝试移除空格 (针对某些带参数的 URL)
             var idxSpace = s.IndexOf(' ');
             if (idxSpace > 0)
             {
@@ -279,13 +264,10 @@ namespace LibmpvIptvClient.Services
         }
         static string ResolveUrl(string url, Uri? baseUri)
         {
-            // 对于 rtp2httpd 等本地代理地址，IsValidAbsoluteUrl 可能会因为中文字符等原因失败，但 Uri.TryCreate 仍然可能成功解析为 Absolute
             if (Uri.TryCreate(url, UriKind.Absolute, out var abs)) return abs.ToString();
             
-            // 如果 baseUri 存在，尝试作为相对路径解析
             if (baseUri != null && Uri.TryCreate(baseUri, url, out var rel)) return rel.ToString();
             
-            // 如果都失败了，直接返回原始 url (可能是包含非标准字符的绝对路径)
             return url;
         }
         static StreamProtocol GuessProtocol(string url)
@@ -299,111 +281,82 @@ namespace LibmpvIptvClient.Services
             if (u.StartsWith("http://") || u.StartsWith("https://")) return StreamProtocol.HTTP;
             return StreamProtocol.FILE;
         }
-        static Dictionary<string, string> ParseAttributes(string input)
+        static Dictionary<string, string> ParseAttributes(ReadOnlySpan<char> input)
         {
             var dict = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-            
-            // 跳过 #EXTINF: 部分
+
             int startIdx = 0;
             if (input.StartsWith("#EXTINF", StringComparison.OrdinalIgnoreCase))
             {
                 int colon = input.IndexOf(':');
-                if (colon > 0) startIdx = colon + 1;
-                else startIdx = 7;
+                startIdx = colon > 0 ? colon + 1 : 7;
             }
 
-            // 扫描整个字符串，提取 key="value" 或 key=value
-            // 我们不依赖“最后一个逗号”来截断，因为频道名也可能不包含逗号，或者属性值包含逗号
-            // 使用状态机逐字符扫描是最稳妥的
-            
             int i = startIdx;
             int len = input.Length;
-            
+
             while (i < len)
             {
-                // 跳过空白
                 while (i < len && char.IsWhiteSpace(input[i])) i++;
                 if (i >= len) break;
 
-                // 如果遇到逗号，这可能是属性之间的（虽然不规范），也可能是频道名的开始
-                // 但如果逗号后面紧跟的是 key=value 格式，则继续解析
-                // 如果是单纯的逗号，我们尝试跳过它
                 if (input[i] == ',')
                 {
-                    // 检查逗号后面是否还有属性
-                    // 如果后面是普通文本且不包含 '='，很可能是频道名了，停止解析
-                    int nextEq = input.IndexOf('=', i);
-                    if (nextEq < 0) break; // 后面没有等号了，肯定是频道名
-                    
-                    // 简单的启发式：如果等号前有空格或逗号，说明可能是个 key
-                    // 我们这里简单跳过逗号继续尝试
+                    int nextEq = input.Slice(i).IndexOf('=');
+                    if (nextEq < 0) break;
                     i++;
                     continue;
                 }
 
-                // 读取 Key
                 int keyStart = i;
                 while (i < len && (char.IsLetterOrDigit(input[i]) || input[i] == '-' || input[i] == '_' || input[i] == '.'))
                 {
                     i++;
                 }
-                
-                string key = input.Substring(keyStart, i - keyStart);
-                if (string.IsNullOrEmpty(key)) 
-                {
-                    // 遇到非 key 字符（且不是逗号/空格），可能是频道名开始了
-                    // 比如直接是 "CCTV-1"
-                    break; 
-                }
 
-                // 期望 key 后面紧跟 '='
-                // 允许 key 和 = 之间有空格（虽然不规范）
+                var key = input.Slice(keyStart, i - keyStart).ToString();
+                if (key.Length == 0) break;
+
                 while (i < len && char.IsWhiteSpace(input[i])) i++;
-                
+
                 if (i >= len || input[i] != '=')
                 {
-                    // 不是属性赋值，可能是时长参数（如 -1）或频道名的一部分
-                    // 如果是数字（时长），忽略它
                     if (int.TryParse(key, out _)) continue;
-                    
-                    // 否则认为是频道名开始，停止解析
                     break;
                 }
-                
-                i++; // 跳过 '='
-                
-                // 跳过值前的空白
+
+                i++;
+
                 while (i < len && char.IsWhiteSpace(input[i])) i++;
                 if (i >= len) break;
 
-                string value = "";
+                string value;
                 if (input[i] == '"')
                 {
-                    // 带引号的值
-                    i++; // 跳过 "
+                    i++;
                     int valStart = i;
                     while (i < len && input[i] != '"') i++;
-                    value = input.Substring(valStart, i - valStart);
-                    if (i < len) i++; // 跳过闭合 "
+                    value = input.Slice(valStart, i - valStart).ToString();
+                    if (i < len) i++;
                 }
                 else
                 {
-                    // 不带引号的值，读取到空格或逗号为止
                     int valStart = i;
                     while (i < len && !char.IsWhiteSpace(input[i]) && input[i] != ',') i++;
-                    value = input.Substring(valStart, i - valStart);
+                    value = input.Slice(valStart, i - valStart).ToString();
                 }
 
                 dict[key] = value;
             }
-            
+
             return dict;
         }
-        static string? ParseDisplayName(string extinf)
+
+        static string? ParseDisplayName(ReadOnlySpan<char> extinf)
         {
             var comma = extinf.LastIndexOf(',');
             if (comma < 0) return null;
-            return extinf.Substring(comma + 1).Trim();
+            return extinf.Slice(comma + 1).Trim().ToString();
         }
     }
 }

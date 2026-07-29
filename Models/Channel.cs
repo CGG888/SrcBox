@@ -48,5 +48,24 @@ namespace LibmpvIptvClient.Models
         
         public event PropertyChangedEventHandler? PropertyChanged;
         protected void OnPropertyChanged([CallerMemberName] string? name = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
+        public void Reset()
+        {
+            Id = "";
+            Name = "";
+            Group = "";
+            _logo = "";
+            TvgId = "";
+            TvgName = "";
+            Catchup = "";
+            CatchupSource = "";
+            _favorite = false;
+            _playing = false;
+            _currentProgramTitle = "";
+            Tag = null;
+            Sources.Clear();
+            DisplayIndex = 0;
+            GlobalIndex = 0;
+        }
     }
 }
