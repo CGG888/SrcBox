@@ -42,12 +42,12 @@ namespace LibmpvIptvClient.Services
                 // 简单的缓存策略：文件存在且小于 12 小时则直接使用
                 if (File.Exists(cachePath) && (DateTime.Now - File.GetLastWriteTime(cachePath)).TotalHours < 12)
                 {
-                    LibmpvIptvClient.Diagnostics.Logger.Log("Loading EPG from cache...");
+                    LibmpvIptvClient.Diagnostics.Logger.Info("正在从缓存加载节目单...");
                     data = await File.ReadAllBytesAsync(cachePath);
                 }
                 else
                 {
-                    LibmpvIptvClient.Diagnostics.Logger.Log($"Downloading EPG from {url}...");
+                    LibmpvIptvClient.Diagnostics.Logger.Info("正在下载节目单...");
                     try
                     {
                         data = await _http.GetByteArrayAsyncWithRetry(url);
@@ -61,7 +61,7 @@ namespace LibmpvIptvClient.Services
                     _ = File.WriteAllBytesAsync(cachePath, data);
                 }
 
-                LibmpvIptvClient.Diagnostics.Logger.Log($"EPG Data Length: {data.Length} bytes");
+                LibmpvIptvClient.Diagnostics.Logger.Info($"节目单数据大小: {data.Length} bytes");
 
                 using var ms = new MemoryStream(data);
                 Stream stream = ms;
@@ -69,16 +69,16 @@ namespace LibmpvIptvClient.Services
                 // Check for GZIP
                 if (data.Length > 2 && data[0] == 0x1F && data[1] == 0x8B)
                 {
-                    LibmpvIptvClient.Diagnostics.Logger.Log("EPG is GZIP compressed.");
+                    LibmpvIptvClient.Diagnostics.Logger.Info("节目单已解压");
                     stream = new GZipStream(ms, CompressionMode.Decompress);
                 }
                 else
                 {
-                    LibmpvIptvClient.Diagnostics.Logger.Log("EPG is plain XML.");
+                    LibmpvIptvClient.Diagnostics.Logger.Info("节目单格式: XML");
                 }
 
                 await Task.Run(() => ParseXml(stream));
-                LibmpvIptvClient.Diagnostics.Logger.Log($"EPG 加载完成，包含 {_programs.Count} 个频道");
+                LibmpvIptvClient.Diagnostics.Logger.Info($"节目单加载完成，包含 {_programs.Count} 个频道");
             }
             catch (Exception ex)
             {

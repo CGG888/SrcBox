@@ -87,7 +87,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 {
                     try
                     {
-                        LibmpvIptvClient.Diagnostics.Logger.Log("[Fullscreen] Setting mpv parent to FullscreenPanel");
+                        LibmpvIptvClient.Diagnostics.Logger.Info("进入全屏");
                         ctx.Mpv.SetWid(FullscreenPanel.Handle);
                     }
                     catch (Exception ex)
@@ -165,7 +165,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 {
                     try
                     {
-                        LibmpvIptvClient.Diagnostics.Logger.Log("[Fullscreen] Restoring mpv parent to WindowedPanel");
+                        LibmpvIptvClient.Diagnostics.Logger.Info("退出全屏");
                         ctx.Mpv.SetWid(ctx.WindowedPanel.Handle);
                     }
                     catch (Exception ex)

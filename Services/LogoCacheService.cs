@@ -117,7 +117,7 @@ namespace LibmpvIptvClient.Services
                 var dir = EnsureCacheDir();
                 var marker = Path.Combine(dir, Sha1(url) + NegExt);
                 File.WriteAllText(marker, "neg");
-                try { Logger.Log($"[LogoCache] NEG-WRITE {marker}"); } catch { }
+                try { Logger.Debug($"[LogoCache] NEG-WRITE {marker}"); } catch { }
             }
             catch { }
         }
@@ -144,7 +144,7 @@ namespace LibmpvIptvClient.Services
                         Directory.CreateDirectory(fallback);
                         AppSettings.Current.Logo.CacheDir = fallback;
                         AppSettings.Current.Save();
-                        try { Logger.Log($"[LogoCache] DIR FALLBACK {fallback} (no write permission in EXE dir)"); } catch { }
+                        try { Logger.Info($"Logo缓存目录切换: {fallback}"); } catch { }
                         return fallback;
                     }
                 }

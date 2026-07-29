@@ -78,7 +78,7 @@ namespace LibmpvIptvClient.Services
                 }
                 catch { }
             }
-            LibmpvIptvClient.Diagnostics.Logger.Log("M3U频道数量 " + fromM3u.Count);
+            LibmpvIptvClient.Diagnostics.Logger.Info("M3U频道数量 " + fromM3u.Count);
             if (fromM3u.Count > 0)
             {
                 try
@@ -97,7 +97,7 @@ namespace LibmpvIptvClient.Services
                 }
             }
             catch { }
-            LibmpvIptvClient.Diagnostics.Logger.Log("后端频道数量 " + fromChecker.Count);
+            LibmpvIptvClient.Diagnostics.Logger.Info("后端频道数量 " + fromChecker.Count);
             var merged = MergeChannels(fromM3u, fromChecker, m3uPriority);
             
             // Apply custom logo URL pattern if configured

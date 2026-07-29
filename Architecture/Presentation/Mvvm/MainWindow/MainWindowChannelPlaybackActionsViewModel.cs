@@ -226,7 +226,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 url = ProcessUrlPlaceholders(url, prog.Start, prog.End, AppSettings.Current.Replay.AppendEpgTime);
                 try { url = LibmpvIptvClient.Services.UrlTimeRewriter.RewriteIfEnabled(AppSettings.Current, url, prog.Start, prog.End, false); } catch { }
 
-                LibmpvIptvClient.Diagnostics.Logger.Info($"[Replay] Start Catchup - Program: {prog.Title}, Channel: {ch.Name}, Time: {prog.Start:HH:mm}-{prog.End:HH:mm}, URL: {url}");
+                LibmpvIptvClient.Diagnostics.Logger.Info($"开始回看: {prog.Title} ({prog.Start:HH:mm}-{prog.End:HH:mm})");
                 _shell.PlayerEngine.Play(url);
                 _shell.CurrentUrl = url;
                 RequestVideoShow?.Invoke();

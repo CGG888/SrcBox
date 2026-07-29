@@ -100,7 +100,7 @@ public class M3UCacheService
             var ttl = AppSettings.Current?.M3uCacheTtlHours ?? meta.CacheTtlHours;
             if ((DateTime.Now - meta.CachedAt).TotalHours > ttl)
             {
-                Logger.Log($"[M3U Cache] Cache expired (TTL={ttl}h), will refresh");
+                Logger.Info($"M3U缓存已过期 (TTL={ttl}h)，将刷新");
                 return (null, false);
             }
 
@@ -128,24 +128,24 @@ public class M3UCacheService
 
                             if (!string.IsNullOrEmpty(serverEtag) && !string.Equals(meta.ETag, serverEtag, StringComparison.Ordinal))
                             {
-                                Logger.Log("[M3U Cache] ETag changed, need refresh");
+                                Logger.Info("M3U缓存ETag已变化，需要刷新");
                                 needRefresh = true;
                             }
                             else if (!string.IsNullOrEmpty(serverLastModified) && !string.Equals(meta.LastModified, serverLastModified, StringComparison.Ordinal))
                             {
-                                Logger.Log("[M3U Cache] LastModified changed, need refresh");
+                                Logger.Info("M3U缓存已修改，需要刷新");
                                 needRefresh = true;
                             }
                         }
                     }
                     catch (Exception ex)
                     {
-                        Logger.Log($"[M3U Cache] HEAD request failed: {ex.Message}, relying on TTL");
+                        Logger.Debug($"[M3U缓存] HEAD请求失败: {ex.Message}，依赖TTL判断");
                     }
                 }
                 else
                 {
-                    Logger.Log("[M3U Cache] Dynamic URL detected (contains token/timestamp), relying on TTL for cache validity");
+                    Logger.Info("M3U URL包含动态参数，依赖TTL判断");
                 }
             }
             else if (File.Exists(url))
@@ -154,7 +154,7 @@ public class M3UCacheService
                 var fileLastModified = fileInfo.LastWriteTimeUtc.ToString("O");
                 if (!string.Equals(meta.LastModified, fileLastModified, StringComparison.Ordinal))
                 {
-                    Logger.Log("[M3U Cache] Local file modified, need refresh");
+                    Logger.Info("M3U本地文件已修改，需要刷新");
                     needRefresh = true;
                 }
             }
@@ -174,7 +174,7 @@ public class M3UCacheService
                 var channels = JsonSerializer.Deserialize<List<Channel>>(data, options);
                 if (channels != null)
                 {
-                    Logger.Log($"[M3U Cache] Loaded {channels.Count} channels from cache");
+                    Logger.Info($"从缓存加载了 {channels.Count} 个频道");
                     return (channels, true);
                 }
             }
@@ -224,7 +224,7 @@ public class M3UCacheService
             var metaJson = JsonSerializer.Serialize(meta, new JsonSerializerOptions { WriteIndented = false });
             await File.WriteAllTextAsync(metaPath, metaJson);
 
-            Logger.Log($"[M3U Cache] Saved {channels.Count} channels to cache");
+            Logger.Info($"已保存 {channels.Count} 个频道到缓存");
         }
         catch (Exception ex)
         {
@@ -263,7 +263,7 @@ public class M3UCacheService
                     {
                         try { File.Delete(file); } catch { }
                     }
-                    Logger.Log("[M3U Cache] Cache cleared");
+                    Logger.Info("M3U缓存已清除");
                 }
             }
             catch (Exception ex)

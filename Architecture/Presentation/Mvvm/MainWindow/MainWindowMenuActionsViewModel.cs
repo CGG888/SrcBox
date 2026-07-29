@@ -335,7 +335,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             if (_shell.CurrentChannel == null) return;
             _shell.CurrentChannel.Tag = newSrc;
             var u = _shell.SourceLoader.SanitizeUrl(newSrc.Url);
-            LibmpvIptvClient.Diagnostics.Logger.Log("切换源 " + u);
+            LibmpvIptvClient.Diagnostics.Logger.Info("切换到 " + u);
             _shell.CurrentUrl = u;
             _shell.PlayerEngine?.Play(u);
         }

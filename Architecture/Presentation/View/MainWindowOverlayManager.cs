@@ -208,7 +208,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                         var secs = Math.Max(0, val);
                         _shell.TimeshiftCursorSec = secs;
                         var t = _shell.TimeshiftMin.AddSeconds(secs);
-                        try { LibmpvIptvClient.Diagnostics.Logger.Log($"[Timeshift] 拖动定位到 {t:yyyy-MM-dd HH:mm:ss}"); } catch { }
+                        try { LibmpvIptvClient.Diagnostics.Logger.Info($"时移定位到 {t:yyyy-MM-dd HH:mm:ss}"); } catch { }
                         _shell.ChannelPlaybackActions.PlayCatchupAt(_shell.CurrentChannel, t);
                         _shell.TimeshiftStart = t;
                     }

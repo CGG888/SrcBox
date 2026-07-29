@@ -142,7 +142,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                     RequestEpgRefresh?.Invoke();
 
                     _shell.ClearRecordingPlayingIndicator();
-                    try { LibmpvIptvClient.Diagnostics.Logger.Info("[Recordings] LoadFile (remote-direct) " + authUrl); } catch { }
+                    try { LibmpvIptvClient.Diagnostics.Logger.Info("正在播放远程录制..."); } catch { }
                     _shell.PlayerEngine.Play(authUrl);
                     _shell.CurrentUrl = authUrl;
                     
@@ -177,7 +177,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                     
                     var fu = new Uri(url, UriKind.Absolute);
                     var fileUri = fu.AbsoluteUri;
-                    try { LibmpvIptvClient.Diagnostics.Logger.Info("[Recordings] LoadFile (local-raw) " + fileUri); } catch { }
+                    try { LibmpvIptvClient.Diagnostics.Logger.Info("正在播放本地录制..."); } catch { }
                     _shell.PlayerEngine.Play(fileUri);
                     _shell.CurrentUrl = fileUri;
                 }
@@ -197,7 +197,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 
                         _shell.ClearRecordingPlayingIndicator();
                         
-                        try { LibmpvIptvClient.Diagnostics.Logger.Info("[Recordings] LoadFile (local-raw-fallback) " + url); } catch { }
+                        try { LibmpvIptvClient.Diagnostics.Logger.Info("正在播放本地录制(回退)..."); } catch { }
                         _shell.PlayerEngine.Play(url);
                         _shell.CurrentUrl = url;
                     }

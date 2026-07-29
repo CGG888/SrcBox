@@ -89,7 +89,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                         _channelScheduleLast[k] = now;
                     }
                 }
-                LibmpvIptvClient.Diagnostics.Logger.Info($"[Recordings] ScheduleRefresh key={channelKey ?? "null"} pending={_recordingsRefreshPending}");
+                LibmpvIptvClient.Diagnostics.Logger.Debug($"[Recordings] ScheduleRefresh key={channelKey ?? "null"} pending={_recordingsRefreshPending}");
                 if (channelKey != null) _recordingsRefreshChannelKey = channelKey;
                 _recordingsRefreshPending = true;
                 _recordingsRefreshTimer?.Stop();
@@ -120,7 +120,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 { 
                     try 
                     { 
-                        LibmpvIptvClient.Diagnostics.Logger.Info($"[Recordings] Watcher Event: {e.ChangeType} {e.FullPath}");
+                        LibmpvIptvClient.Diagnostics.Logger.Debug($"[Recordings] 文件监控: {e.ChangeType} {Path.GetFileName(e.FullPath)}");
                         var ch = ChannelFromFullPath(e.FullPath); 
                         if (!string.IsNullOrWhiteSpace(ch)) ScheduleRecordingsRefresh(ch); 
                         else ScheduleRecordingsRefresh(); 
@@ -139,7 +139,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                     _recordingsRefreshPending = false;
                     try
                     {
-                        LibmpvIptvClient.Diagnostics.Logger.Info("[Recordings] Timer Tick - Refreshing");
+                        LibmpvIptvClient.Diagnostics.Logger.Debug("[Recordings] Timer Tick - Refreshing");
                         var key = _recordingsRefreshChannelKey;
                         _recordingsRefreshChannelKey = null;
                         if (!string.IsNullOrWhiteSpace(key))
@@ -239,7 +239,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
         {
             try
             {
-                try { LibmpvIptvClient.Diagnostics.Logger.Info("[UI] Recordings Refresh clicked"); } catch { }
+                try { LibmpvIptvClient.Diagnostics.Logger.Info("点击了录制刷新按钮"); } catch { }
                 await LoadRecordingsLocalGrouped();
             }
             catch { }
@@ -298,7 +298,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             if (string.IsNullOrWhiteSpace(_recordProgramTitle)) _recordProgramTitle = ResolveProgramTitleNow();
             try { WriteRecordingMeta(_recordFilePath, _recordStartUtc, null, false); } catch { }
             
-            try { LibmpvIptvClient.Diagnostics.Logger.Info("[Record] start " + _recordFilePath); } catch { }
+            try { LibmpvIptvClient.Diagnostics.Logger.Info("开始录制: " + Path.GetFileName(_recordFilePath)); } catch { }
             
             TryStartStreamRecord(_recordFilePath);
             _recordingNow = true;
@@ -355,7 +355,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             
             UpdateRecordButtonState(false);
             
-            try { LibmpvIptvClient.Diagnostics.Logger.Info("[Record] stop " + _recordFilePath); } catch { }
+            try { LibmpvIptvClient.Diagnostics.Logger.Info("停止录制"); } catch { }
             
             string? logoPathStop = _shell.CurrentChannel?.Logo;
             try
@@ -524,7 +524,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             {
                 if (string.IsNullOrWhiteSpace(path)) return;
                 path = path.Replace("\\", "/");
-                LibmpvIptvClient.Diagnostics.Logger.Info($"[Record] Attempting to start record to: {path}");
+                LibmpvIptvClient.Diagnostics.Logger.Debug($"[Record] 正在启动录制: {path}");
                 try
                 {
                     var pd = Path.GetDirectoryName(path) ?? "";
@@ -542,7 +542,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                     _shell.PlayerEngine?.SetPropertyString("force-seekable", "yes");
 
                     _shell.PlayerEngine?.SetPropertyString("stream-record", path);
-                    LibmpvIptvClient.Diagnostics.Logger.Info("[Record] Set stream-record property (path)");
+                    LibmpvIptvClient.Diagnostics.Logger.Debug("[Record] 设置 stream-record 属性");
                 } 
                 catch (Exception ex)
                 {
@@ -565,7 +565,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                         // If not, we can try record-file as fallback
                         
                         _shell.PlayerEngine?.SetPropertyString("record-file", path);
-                        LibmpvIptvClient.Diagnostics.Logger.Info("[Record] Set record-file property");
+                        LibmpvIptvClient.Diagnostics.Logger.Debug("[Record] 设置 record-file 属性");
                     } 
                     catch (Exception ex)
                     {
@@ -838,7 +838,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 var fileName = Path.GetFileName(new Uri(tsUrl).AbsolutePath);
                 var path = Path.Combine(dir, fileName);
                 
-                try { LibmpvIptvClient.Diagnostics.Logger.Info($"[Recordings.Download] TS {tsUrl}"); } catch { }
+                try { LibmpvIptvClient.Diagnostics.Logger.Info("正在下载录制文件..."); } catch { }
                 var res = await cli.GetBytesAsync(tsUrl);
                 if (res.ok && res.bytes != null && res.bytes.Length > 0) { File.WriteAllBytes(path, res.bytes); }
                 
@@ -846,7 +846,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 {
                     try
                     {
-                        try { LibmpvIptvClient.Diagnostics.Logger.Info($"[Recordings.Download] JSON {jsonUrl}"); } catch { }
+                        try { LibmpvIptvClient.Diagnostics.Logger.Info("正在下载录制元数据..."); } catch { }
                         var sideRes = await cli.GetBytesAsync(jsonUrl);
                         if (sideRes.ok && sideRes.bytes != null && sideRes.bytes.Length > 0)
                         {
@@ -1003,11 +1003,11 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                                     if (!string.IsNullOrWhiteSpace(hrefTs))
                                     {
                                         var cli = new WebDavClient(wd);
-                                        try { LibmpvIptvClient.Diagnostics.Logger.Info($"[Recordings.Delete] Remote TS {hrefTs}"); } catch { }
+                                        try { LibmpvIptvClient.Diagnostics.Logger.Info("正在删除远程录制..."); } catch { }
                                         try { await cli.DeleteAsync(hrefTs); } catch { }
                                         if (!string.IsNullOrWhiteSpace(hrefJson))
                                         {
-                                            try { LibmpvIptvClient.Diagnostics.Logger.Info($"[Recordings.Delete] Remote JSON {hrefJson}"); } catch { }
+                                            try { LibmpvIptvClient.Diagnostics.Logger.Info("正在删除远程元数据..."); } catch { }
                                             try { await cli.DeleteAsync(hrefJson); } catch { }
                                         }
                                     }

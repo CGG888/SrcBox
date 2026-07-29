@@ -24,14 +24,14 @@ namespace LibmpvIptvClient.Services
         {
             try
             {
-                LibmpvIptvClient.Diagnostics.Logger.Log($"[M3UParser] Downloading from {url}");
+                LibmpvIptvClient.Diagnostics.Logger.Info("正在下载播放列表...");
                 var data = await _http.GetByteArrayAsync(url);
-                LibmpvIptvClient.Diagnostics.Logger.Log($"[M3UParser] Downloaded {data.Length} bytes");
+                LibmpvIptvClient.Diagnostics.Logger.Info($"播放列表下载完成: {data.Length} bytes");
                 
                 string text;
                 if (IsGzip(data))
                 {
-                    LibmpvIptvClient.Diagnostics.Logger.Log("[M3UParser] Detected GZIP content");
+                    LibmpvIptvClient.Diagnostics.Logger.Info("播放列表已解压");
                     using var ms = new MemoryStream(data);
                     using var gz = new GZipStream(ms, CompressionMode.Decompress);
                     using var sr = new StreamReader(gz, Encoding.UTF8, true);

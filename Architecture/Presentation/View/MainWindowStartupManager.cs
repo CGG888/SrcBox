@@ -45,7 +45,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 {
                     AppSettings.Current.Logo.CacheDir = "";
                     AppSettings.Current.Save();
-                    try { Logger.Log("[LogoCache] migrate old default path to EXE-based default"); } catch { }
+                    try { Logger.Info("Logo缓存目录已迁移"); } catch { }
                 }
             }
             catch { }
@@ -57,7 +57,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 !string.IsNullOrWhiteSpace(AppSettings.Current.LastLocalM3uPath) &&
                 File.Exists(AppSettings.Current.LastLocalM3uPath))
             {
-                Logger.Log("自动加载上次本地 M3U: " + AppSettings.Current.LastLocalM3uPath);
+                Logger.Info("正在自动加载上次本地 M3U...");
                 _ = _shell.LoadChannels(AppSettings.Current.LastLocalM3uPath);
             }
             else if (AppSettings.Current.SavedSources != null)
@@ -65,7 +65,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 var lastSelected = AppSettings.Current.SavedSources.FirstOrDefault(s => s.IsSelected);
                 if (lastSelected != null)
                 {
-                    Logger.Log("自动加载上次选择的源: " + lastSelected.Name);
+                    Logger.Info("正在自动加载上次选择的源: " + lastSelected.Name);
                     _shell.MenuActions.LoadM3u(lastSelected);
                 }
             }

@@ -31,7 +31,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                     var fps1 = _window.PlayerInterop.GetDouble("estimated-vf-fps") ?? _window.PlayerInterop.GetDouble("fps") ?? 0;
                     if (!_window.FirstFrameLoggedForManager && w1 > 0 && h1 > 0)
                     {
-                        Logger.Info($"[Playback] 首帧出现 {w1}x{h1} @{fps1:0.##} URL={_shell.CurrentUrl}");
+                        Logger.Info("首帧出现");
                         _window.FirstFrameLoggedForManager = true;
                     }
                     if (!_window.FirstFrameLoggedForManager)

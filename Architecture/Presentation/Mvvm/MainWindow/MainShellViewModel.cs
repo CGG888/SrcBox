@@ -308,7 +308,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         {
             try 
             {
-                Diagnostics.Logger.Log(on ? "[Timeshift] 开启时移" : "[Timeshift] 关闭时移");
+                Diagnostics.Logger.Info(on ? "时移已开启" : "时移已关闭");
             } 
             catch { }
 
@@ -524,7 +524,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             {
                 TimeshiftCursorSec = Math.Max(0, value);
                 var t = TimeshiftMin.AddSeconds(value);
-                try { Diagnostics.Logger.Log($"[Timeshift] 拖动定位到 {t:yyyy-MM-dd HH:mm:ss}"); } catch { }
+                try { Diagnostics.Logger.Info($"时移定位到 {t:yyyy-MM-dd HH:mm:ss}"); } catch { }
             }
             else
             {
@@ -802,7 +802,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 
             try
             {
-                LibmpvIptvClient.Diagnostics.Logger.Log("开始加载频道: " + url);
+                LibmpvIptvClient.Diagnostics.Logger.Info("正在加载频道...");
 
                 var loadedChannels = await SourceLoader.LoadChannelsAsync(ChannelService, url, msg => LibmpvIptvClient.Diagnostics.Logger.Log(msg));
 
@@ -811,7 +811,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 
                 if (loadedChannels.Count == 0)
                 {
-                    LibmpvIptvClient.Diagnostics.Logger.Log("未解析到频道");
+                    LibmpvIptvClient.Diagnostics.Logger.Info("未解析到频道");
                     return;
                 }
 
@@ -852,7 +852,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 
                 if (!string.IsNullOrEmpty(epgUrl) && _epgService != null)
                 {
-                    LibmpvIptvClient.Diagnostics.Logger.Log("正在加载 EPG: " + epgUrl);
+                    LibmpvIptvClient.Diagnostics.Logger.Info("正在加载节目单...");
                     _ = System.Threading.Tasks.Task.Run(async () =>
                     {
                         try
@@ -867,7 +867,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                                 try { await RecordingActions.LoadRecordingsLocalGroupedAsync(loadedChannels, _epgService); } catch { }
                             });
                         }
-                        catch (Exception ex) { LibmpvIptvClient.Diagnostics.Logger.Log("EPG 加载失败: " + ex.Message); }
+                        catch (Exception ex) { LibmpvIptvClient.Diagnostics.Logger.Info("节目单加载失败: " + ex.Message); }
                     });
                 }
             }

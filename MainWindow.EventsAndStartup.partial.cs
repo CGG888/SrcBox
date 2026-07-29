@@ -505,7 +505,7 @@ namespace LibmpvIptvClient
             _epgTimer.Interval = TimeSpan.FromMinutes(1);
             _epgTimer.Tick += (s, e) => _epgManager?.UpdateEpgDisplay();
             _epgTimer.Start();
-            Logger.Log("应用启动完成");
+            Logger.Info("应用启动完成");
 
             try { _userDataStore.Load(); } catch { }
             LocationChanged += (_, __) => PositionMinimalToolbar();

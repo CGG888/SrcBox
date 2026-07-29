@@ -34,7 +34,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             var file = files[0];
             var ext = Path.GetExtension(file).ToLowerInvariant();
 
-            LibmpvIptvClient.Diagnostics.Logger.Log($"[DragDrop] 收到文件: {file}");
+            LibmpvIptvClient.Diagnostics.Logger.Info($"收到文件: {file}");
 
             if (ext == ".m3u" || ext == ".m3u8" || ext == ".txt")
             {
@@ -61,7 +61,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             // 如果支持多文件拖入（如批量添加 M3U），可在此扩展
             if (files.Length > 1)
             {
-                LibmpvIptvClient.Diagnostics.Logger.Log("[DragDrop] 暂不支持批量拖入，仅处理了第一个文件。");
+                LibmpvIptvClient.Diagnostics.Logger.Info("暂不支持批量拖入，仅处理了第一个文件。");
             }
         }
     }
