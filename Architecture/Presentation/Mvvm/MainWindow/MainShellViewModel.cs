@@ -807,16 +807,12 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 var loadedChannels = await SourceLoader.LoadChannelsAsync(ChannelService, url, msg => LibmpvIptvClient.Diagnostics.Logger.Log(msg));
 
                 ChannelListActions.ComputeGlobalIndices(loadedChannels);
-
                 ApplyFavoritesFromStore(loadedChannels);
-
-                var filterResult = ChannelListActions.BuildChannelFilterResult(loadedChannels, SearchText, SelectedGroup);
-                var groupsResult = ChannelListActions.BuildGroups(loadedChannels);
-                var favoritesResult = ChannelInteractionActions.BuildFavoriteList(loadedChannels, c => UserDataStore.ComputeKey(c));
 
                 if (loadedChannels.Count == 0)
                 {
                     LibmpvIptvClient.Diagnostics.Logger.Log("未解析到频道");
+                    return;
                 }
 
                 var epgUrl = AppSettings.Current.CustomEpgUrl;
@@ -825,6 +821,14 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                     epgUrl = M3UParser.TvgUrl;
                 }
 
+                await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+                {
+                    Channels = loadedChannels;
+                    FilteredChannels = loadedChannels;
+                    FilterCountText = string.Format(LibmpvIptvClient.Helpers.ResxLocalizer.Get("Drawer_CountAll", "共 {0} 个频道"), loadedChannels.Count);
+                    LoadHistory();
+                });
+
                 try
                 {
                     LibmpvIptvClient.Services.DnsPrefetcher.PrefetchForChannels(loadedChannels, maxHosts: 60);
@@ -832,14 +836,18 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 }
                 catch { }
 
-                await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
+                _ = System.Threading.Tasks.Task.Run(() =>
                 {
-                    Channels = loadedChannels;
-                    FilteredChannels = filterResult.Channels;
-                    FilterCountText = filterResult.CountText;
-                    ChannelGroups = groupsResult;
-                    Favorites = favoritesResult;
-                    LoadHistory();
+                    var filterResult = ChannelListActions.BuildChannelFilterResult(loadedChannels, SearchText, SelectedGroup);
+                    var groupsResult = ChannelListActions.BuildGroups(loadedChannels);
+                    var favoritesResult = ChannelInteractionActions.BuildFavoriteList(loadedChannels, c => UserDataStore.ComputeKey(c));
+                    System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                    {
+                        FilteredChannels = filterResult.Channels;
+                        FilterCountText = filterResult.CountText;
+                        ChannelGroups = groupsResult;
+                        Favorites = favoritesResult;
+                    });
                 });
 
                 if (!string.IsNullOrEmpty(epgUrl) && _epgService != null)
