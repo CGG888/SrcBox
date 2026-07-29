@@ -55,7 +55,7 @@ namespace LibmpvIptvClient.Services
                 _data.Version = CurrentVersion;
                 var json = JsonSerializer.Serialize(_data, new JsonSerializerOptions { WriteIndented = true });
                 File.WriteAllText(_path, json);
-                Logger.Info($"[UserDataStore.Save] favorites={_data.Favorites.Count} history={_data.History.Count}");
+                Logger.Trace($"[UserDataStore.Save] favorites={_data.Favorites.Count} history={_data.History.Count}");
             }
             catch (Exception ex)
             {

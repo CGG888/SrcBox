@@ -42,7 +42,7 @@ namespace LibmpvIptvClient
             if (!string.IsNullOrWhiteSpace(_settings.Alang)) SetString("alang", _settings.Alang);
             if (!string.IsNullOrWhiteSpace(_settings.Slang)) SetString("slang", _settings.Slang);
             if (_settings.MpvNetworkTimeoutSec > 0) SetString("network-timeout", _settings.MpvNetworkTimeoutSec.ToString(System.Globalization.CultureInfo.InvariantCulture));
-            Logger.Debug($"[mpv] init alang={_settings.Alang} slang={_settings.Slang} net_to={_settings.MpvNetworkTimeoutSec}");
+
 
             // 反交错（针对 1080i/720i 隔行流）
             // 在 Initialize 阶段设置，对后续所有 loadfile 自动生效
@@ -61,7 +61,7 @@ namespace LibmpvIptvClient
                         SetString("vf", $"{diAlgo}=mode=1");
                     }
                 }
-                Logger.Debug($"[mpv] init deinterlace={diMode} parity={_settings.DeinterlaceFieldParity} algo={_settings.DeinterlaceAlgorithm}");
+
             }
             catch { /* 静默 */ }
 
@@ -77,9 +77,13 @@ namespace LibmpvIptvClient
                 // audio-delay: 音频延迟 (秒), -100 ~ 100
                 var delay = Math.Max(-100.0, Math.Min(100.0, _settings.AudioDelay));
                 SetString("audio-delay", delay.ToString(CultureInfo.InvariantCulture));
-                Logger.Debug($"[mpv] init volume-gain={gain}dB volume-max={volMax}% audio-delay={delay}s");
+
             }
             catch { /* 静默 */ }
+
+            var initDiMode = string.IsNullOrWhiteSpace(_settings.Deinterlace) ? "no" : _settings.Deinterlace;
+            var initGain = Math.Max(-200, Math.Min(60, _settings.VolumeGain));
+            Logger.Debug($"[mpv] init alang={_settings.Alang} slang={_settings.Slang} di={initDiMode} gain={initGain}dB");
         }
         public void SetSpeed(double speed)
         {
@@ -147,7 +151,7 @@ namespace LibmpvIptvClient
                 SetString("demuxer-lavf-format", "");
                 SetString("demuxer-lavf-probesize", "32"); // Fast probe
                 SetString("demuxer-lavf-analyzeduration", "0");
-                Logger.Debug($"[mpv] rtsp cache={(_settings.CacheSecs>0?"yes":"no")} cache-secs={_settings.CacheSecs} probesize=32 adur=0 url={url}");
+
                 return;
             }
 
@@ -166,7 +170,7 @@ namespace LibmpvIptvClient
                     SetString("cache", "yes");
                     SetString("cache-secs", _settings.CacheSecs > 0 ? _settings.CacheSecs.ToString(System.Globalization.CultureInfo.InvariantCulture) : "10");
                     SetString("demuxer-max-back-bytes", "128MiB"); // 允许回溯
-                    Logger.Debug($"[mpv] udp-ts demux=mpegts cache=yes max-back=128MiB probesize=32 adur=0 url={url}");
+
                 }
                 else
                 {
@@ -175,7 +179,7 @@ namespace LibmpvIptvClient
                         SetString("cache-secs", _settings.CacheSecs.ToString(System.Globalization.CultureInfo.InvariantCulture));
                     SetString("demuxer-max-bytes", $"{_settings.DemuxerMaxBytesMiB}MiB");
                     SetString("demuxer-max-back-bytes", $"{_settings.DemuxerMaxBackBytesMiB}MiB");
-                    Logger.Debug($"[mpv] http-ts demux=mpegts cache={( _settings.CacheSecs>0?"yes":"no")} cache-secs={_settings.CacheSecs} max={_settings.DemuxerMaxBytesMiB}MiB back={_settings.DemuxerMaxBackBytesMiB}MiB probesize=32 adur=0 url={url}");
+
                 }
             }
             else
@@ -193,7 +197,7 @@ namespace LibmpvIptvClient
                 SetString("demuxer-readahead-secs", "60"); 
                 SetString("demuxer-cache-wait", "no"); // 不要等待缓存填满才播放，但要持续缓存
                 
-                Logger.Debug($"[mpv] generic http cache=yes max=512MiB back=256MiB seekable=yes readahead=60 url={url}");
+
             }
 
             // 4. HTTP/HTTPS 自定义 Header（适用于所有 HTTP 流）
@@ -202,7 +206,7 @@ namespace LibmpvIptvClient
                 // mpv 格式：每行用 \n 分隔
                 var headers = _settings.HttpHeaders.Headers.Replace("\r\n", "\n").Replace("\n", "\\n");
                 SetString("http-header-fields", headers);
-                Logger.Debug($"[mpv] http-headers set: {headers}");
+
             }
             // 3. HLS 自适应（仅在启用时）
             if (_settings.EnableProtocolAdaptive && (u.Contains(".m3u8") || u.Contains("format=hls")))
@@ -210,8 +214,13 @@ namespace LibmpvIptvClient
                 if (_settings.HlsStartAtLiveEdge) SetString("hls-playlist-start", "no");
                 if (_settings.HlsReadaheadSecs > 0)
                     SetString("demuxer-readahead-secs", _settings.HlsReadaheadSecs.ToString(CultureInfo.InvariantCulture));
-                Logger.Debug($"[mpv] hls opts start_live={_settings.HlsStartAtLiveEdge} readahead={_settings.HlsReadaheadSecs} url={url}");
             }
+
+            var proto = u.StartsWith("rtsp://") ? "RTSP" :
+                        u.StartsWith("udp://") ? "UDP" :
+                        looksTs ? "TS" :
+                        u.Contains(".m3u8") ? "HLS" : "HTTP";
+            Logger.Debug($"[mpv] proto={proto} cache={_settings.CacheSecs > 0}");
         }
         public string? GetString(string name)
         {

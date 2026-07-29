@@ -80,6 +80,9 @@
   <sys:String x:Key="UI_Cancel">取消</sys:String>
   <sys:String x:Key="UI_DebugLog">除錯日誌</sys:String>
   <sys:String x:Key="UI_Clear">清除</sys:String>
+  <sys:String x:Key="UI_ExportLog">匯出日誌</sys:String>
+  <sys:String x:Key="UI_DebugMode">除錯模式</sys:String>
+  <sys:String x:Key="UI_LogLevel">日誌級別</sys:String>
   <sys:String x:Key="UI_SettingsTitle">設定</sys:String>
   <sys:String x:Key="UI_LangThemeNote">語言與主題修改需點擊儲存後生效。</sys:String>
   <sys:String x:Key="UI_Epg_LogoUrl_Tip">支援 {name} 佔位符，例如 http://site.com/{name}.png</sys:String>

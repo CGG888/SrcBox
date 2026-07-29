@@ -273,7 +273,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
 
             _window.LblEpgChannel.Text = ch.Name;
             var programs = _epgService?.GetPrograms(ch.TvgId, ch.TvgName, ch.Name);
-            try { LibmpvIptvClient.Diagnostics.Logger.Log($"[EPG] 渲染频道 {ch.Name} EPG 列表，数据条数={(programs?.Count ?? 0)}"); } catch { }
+            try { LibmpvIptvClient.Diagnostics.Logger.Debug($"[EPG] 渲染频道 {ch.Name} EPG 列表，数据条数={(programs?.Count ?? 0)}"); } catch { }
 
             var suppressAutoScroll = _suppressAutoScroll || !allowAutoScroll;
             var useFocusDate = focusTime.HasValue && (!suppressAutoScroll || forceScroll);
@@ -311,7 +311,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             catch { }
             var priorOffset = suppressAutoScroll ? _epgScrollViewer?.VerticalOffset : null;
             _window.ListEpg.ItemsSource = filtered;
-            try { LibmpvIptvClient.Diagnostics.Logger.Log($"[EPG] 日期 {_shell.CurrentEpgDate:yyyy-MM-dd} 可见节目数 {filtered.Count}"); } catch { }
+            try { LibmpvIptvClient.Diagnostics.Logger.Debug($"[EPG] 日期 {_shell.CurrentEpgDate:yyyy-MM-dd} 可见节目数 {filtered.Count}"); } catch { }
 
             if (forceScroll || !suppressAutoScroll)
             {

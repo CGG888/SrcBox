@@ -80,6 +80,9 @@
   <sys:String x:Key="UI_Cancel">Отмена</sys:String>
   <sys:String x:Key="UI_DebugLog">Журнал отладки</sys:String>
   <sys:String x:Key="UI_Clear">Очистить</sys:String>
+  <sys:String x:Key="UI_ExportLog">Экспорт журнала</sys:String>
+  <sys:String x:Key="UI_DebugMode">Режим отладки</sys:String>
+  <sys:String x:Key="UI_LogLevel">Уровень журнала</sys:String>
   <sys:String x:Key="UI_SettingsTitle">Настройки</sys:String>
   <sys:String x:Key="UI_LangThemeNote">Изменения языка и темы вступают в силу после нажатия «Сохранить».</sys:String>
   <sys:String x:Key="UI_Epg_LogoUrl_Tip">Поддерживается {name}, напр. http://site.com/{name}.png</sys:String>

@@ -5,11 +5,22 @@
     <Grid>
         <Grid.RowDefinitions>
             <RowDefinition Height="*"/>
-            <RowDefinition Height="40"/>
+            <RowDefinition Height="36"/>
         </Grid.RowDefinitions>
-        <TextBox x:Name="TxtLog" Grid.Row="0" FontFamily="Consolas" FontSize="12" IsReadOnly="True" TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Background="{DynamicResource AppBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0"/>
-        <DockPanel Grid.Row="1" LastChildFill="False" Margin="8">
-            <Button Content="{DynamicResource UI_Clear}" Width="80" Click="BtnClear_Click" Style="{StaticResource ChipButton}"/>
+        <TextBox x:Name="TxtLog" Grid.Row="0" FontFamily="Consolas" FontSize="10" IsReadOnly="True" TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" Background="{DynamicResource AppBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0"/>
+        <DockPanel Grid.Row="1" LastChildFill="False" Margin="5">
+            <TextBlock Text="{DynamicResource UI_LogLevel}" VerticalAlignment="Center" FontSize="10" Margin="0,0,5,0"/>
+            <ComboBox x:Name="CmbLogLevel" Width="70" VerticalAlignment="Center" FontSize="10" Margin="0,0,10,0" SelectionChanged="CmbLogLevel_SelectionChanged">
+                <ComboBoxItem Content="TRACE" Tag="0"/>
+                <ComboBoxItem Content="DEBUG" Tag="1"/>
+                <ComboBoxItem Content="INFO" Tag="2" IsSelected="True"/>
+                <ComboBoxItem Content="WARN" Tag="3"/>
+                <ComboBoxItem Content="ERROR" Tag="4"/>
+                <ComboBoxItem Content="FATAL" Tag="5"/>
+            </ComboBox>
+            <Button x:Name="BtnDebug" Content="{DynamicResource UI_DebugMode}" Width="70" FontSize="10" Click="BtnDebug_Click" Style="{StaticResource ChipButton}" Margin="0,0,5,0"/>
+            <Button Content="{DynamicResource UI_ExportLog}" Width="60" FontSize="10" Click="BtnExport_Click" Style="{StaticResource ChipButton}" Margin="0,0,5,0"/>
+            <Button Content="{DynamicResource UI_Clear}" Width="50" FontSize="10" Click="BtnClear_Click" Style="{StaticResource ChipButton}"/>
         </DockPanel>
     </Grid>
-    </Window>
+</Window>

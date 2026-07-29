@@ -82,6 +82,9 @@
   <sys:String x:Key="UI_Cancel">取消</sys:String>
   <sys:String x:Key="UI_DebugLog">调试日志</sys:String>
   <sys:String x:Key="UI_Clear">清空</sys:String>
+  <sys:String x:Key="UI_ExportLog">导出日志</sys:String>
+  <sys:String x:Key="UI_DebugMode">调试模式</sys:String>
+  <sys:String x:Key="UI_LogLevel">日志级别</sys:String>
   <sys:String x:Key="UI_TextViewer">查看文本</sys:String>
   <sys:String x:Key="UI_Prev">上一个</sys:String>
   <sys:String x:Key="UI_Next">下一个</sys:String>

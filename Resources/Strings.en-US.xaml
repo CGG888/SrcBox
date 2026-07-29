@@ -80,6 +80,9 @@
   <sys:String x:Key="UI_Cancel">Cancel</sys:String>
   <sys:String x:Key="UI_DebugLog">Debug Log</sys:String>
   <sys:String x:Key="UI_Clear">Clear</sys:String>
+  <sys:String x:Key="UI_ExportLog">Export Log</sys:String>
+  <sys:String x:Key="UI_DebugMode">Debug Mode</sys:String>
+  <sys:String x:Key="UI_LogLevel">Log Level</sys:String>
   <sys:String x:Key="UI_SettingsTitle">Settings</sys:String>
   <sys:String x:Key="UI_LangThemeNote">Language and theme changes take effect after clicking Save.</sys:String>
   <sys:String x:Key="UI_Epg_LogoUrl_Tip">Supports {name} placeholder, e.g. http://site.com/{name}.png</sys:String>

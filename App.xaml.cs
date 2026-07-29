@@ -45,6 +45,7 @@ namespace LibmpvIptvClient
                     var baseDir = AppDomain.CurrentDomain.BaseDirectory;
                     var logDir = System.IO.Path.Combine(baseDir, "logs");
                     Directory.CreateDirectory(logDir);
+
                     var envLevel = Environment.GetEnvironmentVariable("SRCBOX_LOG_LEVEL");
                     if (!string.IsNullOrWhiteSpace(envLevel))
                     {
@@ -55,19 +56,15 @@ namespace LibmpvIptvClient
                         }
                         catch { }
                     }
-                    CleanupOldLogs(logDir, 7);
-                    LibmpvIptvClient.Diagnostics.Logger.OnMessageLeveled += (level, msg) =>
+
+                    var envDebug = Environment.GetEnvironmentVariable("SRCBOX_DEBUG");
+                    if (!string.IsNullOrWhiteSpace(envDebug) && envDebug.Equals("1", StringComparison.OrdinalIgnoreCase))
                     {
-                        try
-                        {
-                            var day = DateTime.Now.ToString("yyyyMMdd");
-                            var file = System.IO.Path.Combine(logDir, $"SrcBox-{day}.log");
-                            File.AppendAllText(file, msg + Environment.NewLine);
-                            var fileByLevel = System.IO.Path.Combine(logDir, $"SrcBox-{level}-{day}.log");
-                            File.AppendAllText(fileByLevel, msg + Environment.NewLine);
-                        }
-                        catch { }
-                    };
+                        LibmpvIptvClient.Diagnostics.Logger.DebugEnabled = true;
+                    }
+
+                    LibmpvIptvClient.Diagnostics.Logger.InitializeFileLogging(logDir);
+                    CleanupOldLogs(logDir, 7);
                 }
                 catch { }
             }

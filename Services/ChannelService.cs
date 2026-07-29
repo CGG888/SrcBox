@@ -51,7 +51,29 @@ namespace LibmpvIptvClient.Services
                     }
                     else if (System.IO.File.Exists(m3uUrl))
                     {
-                        fromM3u = await _m3u.ParseFromPathAsync(m3uUrl);
+                        bool cacheEnabled = AppSettings.Current?.EnableM3uCache ?? true;
+
+                        if (cacheEnabled)
+                        {
+                            var (cached, fromCache) = await M3UCacheService.Instance.LoadFromCacheAsync(m3uUrl);
+                            if (cached != null && cached.Count > 0)
+                            {
+                                fromM3u = cached;
+                            }
+                            else
+                            {
+                                fromM3u = await _m3u.ParseFromPathAsync(m3uUrl);
+                                if (fromM3u.Count > 0)
+                                {
+                                    var fileInfo = new System.IO.FileInfo(m3uUrl);
+                                    await M3UCacheService.Instance.SaveToCacheAsync(m3uUrl, fromM3u, null, fileInfo.LastWriteTimeUtc.ToString("O"));
+                                }
+                            }
+                        }
+                        else
+                        {
+                            fromM3u = await _m3u.ParseFromPathAsync(m3uUrl);
+                        }
                     }
                 }
                 catch { }

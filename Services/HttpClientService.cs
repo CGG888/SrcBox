@@ -21,7 +21,7 @@ namespace LibmpvIptvClient.Services
             // but the heavy lifting is now done by RegistryProxyProvider polling
             SystemEvents.UserPreferenceChanged += (s, e) =>
             {
-                LibmpvIptvClient.Diagnostics.Logger.Log($"[HttpClientService] UserPreferenceChanged: {e.Category}");
+                LibmpvIptvClient.Diagnostics.Logger.Debug($"[HttpClientService] UserPreferenceChanged: {e.Category}");
             };
         }
 
@@ -33,7 +33,7 @@ namespace LibmpvIptvClient.Services
                 {
                     if (_client == null)
                     {
-                        LibmpvIptvClient.Diagnostics.Logger.Log("[HttpClientService] Creating new HttpClient instance...");
+                        LibmpvIptvClient.Diagnostics.Logger.Debug("[HttpClientService] Creating new HttpClient instance...");
                         _client = CreateClient();
                     }
                     return _client;
@@ -47,7 +47,7 @@ namespace LibmpvIptvClient.Services
             // Since we are now using a dynamic RegistryProxyProvider + Short PooledConnectionLifetime,
             // we don't strictly need to dispose the HttpClient instance anymore.
             // The SocketsHttpHandler will query our GetProxy() method for every new connection.
-            LibmpvIptvClient.Diagnostics.Logger.Log("[HttpClientService] Proxy change detected (Registry/Event). Future connections will adapt automatically.");
+            LibmpvIptvClient.Diagnostics.Logger.Trace("[HttpClientService] Proxy change detected (Registry/Event). Future connections will adapt automatically.");
         }
 
         private HttpClient CreateClient()

@@ -15,7 +15,7 @@ namespace LibmpvIptvClient.Services
             }
             catch (Exception ex) when (ex is HttpRequestException || ex is TaskCanceledException)
             {
-                LibmpvIptvClient.Diagnostics.Logger.Log($"[HttpClientExtensions] Request via Proxy failed ({ex.Message}). Trying DIRECT connection...");
+                LibmpvIptvClient.Diagnostics.Logger.Trace($"[HttpClientExtensions] Request via Proxy failed ({ex.Message}). Trying DIRECT connection...");
                 
                 // Fallback Strategy: Create a temporary DIRECT (No Proxy) client
                 // This handles cases where the system proxy is stuck or invalid

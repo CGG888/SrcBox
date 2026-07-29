@@ -109,31 +109,53 @@ public class M3UCacheService
             if (Uri.TryCreate(url, UriKind.Absolute, out var uri) &&
                 (uri.Scheme == Uri.UriSchemeHttp || uri.Scheme == Uri.UriSchemeHttps))
             {
-                try
+                bool urlHasDynamicToken = url.Contains("token=", StringComparison.OrdinalIgnoreCase) ||
+                                          url.Contains("time=", StringComparison.OrdinalIgnoreCase) ||
+                                          url.Contains("ts=", StringComparison.OrdinalIgnoreCase) ||
+                                          url.Contains("v=", StringComparison.OrdinalIgnoreCase);
+
+                if (!urlHasDynamicToken)
                 {
-                    using var request = new HttpRequestMessage(HttpMethod.Head, url);
-                    using var response = await _http.SendAsync(request);
-
-                    if (response.IsSuccessStatusCode)
+                    try
                     {
-                        var serverEtag = response.Headers.ETag?.Tag;
-                        var serverLastModified = response.Content.Headers.LastModified?.ToString();
+                        using var request = new HttpRequestMessage(HttpMethod.Head, url);
+                        using var response = await _http.SendAsync(request);
 
-                        if (!string.IsNullOrEmpty(serverEtag) && !string.Equals(meta.ETag, serverEtag, StringComparison.Ordinal))
+                        if (response.IsSuccessStatusCode)
                         {
-                            Logger.Log("[M3U Cache] ETag changed, need refresh");
-                            needRefresh = true;
-                        }
-                        else if (!string.IsNullOrEmpty(serverLastModified) && !string.Equals(meta.LastModified, serverLastModified, StringComparison.Ordinal))
-                        {
-                            Logger.Log("[M3U Cache] LastModified changed, need refresh");
-                            needRefresh = true;
+                            var serverEtag = response.Headers.ETag?.Tag;
+                            var serverLastModified = response.Content.Headers.LastModified?.ToString();
+
+                            if (!string.IsNullOrEmpty(serverEtag) && !string.Equals(meta.ETag, serverEtag, StringComparison.Ordinal))
+                            {
+                                Logger.Log("[M3U Cache] ETag changed, need refresh");
+                                needRefresh = true;
+                            }
+                            else if (!string.IsNullOrEmpty(serverLastModified) && !string.Equals(meta.LastModified, serverLastModified, StringComparison.Ordinal))
+                            {
+                                Logger.Log("[M3U Cache] LastModified changed, need refresh");
+                                needRefresh = true;
+                            }
                         }
                     }
+                    catch (Exception ex)
+                    {
+                        Logger.Log($"[M3U Cache] HEAD request failed: {ex.Message}, relying on TTL");
+                    }
                 }
-                catch (Exception ex)
+                else
                 {
-                    Logger.Log($"[M3U Cache] HEAD request failed: {ex.Message}");
+                    Logger.Log("[M3U Cache] Dynamic URL detected (contains token/timestamp), relying on TTL for cache validity");
+                }
+            }
+            else if (File.Exists(url))
+            {
+                var fileInfo = new FileInfo(url);
+                var fileLastModified = fileInfo.LastWriteTimeUtc.ToString("O");
+                if (!string.Equals(meta.LastModified, fileLastModified, StringComparison.Ordinal))
+                {
+                    Logger.Log("[M3U Cache] Local file modified, need refresh");
+                    needRefresh = true;
                 }
             }
 
