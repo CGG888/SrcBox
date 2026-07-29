@@ -112,6 +112,9 @@ namespace LibmpvIptvClient
         public List<M3uSource> SavedSources { get; set; } = new List<M3uSource>();
         // 更新下载 CDN 持久化列表（仅前缀，例如 https://gh-proxy.org）
         public List<string> UpdateCdnMirrors { get; set; } = new List<string>();
+        // M3U 缓存设置
+        public bool EnableM3uCache { get; set; } = true;
+        public double M3uCacheTtlHours { get; set; } = 24;
         // 界面语言（例如 zh-CN / en-US；为空表示跟随系统）
         public string Language { get; set; } = "";
         // 主题模式：System/Light/Dark
