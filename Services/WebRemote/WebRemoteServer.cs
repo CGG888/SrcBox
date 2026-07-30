@@ -188,7 +188,7 @@ namespace LibmpvIptvClient.Services.WebRemote
                 // WebSocket handshake response
                 var acceptKey = Convert.ToBase64String(System.Security.Cryptography.SHA1.Create()
                     .ComputeHash(Encoding.UTF8.GetBytes(key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")));
-                var handshake = $"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {acceptKey}\r\n\r\n";
+                var handshake = $"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {acceptKey}\r\nSec-WebSocket-Version: 13\r\n\r\n";
                 await stream.WriteAsync(Encoding.UTF8.GetBytes(handshake), ct);
 
                 // Create WebSocket from raw connection
