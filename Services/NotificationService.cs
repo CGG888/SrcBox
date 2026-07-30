@@ -3,11 +3,15 @@ using System.Drawing;
 using System.IO;
 using System.Diagnostics;
 using System.Windows.Forms;
+using System.Runtime.InteropServices;
 
 namespace LibmpvIptvClient.Services
 {
     public class NotificationService : IDisposable
     {
+        [DllImport("user32.dll")]
+        private static extern bool DestroyIcon(IntPtr hIcon);
+
         private static readonly Lazy<NotificationService> _lazy = new Lazy<NotificationService>(() => new NotificationService());
         public static NotificationService Instance => _lazy.Value;
         private readonly NotifyIcon _icon;
@@ -109,6 +113,7 @@ namespace LibmpvIptvClient.Services
         public void ShowWithLogo(string channel, string program, DateTime startLocal, string? logoPath, int timeoutMs = 8000)
         {
             Icon? old = null;
+            IntPtr hIconToDestroy = IntPtr.Zero;
             try
             {
                 old = _icon.Icon;
@@ -117,6 +122,7 @@ namespace LibmpvIptvClient.Services
                     using var bmp = new Bitmap(logoPath);
                     using var small = new Bitmap(bmp, new Size(32, 32));
                     var hIcon = small.GetHicon();
+                    hIconToDestroy = hIcon;
                     _icon.Icon = Icon.FromHandle(hIcon);
                 }
             }
@@ -130,6 +136,7 @@ namespace LibmpvIptvClient.Services
             finally
             {
                 try { if (old != null) _icon.Icon = old; } catch { }
+                if (hIconToDestroy != IntPtr.Zero) DestroyIcon(hIconToDestroy);
             }
         }
 
