@@ -184,6 +184,7 @@
   <sys:String x:Key="Drawer_Title">频道列表</sys:String>
   <sys:String x:Key="Drawer_Collapse">折叠频道列表</sys:String>
   <sys:String x:Key="Drawer_Clear">清空</sys:String>
+  <sys:String x:Key="Drawer_M3uList">选择M3U列表</sys:String>
   <sys:String x:Key="Drawer_CountAll">共 {0} 个频道</sys:String>
   <sys:String x:Key="Drawer_FilteredCount">筛选到 {0} / {1}</sys:String>
   <sys:String x:Key="Tab_AllChannels">所有频道</sys:String>

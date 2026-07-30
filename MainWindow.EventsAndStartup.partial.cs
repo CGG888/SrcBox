@@ -367,7 +367,6 @@ namespace LibmpvIptvClient
                 InitializeViewModel(playerEngine);
 
                 _overlayManager.Initialize();
-                _recordingManager?.Initialize();
                 _overlayManager.BuildOverlayWindow(
                     () => BtnPlayPause_Click(this, new RoutedEventArgs()),
                     () => BtnStop_Click(this, new RoutedEventArgs()),
@@ -377,7 +376,13 @@ namespace LibmpvIptvClient
                 );
 
                 InitializeBindings();
-                InitializeAutoLoad();
+                SyncM3uComboBoxSelection();
+
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    _recordingManager?.Initialize();
+                    InitializeAutoLoad();
+                }), System.Windows.Threading.DispatcherPriority.Background);
             }
             catch (Exception ex)
             {

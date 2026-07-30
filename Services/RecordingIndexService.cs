@@ -212,6 +212,7 @@ namespace LibmpvIptvClient.Services
                                 var fi = new FileInfo(f);
                                 var name = Path.GetFileNameWithoutExtension(f);
                                 var ext = Path.GetExtension(f).Trim('.').ToUpperInvariant();
+                                if (ext == "JSON") continue;
                                 DateTime? start = ParseStart(name);
                                 string title = name;
                                 if (titleResolver != null)
@@ -243,6 +244,7 @@ namespace LibmpvIptvClient.Services
                             var fi = new FileInfo(f);
                             var name = Path.GetFileNameWithoutExtension(f);
                             var ext = Path.GetExtension(f).Trim('.').ToUpperInvariant();
+                            if (ext == "JSON") continue;
                             DateTime? start = ParseStart(name);
                             string title = name;
                             if (titleResolver != null)

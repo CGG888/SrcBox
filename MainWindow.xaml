@@ -796,13 +796,15 @@
                             <!-- 搜索区 -->
                             <Grid Grid.Row="0" Margin="10,10,10,0">
                                 <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBox x:Name="TxtSearch" Grid.Column="0" Height="30" Background="{DynamicResource ChipButtonBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0" VerticalContentAlignment="Center" Padding="6,0" TextChanged="TxtSearch_TextChanged" />
-                                <Button x:Name="BtnClearSearch" Grid.Column="1" Content="{DynamicResource Drawer_Clear}" Margin="8,0,0,0" Click="BtnClearSearch_Click" Style="{StaticResource ItemActionChipButton}"/>
-                                <Button x:Name="BtnChannelsRefresh" Grid.Column="2" Content="{DynamicResource Drawer_Recordings_Refresh}" Margin="8,0,0,0" Click="BtnChannelsRefresh_Click" Style="{StaticResource ItemActionChipButton}"/>
+                                <ComboBox x:Name="CbM3uList" Grid.Column="0" Height="30" Width="140" DisplayMemberPath="Name" IsEditable="True" SelectionChanged="CbM3uList_SelectionChanged" ToolTip="{DynamicResource Drawer_M3uList}" Background="{DynamicResource ChipButtonBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <TextBox x:Name="TxtSearch" Grid.Column="1" Height="30" Background="{DynamicResource ChipButtonBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0" VerticalContentAlignment="Center" Padding="6,0" TextChanged="TxtSearch_TextChanged" />
+                                <Button x:Name="BtnClearSearch" Grid.Column="2" Content="{DynamicResource Drawer_Clear}" Margin="8,0,0,0" Click="BtnClearSearch_Click" Style="{StaticResource ItemActionChipButton}"/>
+                                <Button x:Name="BtnChannelsRefresh" Grid.Column="3" Content="{DynamicResource Drawer_Recordings_Refresh}" Margin="8,0,0,0" Click="BtnChannelsRefresh_Click" Style="{StaticResource ItemActionChipButton}"/>
                             </Grid>
                             <!-- 列表区 -->
                             <Grid Grid.Row="1" Margin="0,10,0,0">
@@ -915,7 +917,26 @@
                         </Grid>
                     </TabItem>
                     <TabItem Header="{DynamicResource Tab_Groups}" x:Name="TabGroups">
-                        <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="6,6,6,6" Background="Transparent">
+                        <Grid Background="Transparent">
+                            <Grid.RowDefinitions>
+                                <RowDefinition Height="Auto"/>
+                                <RowDefinition Height="*"/>
+                            </Grid.RowDefinitions>
+                            <!-- 搜索区 -->
+                            <Grid Grid.Row="0" Margin="10,10,10,0">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
+                                </Grid.ColumnDefinitions>
+                                <ComboBox x:Name="CbM3uListGroups" Grid.Column="0" Height="30" Width="140" DisplayMemberPath="Name" IsEditable="True" SelectionChanged="CbM3uList_SelectionChanged" ToolTip="{DynamicResource Drawer_M3uList}" Background="{DynamicResource ChipButtonBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <TextBox x:Name="TxtSearchGroups" Grid.Column="1" Height="30" Background="{DynamicResource ChipButtonBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0" VerticalContentAlignment="Center" Padding="6,0" TextChanged="TxtSearchGroups_TextChanged" />
+                                <Button x:Name="BtnClearSearchGroups" Grid.Column="2" Content="{DynamicResource Drawer_Clear}" Margin="8,0,0,0" Click="BtnClearSearchGroups_Click" Style="{StaticResource ItemActionChipButton}"/>
+                                <Button x:Name="BtnChannelsRefreshGroups" Grid.Column="3" Content="{DynamicResource Drawer_Recordings_Refresh}" Margin="8,0,0,0" Click="BtnChannelsRefreshGroups_Click" Style="{StaticResource ItemActionChipButton}"/>
+                            </Grid>
+                            <!-- 列表区 -->
+                            <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="6,6,6,6" Background="Transparent">
                             <ItemsControl x:Name="ListGroups" >
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
@@ -986,6 +1007,7 @@
                                 </ItemsControl.ItemTemplate>
                             </ItemsControl>
                         </ScrollViewer>
+                        </Grid>
                     </TabItem>
                     <TabItem Header="{DynamicResource Tab_History}" x:Name="TabHistory">
                         <Grid Background="Transparent">
@@ -996,8 +1018,8 @@
                             <DockPanel Grid.Row="0" Margin="12,12,12,8">
                                 <TextBlock Text="{DynamicResource History_Title}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="14" FontWeight="Bold" DockPanel.Dock="Left" VerticalAlignment="Center"/>
                                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center">
-                                    <Button x:Name="BtnHistoryDelete" Content="{DynamicResource History_DeleteSelected}" Click="BtnHistoryDelete_Click" Style="{StaticResource ActionChipButton}"/>
-                                    <Button x:Name="BtnHistoryClear" Content="{DynamicResource History_ClearAll}" Click="BtnHistoryClear_Click" Style="{StaticResource ActionChipButton}" Margin="8,0,0,0"/>
+                                    <Button x:Name="BtnHistoryDelete" Content="{DynamicResource History_DeleteSelected}" Click="BtnHistoryDelete_Click" Style="{StaticResource ItemActionChipButton}"/>
+                                    <Button x:Name="BtnHistoryClear" Content="{DynamicResource History_ClearAll}" Click="BtnHistoryClear_Click" Style="{StaticResource ItemActionChipButton}" Margin="8,0,0,0"/>
                                 </StackPanel>
                             </DockPanel>
                             <ListBox x:Name="ListHistory" Grid.Row="1" Background="Transparent" BorderThickness="0" Margin="10,0,10,0" SelectionMode="Extended" MouseDoubleClick="ListHistory_MouseDoubleClick"

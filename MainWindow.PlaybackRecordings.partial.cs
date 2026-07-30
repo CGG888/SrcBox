@@ -145,7 +145,19 @@ namespace LibmpvIptvClient
         }
         void BtnChannelsRefresh_Click(object sender, RoutedEventArgs e)
         {
-            try { _shell.ApplyChannelFilter(); } catch { }
+            try
+            {
+                var selected = AppSettings.Current.SavedSources?.FirstOrDefault(s => s.IsSelected);
+                if (selected != null)
+                {
+                    _shell.MenuActions.LoadM3u(selected);
+                }
+                else
+                {
+                    _shell.ApplyChannelFilter();
+                }
+            }
+            catch { }
         }
 
         System.Collections.Generic.HashSet<string> _recordingsExpanded = new System.Collections.Generic.HashSet<string>(System.StringComparer.OrdinalIgnoreCase);

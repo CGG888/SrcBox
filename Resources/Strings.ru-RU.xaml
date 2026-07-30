@@ -143,6 +143,7 @@
   <sys:String x:Key="Drawer_Title">Список каналов</sys:String>
   <sys:String x:Key="Drawer_Collapse">Свернуть список</sys:String>
   <sys:String x:Key="Drawer_Clear">Очистить</sys:String>
+  <sys:String x:Key="Drawer_M3uList">Выбор M3U списка</sys:String>
   <sys:String x:Key="Drawer_CountAll">Всего {0} каналов</sys:String>
   <sys:String x:Key="Drawer_FilteredCount">{0} / {1} отфильтровано</sys:String>
   <sys:String x:Key="Tab_AllChannels">Все каналы</sys:String>

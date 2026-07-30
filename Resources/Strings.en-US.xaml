@@ -154,6 +154,7 @@
   <sys:String x:Key="Drawer_Title">Channel list</sys:String>
   <sys:String x:Key="Drawer_Collapse">Collapse channel list</sys:String>
   <sys:String x:Key="Drawer_Clear">Clear</sys:String>
+  <sys:String x:Key="Drawer_M3uList">Select M3U List</sys:String>
   <sys:String x:Key="Drawer_CountAll">Total {0} channels</sys:String>
   <sys:String x:Key="Drawer_FilteredCount">{0} / {1} filtered</sys:String>
   <sys:String x:Key="Tab_AllChannels">All channels</sys:String>

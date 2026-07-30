@@ -185,6 +185,40 @@ namespace LibmpvIptvClient
             try { _shell.SearchText = ""; } catch { }
         }
 
+        void CbM3uList_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (sender is System.Windows.Controls.ComboBox cb && cb.SelectedItem is M3uSource src)
+            {
+                _shell.MenuActions.LoadM3u(src);
+            }
+        }
+
+        void TxtSearchGroups_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        {
+        }
+
+        void BtnClearSearchGroups_Click(object sender, RoutedEventArgs e)
+        {
+            try { _shell.SearchText = ""; } catch { }
+        }
+
+        void BtnChannelsRefreshGroups_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var selected = AppSettings.Current.SavedSources?.FirstOrDefault(s => s.IsSelected);
+                if (selected != null)
+                {
+                    _shell.MenuActions.LoadM3u(selected);
+                }
+                else
+                {
+                    _shell.ApplyChannelFilter();
+                }
+            }
+            catch { }
+        }
+
         void ListGroups_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
         {
             if (sender is System.Windows.Controls.ListBox list && list.SelectedItem is LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow.ChannelGroupItem item)

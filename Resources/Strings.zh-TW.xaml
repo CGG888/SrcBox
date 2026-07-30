@@ -143,6 +143,7 @@
   <sys:String x:Key="Drawer_Title">頻道列表</sys:String>
   <sys:String x:Key="Drawer_Collapse">收合頻道列表</sys:String>
   <sys:String x:Key="Drawer_Clear">清除</sys:String>
+  <sys:String x:Key="Drawer_M3uList">選擇M3U列表</sys:String>
   <sys:String x:Key="Drawer_CountAll">共 {0} 個頻道</sys:String>
   <sys:String x:Key="Drawer_FilteredCount">篩選 {0} / {1}</sys:String>
   <sys:String x:Key="Tab_AllChannels">所有頻道</sys:String>

@@ -42,6 +42,9 @@ namespace LibmpvIptvClient
         public MainWindow()
         {
             InitializeComponent();
+            CbM3uList.ItemsSource = AppSettings.Current.SavedSources;
+            CbM3uListGroups.ItemsSource = AppSettings.Current.SavedSources;
+            SyncM3uComboBoxSelection();
             DataContext = _shell;
             _overlayManager = new LibmpvIptvClient.Architecture.Presentation.View.MainWindowOverlayManager(this, _shell);
             _menuManager = new LibmpvIptvClient.Architecture.Presentation.View.MainWindowMenuManager(this, _shell, _overlayManager);
@@ -92,6 +95,26 @@ namespace LibmpvIptvClient
                     }
                     catch { }
                 };
+            }
+            catch { }
+        }
+
+        private void SyncM3uComboBoxSelection()
+        {
+            try
+            {
+                var sources = AppSettings.Current.SavedSources;
+                if (sources == null || sources.Count == 0)
+                {
+                    CbM3uList.SelectedIndex = -1;
+                    CbM3uList.Text = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Drawer_M3uList", "选择M3U列表");
+                    CbM3uListGroups.SelectedIndex = -1;
+                    CbM3uListGroups.Text = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Drawer_M3uList", "选择M3U列表");
+                    return;
+                }
+                var selected = sources.FirstOrDefault(s => s.IsSelected);
+                CbM3uList.SelectedItem = selected;
+                CbM3uListGroups.SelectedItem = selected;
             }
             catch { }
         }
