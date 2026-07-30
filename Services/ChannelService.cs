@@ -34,7 +34,7 @@ namespace LibmpvIptvClient.Services
                             if (cached != null && cached.Count > 0)
                             {
                                 fromM3u = cached;
-                                if (string.IsNullOrEmpty(_m3u.TvgUrl) && !string.IsNullOrEmpty(cachedTvgUrl))
+                                if (!string.IsNullOrEmpty(cachedTvgUrl))
                                 {
                                     _m3u.TvgUrl = cachedTvgUrl;
                                 }
@@ -63,7 +63,7 @@ namespace LibmpvIptvClient.Services
                             if (cached != null && cached.Count > 0)
                             {
                                 fromM3u = cached;
-                                if (string.IsNullOrEmpty(_m3u.TvgUrl) && !string.IsNullOrEmpty(cachedTvgUrl))
+                                if (!string.IsNullOrEmpty(cachedTvgUrl))
                                 {
                                     _m3u.TvgUrl = cachedTvgUrl;
                                 }

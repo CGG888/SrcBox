@@ -189,6 +189,10 @@ namespace LibmpvIptvClient
         {
             if (sender is System.Windows.Controls.ComboBox cb && cb.SelectedItem is M3uSource src)
             {
+                if (cb.Name == nameof(CbM3uList))
+                    CbM3uListGroups.SelectedItem = src;
+                else if (cb.Name == nameof(CbM3uListGroups))
+                    CbM3uList.SelectedItem = src;
                 _shell.MenuActions.LoadM3u(src);
             }
         }

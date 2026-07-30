@@ -1,7 +1,9 @@
 using System;
-using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Net.Http;
+using System.Security.Cryptography;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
@@ -13,9 +15,9 @@ namespace LibmpvIptvClient.Helpers
 {
     public static class ImageExtensions
     {
-        private static HttpClient _http => LibmpvIptvClient.Services.HttpClientService.Instance.Client;
-        private static readonly ConcurrentDictionary<string, BitmapImage> _cache = new ConcurrentDictionary<string, BitmapImage>();
         private static readonly BitmapImage _defaultImage;
+        private static readonly LruCache<string, BitmapImage> _memoryCache = new LruCache<string, BitmapImage>(maxItems: 50);
+        private const int DecodeWidth = 160;
 
         static ImageExtensions()
         {
@@ -40,7 +42,6 @@ namespace LibmpvIptvClient.Helpers
             obj.SetValue(RemoteUrlProperty, value);
         }
 
-        // Using a DependencyProperty as the backing store for RemoteUrl.
         public static readonly DependencyProperty RemoteUrlProperty =
             DependencyProperty.RegisterAttached("RemoteUrl", typeof(string), typeof(ImageExtensions), new PropertyMetadata(null, OnRemoteUrlChanged));
 
@@ -55,24 +56,20 @@ namespace LibmpvIptvClient.Helpers
                     return;
                 }
 
-                // Check cache first
-                if (_cache.TryGetValue(url, out var cached))
+                if (_memoryCache.TryGet(url, out var cached))
                 {
                     img.Source = cached;
                     return;
                 }
 
-                // Set default/loading image while fetching
                 img.Source = _defaultImage;
 
                 try
                 {
-                    // Use captured context to ensure UI update happens on UI thread
                     var bitmap = await LoadImageAsync(url);
                     if (bitmap != null)
                     {
-                        _cache[url] = bitmap;
-                        // Verify the URL hasn't changed while we were loading
+                        _memoryCache.Set(url, bitmap);
                         if (GetRemoteUrl(img) == url)
                         {
                             img.Source = bitmap;
@@ -82,105 +79,123 @@ namespace LibmpvIptvClient.Helpers
                 catch (Exception ex)
                 {
                     Logger.Error($"Failed to load {url}: {ex.Message}");
-                    // Keep default image on failure
                 }
             }
         }
 
         private static async Task<BitmapImage?> LoadImageAsync(string url)
         {
-            if (string.IsNullOrWhiteSpace(url)) return null; // Pre-check to prevent null argument exceptions
+            if (string.IsNullOrWhiteSpace(url)) return null;
 
             try
             {
                 string processedUrl = url.Trim();
-                
-                // Better URL normalization
                 if (processedUrl.StartsWith("//"))
                     processedUrl = "http:" + processedUrl;
                 else if (!processedUrl.Contains("://") && !Path.IsPathRooted(processedUrl))
                 {
-                    // If it looks like a domain, assume http
                     if (!File.Exists(Path.GetFullPath(processedUrl)) && processedUrl.Contains("."))
                         processedUrl = "http://" + processedUrl;
                 }
 
-                byte[]? data = null;
+                string? filePath = null;
 
                 if (processedUrl.StartsWith("http", StringComparison.OrdinalIgnoreCase))
                 {
-                    try { if (LogoCacheService.Instance.IsNegative(processedUrl)) return null; } catch { }
-                    // True async call
-                    try 
+                    filePath = LogoCacheService.Instance.GetCachedPath(processedUrl);
+                    if (string.IsNullOrWhiteSpace(filePath))
                     {
-                        data = await _http.GetByteArrayAsyncWithRetry(processedUrl);
-                    }
-                    catch (HttpRequestException he)
-                    {
-                        Logger.Error($"HTTP Request failed for {processedUrl}: {he.Message} Status: {he.StatusCode}");
-                        return null;
+                        filePath = await LogoCacheService.Instance.GetLogoPathAsync("", processedUrl);
                     }
                 }
                 else if (File.Exists(processedUrl))
                 {
-                    data = await File.ReadAllBytesAsync(processedUrl);
+                    filePath = processedUrl;
                 }
                 else
                 {
-                    // URL is neither a valid http(s) url nor a local file path
-                    Logger.Warn($"Skipping invalid image source: {processedUrl} (Original: {url})");
-                    try { LogoCacheService.Instance.MarkNegative(processedUrl); } catch { }
                     return null;
                 }
 
-                if (data != null && data.Length > 0)
-                {
-                    // Check if it's HTML (common error for "200 OK" but not image)
-                    if (data.Length < 1024)
-                    {
-                        try
-                        {
-                            var header = System.Text.Encoding.ASCII.GetString(data, 0, Math.Min(data.Length, 100));
-                            if (header.Contains("<html") || header.Contains("<!DOCTYPE"))
-                            {
-                                Logger.Warn($"Received HTML instead of image for {url}");
-                                return null;
-                            }
-                        }
-                        catch { }
-                    }
+                if (string.IsNullOrWhiteSpace(filePath) || !File.Exists(filePath))
+                    return null;
 
-                    // Create bitmap on UI thread or Frozen on background thread?
-                    // Best practice: Create on background, freeze, return.
-                    return await Task.Run(() =>
+                return await Task.Run(() =>
+                {
+                    try
                     {
-                        using var ms = new MemoryStream(data);
-                        
-                        try
-                        {
-                            var img = new BitmapImage();
-                            img.BeginInit();
-                            img.CacheOption = BitmapCacheOption.OnLoad;
-                            img.CreateOptions = BitmapCreateOptions.None; // Use default
-                            img.StreamSource = ms;
-                            img.EndInit();
-                            img.Freeze();
-                            return img;
-                        }
-                        catch (Exception ex)
-                        {
-                            // Log detailed error
-                            Logger.Error($"Bitmap decode error for {url}. Data len: {data.Length}. Error: {ex}");
-                            return null;
-                        }
-                    });
-                }
+                        var img = new BitmapImage();
+                        img.BeginInit();
+                        img.CacheOption = BitmapCacheOption.OnLoad;
+                        img.CreateOptions = BitmapCreateOptions.IgnoreColorProfile;
+                        img.StreamSource = new MemoryStream(File.ReadAllBytes(filePath));
+                        img.DecodePixelWidth = DecodeWidth;
+                        img.EndInit();
+                        img.Freeze();
+                        return img;
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error($"Bitmap decode error for {url}: {ex.Message}");
+                        return null;
+                    }
+                });
             }
             catch (Exception ex)
             {
-                Logger.Error($"Download error for {url}: {ex.Message}");
+                Logger.Error($"Load image error for {url}: {ex.Message}");
             }
             return null;
+        }
+    }
+
+    internal class LruCache<TKey, TValue> where TKey : notnull
+    {
+        private readonly int _maxItems;
+        private readonly LinkedList<(TKey Key, TValue Value)> _list = new();
+        private readonly Dictionary<TKey, LinkedListNode<(TKey, TValue)>> _dict = new();
+
+        public LruCache(int maxItems)
+        {
+            _maxItems = maxItems;
+        }
+
+        public bool TryGet(TKey key, out TValue value)
+        {
+            if (_dict.TryGetValue(key, out var node))
+            {
+                value = node.Value.Item2;
+                _list.Remove(node);
+                _list.AddLast(node);
+                return true;
+            }
+            value = default!;
+            return false;
+        }
+
+        public void Set(TKey key, TValue value)
+        {
+            if (_dict.TryGetValue(key, out var node))
+            {
+                _list.Remove(node);
+                _list.AddLast(node);
+                node.Value = (key, value);
+            }
+            else
+            {
+                if (_dict.Count >= _maxItems)
+                {
+                    var first = _list.First;
+                    if (first != null)
+                    {
+                        _dict.Remove(first.Value.Item1);
+                        _list.RemoveFirst();
+                    }
+                }
+                node = new LinkedListNode<(TKey, TValue)>((key, value));
+                _list.AddLast(node);
+                _dict[key] = node;
+            }
         }
     }
 }

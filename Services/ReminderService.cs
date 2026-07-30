@@ -111,7 +111,7 @@ namespace LibmpvIptvClient.Services
                             if (!string.IsNullOrWhiteSpace(r.ChannelLogo))
                             {
                                 if (System.IO.File.Exists(r.ChannelLogo)) logoLocal = r.ChannelLogo;
-                                else logoLocal = LogoCacheService.Instance.GetOrDownloadAsync(r.ChannelLogo).GetAwaiter().GetResult();
+                                else logoLocal = LogoCacheService.Instance.GetLogoPathAsync(r.ChannelName ?? "", r.ChannelLogo).GetAwaiter().GetResult();
                             }
                         }
                         catch { }
@@ -144,7 +144,7 @@ namespace LibmpvIptvClient.Services
                             if (!string.IsNullOrWhiteSpace(r.ChannelLogo))
                             {
                                 if (System.IO.File.Exists(r.ChannelLogo)) logoLocal = r.ChannelLogo;
-                                else logoLocal = LogoCacheService.Instance.GetOrDownloadAsync(r.ChannelLogo).GetAwaiter().GetResult();
+                                else logoLocal = LogoCacheService.Instance.GetLogoPathAsync(r.ChannelName ?? "", r.ChannelLogo).GetAwaiter().GetResult();
                             }
                         }
                         catch { }

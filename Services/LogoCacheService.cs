@@ -1,12 +1,14 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
 using LibmpvIptvClient.Diagnostics;
+using LibmpvIptvClient.Models;
 using System.Diagnostics;
-using WpfApp = System.Windows.Application;
 
 namespace LibmpvIptvClient.Services
 {
@@ -33,67 +35,231 @@ namespace LibmpvIptvClient.Services
         }
         private TimeSpan Ttl => TimeSpan.FromHours(Math.Max(1, AppSettings.Current.Logo.CacheTtlHours));
         private long MaxBytes => Math.Max(50, AppSettings.Current.Logo.CacheMaxMiB) * 1024L * 1024L;
-        private const string NegExt = ".neg"; // negative cache marker (no image / unsupported)
+        private const string NegExt = ".neg";
 
-        public async Task<string?> GetOrDownloadAsync(string url)
+        public string? GetCachedPath(string url)
         {
+            if (string.IsNullOrWhiteSpace(url)) return null;
+            var hash = Sha1(url);
+            var dir = CacheDir;
+            if (!Directory.Exists(dir)) return null;
+
             try
             {
-                if (!AppSettings.Current.Logo.EnableCache) return null;
-                if (string.IsNullOrWhiteSpace(url)) return null;
-                var dir = EnsureCacheDir();
-                if (string.IsNullOrWhiteSpace(dir)) return null;
-                
-                // Negative cache: if previously determined no valid image, skip network entirely
-                if (IsNegative(url))
+                var ext = GetExtensionFromUrl(url);
+                var hashPath = Path.Combine(dir, hash + ext);
+                if (File.Exists(hashPath))
                 {
-                    return null;
+                    var age = DateTime.UtcNow - File.GetLastWriteTimeUtc(hashPath);
+                    if (age < Ttl) return hashPath;
                 }
-                
-                var ext = Path.GetExtension(url);
-                if (string.IsNullOrWhiteSpace(ext) || ext.Length > 5) ext = ".img";
-                var name = Sha1(url) + ext;
-                var path = Path.Combine(dir, name);
-                if (File.Exists(path))
+
+                var allFiles = Directory.GetFiles(dir, "*.*", SearchOption.TopDirectoryOnly)
+                    .Where(f => !Path.GetFileName(f).StartsWith("."))
+                    .ToArray();
+
+                foreach (var f in allFiles)
                 {
-                    var age = DateTime.UtcNow - File.GetLastWriteTimeUtc(path);
-                    if (age < Ttl)
+                    var name = Path.GetFileNameWithoutExtension(f);
+                    if (name.Equals(hash, StringComparison.OrdinalIgnoreCase))
                     {
-                        return path;
+                        if (File.Exists(f))
+                        {
+                            return f;
+                        }
                     }
                 }
-                var tmp = path + ".downloading";
+            }
+            catch { }
+            return null;
+        }
+
+        public async Task<string?> GetLogoPathAsync(string channelName, string logoUrl)
+        {
+            if (!AppSettings.Current.Logo.EnableCache) return null;
+            if (string.IsNullOrWhiteSpace(logoUrl)) return null;
+
+            var dir = EnsureCacheDir();
+            if (string.IsNullOrWhiteSpace(dir)) return null;
+
+            if (IsNegative(logoUrl))
+            {
+                return null;
+            }
+
+            var hash = Sha1(logoUrl);
+            var ext = GetExtensionFromUrl(logoUrl);
+            var hashPath = Path.Combine(dir, hash + ext);
+
+            if (File.Exists(hashPath))
+            {
+                var age = DateTime.UtcNow - File.GetLastWriteTimeUtc(hashPath);
+                if (age < Ttl)
+                {
+                    return hashPath;
+                }
+            }
+
+            if (!string.IsNullOrWhiteSpace(channelName))
+            {
+                var sanitized = SanitizeFileName(channelName);
+                var namePath = Path.Combine(dir, sanitized + ext);
+
+                if (File.Exists(namePath))
+                {
+                    var age = DateTime.UtcNow - File.GetLastWriteTimeUtc(namePath);
+                    if (age < Ttl)
+                    {
+                        return namePath;
+                    }
+                }
+            }
+
+            return await DownloadLogoAsync(logoUrl, channelName, dir);
+        }
+
+        private async Task<string?> DownloadLogoAsync(string url, string channelName, string dir)
+        {
+            var tmp = Path.Combine(dir, ".dl_" + Guid.NewGuid().ToString("N"));
+            try
+            {
                 using (var resp = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
                 {
                     if (!resp.IsSuccessStatusCode)
                     {
-                        try { MarkNegative(url); } catch { }
-                        return File.Exists(path) ? path : null;
+                        MarkNegative(url);
+                        return null;
                     }
-                    // Content-Type gate: avoid saving unsupported formats (e.g., webp) to prevent WIC decode error
-                    try
-                    {
-                        var ct = resp.Content.Headers.ContentType?.MediaType?.ToLowerInvariant() ?? "";
-                        if (!(ct == "image/png" || ct == "image/jpeg" || ct == "image/jpg" || ct == "image/bmp" || ct == "image/gif"))
-                        {
-                            try { MarkNegative(url); } catch { }
-                            return null;
-                        }
-                    }
-                    catch { }
                     using (var fs = File.Create(tmp))
                     {
                         await resp.Content.CopyToAsync(fs);
                     }
                 }
-                if (File.Exists(path)) File.Delete(path);
-                File.Move(tmp, path);
+
+                var hash = Sha1(url);
+                var ext = GetExtensionFromUrl(url);
+                string targetPath;
+
+                if (!string.IsNullOrWhiteSpace(channelName))
+                {
+                    var sanitized = SanitizeFileName(channelName);
+                    var namePath = Path.Combine(dir, sanitized + ext);
+                    if (!File.Exists(namePath))
+                    {
+                        targetPath = namePath;
+                    }
+                    else
+                    {
+                        var existingHash = HashFile(namePath);
+                        if (existingHash == hash)
+                        {
+                            targetPath = namePath;
+                        }
+                        else
+                        {
+                            targetPath = Path.Combine(dir, hash + ext);
+                        }
+                    }
+                }
+                else
+                {
+                    targetPath = Path.Combine(dir, hash + ext);
+                }
+
+                if (File.Exists(targetPath) && !targetPath.Equals(tmp)) File.Delete(targetPath);
+                if (!tmp.Equals(targetPath)) File.Move(tmp, targetPath);
                 _ = Task.Run(() => TryCleanup());
-                return path;
+                return targetPath;
             }
-            catch { }
+            catch
+            {
+                MarkNegative(url);
+            }
+            finally
+            {
+                if (File.Exists(tmp)) try { File.Delete(tmp); } catch { }
+            }
             return null;
         }
+
+        public async Task WarmupAndSwapAsync(IEnumerable<Channel> list)
+        {
+            if (!AppSettings.Current.Logo.EnableCache) return;
+            int ok = 0, fail = 0;
+            var tasks = new List<Task>();
+            foreach (var ch in list)
+            {
+                var logo = ch?.Logo ?? "";
+                if (string.IsNullOrWhiteSpace(logo)) continue;
+                tasks.Add(Task.Run(async () =>
+                {
+                    try
+                    {
+                        var local = await GetLogoPathAsync(ch.Name, logo);
+                        if (!string.IsNullOrWhiteSpace(local))
+                        {
+                            System.Threading.Interlocked.Increment(ref ok);
+                            try
+                            {
+                                System.Windows.Application.Current?.Dispatcher?.Invoke(() => ch.Logo = local);
+                            }
+                            catch { }
+                        }
+                        else
+                        {
+                            System.Threading.Interlocked.Increment(ref fail);
+                        }
+                    }
+                    catch { System.Threading.Interlocked.Increment(ref fail); }
+                }));
+            }
+            try { await Task.WhenAll(tasks); } catch { }
+            try { Logger.Info($"[LogoCache] Warmup: {ok} ok, {fail} failed"); } catch { }
+        }
+
+        private string SanitizeFileName(string name)
+        {
+            if (string.IsNullOrWhiteSpace(name)) return "";
+            var invalid = Path.GetInvalidFileNameChars();
+            var sb = new StringBuilder(name);
+            foreach (var c in invalid)
+            {
+                sb.Replace(c, '_');
+            }
+            var sanitized = sb.ToString().Trim();
+            if (string.IsNullOrWhiteSpace(sanitized)) return Sha1(name).Substring(0, 12);
+            return sanitized;
+        }
+
+        private string GetExtensionFromUrl(string url)
+        {
+            try
+            {
+                var uri = new Uri(url);
+                var ext = Path.GetExtension(uri.AbsolutePath);
+                if (!string.IsNullOrWhiteSpace(ext) && ext.Length <= 5) return ext.ToLower();
+                if (url.Contains(".png", StringComparison.OrdinalIgnoreCase)) return ".png";
+                if (url.Contains(".jpg", StringComparison.OrdinalIgnoreCase)) return ".jpg";
+                if (url.Contains(".jpeg", StringComparison.OrdinalIgnoreCase)) return ".jpg";
+                if (url.Contains(".gif", StringComparison.OrdinalIgnoreCase)) return ".gif";
+                if (url.Contains(".webp", StringComparison.OrdinalIgnoreCase)) return ".png";
+            }
+            catch { }
+            return ".png";
+        }
+
+        private string HashFile(string path)
+        {
+            try
+            {
+                using var sha1 = SHA1.Create();
+                using var fs = File.OpenRead(path);
+                var hash = sha1.ComputeHash(fs);
+                return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+            }
+            catch { return ""; }
+        }
+
         public bool IsNegative(string url)
         {
             try
@@ -110,6 +276,7 @@ namespace LibmpvIptvClient.Services
             catch { }
             return false;
         }
+
         public void MarkNegative(string url)
         {
             try
@@ -117,17 +284,16 @@ namespace LibmpvIptvClient.Services
                 var dir = EnsureCacheDir();
                 var marker = Path.Combine(dir, Sha1(url) + NegExt);
                 File.WriteAllText(marker, "neg");
-                try { Logger.Debug($"[LogoCache] NEG-WRITE {marker}"); } catch { }
             }
             catch { }
         }
+
         private string EnsureCacheDir()
         {
             var dir = CacheDir;
             try
             {
                 Directory.CreateDirectory(dir);
-                // quick write probe
                 var probe = Path.Combine(dir, ".probe");
                 using (File.Create(probe)) { }
                 File.Delete(probe);
@@ -135,7 +301,6 @@ namespace LibmpvIptvClient.Services
             }
             catch (UnauthorizedAccessException)
             {
-                // If default (empty in settings) points to a protected location, fallback to LocalAppData and persist
                 try
                 {
                     if (string.IsNullOrWhiteSpace(AppSettings.Current.Logo.CacheDir))
@@ -154,49 +319,18 @@ namespace LibmpvIptvClient.Services
             return dir;
         }
 
-        public async Task WarmupAndSwapAsync(System.Collections.Generic.IEnumerable<Models.Channel> list)
-        {
-            if (!AppSettings.Current.Logo.EnableCache) return;
-            var tasks = new System.Collections.Generic.List<Task>();
-            int ok = 0, fail = 0, neg = 0;
-            foreach (var ch in list)
-            {
-                var logo = ch?.Logo ?? "";
-                if (string.IsNullOrWhiteSpace(logo)) continue;
-                tasks.Add(Task.Run(async () =>
-                {
-                    var local = await GetOrDownloadAsync(logo);
-                    if (!string.IsNullOrWhiteSpace(local))
-                    {
-                        System.Threading.Interlocked.Increment(ref ok);
-                        try { WpfApp.Current?.Dispatcher?.Invoke(() => ch.Logo = local); } catch { }
-                    }
-                    else
-                    {
-                        if (IsNegative(logo)) System.Threading.Interlocked.Increment(ref neg);
-                        else System.Threading.Interlocked.Increment(ref fail);
-                    }
-                }));
-            }
-            try { await Task.WhenAll(tasks); } catch { }
-            try
-            {
-                var dir = EnsureCacheDir();
-                LibmpvIptvClient.Diagnostics.Logger.Debug($"[LogoCache] summary dir={dir} ok={ok} fail={fail} neg={neg}");
-            }
-            catch { }
-        }
-
         private void TryCleanup()
         {
             try
             {
                 if (!Directory.Exists(CacheDir)) return;
-                var files = new DirectoryInfo(CacheDir).GetFiles("*", SearchOption.TopDirectoryOnly);
+                var files = new DirectoryInfo(CacheDir).GetFiles("*", SearchOption.TopDirectoryOnly)
+                    .Where(f => f.Extension.ToLower() != NegExt)
+                    .ToArray();
                 long total = 0;
-                Array.Sort(files, (a, b) => b.LastWriteTimeUtc.CompareTo(a.LastWriteTimeUtc));
                 foreach (var f in files) total += f.Length;
                 if (total <= MaxBytes) return;
+                Array.Sort(files, (a, b) => a.LastWriteTimeUtc.CompareTo(b.LastWriteTimeUtc));
                 foreach (var f in files)
                 {
                     if (total <= MaxBytes) break;
