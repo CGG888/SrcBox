@@ -17,7 +17,7 @@ namespace LibmpvIptvClient.Services
         readonly List<UploadItem> _items = new List<UploadItem>();
         static readonly System.Collections.Concurrent.ConcurrentDictionary<string, DateTime> _notified = new System.Collections.Concurrent.ConcurrentDictionary<string, DateTime>(StringComparer.OrdinalIgnoreCase);
         SemaphoreSlim _sem = new SemaphoreSlim(1, 64);
-        bool _running = false;
+        volatile bool _running = false;
         int _maxConcurrency = 1;
         int _maxRetry = 3;
         int _backoffMs = 1000;
@@ -79,6 +79,7 @@ namespace LibmpvIptvClient.Services
         }
         public void Retry(string id)
         {
+            bool needSave = false;
             lock (_lock)
             {
                 var it = _items.FirstOrDefault(i => i.Id == id);
@@ -86,17 +87,20 @@ namespace LibmpvIptvClient.Services
                 {
                     it.Status = "pending";
                     it.Error = null;
+                    needSave = true;
                 }
-                Save();
             }
+            if (needSave) Save();
         }
         public void Remove(string id)
         {
+            bool needSave = false;
             lock (_lock)
             {
                 _items.RemoveAll(i => i.Id == id);
-                Save();
+                needSave = true;
             }
+            if (needSave) Save();
         }
 
         async Task RunAsync(LibmpvIptvClient.WebDavConfig wd)
@@ -108,16 +112,18 @@ namespace LibmpvIptvClient.Services
                 while (true)
                 {
                     UploadItem? next = null;
+                    bool needSave = false;
                     lock (_lock)
                     {
                         next = _items.FirstOrDefault(i => i.Status == "pending" || (i.Status == "failed" && i.Attempts <= _maxRetry));
                         if (next != null)
                         {
                             next.Status = "running"; // 立即占位，避免并发挑中同一项
-                            Save();
+                            needSave = true;
                         }
                     }
                     if (next == null) break;
+                    if (needSave) Save();
                     await _sem.WaitAsync();
                     _ = Task.Run(async () =>
                     {

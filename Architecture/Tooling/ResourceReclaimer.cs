@@ -32,8 +32,6 @@ public sealed class ResourceReclaimer
             }
         }
 
-        GC.Collect();
-        GC.WaitForPendingFinalizers();
         return released;
     }
 }

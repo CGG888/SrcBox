@@ -22,7 +22,7 @@ namespace LibmpvIptvClient.Services
         {
             get
             {
-                var custom = AppSettings.Current.Logo.CacheDir;
+                var custom = AppSettings.Current?.Logo?.CacheDir;
                 if (!string.IsNullOrWhiteSpace(custom)) return custom;
                 string exeDir = "";
                 try { exeDir = Path.GetDirectoryName(Process.GetCurrentProcess().MainModule?.FileName ?? "") ?? ""; } catch { }
@@ -33,8 +33,8 @@ namespace LibmpvIptvClient.Services
                 return Path.Combine(exeDir, "logo-cache");
             }
         }
-        private TimeSpan Ttl => TimeSpan.FromHours(Math.Max(1, AppSettings.Current.Logo.CacheTtlHours));
-        private long MaxBytes => Math.Max(50, AppSettings.Current.Logo.CacheMaxMiB) * 1024L * 1024L;
+        private TimeSpan Ttl => TimeSpan.FromHours(Math.Max(1, AppSettings.Current?.Logo?.CacheTtlHours ?? 24));
+        private long MaxBytes => Math.Max(50, AppSettings.Current?.Logo?.CacheMaxMiB ?? 200) * 1024L * 1024L;
         private const string NegExt = ".neg";
 
         public string? GetCachedPath(string url)
