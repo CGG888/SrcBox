@@ -24,19 +24,20 @@ namespace LibmpvIptvClient
 
         private void LoadRecentLog()
         {
+            const int MAX_LINES = 2000;
             try
             {
                 var latestLog = Logger.GetLatestLogFile();
                 if (!string.IsNullOrEmpty(latestLog) && File.Exists(latestLog))
                 {
-                    var lines = File.ReadAllLines(latestLog);
+                    var lines = File.ReadLines(latestLog).TakeLast(MAX_LINES);
+                    var sb = new System.Text.StringBuilder();
                     foreach (var line in lines)
                     {
                         if (!string.IsNullOrWhiteSpace(line))
-                        {
-                            TxtLog.AppendText(line + Environment.NewLine);
-                        }
+                            sb.AppendLine(line);
                     }
+                    TxtLog.Text = sb.ToString();
                     TxtLog.ScrollToEnd();
                 }
             }
