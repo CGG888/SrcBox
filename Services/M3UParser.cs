@@ -264,10 +264,10 @@ namespace LibmpvIptvClient.Services
         }
         static string ResolveUrl(string url, Uri? baseUri)
         {
-            if (Uri.TryCreate(url, UriKind.Absolute, out var abs)) return abs.ToString();
-            
-            if (baseUri != null && Uri.TryCreate(baseUri, url, out var rel)) return rel.ToString();
-            
+            if (Uri.TryCreate(url, UriKind.Absolute, out var abs)) return abs.AbsoluteUri;
+
+            if (baseUri != null && Uri.TryCreate(baseUri, url, out var rel)) return rel.AbsoluteUri;
+
             return url;
         }
         static StreamProtocol GuessProtocol(string url)
