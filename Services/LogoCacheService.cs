@@ -76,7 +76,7 @@ namespace LibmpvIptvClient.Services
 
         public async Task<string?> GetLogoPathAsync(string channelName, string logoUrl)
         {
-            if (!AppSettings.Current.Logo.EnableCache) return null;
+            if (AppSettings.Current?.Logo?.EnableCache != true) return null;
             if (string.IsNullOrWhiteSpace(logoUrl)) return null;
 
             var dir = EnsureCacheDir();
@@ -123,10 +123,12 @@ namespace LibmpvIptvClient.Services
             var tmp = Path.Combine(dir, ".dl_" + Guid.NewGuid().ToString("N"));
             try
             {
+                try { Logger.Debug($"[LogoCache] Downloading: {url}"); } catch { }
                 using (var resp = await _http.GetAsync(url, HttpCompletionOption.ResponseHeadersRead))
                 {
                     if (!resp.IsSuccessStatusCode)
                     {
+                        try { Logger.Debug($"[LogoCache] HTTP failed: {resp.StatusCode} for {url}"); } catch { }
                         MarkNegative(url);
                         return null;
                     }
@@ -169,10 +171,12 @@ namespace LibmpvIptvClient.Services
                 if (File.Exists(targetPath) && !targetPath.Equals(tmp)) File.Delete(targetPath);
                 if (!tmp.Equals(targetPath)) File.Move(tmp, targetPath);
                 _ = Task.Run(() => TryCleanup());
+                try { Logger.Debug($"[LogoCache] Downloaded: {targetPath}"); } catch { }
                 return targetPath;
             }
-            catch
+            catch (Exception ex)
             {
+                try { Logger.Debug($"[LogoCache] Download failed: {ex.Message} for {url}"); } catch { }
                 MarkNegative(url);
             }
             finally
@@ -184,7 +188,13 @@ namespace LibmpvIptvClient.Services
 
         public async Task WarmupAndSwapAsync(IEnumerable<Channel> list)
         {
-            if (!AppSettings.Current.Logo.EnableCache) return;
+            var enableCache = AppSettings.Current?.Logo?.EnableCache;
+            if (enableCache != true)
+            {
+                try { Logger.Info($"[LogoCache] Warmup skipped: EnableCache={enableCache}"); } catch { }
+                return;
+            }
+            try { Logger.Info($"[LogoCache] Warmup starting: {list.Count()} channels"); } catch { }
             int ok = 0, fail = 0;
             var tasks = new List<Task>();
             foreach (var ch in list)
@@ -303,7 +313,7 @@ namespace LibmpvIptvClient.Services
             {
                 try
                 {
-                    if (string.IsNullOrWhiteSpace(AppSettings.Current.Logo.CacheDir))
+                    if (string.IsNullOrWhiteSpace(AppSettings.Current?.Logo?.CacheDir))
                     {
                         var fallback = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SrcBox", "logo-cache");
                         Directory.CreateDirectory(fallback);

@@ -91,9 +91,13 @@ namespace LibmpvIptvClient.Services
             {
                 try
                 {
+                    LibmpvIptvClient.Diagnostics.Logger.Info("[ChannelService] Calling LogoCacheService.WarmupAndSwapAsync...");
                     _ = LibmpvIptvClient.Services.LogoCacheService.Instance.WarmupAndSwapAsync(fromM3u);
                 }
-                catch { }
+                catch (Exception ex)
+                {
+                    LibmpvIptvClient.Diagnostics.Logger.Error("[ChannelService] LogoCacheService call failed: " + ex.Message);
+                }
                 return (fromM3u, _m3u.TvgUrl);
             }
             var fromChecker = new List<Channel>();

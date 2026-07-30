@@ -26,7 +26,7 @@ namespace LibmpvIptvClient
     {
         public bool Enabled { get; set; } = true;
         public string Url { get; set; } = "";
-        public bool EnableCache { get; set; } = false;
+        public bool EnableCache { get; set; } = true;
         public string CacheDir { get; set; } = "";
         public double CacheTtlHours { get; set; } = 168;
         public int CacheMaxMiB { get; set; } = 500;
