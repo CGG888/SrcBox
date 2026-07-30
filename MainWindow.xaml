@@ -508,8 +508,8 @@
             </Grid>
         </Border>
 
-        <!-- 左侧 EPG 抽屉 -->
-        <Grid x:Name="EpgPanel" Grid.Row="1" Grid.Column="0" Background="{DynamicResource CardBackgroundBrush}" Visibility="Collapsed">
+        <!-- 左侧 EPG 抽屉 (跨 Row 1 和 Row 2，底部对齐底部控制栏) -->
+        <Grid x:Name="EpgPanel" Grid.Row="1" Grid.Column="0" Grid.RowSpan="2" Background="{DynamicResource CardBackgroundBrush}" Visibility="Collapsed">
              <!-- ... EPG Content (Same as before) ... -->
              <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
@@ -741,8 +741,8 @@
             </Border>
         </Grid>
 
-        <!-- 右侧频道/分组抽屉 -->
-        <Border Grid.Row="1" Grid.Column="2" Grid.RowSpan="1" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1,0,0,0" x:Name="DrawerPanel">
+        <!-- 右侧频道/分组抽屉 (跨 Row 1 和 Row 2，底部对齐底部控制栏) -->
+        <Border Grid.Row="1" Grid.Column="2" Grid.RowSpan="2" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1,0,0,0" x:Name="DrawerPanel">
              <!-- ... Drawer Content (Same as before) ... -->
              <Grid>
                 <Grid.RowDefinitions>
@@ -1319,7 +1319,7 @@
         </Border>
 
         <!-- 底部控制栏 -->
-        <Border x:Name="BottomBar" Grid.Row="2" Grid.Column="0" Grid.ColumnSpan="3" Background="{DynamicResource TopOverlayScrimBrush}" Height="64" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="0,1,0,0" PreviewMouseWheel="BottomBar_PreviewMouseWheel">
+        <Border x:Name="BottomBar" Grid.Row="2" Grid.Column="1" Background="{DynamicResource TopOverlayScrimBrush}" Height="64" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="0,1,0,0" PreviewMouseWheel="BottomBar_PreviewMouseWheel">
             <Border.Style>
                 <Style TargetType="Border">
                     <Setter Property="Visibility" Value="Visible"/>

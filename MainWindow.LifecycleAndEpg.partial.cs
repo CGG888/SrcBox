@@ -115,9 +115,17 @@ namespace LibmpvIptvClient
         internal void SetDrawerCollapsed(bool collapsed)
         {
             if (_shell.IsDrawerCollapsed == collapsed) return;
+            var drawerWidth = _shell.DrawerWidth > 0 ? _shell.DrawerWidth : 380;
+            if (!collapsed)
+            {
+                Width = _baseWindowWidth + (CbEpg.IsChecked == true ? 320 : 0) + drawerWidth;
+            }
+            else
+            {
+                Width = _baseWindowWidth + (CbEpg.IsChecked == true ? 320 : 0);
+            }
             _shell.IsDrawerCollapsed = collapsed;
             DrawerPanel.Visibility = collapsed ? Visibility.Collapsed : Visibility.Visible;
-            // 频道列表从隐藏→显示时，强制刷新 ListBox 解决虚拟化容器未重建导致的空白问题
             if (!collapsed)
             {
                 try { _shell.ApplyChannelFilter(); } catch { }
@@ -282,7 +290,25 @@ namespace LibmpvIptvClient
         }
         internal void CbEpg_Click(object sender, RoutedEventArgs e)
         {
-            _epgManager?.CbEpg_Click(sender, e);
+            var show = _shell.ViewToggleActions.ResolveEpgVisible(CbEpg.IsChecked);
+            if (_shell.WindowStateActions.IsFullscreen)
+            {
+                if (show) ShowFullscreenEpg();
+                else CloseFullscreenEpg();
+            }
+            else
+            {
+                var drawerWidth = _shell.DrawerWidth > 0 ? _shell.DrawerWidth : 380;
+                if (show)
+                {
+                    Width = _baseWindowWidth + 320 + (_shell.IsDrawerCollapsed ? 0 : drawerWidth);
+                }
+                else
+                {
+                    Width = _baseWindowWidth + (_shell.IsDrawerCollapsed ? 0 : drawerWidth);
+                }
+                _epgManager?.CbEpg_Click(sender, e);
+            }
         }
         void BtnEpgCollapse_Click(object sender, RoutedEventArgs e)
         {

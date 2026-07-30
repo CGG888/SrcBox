@@ -362,6 +362,9 @@ namespace LibmpvIptvClient
         {
             try
             {
+                var drawerWidth = _shell.DrawerWidth > 0 ? _shell.DrawerWidth : 380;
+                _baseWindowWidth = Width - (_shell.IsDrawerCollapsed ? 0 : drawerWidth) - (CbEpg.IsChecked == true ? 320 : 0);
+
                 InitializeAppServices();
                 var playerEngine = InitializePlayer();
                 InitializeViewModel(playerEngine);

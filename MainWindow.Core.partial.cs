@@ -38,6 +38,7 @@ namespace LibmpvIptvClient
         private readonly MainShellViewModel _shell = new();
         private readonly Action _epgRemindersChangedHandler;
         private DateTime _playStartTime;
+        private double _baseWindowWidth = 1280;
 
         public MainWindow()
         {
