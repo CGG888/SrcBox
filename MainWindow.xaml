@@ -7,7 +7,7 @@
         xmlns:controls="clr-namespace:LibmpvIptvClient.Controls"
         xmlns:helpers="clr-namespace:LibmpvIptvClient.Helpers"
         x:Class="LibmpvIptvClient.MainWindow"
-        Title="{DynamicResource App_Name}" Width="1280" Height="720" WindowStartupLocation="CenterScreen"
+        Title="{DynamicResource App_Name}" Width="1024" Height="768" WindowStartupLocation="CenterScreen"
         WindowStyle="SingleBorderWindow" ResizeMode="CanResize"
         AllowDrop="True" Drop="OnDrop"
         Icon="pack://application:,,,/srcbox.ico">
@@ -508,13 +508,14 @@
             </Grid>
         </Border>
 
-        <!-- 左侧 EPG 抽屉 (跨 Row 1 和 Row 2，底部对齐底部控制栏) -->
-        <Grid x:Name="EpgPanel" Grid.Row="1" Grid.Column="0" Grid.RowSpan="2" Background="{DynamicResource CardBackgroundBrush}" Visibility="Collapsed">
+        <!-- 左侧 EPG 抽屉 (Row 1，底部有边框) -->
+        <Grid x:Name="EpgPanel" Grid.Row="1" Grid.Column="0" Background="{DynamicResource CardBackgroundBrush}" Visibility="Collapsed">
              <!-- ... EPG Content (Same as before) ... -->
              <Grid.RowDefinitions>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="Auto"/>
                 <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <DockPanel Grid.Row="0" Margin="12,16,12,8">
                 <TextBlock Text="{DynamicResource EPG_Title}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="16" FontWeight="Bold" DockPanel.Dock="Left"/>
@@ -719,6 +720,7 @@
                     </DataTemplate>
                 </ListBox.ItemTemplate>
             </ListBox>
+            <Border Grid.Row="3" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="0,0,0,1"/>
         </Grid>
 
         <!-- 视频区域 -->
@@ -741,8 +743,8 @@
             </Border>
         </Grid>
 
-        <!-- 右侧频道/分组抽屉 (跨 Row 1 和 Row 2，底部对齐底部控制栏) -->
-        <Border Grid.Row="1" Grid.Column="2" Grid.RowSpan="2" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1,0,0,0" x:Name="DrawerPanel">
+        <!-- 右侧频道/分组抽屉 (Row 1，底部有边框) -->
+        <Border Grid.Row="1" Grid.Column="2" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1,0,0,1" x:Name="DrawerPanel">
              <!-- ... Drawer Content (Same as before) ... -->
              <Grid>
                 <Grid.RowDefinitions>
