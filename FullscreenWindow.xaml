@@ -6,7 +6,6 @@
         Title="FS"
         Icon="pack://application:,,,/srcbox.ico"
         WindowStyle="None"
-        WindowState="Maximized"
         Topmost="False"
         ResizeMode="NoResize"
         Background="Black"

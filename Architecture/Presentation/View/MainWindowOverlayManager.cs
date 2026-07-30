@@ -417,20 +417,21 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
 
             if (GetCursorPos(out POINT p))
             {
+                var fsWindow = _shell.WindowStateActions.FullscreenWindow;
                 System.Windows.Point relPoint;
                 try
                 {
-                    relPoint = _shell.WindowStateActions.FullscreenWindow.PointFromScreen(new System.Windows.Point(p.X, p.Y));
+                    relPoint = fsWindow.PointFromScreen(new System.Windows.Point(p.X, p.Y));
                 }
                 catch
                 {
-                    relPoint = new System.Windows.Point(p.X - _shell.WindowStateActions.FullscreenWindow.Left, p.Y - _shell.WindowStateActions.FullscreenWindow.Top);
+                    relPoint = new System.Windows.Point(p.X - fsWindow.Left, p.Y - fsWindow.Top);
                 }
 
                 var relX = relPoint.X;
                 var relY = relPoint.Y;
-                var screenW = _shell.WindowStateActions.FullscreenWindow.ActualWidth;
-                var screenH = _shell.WindowStateActions.FullscreenWindow.ActualHeight;
+                var screenW = fsWindow.ActualWidth;
+                var screenH = fsWindow.ActualHeight;
 
                 if (screenW <= 0 || screenH <= 0) return;
 

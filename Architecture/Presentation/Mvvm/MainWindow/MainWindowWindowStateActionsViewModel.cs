@@ -3,6 +3,8 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
+using System.Windows.Forms;
 using LibmpvIptvClient.Architecture.Presentation.Mvvm;
 
 namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
@@ -77,11 +79,33 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 IsFullscreen = true;
                 // updateUiState(true); // Removed, handled by binding
 
+                // 获取主窗口所在的屏幕，覆盖该屏幕的分辨率
+                var mainHandle = new WindowInteropHelper(ctx.MainWindow).Handle;
+                var screen = Screen.FromHandle(mainHandle);
+                var screenBounds = screen.Bounds;
+
+                // DPI 转换：Screen.Bounds 是设备像素，WPF 使用 DIP
+                var hwndSource = System.Windows.Interop.HwndSource.FromHwnd(mainHandle);
+                double dpiScaleX = 1.0, dpiScaleY = 1.0;
+                if (hwndSource != null)
+                {
+                    dpiScaleX = hwndSource.CompositionTarget.TransformToDevice.M11;
+                    dpiScaleY = hwndSource.CompositionTarget.TransformToDevice.M22;
+                }
+
+                // 全屏窗口：位置使用屏幕原点(0,0)，大小使用屏幕分辨率
                 FullscreenWindow = new FullscreenWindow();
                 FullscreenWindow.Topmost = true;
-                FullscreenWindow.Owner = ctx.MainWindow;
+                FullscreenWindow.Left = screenBounds.Left / dpiScaleX;
+                FullscreenWindow.Top = screenBounds.Top / dpiScaleY;
+                FullscreenWindow.Width = screenBounds.Width / dpiScaleX;
+                FullscreenWindow.Height = screenBounds.Height / dpiScaleY;
+                // 不设置 Owner，避免窗口跳到主屏幕
                 FullscreenWindow.Loaded += ctx.OnLoaded;
                 FullscreenPanel = FullscreenWindow.VideoPanel;
+
+                // 隐藏主窗口
+                ctx.MainWindow.Hide();
 
                 if (ctx.Mpv != null && FullscreenPanel != null)
                 {
@@ -116,13 +140,6 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 FullscreenWindow.Host.PreviewMouseMove += (s, e) => ctx.ShowOverlayWithDelay();
 
                 FullscreenWindow.Activated += (s, e) => EnsureTopmostZOrder();
-                FullscreenWindow.StateChanged += (s, e) =>
-                {
-                    if (FullscreenWindow.WindowState != WindowState.Maximized)
-                    {
-                        try { FullscreenWindow.WindowState = WindowState.Maximized; } catch { }
-                    }
-                };
                 FullscreenWindow.Deactivated += (s, e) =>
                 {
                     try { if (FullscreenWindow != null && !FullscreenWindow.Topmost) FullscreenWindow.Topmost = true; } catch { }
@@ -133,9 +150,15 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 
                 FullscreenWindow.Show();
                 FullscreenWindow.Focus();
-                
+
+                // Show() 后再次设置位置和大小，确保覆盖整个屏幕
+                FullscreenWindow.Left = screenBounds.Left / dpiScaleX;
+                FullscreenWindow.Top = screenBounds.Top / dpiScaleY;
+                FullscreenWindow.Width = screenBounds.Width / dpiScaleX;
+                FullscreenWindow.Height = screenBounds.Height / dpiScaleY;
+
                 ctx.CreateTopOverlay();
-                
+
                 ctx.ResetOverlayForOwner();
                 ctx.ShowFsOverlayNow();
                 ctx.SyncTimeshiftUi();
@@ -180,7 +203,10 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                     FullscreenWindow = null;
                     FullscreenPanel = null;
                 }
-                
+
+                // 显示主窗口
+                ctx.MainWindow.Show();
+
                 ctx.ResetOverlayForOwner();
                 ctx.SyncTimeshiftUi();
                 
