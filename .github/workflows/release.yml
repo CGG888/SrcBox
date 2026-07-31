@@ -312,7 +312,7 @@ jobs:
             foreach ($pr in $changelog.prs) {
               $labels = if ($pr.labels.Count -gt 0) { " [$($pr.labels -join ', ')]" } else { "" }
               $title = $pr.title -replace '\[', '[[' -replace '\]', ']]'
-              $body += "- #$($pr.number)$labels: [$title]($($pr.url))`n"
+              $body += "- #$($pr.number)${labels}: [$title]($($pr.url))`n"
             }
             $body += "`n"
           }
