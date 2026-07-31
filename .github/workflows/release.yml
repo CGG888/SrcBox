@@ -301,37 +301,32 @@ jobs:
         id: release_body
         shell: pwsh
         run: |
-          $changelogPath = "${{ steps.changelog.outputs.result }}"
-          $changelog = Get-Content $changelogPath | ConvertFrom-Json
           $version = "${{ steps.version.outputs.csproj_version }}"
+          $changelogPath = "changelog.json"
+          $changelog = Get-Content $changelogPath | ConvertFrom-Json
           
-          $sb = [System.Text.StringBuilder]::new()
-          [void]$sb.AppendLine("# SrcBox v$version")
-          [void]$sb.AppendLine()
-          [void]$sb.AppendLine("## Changes")
-          [void]$sb.AppendLine()
+          $body = "# SrcBox v$version`n`n## Changes`n`n"
           
-          if ($changelog.prs -and $changelog.prs.Count -gt 0) {
-            $sb.AppendLine("### Pull Requests")
-            [void]$sb.AppendLine()
+          if ($changelog.prs.Count -gt 0) {
+            $body += "### Pull Requests`n`n"
             foreach ($pr in $changelog.prs) {
-              $labels = if ($pr.labels) { " [$($pr.labels -join ', ')]" } else { "" }
-              [void]$sb.AppendLine("- #$($pr.number) $labels: [$($pr.title)]($($pr.url))")
+              $labels = if ($pr.labels.Count -gt 0) { " [$($pr.labels -join ', ')]" } else { "" }
+              $title = $pr.title -replace '\[', '[[' -replace '\]', ']]'
+              $body += "- #$($pr.number)$labels: [$title]($($pr.url))`n"
             }
-            [void]$sb.AppendLine()
+            $body += "`n"
           }
           
-          if ($changelog.issues -and $changelog.issues.Count -gt 0) {
-            $sb.AppendLine("### Closed Issues")
-            [void]$sb.AppendLine()
+          if ($changelog.issues.Count -gt 0) {
+            $body += "### Closed Issues`n`n"
             foreach ($issueNum in $changelog.issues) {
-              [void]$sb.AppendLine("- #$issueNum")
+              $body += "- #$issueNum`n"
             }
-            [void]$sb.AppendLine()
+            $body += "`n"
           }
           
-          $body = $sb.ToString()
-          "body=$body" >> $env:GITHUB_OUTPUT
+          $body | Out-File -FilePath "release_body.txt" -Encoding utf8
+          "body=$body" -replace "`n", "%0A" >> $env:GITHUB_OUTPUT
           Write-Host "Release body generated"
 
       - name: Create Release
