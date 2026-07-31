@@ -303,17 +303,16 @@ jobs:
         run: |
           $version = "${{ steps.version.outputs.csproj_version }}"
           $releaseNotesPath = "docs/releases/v$version.md"
+          $bodyPath = "release_body.txt"
           
           if (Test-Path $releaseNotesPath) {
-            $body = Get-Content $releaseNotesPath -Raw
-            $body | Out-File -FilePath "release_body.txt" -Encoding utf8
-            "body=$body" -replace "`n", "%0A" >> $env:GITHUB_OUTPUT
+            Copy-Item $releaseNotesPath $bodyPath -Force
             Write-Host "Release body loaded from $releaseNotesPath"
           } else {
-            Write-Host "##[warning]Release notes not found at $releaseNotesPath, using generated body"
-            $body = "# SrcBox v$version`n`nSee https://github.com/CGG888/SrcBox/releases/tag/v$version for details."
-            "body=$body" -replace "`n", "%0A" >> $env:GITHUB_OUTPUT
+            Write-Host "##[warning]Release notes not found at $releaseNotesPath, creating default"
+            "# SrcBox v$version`n`nSee https://github.com/CGG888/SrcBox/releases/tag/v$version for details." | Out-File -FilePath $bodyPath -Encoding utf8
           }
+          "body_path=$bodyPath" >> $env:GITHUB_OUTPUT
 
       - name: Delete existing release if exists
         uses: actions/github-script@v7
@@ -356,7 +355,7 @@ jobs:
         with:
           tag_name: v${{ steps.version.outputs.csproj_version }}
           name: SrcBox v${{ steps.version.outputs.csproj_version }}
-          body: ${{ steps.release_body.outputs.body }}
+          body_path: ${{ steps.release_body.outputs.body_path }}
           draft: false
           prerelease: false
           files: |
