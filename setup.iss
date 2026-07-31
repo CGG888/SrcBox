@@ -61,15 +61,11 @@ InfoBeforeFile=THIRD-PARTY-NOTICES.txt
 
 [CustomMessages]
 english.OpenGitHubRepo=Open GitHub repository after setup
-chinesesimplified.OpenGitHubRepo=安装完成后打开 GitHub 仓库主页
 english.GitHubHelp=For help or feedback, visit Issues: {#GitIssuesURL}
-chinesesimplified.GitHubHelp=如需帮助或反馈，请访问 Issues：{#GitIssuesURL}
 
 [Messages]
 english.WelcomeLabel2=This wizard will install {#MyAppName} {#MyAppVersion}. Project: {#GitRepoURL}
-chinesesimplified.WelcomeLabel2=该向导将安装 {#MyAppName} {#MyAppVersion}。项目主页：{#GitRepoURL}
 english.FinishedLabel=Setup has finished installing {#MyAppName}. {cm:GitHubHelp}
-chinesesimplified.FinishedLabel=安装完成 {#MyAppName}。{cm:GitHubHelp}
 
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
