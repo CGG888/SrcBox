@@ -145,15 +145,13 @@ jobs:
           }
 
       - name: Build Release
-        shell: cmd
-        env:
-          GIT_DESCRIBE: v${{ steps.version.outputs.csproj_version }}
+        shell: pwsh
         run: |
-          call build_release.bat
-          if %errorlevel% neq 0 (
-            echo ##[error]Build failed
-            exit /b 1
-          )
+          dotnet publish LibmpvIptvClient.csproj -c Release -r win-x64 --self-contained true -p:PublishSingleFile=false -p:PublishReadyToRun=false
+          if ($LASTEXITCODE -ne 0) {
+            Write-Host "##[error]Build failed"
+            exit 1
+          }
 
       - name: Copy libmpv-2.dll to publish directory
         shell: pwsh
