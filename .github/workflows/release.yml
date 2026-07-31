@@ -302,32 +302,18 @@ jobs:
         shell: pwsh
         run: |
           $version = "${{ steps.version.outputs.csproj_version }}"
-          $changelogPath = "changelog.json"
-          $changelog = Get-Content $changelogPath | ConvertFrom-Json
+          $releaseNotesPath = "docs/releases/v$version.md"
           
-          $body = "# SrcBox v$version`n`n## Changes`n`n"
-          
-          if ($changelog.prs.Count -gt 0) {
-            $body += "### Pull Requests`n`n"
-            foreach ($pr in $changelog.prs) {
-              $labels = if ($pr.labels.Count -gt 0) { " [$($pr.labels -join ', ')]" } else { "" }
-              $title = $pr.title -replace '\[', '[[' -replace '\]', ']]'
-              $body += "- #$($pr.number)${labels}: [$title]($($pr.url))`n"
-            }
-            $body += "`n"
+          if (Test-Path $releaseNotesPath) {
+            $body = Get-Content $releaseNotesPath -Raw
+            $body | Out-File -FilePath "release_body.txt" -Encoding utf8
+            "body=$body" -replace "`n", "%0A" >> $env:GITHUB_OUTPUT
+            Write-Host "Release body loaded from $releaseNotesPath"
+          } else {
+            Write-Host "##[warning]Release notes not found at $releaseNotesPath, using generated body"
+            $body = "# SrcBox v$version`n`nSee https://github.com/CGG888/SrcBox/releases/tag/v$version for details."
+            "body=$body" -replace "`n", "%0A" >> $env:GITHUB_OUTPUT
           }
-          
-          if ($changelog.issues.Count -gt 0) {
-            $body += "### Closed Issues`n`n"
-            foreach ($issueNum in $changelog.issues) {
-              $body += "- #$issueNum`n"
-            }
-            $body += "`n"
-          }
-          
-          $body | Out-File -FilePath "release_body.txt" -Encoding utf8
-          "body=$body" -replace "`n", "%0A" >> $env:GITHUB_OUTPUT
-          Write-Host "Release body generated"
 
       - name: Delete existing release if exists
         uses: actions/github-script@v7
