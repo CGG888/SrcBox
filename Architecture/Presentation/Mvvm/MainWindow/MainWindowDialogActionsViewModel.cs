@@ -8,7 +8,7 @@ public sealed record EditM3uResult(bool IsDelete, string Name, string Url);
 
 public sealed class MainWindowDialogActionsViewModel : ViewModelBase
 {
-    private const string PlaylistFilter = "Playlist Files (*.m3u;*.m3u8)|*.m3u;*.m3u8|All Files (*.*)|*.*";
+    private const string PlaylistFilter = "Playlist Files (*.m3u;*.m3u8;*.txt)|*.m3u;*.m3u8;*.txt|All Files (*.*)|*.*";
 
     public string? PromptOpenFile()
     {

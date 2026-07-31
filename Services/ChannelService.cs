@@ -11,10 +11,12 @@ namespace LibmpvIptvClient.Services
     {
         HttpClient _http => HttpClientService.Instance.Client;
         readonly M3UParser _m3u;
+        readonly TxtParser _txt;
         readonly IptvCheckerClient _checker;
         public ChannelService(M3UParser m3u, IptvCheckerClient checker)
         {
             _m3u = m3u;
+            _txt = new TxtParser();
             _checker = checker;
         }
         public async Task<(List<Channel> channels, string? tvgUrl)> LoadChannelsAsync(string? m3uUrl, bool m3uPriority)
@@ -27,6 +29,7 @@ namespace LibmpvIptvClient.Services
                     if (Uri.TryCreate(m3uUrl, UriKind.Absolute, out var u) && (u.Scheme == Uri.UriSchemeHttp || u.Scheme == Uri.UriSchemeHttps))
                     {
                         bool cacheEnabled = AppSettings.Current?.EnableM3uCache ?? true;
+                        bool isTxt = IsTxtUrl(m3uUrl);
 
                         if (cacheEnabled)
                         {
@@ -41,7 +44,9 @@ namespace LibmpvIptvClient.Services
                             }
                             else
                             {
-                                fromM3u = await _m3u.ParseFromUrlAsync(m3uUrl);
+                                fromM3u = isTxt
+                                    ? await _txt.ParseFromUrlAsync(m3uUrl)
+                                    : await _m3u.ParseFromUrlAsync(m3uUrl);
                                 if (fromM3u.Count > 0)
                                 {
                                     await M3UCacheService.Instance.SaveToCacheAsync(m3uUrl, fromM3u, null, null, _m3u.TvgUrl);
@@ -50,12 +55,15 @@ namespace LibmpvIptvClient.Services
                         }
                         else
                         {
-                            fromM3u = await _m3u.ParseFromUrlAsync(m3uUrl);
+                            fromM3u = isTxt
+                                ? await _txt.ParseFromUrlAsync(m3uUrl)
+                                : await _m3u.ParseFromUrlAsync(m3uUrl);
                         }
                     }
                     else if (System.IO.File.Exists(m3uUrl))
                     {
                         bool cacheEnabled = AppSettings.Current?.EnableM3uCache ?? true;
+                        bool isTxt = IsTxtFile(m3uUrl);
 
                         if (cacheEnabled)
                         {
@@ -70,7 +78,9 @@ namespace LibmpvIptvClient.Services
                             }
                             else
                             {
-                                fromM3u = await _m3u.ParseFromPathAsync(m3uUrl);
+                                fromM3u = isTxt
+                                    ? await _txt.ParseFromPathAsync(m3uUrl)
+                                    : await _m3u.ParseFromPathAsync(m3uUrl);
                                 if (fromM3u.Count > 0)
                                 {
                                     var fileInfo = new System.IO.FileInfo(m3uUrl);
@@ -80,7 +90,9 @@ namespace LibmpvIptvClient.Services
                         }
                         else
                         {
-                            fromM3u = await _m3u.ParseFromPathAsync(m3uUrl);
+                            fromM3u = isTxt
+                                ? await _txt.ParseFromPathAsync(m3uUrl)
+                                : await _m3u.ParseFromPathAsync(m3uUrl);
                         }
                     }
                 }
@@ -199,6 +211,38 @@ namespace LibmpvIptvClient.Services
                 foreach (var ch in a) add(ch);
             }
             return map.Values.ToList();
+        }
+
+        private static bool IsTxtFile(string path)
+        {
+            if (string.IsNullOrEmpty(path)) return false;
+            var ext = System.IO.Path.GetExtension(path).ToLowerInvariant();
+            return ext == ".txt" || ext == ".text";
+        }
+
+        private static bool IsTxtUrl(string url)
+        {
+            if (string.IsNullOrEmpty(url)) return false;
+            try
+            {
+                if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
+                {
+                    var path = uri.AbsolutePath;
+                    if (!string.IsNullOrEmpty(path))
+                    {
+                        path = path.ToLowerInvariant();
+                        if (path.EndsWith("/txt") || path.EndsWith("/text"))
+                        {
+                            return true;
+                        }
+                        var ext = System.IO.Path.GetExtension(path).ToLowerInvariant();
+                        var extWithoutDot = ext.TrimStart('.');
+                        return extWithoutDot == "txt" || extWithoutDot == "text";
+                    }
+                }
+            }
+            catch { }
+            return false;
         }
     }
 }

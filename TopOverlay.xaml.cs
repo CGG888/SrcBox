@@ -109,6 +109,7 @@ namespace LibmpvIptvClient
                 editM3u: EditM3u,
                 loadM3u: LoadM3u,
                 openSettings: OpenSettings,
+                showAbout: null,
                 exitApp: ExitApp,
                 toggleFcc: (on) =>
                 {
@@ -128,7 +129,21 @@ namespace LibmpvIptvClient
                 toggleDeinterlace: (on) => DeinterlaceChanged?.Invoke(on),
                 isEpgChecked: IsEpgVisible?.Invoke() ?? false,
                 isDrawerChecked: IsDrawerVisible?.Invoke() ?? false,
-                isMinimalChecked: IsMinimalMode?.Invoke() ?? false);
+                isMinimalChecked: IsMinimalMode?.Invoke() ?? false,
+                refreshChannels: null,
+                togglePlayPause: null,
+                stopPlayback: null,
+                seekForward: null,
+                seekBackward: null,
+                prevChannel: null,
+                nextChannel: null,
+                toggleMute: null,
+                volumeUp: null,
+                volumeDown: null,
+                toggleTopmost: null,
+                openDebug: null,
+                showShortcuts: null,
+                isTopmostChecked: false);
 
             BtnTitle.ContextMenu = cm;
             BtnTitle.ContextMenu.PlacementTarget = BtnTitle;

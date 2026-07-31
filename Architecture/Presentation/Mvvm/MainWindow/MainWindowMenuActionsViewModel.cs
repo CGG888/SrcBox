@@ -95,6 +95,14 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 return (false, null);
             }
 
+            // 检测是否为 TXT 格式（根据 URL 扩展名）
+            bool isTxt = IsTxtUrl(url);
+            LibmpvIptvClient.Diagnostics.Logger.Info($"[TxtDetect] URL={url}, IsTxt={isTxt}");
+            if (isTxt)
+            {
+                return (true, null);
+            }
+
             try
             {
                 var client = HttpClientService.Instance.Client;
@@ -135,6 +143,43 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 LibmpvIptvClient.Diagnostics.Logger.Warn($"URL 类型检测失败: {ex.Message}");
                 return (false, null);
             }
+        }
+
+        private static bool IsTxtUrl(string url)
+        {
+            if (string.IsNullOrEmpty(url)) return false;
+            try
+            {
+                if (Uri.TryCreate(url, UriKind.Absolute, out var uri))
+                {
+                    var path = uri.AbsolutePath;
+                    if (!string.IsNullOrEmpty(path))
+                    {
+                        path = path.ToLowerInvariant();
+                        if (path.EndsWith("/txt") || path.EndsWith("/text"))
+                        {
+                            return true;
+                        }
+                        var ext = System.IO.Path.GetExtension(path).ToLowerInvariant();
+                        var extWithoutDot = ext.TrimStart('.');
+                        LibmpvIptvClient.Diagnostics.Logger.Info($"[TxtDetect] path={path}, ext={ext}, extWithoutDot={extWithoutDot}");
+                        return extWithoutDot == "txt" || extWithoutDot == "text";
+                    }
+                    else
+                    {
+                        LibmpvIptvClient.Diagnostics.Logger.Info($"[TxtDetect] path is null or empty for URL={url}");
+                    }
+                }
+                else
+                {
+                    LibmpvIptvClient.Diagnostics.Logger.Info($"[TxtDetect] Uri.TryCreate failed for URL={url}");
+                }
+            }
+            catch (Exception ex)
+            {
+                LibmpvIptvClient.Diagnostics.Logger.Info($"[TxtDetect] Exception: {ex.Message}");
+            }
+            return false;
         }
 
         private void ShowError(string message)

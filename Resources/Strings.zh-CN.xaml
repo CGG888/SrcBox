@@ -178,7 +178,7 @@
   <sys:String x:Key="CloseConfirm_Label">选择操作：</sys:String>
   <sys:String x:Key="CloseConfirm_LineYes">是：退出软件</sys:String>
   <sys:String x:Key="CloseConfirm_LineNo">否：最小化到系统托盘</sys:String>
-  <sys:String x:Key="Menu_ManageM3u">管理 M3U 列表</sys:String>
+  <sys:String x:Key="Menu_ManageM3u">管理频道数据</sys:String>
 
   <!-- Drawer -->
   <sys:String x:Key="Drawer_Title">频道列表</sys:String>
@@ -217,18 +217,18 @@
   <sys:String x:Key="Menu_OpenFile">打开文件...</sys:String>
   <sys:String x:Key="Menu_OpenUrl">打开链接...</sys:String>
   <sys:String x:Key="Menu_M3U">M3U</sys:String>
-  <sys:String x:Key="Menu_AddM3uFile">添加 M3U 文件...</sys:String>
-  <sys:String x:Key="Menu_AddM3uUrl">添加 M3U 地址...</sys:String>
+  <sys:String x:Key="Menu_AddM3uFile">添加文件</sys:String>
+  <sys:String x:Key="Menu_AddM3uUrl">添加链接</sys:String>
   <sys:String x:Key="Menu_EditM3u">编辑 M3U</sys:String>
   <sys:String x:Key="Menu_Performance">性能</sys:String>
   <sys:String x:Key="Menu_FCC">FCC (快速切台)</sys:String>
   <sys:String x:Key="Menu_UDP">UDP (组播优化)</sys:String>
   <sys:String x:Key="Menu_Deinterlace">反交错 (1080i/720i)</sys:String>
   <sys:String x:Key="Menu_List">列表</sys:String>
-  <sys:String x:Key="Menu_EPG">EPG</sys:String>
+  <sys:String x:Key="Menu_EPG">节目指南</sys:String>
   <sys:String x:Key="Menu_Channel">频道</sys:String>
   <sys:String x:Key="Menu_MinimalMode">精简模式</sys:String>
-  <sys:String x:Key="Menu_SwitchM3u">切换 M3U</sys:String>
+  <sys:String x:Key="Menu_SwitchM3u">切换频道数据</sys:String>
   <sys:String x:Key="Menu_Settings">设置</sys:String>
   <sys:String x:Key="Menu_Exit">退出</sys:String>
 

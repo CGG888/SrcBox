@@ -37,6 +37,49 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
 
         public ContextMenu CreateAppMenu()
         {
+            MenuBuilder.SetSpeedCallback((speed) =>
+            {
+                _shell.PlaybackSpeed = speed;
+                _shell.IsSpeedEnabled = true;
+            });
+
+            MenuBuilder.SetRatioCallback((val) =>
+            {
+                _shell.CurrentAspect = val;
+                _shell.PlayerEngine?.SetAspectRatio(val);
+            });
+
+            MenuBuilder.SetRecToggleCallback((start) =>
+            {
+                _window.Dispatcher.Invoke(() =>
+                {
+                    var btn = _window.BtnRecordNow;
+                    if (btn != null)
+                    {
+                        btn.IsChecked = start;
+                        btn.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Button.ClickEvent));
+                    }
+                });
+            });
+
+            MenuBuilder.SetRecListCallback(() =>
+            {
+                _window.Dispatcher.Invoke(() =>
+                {
+                    _shell.IsDrawerCollapsed = false;
+                });
+            });
+
+            MenuBuilder.SetRecSettingsCallback(() =>
+            {
+                _window.Dispatcher.Invoke(() => OpenSettings());
+            });
+
+            MenuBuilder.SetSwitchSourceCallback(() =>
+            {
+                _shell.MenuActions.SwitchSourceCycle(true);
+            });
+
             return MenuBuilder.BuildMainMenu(
                 openFile: () => _shell.MenuActions.OpenFile(),
                 openUrl: () => _shell.MenuActions.OpenUrl(),
@@ -44,7 +87,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 addM3uUrl: () => _shell.MenuActions.AddM3uUrl(),
                 editM3u: (s) => _shell.MenuActions.EditM3u(s),
                 loadM3u: (s) => _shell.MenuActions.LoadM3u(s),
-                openSettings: () => _window.Dispatcher.Invoke(() => OpenSettings()), // Need to delegate OpenSettings
+                openSettings: () => _window.Dispatcher.Invoke(() => OpenSettings()),
                 showAbout: () => _shell.MenuActions.ShowAbout(),
                 exitApp: () => _shell.MenuActions.ExitApp(),
                 toggleFcc: (on) => _shell.MenuActions.ToggleFcc(on),
@@ -55,7 +98,21 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 toggleDeinterlace: (on) => _shell.MenuActions.ToggleDeinterlace(on),
                 isEpgChecked: _window.CbEpg.IsChecked == true,
                 isDrawerChecked: !_shell.IsDrawerCollapsed,
-                isMinimalChecked: _shell.IsMinimalMode
+                isMinimalChecked: _shell.IsMinimalMode,
+                refreshChannels: null,
+                togglePlayPause: () => _shell.ShortcutActions.ExecuteAction(MainWindowShortcutAction.TogglePlayPause),
+                stopPlayback: () => _shell.ShortcutActions.ExecuteAction(MainWindowShortcutAction.Stop),
+                seekForward: () => _shell.ShortcutActions.ExecuteAction(MainWindowShortcutAction.SeekForward),
+                seekBackward: () => _shell.ShortcutActions.ExecuteAction(MainWindowShortcutAction.SeekBackward),
+                prevChannel: () => _shell.ShortcutActions.ExecuteAction(MainWindowShortcutAction.PreviousChannel),
+                nextChannel: () => _shell.ShortcutActions.ExecuteAction(MainWindowShortcutAction.NextChannel),
+                toggleMute: () => _shell.ShortcutActions.ExecuteAction(MainWindowShortcutAction.ToggleMute),
+                volumeUp: null,
+                volumeDown: null,
+                toggleTopmost: (on) => { _window.Topmost = on; },
+                openDebug: null,
+                showShortcuts: null,
+                isTopmostChecked: _window.Topmost
             );
         }
 

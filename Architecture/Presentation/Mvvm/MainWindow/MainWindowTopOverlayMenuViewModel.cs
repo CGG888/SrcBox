@@ -1,3 +1,4 @@
+using System;
 using System.Windows.Controls;
 using LibmpvIptvClient.Architecture.Presentation.Mvvm;
 
@@ -13,6 +14,7 @@ public sealed class MainWindowTopOverlayMenuViewModel : ViewModelBase
         Action<M3uSource>? editM3u,
         Action<M3uSource>? loadM3u,
         Action? openSettings,
+        Action? showAbout,
         Action? exitApp,
         Action<bool>? toggleFcc,
         Action<bool>? toggleUdp,
@@ -22,7 +24,21 @@ public sealed class MainWindowTopOverlayMenuViewModel : ViewModelBase
         Action<bool>? toggleDeinterlace,
         bool isEpgChecked,
         bool isDrawerChecked,
-        bool isMinimalChecked)
+        bool isMinimalChecked,
+        Action? refreshChannels = null,
+        Action? togglePlayPause = null,
+        Action? stopPlayback = null,
+        Action? seekForward = null,
+        Action? seekBackward = null,
+        Action? prevChannel = null,
+        Action? nextChannel = null,
+        Action? toggleMute = null,
+        Action? volumeUp = null,
+        Action? volumeDown = null,
+        Action<bool>? toggleTopmost = null,
+        Action? openDebug = null,
+        Action? showShortcuts = null,
+        bool isTopmostChecked = false)
     {
         return LibmpvIptvClient.Helpers.MenuBuilder.BuildMainMenu(
             openFile: openFile,
@@ -32,7 +48,7 @@ public sealed class MainWindowTopOverlayMenuViewModel : ViewModelBase
             editM3u: editM3u,
             loadM3u: loadM3u,
             openSettings: openSettings,
-            showAbout: null,
+            showAbout: showAbout,
             exitApp: exitApp,
             toggleFcc: toggleFcc,
             toggleUdp: toggleUdp,
@@ -42,6 +58,20 @@ public sealed class MainWindowTopOverlayMenuViewModel : ViewModelBase
             toggleDeinterlace: toggleDeinterlace,
             isEpgChecked: isEpgChecked,
             isDrawerChecked: isDrawerChecked,
-            isMinimalChecked: isMinimalChecked);
+            isMinimalChecked: isMinimalChecked,
+            refreshChannels: refreshChannels,
+            togglePlayPause: togglePlayPause,
+            stopPlayback: stopPlayback,
+            seekForward: seekForward,
+            seekBackward: seekBackward,
+            prevChannel: prevChannel,
+            nextChannel: nextChannel,
+            toggleMute: toggleMute,
+            volumeUp: volumeUp,
+            volumeDown: volumeDown,
+            toggleTopmost: toggleTopmost,
+            openDebug: openDebug,
+            showShortcuts: showShortcuts,
+            isTopmostChecked: isTopmostChecked);
     }
 }

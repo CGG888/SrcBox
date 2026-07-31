@@ -186,18 +186,18 @@
   <sys:String x:Key="Menu_OpenFile">Open file...</sys:String>
   <sys:String x:Key="Menu_OpenUrl">Open URL...</sys:String>
   <sys:String x:Key="Menu_M3U">M3U</sys:String>
-  <sys:String x:Key="Menu_AddM3uFile">Add M3U file...</sys:String>
-  <sys:String x:Key="Menu_AddM3uUrl">Add M3U URL...</sys:String>
+  <sys:String x:Key="Menu_AddM3uFile">Add file</sys:String>
+  <sys:String x:Key="Menu_AddM3uUrl">Add URL</sys:String>
   <sys:String x:Key="Menu_EditM3u">Edit M3U</sys:String>
   <sys:String x:Key="Menu_Performance">Performance</sys:String>
   <sys:String x:Key="Menu_FCC">FCC (Fast channel change)</sys:String>
   <sys:String x:Key="Menu_UDP">UDP (Multicast optimization)</sys:String>
   <sys:String x:Key="Menu_Deinterlace">Deinterlace (1080i/720i)</sys:String>
   <sys:String x:Key="Menu_List">List</sys:String>
-  <sys:String x:Key="Menu_EPG">EPG</sys:String>
+  <sys:String x:Key="Menu_EPG">Program guide</sys:String>
   <sys:String x:Key="Menu_Channel">Channels</sys:String>
   <sys:String x:Key="Menu_MinimalMode">Minimal mode</sys:String>
-  <sys:String x:Key="Menu_SwitchM3u">Switch M3U</sys:String>
+  <sys:String x:Key="Menu_SwitchM3u">Switch channels</sys:String>
   <sys:String x:Key="Menu_Settings">Settings</sys:String>
   <sys:String x:Key="Menu_Exit">Exit</sys:String>
 
@@ -339,7 +339,7 @@
   <sys:String x:Key="CloseConfirm_Label">Choose an action:</sys:String>
   <sys:String x:Key="CloseConfirm_LineYes">Yes: Exit app</sys:String>
   <sys:String x:Key="CloseConfirm_LineNo">No: Minimize to system tray</sys:String>
-  <sys:String x:Key="Menu_ManageM3u">Manage M3U List</sys:String>
+  <sys:String x:Key="Menu_ManageM3u">Manage channels</sys:String>
   
   <sys:String x:Key="UI_Playback_Settings">Replay Settings</sys:String>
   <sys:String x:Key="UI_EnablePlayback">Enable Replay</sys:String>
