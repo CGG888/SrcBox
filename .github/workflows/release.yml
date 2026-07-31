@@ -156,7 +156,7 @@ jobs:
       - name: Copy libmpv-2.dll to publish directory
         shell: pwsh
         run: |
-          $dllPath = "${{ steps.extract_libmpv.outputs.dll_path }}"
+          $dllPath = "${{ steps.extract.outputs.dll_path }}"
           $publishDir = "bin\Release\net8.0-windows\win-x64\publish"
           if (Test-Path $dllPath) {
             Copy-Item $dllPath -Destination $publishDir -Force
