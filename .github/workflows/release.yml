@@ -329,6 +329,42 @@ jobs:
           "body=$body" -replace "`n", "%0A" >> $env:GITHUB_OUTPUT
           Write-Host "Release body generated"
 
+      - name: Delete existing release if exists
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const version = "${{ steps.version.outputs.csproj_version }}";
+            const tagName = `v${version}`;
+            
+            try {
+              const release = await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag: tagName
+              });
+              await github.rest.repos.deleteRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: release.data.id
+              });
+              console.log(`Deleted existing release: ${tagName}`);
+            } catch (e) {
+              if (e.status !== 404) throw e;
+              console.log(`No existing release found for tag: ${tagName}`);
+            }
+            
+            try {
+              await github.rest.git.deleteRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: `tags/${tagName}`
+              });
+              console.log(`Deleted existing tag: ${tagName}`);
+            } catch (e) {
+              if (e.status !== 404) throw e;
+              console.log(`No existing tag found: ${tagName}`);
+            }
+
       - name: Create Release
         uses: softprops/action-gh-release@v2
         with:
@@ -342,43 +378,3 @@ jobs:
             Output/SrcBox-v${{ steps.version.outputs.csproj_version }}.zip
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Upload Release Assets
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require('fs');
-            const path = require('path');
-            const version = "${{ steps.version.outputs.csproj_version }}";
-            
-            const release = await github.rest.repos.getReleaseByTag({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              tag: `v${version}`
-            });
-            
-            const assets = [
-              `Output/SrcBox_Setup_v${version}.exe`,
-              `Output/SrcBox-v${version}.zip`
-            ];
-            
-            for (const assetPath of assets) {
-              if (fs.existsSync(assetPath)) {
-                const filename = path.basename(assetPath);
-                const mimeType = filename.endsWith('.exe') 
-                  ? 'application/vnd.microsoft.portable-executable'
-                  : 'application/zip';
-                
-                await github.rest.repos.uploadReleaseAsset({
-                  owner: context.repo.owner,
-                  repo: context.repo.repo,
-                  release_id: release.data.id,
-                  name: filename,
-                  data: fs.readFileSync(assetPath),
-                  headers: {
-                    'Content-Type': mimeType
-                  }
-                });
-                console.log(`Uploaded: ${filename}`);
-              }
-            }
