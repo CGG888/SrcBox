@@ -31,7 +31,7 @@ jobs:
         run: |
           $csproj = [xml](Get-Content 'LibmpvIptvClient.csproj')
           $version = $csproj.Project.PropertyGroup | Where-Object { $_.Version } | Select-Object -First 1 -ExpandProperty Version
-          Write-Host "::set-output name=csproj_version::$version"
+          "csproj_version=$version" >> $env:GITHUB_OUTPUT
           Write-Host "CSProj Version: $version"
 
       - name: Extract version from setup.iss
@@ -41,10 +41,10 @@ jobs:
           $content = Get-Content 'setup.iss' -Raw
           if ($content -match '#define\s+MyAppVersion\s+"([^"]+)"') {
             $version = $matches[1]
-            Write-Host "::set-output name=setup_version::$version"
+            "setup_version=$version" >> $env:GITHUB_OUTPUT
             Write-Host "Setup Version: $version"
           } else {
-            Write-Host "::set-output name=setup_version::"
+            "setup_version=" >> $env:GITHUB_OUTPUT
             Write-Host "Could not find MyAppVersion in setup.iss"
           }
 
@@ -71,10 +71,10 @@ jobs:
             });
             if (releases.data.length > 0) {
               const latestTag = releases.data[0].tag_name;
-              console.log(`::set-output name=latest_tag::${latestTag}`);
+              core.setOutput('latest_tag', latestTag);
               console.log(`Latest release tag: ${latestTag}`);
             } else {
-              console.log('::set-output name=latest_tag::');
+              core.setOutput('latest_tag', '');
               console.log('No previous release found');
             }
 
@@ -101,7 +101,7 @@ jobs:
         run: |
           choco install innosetup -y --no-progress
           $env:Path = "C:\Program Files (x86)\Inno Setup 6;" + $env:Path
-          iscc --version
+          Write-Host "Inno Setup installed"
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -119,7 +119,7 @@ jobs:
             Invoke-WebRequest -Uri $url -OutFile $output -UseBasicParsing
             if (Test-Path $output) {
               Write-Host "Downloaded successfully"
-              Write-Host "::set-output name=libmpv_path::$output"
+              "libmpv_path=$output" >> $env:GITHUB_OUTPUT
             } else {
               Write-Host "##[error]Download failed - file not found"
               exit 1
@@ -130,13 +130,14 @@ jobs:
           }
 
       - name: Extract libmpv-2.dll
+        id: extract
         shell: pwsh
         run: |
           Expand-Archive -Path "$env:TEMP\libmpv-2.zip" -DestinationPath "$env:TEMP\libmpv" -Force
           $dllPath = Get-ChildItem "$env:TEMP\libmpv" -Filter "*.dll" -Recurse | Select-Object -First 1
           if ($dllPath) {
             Write-Host "Found: $($dllPath.FullName)"
-            Write-Host "::set-output name=dll_path::$($dllPath.FullName)"
+            "dll_path=$($dllPath.FullName)" >> $env:GITHUB_OUTPUT
           } else {
             Write-Host "##[error]libmpv-2.dll not found in zip"
             exit 1
@@ -156,7 +157,7 @@ jobs:
       - name: Copy libmpv-2.dll to publish directory
         shell: pwsh
         run: |
-          $dllPath = "${{ steps.extract.outputs.dll_path }}"
+          $dllPath = "${{ steps.extract_libmpv.outputs.dll_path }}"
           $publishDir = "bin\Release\net8.0-windows\win-x64\publish"
           if (Test-Path $dllPath) {
             Copy-Item $dllPath -Destination $publishDir -Force
@@ -196,7 +197,6 @@ jobs:
         id: changelog
         uses: actions/github-script@v7
         with:
-          result-container: list
           script: |
             const currentTag = "v${{ steps.version.outputs.csproj_version }}";
             const latestTag = "${{ steps.latest_release.outputs.latest_tag }}" || "v0.0.0";
@@ -253,13 +253,19 @@ jobs:
               issues: [...issuesClosed]
             };
             
-            console.log(JSON.stringify(result));
+            // Write to temp file to avoid multiline issues
+            const fs = require('fs');
+            const path = require('path');
+            const outputPath = path.join(process.env.GITHUB_WORKSPACE, 'changelog.json');
+            fs.writeFileSync(outputPath, JSON.stringify(result));
+            core.setOutput('result', outputPath);
 
       - name: Generate Release Body
         id: release_body
         shell: pwsh
         run: |
-          $changelog = '${{ steps.changelog.outputs.result }}' | ConvertFrom-Json
+          $changelogPath = "${{ steps.changelog.outputs.result }}"
+          $changelog = Get-Content $changelogPath | ConvertFrom-Json
           $version = "${{ steps.version.outputs.csproj_version }}"
           
           $sb = [System.Text.StringBuilder]::new()
@@ -288,9 +294,7 @@ jobs:
           }
           
           $body = $sb.ToString()
-          $body = $body -replace "`r`n", "%0D%0A"
-          $body = $body -replace "`n", "%0D%0A"
-          Write-Host "::set-output name=body::$body"
+          "body=$body" >> $env:GITHUB_OUTPUT
           Write-Host "Release body generated"
 
       - name: Create Release
