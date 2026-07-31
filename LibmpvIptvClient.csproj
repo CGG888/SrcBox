@@ -10,9 +10,9 @@
     <ApplicationIcon>srcbox.ico</ApplicationIcon>
     <Product>SrcBox</Product>
     <AssemblyTitle>SrcBox</AssemblyTitle>
-    <Version>1.1.7</Version>
-    <AssemblyVersion>1.1.7.0</AssemblyVersion>
-    <FileVersion>1.1.7.0</FileVersion>
+    <Version>1.1.8</Version>
+    <AssemblyVersion>1.1.8.0</AssemblyVersion>
+    <FileVersion>1.1.8.0</FileVersion>
     <GenerateProgramFile>false</GenerateProgramFile>
     <DisableWinExeConsoleOutput>true</DisableWinExeConsoleOutput>
   </PropertyGroup>

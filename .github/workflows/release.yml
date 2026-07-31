@@ -1,0 +1,348 @@
+name: Release
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'LibmpvIptvClient.csproj'
+      - 'setup.iss'
+
+permissions:
+  contents: write
+  pull-requests: read
+  issues: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Extract version from csproj
+        id: version
+        shell: pwsh
+        run: |
+          $csproj = [xml](Get-Content 'LibmpvIptvClient.csproj')
+          $version = $csproj.Project.PropertyGroup | Where-Object { $_.Version } | Select-Object -First 1 -ExpandProperty Version
+          Write-Host "::set-output name=csproj_version::$version"
+          Write-Host "CSProj Version: $version"
+
+      - name: Extract version from setup.iss
+        id: setup_version
+        shell: pwsh
+        run: |
+          $content = Get-Content 'setup.iss' -Raw
+          if ($content -match '#define\s+MyAppVersion\s+"([^"]+)"') {
+            $version = $matches[1]
+            Write-Host "::set-output name=setup_version::$version"
+            Write-Host "Setup Version: $version"
+          } else {
+            Write-Host "::set-output name=setup_version::"
+            Write-Host "Could not find MyAppVersion in setup.iss"
+          }
+
+      - name: Validate version match
+        shell: pwsh
+        run: |
+          $csproj = "${{ steps.version.outputs.csproj_version }}"
+          $setup = "${{ steps.setup_version.outputs.setup_version }}"
+          if ($csproj -ne $setup) {
+            Write-Host "##[error]Version mismatch: csproj=$csproj setup.iss=$setup"
+            exit 1
+          }
+          Write-Host "Version validation passed: $csproj"
+
+      - name: Get latest release version
+        id: latest_release
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const releases = await github.rest.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              per_page: 1
+            });
+            if (releases.data.length > 0) {
+              const latestTag = releases.data[0].tag_name;
+              console.log(`::set-output name=latest_tag::${latestTag}`);
+              console.log(`Latest release tag: ${latestTag}`);
+            } else {
+              console.log('::set-output name=latest_tag::');
+              console.log('No previous release found');
+            }
+
+      - name: Compare versions
+        id: version_compare
+        shell: pwsh
+        run: |
+          function Parse-Version($v) {
+            $v = $v -replace '^v', ''
+            return [version]($v -replace '-.*', '')
+          }
+          $newVer = Parse-Version "${{ steps.version.outputs.csproj_version }}"
+          $latestVer = if ("${{ steps.latest_release.outputs.latest_tag }}") { Parse-Version "${{ steps.latest_release.outputs.latest_tag }}" } else { [version]"0.0.0" }
+          Write-Host "New version: $newVer"
+          Write-Host "Latest version: $latestVer"
+          if ($newVer -le $latestVer) {
+            Write-Host "##[error]New version $newVer is not newer than latest $latestVer"
+            exit 1
+          }
+          Write-Host "Version check passed"
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          choco install innosetup -y --no-progress
+          $env:Path = "C:\Program Files (x86)\Inno Setup 6;" + $env:Path
+          iscc --version
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Download libmpv-2.dll
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.csproj_version }}"
+          $url = "https://github.com/CGG888/SrcBox/releases/download/$version/libmpv-2.zip"
+          $output = "$env:TEMP\libmpv-2.zip"
+          Write-Host "Downloading libmpv-2.dll from: $url"
+          try {
+            Invoke-WebRequest -Uri $url -OutFile $output -UseBasicParsing
+            if (Test-Path $output) {
+              Write-Host "Downloaded successfully"
+              Write-Host "::set-output name=libmpv_path::$output"
+            } else {
+              Write-Host "##[error]Download failed - file not found"
+              exit 1
+            }
+          } catch {
+            Write-Host "##[error]Download failed: $_"
+            exit 1
+          }
+
+      - name: Extract libmpv-2.dll
+        shell: pwsh
+        run: |
+          Expand-Archive -Path "$env:TEMP\libmpv-2.zip" -DestinationPath "$env:TEMP\libmpv" -Force
+          $dllPath = Get-ChildItem "$env:TEMP\libmpv" -Filter "*.dll" -Recurse | Select-Object -First 1
+          if ($dllPath) {
+            Write-Host "Found: $($dllPath.FullName)"
+            Write-Host "::set-output name=dll_path::$($dllPath.FullName)"
+          } else {
+            Write-Host "##[error]libmpv-2.dll not found in zip"
+            exit 1
+          }
+
+      - name: Build Release
+        shell: cmd
+        env:
+          GIT_DESCRIBE: v${{ steps.version.outputs.csproj_version }}
+        run: |
+          call build_release.bat
+          if %errorlevel% neq 0 (
+            echo ##[error]Build failed
+            exit /b 1
+          )
+
+      - name: Copy libmpv-2.dll to publish directory
+        shell: pwsh
+        run: |
+          $dllPath = "${{ steps.extract.outputs.dll_path }}"
+          $publishDir = "bin\Release\net8.0-windows\win-x64\publish"
+          if (Test-Path $dllPath) {
+            Copy-Item $dllPath -Destination $publishDir -Force
+            Write-Host "Copied libmpv-2.dll to $publishDir"
+          } else {
+            Write-Host "##[error]libmpv-2.dll not found at: $dllPath"
+            exit 1
+          }
+
+      - name: Build Installer
+        shell: cmd
+        env:
+          GIT_DESCRIBE: v${{ steps.version.outputs.csproj_version }}
+          GIT_ORIGIN_URL: ${{ github.server_url }}/${{ github.repository }}.git
+          GIT_REPO_URL: ${{ github.server_url }}/${{ github.repository }}
+          GIT_ISSUES_URL: ${{ github.server_url }}/${{ github.repository }}/issues
+          GIT_RELEASES_URL: ${{ github.server_url }}/${{ github.repository }}/releases
+        run: |
+          "C:\Program Files (x86)\Inno Setup 6\ISCC.exe" setup.iss
+          if %errorlevel% neq 0 (
+            echo ##[error]Inno Setup compilation failed
+            exit /b 1
+          )
+
+      - name: Build Portable ZIP
+        shell: pwsh
+        run: |
+          $version = "${{ steps.version.outputs.csproj_version }}"
+          $publishDir = "bin\Release\net8.0-windows\win-x64\publish"
+          $zipName = "SrcBox-v$version.zip"
+          $zipPath = "Output\$zipName"
+          if (Test-Path $zipPath) { Remove-Item $zipPath -Force }
+          Compress-Archive -Path "$publishDir\*" -DestinationPath $zipPath -Force
+          Write-Host "Created: $zipPath"
+
+      - name: Get commits since last release
+        id: changelog
+        uses: actions/github-script@v7
+        with:
+          result-container: list
+          script: |
+            const currentTag = "v${{ steps.version.outputs.csproj_version }}";
+            const latestTag = "${{ steps.latest_release.outputs.latest_tag }}" || "v0.0.0";
+            
+            // Get commits
+            const commits = await github.rest.repos.compareCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              base: latestTag,
+              head: currentTag
+            });
+            
+            // Get merged PRs
+            const prs = await github.rest.pulls.list({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'closed',
+              base: 'main',
+              per_page: 100
+            });
+            
+            const mergedPrs = prs.data.filter(pr => pr.merged_at);
+            const relevantPrs = mergedPrs.filter(pr => {
+              const prDate = new Date(pr.merged_at);
+              const lastReleaseDate = commits.data.merge_base_commit.commit.author.date;
+              return prDate > new Date(lastReleaseDate);
+            });
+            
+            // Get issues closed by these PRs
+            const issuesClosed = new Set();
+            relevantPrs.forEach(pr => {
+              const body = pr.body || '';
+              const matches = body.match(/(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved)\s+#(\d+)/gi);
+              if (matches) {
+                matches.forEach(m => {
+                  const num = m.match(/\d+/)[0];
+                  issuesClosed.add(parseInt(num));
+                });
+              }
+            });
+            
+            const result = {
+              commits: commits.data.commits.map(c => ({
+                sha: c.sha.substring(0, 7),
+                message: c.commit.message.split('\n')[0],
+                author: c.commit.author.name
+              })),
+              prs: relevantPrs.map(pr => ({
+                number: pr.number,
+                title: pr.title,
+                url: pr.html_url,
+                labels: pr.labels.map(l => l.name)
+              })),
+              issues: [...issuesClosed]
+            };
+            
+            console.log(JSON.stringify(result));
+
+      - name: Generate Release Body
+        id: release_body
+        shell: pwsh
+        run: |
+          $changelog = '${{ steps.changelog.outputs.result }}' | ConvertFrom-Json
+          $version = "${{ steps.version.outputs.csproj_version }}"
+          
+          $sb = [System.Text.StringBuilder]::new()
+          [void]$sb.AppendLine("# SrcBox v$version")
+          [void]$sb.AppendLine()
+          [void]$sb.AppendLine("## Changes")
+          [void]$sb.AppendLine()
+          
+          if ($changelog.prs -and $changelog.prs.Count -gt 0) {
+            $sb.AppendLine("### Pull Requests")
+            [void]$sb.AppendLine()
+            foreach ($pr in $changelog.prs) {
+              $labels = if ($pr.labels) { " [$($pr.labels -join ', ')]" } else { "" }
+              [void]$sb.AppendLine("- #$($pr.number) $labels: [$($pr.title)]($($pr.url))")
+            }
+            [void]$sb.AppendLine()
+          }
+          
+          if ($changelog.issues -and $changelog.issues.Count -gt 0) {
+            $sb.AppendLine("### Closed Issues")
+            [void]$sb.AppendLine()
+            foreach ($issueNum in $changelog.issues) {
+              [void]$sb.AppendLine("- #$issueNum")
+            }
+            [void]$sb.AppendLine()
+          }
+          
+          $body = $sb.ToString()
+          $body = $body -replace "`r`n", "%0D%0A"
+          $body = $body -replace "`n", "%0D%0A"
+          Write-Host "::set-output name=body::$body"
+          Write-Host "Release body generated"
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.csproj_version }}
+          name: SrcBox v${{ steps.version.outputs.csproj_version }}
+          body: ${{ steps.release_body.outputs.body }}
+          draft: false
+          prerelease: false
+          files: |
+            Output/SrcBox_Setup_v${{ steps.version.outputs.csproj_version }}.exe
+            Output/SrcBox-v${{ steps.version.outputs.csproj_version }}.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Release Assets
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = require('path');
+            const version = "${{ steps.version.outputs.csproj_version }}";
+            
+            const release = await github.rest.repos.getReleaseByTag({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag: `v${version}`
+            });
+            
+            const assets = [
+              `Output/SrcBox_Setup_v${version}.exe`,
+              `Output/SrcBox-v${version}.zip`
+            ];
+            
+            for (const assetPath of assets) {
+              if (fs.existsSync(assetPath)) {
+                const filename = path.basename(assetPath);
+                const mimeType = filename.endsWith('.exe') 
+                  ? 'application/vnd.microsoft.portable-executable'
+                  : 'application/zip';
+                
+                await github.rest.repos.uploadReleaseAsset({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  release_id: release.data.id,
+                  name: filename,
+                  data: fs.readFileSync(assetPath),
+                  headers: {
+                    'Content-Type': mimeType
+                  }
+                });
+                console.log(`Uploaded: ${filename}`);
+              }
+            }
