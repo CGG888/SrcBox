@@ -1,11 +1,16 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
-  <sys:String x:Key="UI_TabInterface">界面设置</sys:String>
-  <sys:String x:Key="UI_TabPlayback">播放设置</sys:String>
+  <sys:String x:Key="UI_TabApplication">应用</sys:String>
+  <sys:String x:Key="UI_TabPlayback">播放</sys:String>
+  <sys:String x:Key="UI_TabVideo">视频</sys:String>
+  <sys:String x:Key="UI_TabAudio">声音</sys:String>
+  <sys:String x:Key="UI_TabNetwork">网络</sys:String>
+  <sys:String x:Key="UI_TabChannel">频道</sys:String>
+  <sys:String x:Key="UI_TabRecording">录制</sys:String>
+  <sys:String x:Key="UI_TabAbout">关于</sys:String>
   <sys:String x:Key="UI_TabEpgLogo">EPG与台标</sys:String>
   <sys:String x:Key="UI_TabUpdateMirrors">CDN 线路</sys:String>
-  <sys:String x:Key="UI_TabAbout">关于</sys:String>
   <sys:String x:Key="App_Name">源匣 (SrcBox)</sys:String>
 
   <sys:String x:Key="UI_Language">语言</sys:String>

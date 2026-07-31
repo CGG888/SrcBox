@@ -1092,5 +1092,45 @@ namespace LibmpvIptvClient
             _previewPlayerEngine = engine;
         }
 
+        private void ListCdn_PreviewMouseWheel(object sender, MouseWheelEventArgs e)
+        {
+            if (sender is System.Windows.Controls.ListBox lb && NetworkScrollViewer != null)
+            {
+                var sv = GetScrollViewer(lb);
+                bool shouldHandle = false;
+                if (sv == null || sv.ScrollableHeight <= 0)
+                {
+                    shouldHandle = true;
+                }
+                else
+                {
+                    double offset = sv.VerticalOffset;
+                    bool atTop = offset <= 0;
+                    bool atBottom = offset >= sv.ScrollableHeight - 1;
+                    if ((e.Delta > 0 && atTop) || (e.Delta < 0 && atBottom))
+                        shouldHandle = true;
+                }
+
+                if (shouldHandle)
+                {
+                    NetworkScrollViewer.ScrollToVerticalOffset(NetworkScrollViewer.VerticalOffset - e.Delta);
+                    e.Handled = true;
+                }
+            }
+        }
+
+        private static System.Windows.Controls.ScrollViewer? GetScrollViewer(System.Windows.DependencyObject parent)
+        {
+            for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
+                if (child is System.Windows.Controls.ScrollViewer sv)
+                    return sv;
+                if (GetScrollViewer(child) is System.Windows.Controls.ScrollViewer found)
+                    return found;
+            }
+            return null;
+        }
+
     }
 }

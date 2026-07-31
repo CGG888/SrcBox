@@ -6,31 +6,22 @@
              mc:Ignorable="d" 
              d:DesignHeight="600" d:DesignWidth="400"
              Background="Transparent">
-    <Grid Margin="16,8,16,8">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+    <StackPanel Margin="0,0,0,16">
+        <!-- Switch -->
+        <CheckBox x:Name="CbEnabled" Content="{DynamicResource UI_Enable}" IsChecked="True" Margin="0,0,0,24"/>
         
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <StackPanel>
-                <!-- Switch -->
-                <CheckBox x:Name="CbEnabled" Content="{DynamicResource UI_Enable}" IsChecked="True" Margin="0,0,0,24"/>
-                
-                <!-- URL -->
-                <TextBlock Text="{DynamicResource UI_Epg_LogoUrl}" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                <TextBox x:Name="TbUrl" Height="32" Padding="4" ToolTip="{DynamicResource UI_Epg_LogoUrl_Tip}"/>
-                <TextBlock Text="{DynamicResource UI_Epg_LogoUrl_Note}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,24" TextWrapping="Wrap"/>
-                
-                <CheckBox x:Name="CbCache" Content="{DynamicResource UI_Logo_Cache_Enable}" Margin="0,0,0,8"/>
-                <TextBlock Text="{DynamicResource UI_Logo_CacheDir}" FontWeight="SemiBold" Margin="0,8,0,8"/>
-                <TextBox x:Name="TbCacheDir" Height="32" Padding="4"/>
-                <TextBlock Text="{DynamicResource UI_Logo_CacheTtl}" FontWeight="SemiBold" Margin="0,8,0,8"/>
-                <TextBox x:Name="TbCacheTtl" Height="32" Padding="4"/>
-                <TextBlock Text="{DynamicResource UI_Logo_CacheMax}" FontWeight="SemiBold" Margin="0,8,0,8"/>
-                <TextBox x:Name="TbCacheMax" Height="32" Padding="4"/>
-                <Button x:Name="BtnClearLogoCache" Content="{DynamicResource UI_Logo_CacheClear}" Width="120" Margin="0,12,0,0" Click="BtnClearLogoCache_Click" Style="{StaticResource ChipButton}"/>
-            </StackPanel>
-        </ScrollViewer>
-    </Grid>
+        <!-- URL -->
+        <TextBlock Text="{DynamicResource UI_Epg_LogoUrl}" FontWeight="SemiBold" Margin="0,0,0,8"/>
+        <TextBox x:Name="TbUrl" Height="24" Padding="4" ToolTip="{DynamicResource UI_Epg_LogoUrl_Tip}"/>
+        <TextBlock Text="{DynamicResource UI_Epg_LogoUrl_Note}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,24" TextWrapping="Wrap"/>
+        
+        <CheckBox x:Name="CbCache" Content="{DynamicResource UI_Logo_Cache_Enable}" Margin="0,0,0,8"/>
+        <TextBlock Text="{DynamicResource UI_Logo_CacheDir}" FontWeight="SemiBold" Margin="0,8,0,8"/>
+        <TextBox x:Name="TbCacheDir" Height="24" Padding="4"/>
+        <TextBlock Text="{DynamicResource UI_Logo_CacheTtl}" FontWeight="SemiBold" Margin="0,8,0,8"/>
+        <TextBox x:Name="TbCacheTtl" Height="24" Padding="4"/>
+        <TextBlock Text="{DynamicResource UI_Logo_CacheMax}" FontWeight="SemiBold" Margin="0,8,0,8"/>
+        <TextBox x:Name="TbCacheMax" Height="24" Padding="4"/>
+        <Button x:Name="BtnClearLogoCache" Content="{DynamicResource UI_Logo_CacheClear}" Width="120" Margin="0,12,0,0" Click="BtnClearLogoCache_Click" Style="{StaticResource ChipButton}"/>
+    </StackPanel>
 </UserControl>

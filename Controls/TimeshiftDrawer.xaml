@@ -6,41 +6,32 @@
              mc:Ignorable="d" 
              d:DesignHeight="600" d:DesignWidth="400"
              Background="Transparent">
-    <Grid Margin="16,8,16,8">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+    <StackPanel Margin="0,0,0,16">
+        <!-- Switch -->
+        <CheckBox x:Name="CbEnabled" Content="{DynamicResource UI_EnableTimeshift}" IsChecked="True" Margin="0,0,0,24"/>
         
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <StackPanel>
-                <!-- Switch -->
-                <CheckBox x:Name="CbEnabled" Content="{DynamicResource UI_EnableTimeshift}" IsChecked="True" Margin="0,0,0,24"/>
-                
-                <!-- URL Format -->
-                <TextBlock Text="{DynamicResource UI_Timeshift_UrlFormat}" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                <TextBox x:Name="TbUrlFormat" Height="32" Padding="4" ToolTip="{DynamicResource UI_Timeshift_UrlFormat_Tip}"/>
-                <TextBlock Text="{DynamicResource UI_Timeshift_UrlFormat_Note}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,24" TextWrapping="Wrap"/>
-                <TextBlock Text="{DynamicResource UI_Timeshift_TimeOverride_Note}" FontSize="12" Foreground="#FF3B30" Margin="0,0,0,16" TextWrapping="Wrap"/>
-                
-                <!-- Duration -->
-                <TextBlock Text="{DynamicResource UI_Timeshift_Duration}" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <Slider x:Name="SldDuration" Minimum="1" Maximum="168" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,0,12,0"/>
-                    <TextBox x:Name="TbDuration" Grid.Column="1" Width="60" Text="{Binding Value, ElementName=SldDuration}" TextAlignment="Center"/>
-                </Grid>
-                <TextBlock Text="{DynamicResource UI_Timeshift_Duration_Note}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,24"/>
-                
-                <TextBlock Margin="0,8,0,0">
-                    <Hyperlink NavigateUri="https://srcbox.top/guide/catchup-timeshift" RequestNavigate="Hyperlink_RequestNavigate">
-                        <Run Text="{DynamicResource UI_Catchup_HelpLink}"/>
-                    </Hyperlink>
-                </TextBlock>
-            </StackPanel>
-        </ScrollViewer>
-    </Grid>
+        <!-- URL Format -->
+        <TextBlock Text="{DynamicResource UI_Timeshift_UrlFormat}" FontWeight="SemiBold" Margin="0,0,0,8"/>
+        <TextBox x:Name="TbUrlFormat" Height="24" Padding="4" ToolTip="{DynamicResource UI_Timeshift_UrlFormat_Tip}"/>
+        <TextBlock Text="{DynamicResource UI_Timeshift_UrlFormat_Note}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,24" TextWrapping="Wrap"/>
+        <TextBlock Text="{DynamicResource UI_Timeshift_TimeOverride_Note}" FontSize="12" Foreground="#FF3B30" Margin="0,0,0,16" TextWrapping="Wrap"/>
+        
+        <!-- Duration -->
+        <TextBlock Text="{DynamicResource UI_Timeshift_Duration}" FontWeight="SemiBold" Margin="0,0,0,8"/>
+        <Grid>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="Auto"/>
+            </Grid.ColumnDefinitions>
+            <Slider x:Name="SldDuration" Minimum="1" Maximum="168" TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,0,12,0"/>
+            <TextBox x:Name="TbDuration" Grid.Column="1" Width="60" Text="{Binding Value, ElementName=SldDuration}" TextAlignment="Center"/>
+        </Grid>
+        <TextBlock Text="{DynamicResource UI_Timeshift_Duration_Note}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,24"/>
+        
+        <TextBlock Margin="0,8,0,0">
+            <Hyperlink NavigateUri="https://srcbox.top/guide/catchup-timeshift" RequestNavigate="Hyperlink_RequestNavigate">
+                <Run Text="{DynamicResource UI_Catchup_HelpLink}"/>
+            </Hyperlink>
+        </TextBlock>
+    </StackPanel>
 </UserControl>

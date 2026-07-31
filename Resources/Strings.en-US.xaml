@@ -1,11 +1,16 @@
 <ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:sys="clr-namespace:System;assembly=mscorlib">
-  <sys:String x:Key="UI_TabInterface">Interface</sys:String>
+  <sys:String x:Key="UI_TabApplication">Application</sys:String>
   <sys:String x:Key="UI_TabPlayback">Playback</sys:String>
+  <sys:String x:Key="UI_TabVideo">Video</sys:String>
+  <sys:String x:Key="UI_TabAudio">Audio</sys:String>
+  <sys:String x:Key="UI_TabNetwork">Network</sys:String>
+  <sys:String x:Key="UI_TabChannel">Channel</sys:String>
+  <sys:String x:Key="UI_TabRecording">Recording</sys:String>
+  <sys:String x:Key="UI_TabAbout">About</sys:String>
   <sys:String x:Key="UI_TabEpgLogo">EPG &amp; Logos</sys:String>
   <sys:String x:Key="UI_TabUpdateMirrors">CDN</sys:String>
-  <sys:String x:Key="UI_TabAbout">About</sys:String>
   <sys:String x:Key="App_Name">SrcBox</sys:String>
 
   <sys:String x:Key="UI_Language">Language</sys:String>

@@ -6,42 +6,33 @@
              mc:Ignorable="d" 
              d:DesignHeight="600" d:DesignWidth="400"
              Background="Transparent">
-    <Grid Margin="16,8,16,8">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
+    <StackPanel Margin="0,0,0,16">
+        <!-- Switch -->
+        <CheckBox x:Name="CbEnabled" Content="{DynamicResource UI_Enable}" IsChecked="True" Margin="0,0,0,24"/>
         
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <StackPanel>
-                <!-- Switch -->
-                <CheckBox x:Name="CbEnabled" Content="{DynamicResource UI_Enable}" IsChecked="True" Margin="0,0,0,24"/>
-                
-                <!-- URL -->
-                <TextBlock Text="{DynamicResource UI_Epg_Url}" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                <TextBox x:Name="TbUrl" Height="32" Padding="4"/>
-                <TextBlock Text="{DynamicResource UI_Epg_Url_Note}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,24" TextWrapping="Wrap"/>
-                
-                <!-- Refresh Interval -->
-                <TextBlock Text="{DynamicResource UI_Epg_RefreshInterval}" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                <TextBox x:Name="TbRefresh" Height="32" Padding="4"/>
-                <TextBlock Text="{DynamicResource UI_Epg_RefreshInterval_Note}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,24"/>
+        <!-- URL -->
+        <TextBlock Text="{DynamicResource UI_Epg_Url}" FontWeight="SemiBold" Margin="0,0,0,8"/>
+        <TextBox x:Name="TbUrl" Height="24" Padding="4"/>
+        <TextBlock Text="{DynamicResource UI_Epg_Url_Note}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,24" TextWrapping="Wrap"/>
+        
+        <!-- Refresh Interval -->
+        <TextBlock Text="{DynamicResource UI_Epg_RefreshInterval}" FontWeight="SemiBold" Margin="0,0,0,8"/>
+        <TextBox x:Name="TbRefresh" Height="24" Padding="4"/>
+        <TextBlock Text="{DynamicResource UI_Epg_RefreshInterval_Note}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,24"/>
 
-                <!-- Smart Match -->
-                <CheckBox x:Name="CbSmartMatch" Content="{DynamicResource UI_Epg_SmartMatch}" Margin="0,0,0,8"/>
-                <TextBlock Text="{DynamicResource UI_Epg_SmartMatch_Note}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="24,0,0,24" TextWrapping="Wrap"/>
+        <!-- Smart Match -->
+        <CheckBox x:Name="CbSmartMatch" Content="{DynamicResource UI_Epg_SmartMatch}" Margin="0,0,0,8"/>
+        <TextBlock Text="{DynamicResource UI_Epg_SmartMatch_Note}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="24,0,0,24" TextWrapping="Wrap"/>
 
-                <Separator Margin="0,6,0,12"/>
-                <TextBlock Text="{DynamicResource UI_Epg_MatchRules_Title}" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                <TextBlock Text="{DynamicResource UI_Epg_MatchRules_Desc}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,8"/>
-                <TextBlock Text="{DynamicResource UI_Epg_Placeholder_Desc}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
-                
-                <TextBlock Margin="0,16,0,0">
-                    <Hyperlink NavigateUri="https://srcbox.top/guide/epg" RequestNavigate="Hyperlink_RequestNavigate">
-                        <Run Text="{DynamicResource UI_Epg_HelpLink}"/>
-                    </Hyperlink>
-                </TextBlock>
-            </StackPanel>
-        </ScrollViewer>
-    </Grid>
+        <Separator Margin="0,6,0,12"/>
+        <TextBlock Text="{DynamicResource UI_Epg_MatchRules_Title}" FontWeight="SemiBold" Margin="0,0,0,8"/>
+        <TextBlock Text="{DynamicResource UI_Epg_MatchRules_Desc}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap" Margin="0,0,0,8"/>
+        <TextBlock Text="{DynamicResource UI_Epg_Placeholder_Desc}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" TextWrapping="Wrap"/>
+        
+        <TextBlock Margin="0,16,0,0">
+            <Hyperlink NavigateUri="https://srcbox.top/guide/epg" RequestNavigate="Hyperlink_RequestNavigate">
+                <Run Text="{DynamicResource UI_Epg_HelpLink}"/>
+            </Hyperlink>
+        </TextBlock>
+    </StackPanel>
 </UserControl>

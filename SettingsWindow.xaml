@@ -3,7 +3,7 @@
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         xmlns:controls="clr-namespace:LibmpvIptvClient.Controls"
         x:Class="LibmpvIptvClient.SettingsWindow"
-        Title="{DynamicResource UI_SettingsTitle}" Width="850" Height="650" WindowStartupLocation="CenterOwner" ResizeMode="CanResize" MinWidth="750" MinHeight="550"
+        Title="{DynamicResource UI_SettingsTitle}" Width="800" Height="600" WindowStartupLocation="CenterOwner" ResizeMode="CanResize" MinWidth="700" MinHeight="500"
         WindowStyle="None" Icon="pack://application:,,,/srcbox.ico"
         Background="{DynamicResource AppBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}">
   <WindowChrome.WindowChrome>
@@ -143,14 +143,16 @@
           <TabControl.Resources>
             <Style TargetType="{x:Type TabItem}">
               <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-              <Setter Property="Background" Value="{DynamicResource ChipButtonBackgroundBrush}"/>
-              <Setter Property="Padding" Value="14,10"/>
-              <Setter Property="Margin" Value="0,4,6,4"/>
+              <Setter Property="Background" Value="Transparent"/>
+              <Setter Property="Padding" Value="12,8"/>
+              <Setter Property="Margin" Value="0,2,0,2"/>
+              <Setter Property="Height" Value="36"/>
+              <Setter Property="FontSize" Value="12"/>
               <Setter Property="Template">
                 <Setter.Value>
                   <ControlTemplate TargetType="{x:Type TabItem}">
-                    <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="6" Padding="{TemplateBinding Padding}">
-                      <ContentPresenter ContentSource="Header" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                    <Border x:Name="Bd" Background="{TemplateBinding Background}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="4" Padding="{TemplateBinding Padding}" Margin="0,0,4,0">
+                      <ContentPresenter ContentSource="Header" HorizontalAlignment="Center" VerticalAlignment="Center" RecognizesAccessKey="True"/>
                     </Border>
                     <ControlTemplate.Triggers>
                       <Trigger Property="IsSelected" Value="True">
@@ -168,540 +170,100 @@
                 </Setter.Value>
               </Setter>
             </Style>
+            <Style TargetType="{x:Type TextBlock}">
+              <Setter Property="FontSize" Value="12"/>
+              <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            </Style>
+            <Style TargetType="{x:Type TextBox}">
+              <Setter Property="FontSize" Value="12"/>
+              <Setter Property="Background" Value="{DynamicResource InputBackgroundBrush}"/>
+              <Setter Property="Foreground" Value="{DynamicResource InputTextBrush}"/>
+              <Setter Property="BorderBrush" Value="{DynamicResource BorderBrushCommon}"/>
+            </Style>
+            <Style TargetType="{x:Type CheckBox}">
+              <Setter Property="FontSize" Value="12"/>
+              <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+            </Style>
+            <Style TargetType="{x:Type Button}">
+              <Setter Property="FontSize" Value="12"/>
+            </Style>
+
+            <Style TargetType="{x:Type Hyperlink}">
+              <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+            </Style>
+            <Style TargetType="{x:Type ComboBoxItem}">
+              <Setter Property="FontSize" Value="12"/>
+              <Setter Property="Background" Value="#FFFFFF"/>
+              <Setter Property="Foreground" Value="#111111"/>
+            </Style>
+            <Style TargetType="{x:Type ComboBox}">
+              <Setter Property="FontSize" Value="12"/>
+              <Setter Property="HorizontalContentAlignment" Value="Left"/>
+              <Setter Property="Background" Value="#FFFFFF"/>
+              <Setter Property="Foreground" Value="#111111"/>
+              <Setter Property="BorderBrush" Value="#D9D9D9"/>
+            </Style>
           </TabControl.Resources>
 
-          <!-- 界面（语言与外观） -->
-          <TabItem Header="{DynamicResource UI_TabInterface}">
+          <!-- 应用 -->
+          <TabItem Header="{DynamicResource UI_TabApplication}">
             <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
-              <Grid Margin="16,8,16,8">
-                <Grid.RowDefinitions>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="Auto"/>
-                  <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <TextBlock Grid.Row="0" Grid.Column="0" Text="{DynamicResource UI_Language}" VerticalAlignment="Center" Margin="0,0,16,0"/>
-                <ComboBox x:Name="CbLanguage" Grid.Row="0" Grid.Column="1" Height="30" Width="220" SelectedIndex="0" Margin="0,0,0,0">
-                  <ComboBoxItem Content="{DynamicResource UI_FollowSystem}" Tag=""/>
-                  <ComboBoxItem Content="{DynamicResource UI_ChineseSimplified}" Tag="zh-CN"/>
-                  <ComboBoxItem Content="{DynamicResource UI_ChineseTraditional}" Tag="zh-TW"/>
-                  <ComboBoxItem Content="{DynamicResource UI_English}" Tag="en-US"/>
-                  <ComboBoxItem Content="{DynamicResource UI_Russian}" Tag="ru-RU"/>
-                </ComboBox>
-                <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource UI_Appearance}" VerticalAlignment="Center" Margin="0,12,16,0"/>
-                <ComboBox x:Name="CbTheme" Grid.Row="1" Grid.Column="1" Height="30" Width="220" Margin="0,12,0,0">
-                  <ComboBoxItem Content="{DynamicResource UI_FollowSystem}" Tag="System"/>
-                  <ComboBoxItem Content="{DynamicResource UI_Light}" Tag="Light"/>
-                  <ComboBoxItem Content="{DynamicResource UI_Dark}" Tag="Dark"/>
-                </ComboBox>
-                <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Text="{DynamicResource UI_LangThemeNote}" Foreground="#888" Margin="0,12,0,0"/>
-              </Grid>
-            </ScrollViewer>
-          </TabItem>
-
-          <!-- 播放 -->
-          <TabItem Header="{DynamicResource UI_TabPlayback}">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
-              <Grid Margin="16,8,16,8">
-                <Grid.RowDefinitions>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                  <!-- New options -->
-                  <RowDefinition Height="Auto"/><!-- 6: Adaptive toggle -->
-                  <RowDefinition Height="Auto"/><!-- 7: Adaptive hint -->
-                  <RowDefinition Height="Auto"/><!-- 8: HLS live edge -->
-                  <RowDefinition Height="Auto"/><!-- 9: HLS readahead -->
-                  <RowDefinition Height="Auto"/><!-- 10: HLS hint -->
-                  <RowDefinition Height="Auto"/><!-- 11: Alang -->
-                  <RowDefinition Height="Auto"/><!-- 12: Slang -->
-                  <RowDefinition Height="Auto"/><!-- 13: Lang hint -->
-                  <RowDefinition Height="Auto"/><!-- 14: mpv timeout -->
-                  <RowDefinition Height="Auto"/><!-- 15: Timeout hint -->
-                  <!-- HTTP/RTSP Header -->
-                  <RowDefinition Height="Auto"/><!-- 16: Section header -->
-                  <RowDefinition Height="Auto"/><!-- 17: HTTP Headers -->
-                  <RowDefinition Height="Auto"/><!-- 18: HTTP Headers hint -->
-                  <RowDefinition Height="Auto"/><!-- 19: RTSP Transport -->
-                  <RowDefinition Height="Auto"/><!-- 20: RTSP User-Agent -->
-                  <RowDefinition Height="Auto"/><!-- 21: RTSP User -->
-                  <RowDefinition Height="Auto"/><!-- 22: RTSP Password -->
-                  <RowDefinition Height="Auto"/><!-- 23: Test URL -->
-                  <RowDefinition Height="Auto"/><!-- 24: Test buttons -->
-                  <RowDefinition Height="Auto"/><!-- 25: Test hint -->
-                  <!-- Deinterlace -->
-                  <RowDefinition Height="Auto"/><!-- 26: Deinterlace section header -->
-                  <RowDefinition Height="Auto"/><!-- 27: Deinterlace mode -->
-                  <RowDefinition Height="Auto"/><!-- 28: Deinterlace algo -->
-                  <RowDefinition Height="Auto"/><!-- 29: Deinterlace hint -->
-                  <!-- 音频设置 -->
-                  <RowDefinition Height="Auto"/><!-- 30: Audio section header -->
-                  <RowDefinition Height="Auto"/><!-- 31: Volume gain -->
-                  <RowDefinition Height="Auto"/><!-- 32: Volume max -->
-                  <RowDefinition Height="Auto"/><!-- 33: Audio delay -->
-                </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="Auto"/>
-                  <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-
-                <CheckBox x:Name="CbHwdec" Grid.Row="0" Grid.ColumnSpan="2" Content="{DynamicResource UI_Playback_EnableHwdec}" Margin="0,0,0,16"/>
-
-                <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource UI_Playback_CacheSecs}" VerticalAlignment="Center" Margin="0,0,16,0"/>
-                <TextBox x:Name="TbCacheSecs" Grid.Row="1" Grid.Column="1" Height="30"/>
-
-                <TextBlock Grid.Row="2" Grid.Column="0" Text="{DynamicResource UI_Playback_DemuxerMaxBytes}" VerticalAlignment="Center" Margin="0,12,16,0"/>
-                <TextBox x:Name="TbMaxBytes" Grid.Row="2" Grid.Column="1" Height="30" Margin="0,12,0,0"/>
-
-                <TextBlock Grid.Row="3" Grid.Column="0" Text="{DynamicResource UI_Playback_DemuxerMaxBackBytes}" VerticalAlignment="Center" Margin="0,12,16,0"/>
-                <TextBox x:Name="TbMaxBackBytes" Grid.Row="3" Grid.Column="1" Height="30" Margin="0,12,0,0"/>
-
-                <TextBlock Grid.Row="4" Grid.Column="0" Text="{DynamicResource UI_Playback_FCCPrefetch}" VerticalAlignment="Center" Margin="0,12,16,0"/>
-                <TextBox x:Name="TbFccPrefetch" Grid.Row="4" Grid.Column="1" Height="30" Margin="0,12,0,0"/>
-
-                <TextBlock Grid.Row="5" Grid.Column="0" Text="{DynamicResource UI_Playback_TimeoutSec}" VerticalAlignment="Center" Margin="0,12,16,0"/>
-                <TextBox x:Name="TbSourceTimeout" Grid.Row="5" Grid.Column="1" Height="30" Margin="0,12,0,0"/>
-
-                <!-- Adaptive toggle -->
-                <CheckBox x:Name="CbAdaptive" Grid.Row="6" Grid.ColumnSpan="2" Content="{DynamicResource UI_Playback_EnableAdaptive}" Margin="0,12,0,0"/>
-                <TextBlock Grid.Row="7" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,2,0,0"
-                           Text="{DynamicResource UI_Playback_AdaptiveHint}" TextWrapping="Wrap"/>
-                
-                <!-- HLS options -->
-                <CheckBox x:Name="CbHlsStart" Grid.Row="8" Grid.ColumnSpan="2" Content="{DynamicResource UI_Playback_HlsStartLive}" Margin="0,8,0,0"/>
-                <TextBlock Grid.Row="9" Grid.Column="0" Text="{DynamicResource UI_Playback_HlsReadahead}" VerticalAlignment="Center" Margin="0,8,16,0"/>
-                <TextBox x:Name="TbHlsReadahead" Grid.Row="9" Grid.Column="1" Height="30" />
-                <TextBlock Grid.Row="10" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,2,0,0"
-                           Text="{DynamicResource UI_Playback_HlsHint}" TextWrapping="Wrap"/>
-
-                <!-- Language preferences -->
-                <TextBlock Grid.Row="11" Grid.Column="0" Text="{DynamicResource UI_Playback_Alang}" VerticalAlignment="Center" Margin="0,8,16,0"/>
-                <TextBox x:Name="TbAlang" Grid.Row="11" Grid.Column="1" Height="30"/>
-                <TextBlock Grid.Row="12" Grid.Column="0" Text="{DynamicResource UI_Playback_Slang}" VerticalAlignment="Center" Margin="0,8,16,0"/>
-                <TextBox x:Name="TbSlang" Grid.Row="12" Grid.Column="1" Height="30"/>
-                <TextBlock Grid.Row="13" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,2,0,0"
-                           Text="{DynamicResource UI_Playback_LangHint}" TextWrapping="Wrap"/>
-
-                <!-- mpv network-timeout -->
-                <TextBlock Grid.Row="14" Grid.Column="0" Text="{DynamicResource UI_Playback_MpvNetworkTimeout}" VerticalAlignment="Center" Margin="0,8,16,0"/>
-                <TextBox x:Name="TbMpvTimeout" Grid.Row="14" Grid.Column="1" Height="30"/>
-                <TextBlock Grid.Row="15" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,2,0,0"
-                           Text="{DynamicResource UI_Playback_MpvTimeoutHint}" TextWrapping="Wrap"/>
-
-                <!-- HTTP/RTSP Header Settings -->
-                <TextBlock Grid.Row="16" Grid.ColumnSpan="2" Text="{DynamicResource UI_HttpHeader_Section}" FontWeight="SemiBold" Margin="0,16,0,8"/>
-                <TextBlock Grid.Row="17" Grid.Column="0" Text="{DynamicResource UI_HttpHeader_Headers}" VerticalAlignment="Top" Margin="0,0,16,0"/>
-                <TextBox x:Name="TbHttpHeaders" Grid.Row="17" Grid.Column="1" Height="72" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
-                <TextBlock Grid.Row="18" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,4,0,8"
-                           Text="{DynamicResource UI_HttpHeader_HeadersHint}" TextWrapping="Wrap"/>
-
-                <TextBlock Grid.Row="19" Grid.Column="0" Text="{DynamicResource UI_RtspTransport}" VerticalAlignment="Center" Margin="0,0,16,0"/>
-                <ComboBox x:Name="CbRtspTransport" Grid.Row="19" Grid.Column="1" Height="30" Width="160" HorizontalAlignment="Left">
-                  <ComboBoxItem Content="TCP" Tag="tcp"/>
-                  <ComboBoxItem Content="UDP" Tag="udp"/>
-                  <ComboBoxItem Content="HTTP Tunnel" Tag="http"/>
-                </ComboBox>
-
-                <TextBlock Grid.Row="20" Grid.Column="0" Text="{DynamicResource UI_RtspUserAgent}" VerticalAlignment="Center" Margin="0,8,16,0"/>
-                <TextBox x:Name="TbRtspUserAgent" Grid.Row="20" Grid.Column="1" Height="30" Margin="0,8,0,0"/>
-
-                <TextBlock Grid.Row="21" Grid.Column="0" Text="{DynamicResource UI_RtspUser}" VerticalAlignment="Center" Margin="0,8,16,0"/>
-                <TextBox x:Name="TbRtspUser" Grid.Row="21" Grid.Column="1" Height="30" Margin="0,8,0,0"/>
-
-                <TextBlock Grid.Row="22" Grid.Column="0" Text="{DynamicResource UI_RtspPassword}" VerticalAlignment="Center" Margin="0,8,16,0"/>
-                <PasswordBox x:Name="PbRtspPassword" Grid.Row="22" Grid.Column="1" Height="30" Margin="0,8,0,0"/>
-
-                <TextBlock Grid.Row="23" Grid.Column="0" Text="{DynamicResource UI_TestUrl}" VerticalAlignment="Center" Margin="0,8,16,0"/>
-                <TextBox x:Name="TbTestUrl" Grid.Row="23" Grid.Column="1" Height="30" Margin="0,8,0,0"/>
-
-                <StackPanel Grid.Row="24" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,8,0,0">
-                  <Button x:Name="BtnTestHttp" Content="{DynamicResource UI_TestHttp}" Width="80" Height="30" Margin="0,0,8,0" Click="BtnTestHttp_Click" Style="{StaticResource ChipButton}"/>
-                  <Button x:Name="BtnTestRtsp" Content="{DynamicResource UI_TestRtsp}" Width="80" Height="30" Click="BtnTestRtsp_Click" Style="{StaticResource ChipButton}"/>
-                </StackPanel>
-                <TextBlock Grid.Row="25" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,4,0,0"
-                           Text="{DynamicResource UI_HttpHeader_TestHint}" TextWrapping="Wrap"/>
-
-                <!-- Deinterlace (反交错) - 针对 1080i/720i 隔行扫描流 -->
-                <TextBlock Grid.Row="26" Grid.ColumnSpan="2" Text="{DynamicResource UI_Deinterlace_Section}" FontWeight="SemiBold" Margin="0,16,0,8"/>
-                <TextBlock Grid.Row="27" Grid.Column="0" Text="{DynamicResource UI_Deinterlace_Mode}" VerticalAlignment="Center" Margin="0,4,16,0"/>
-                <ComboBox x:Name="CbDeinterlaceMode" Grid.Row="27" Grid.Column="1" Height="30" Width="200" HorizontalAlignment="Left" Margin="0,4,0,0"
-                          SelectionChanged="CbDeinterlaceMode_SelectionChanged">
-                  <ComboBoxItem Content="Auto" Tag="auto"/>
-                  <ComboBoxItem Content="Force On" Tag="yes"/>
-                  <ComboBoxItem Content="Off" Tag="no"/>
-                </ComboBox>
-                <TextBlock Grid.Row="28" Grid.Column="0" Text="{DynamicResource UI_Deinterlace_Algorithm}" VerticalAlignment="Center" Margin="0,8,16,0"/>
-                <ComboBox x:Name="CbDeinterlaceAlgo" Grid.Row="28" Grid.Column="1" Height="30" Width="200" HorizontalAlignment="Left" Margin="0,8,0,0"
-                          SelectionChanged="CbDeinterlaceAlgo_SelectionChanged">
-                  <ComboBoxItem Content="yadif" Tag="yadif"/>
-                  <ComboBoxItem Content="bwdif" Tag="bwdif"/>
-                  <ComboBoxItem Content="none" Tag="none"/>
-                </ComboBox>
-                <TextBlock Grid.Row="29" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,4,0,0"
-                           Text="{DynamicResource UI_Deinterlace_Hint}" TextWrapping="Wrap"/>
-
-                <!-- 音频设置 -->
-                <TextBlock Grid.Row="30" Grid.ColumnSpan="2" Text="{DynamicResource UI_Audio_Section}" FontWeight="SemiBold" Margin="0,16,0,8"/>
-                <TextBlock Grid.Row="31" Grid.Column="0" Text="{DynamicResource UI_Audio_VolumeGain}" VerticalAlignment="Center" Margin="0,4,16,0"/>
-                <Grid Grid.Row="31" Grid.Column="1" Margin="0,4,0,0">
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                  </Grid.ColumnDefinitions>
-                  <Slider x:Name="SliderVolumeGain" Grid.Column="0" Minimum="-200" Maximum="60" Value="0" TickFrequency="10" IsSnapToTickEnabled="True" VerticalAlignment="Center" ValueChanged="SliderVolumeGain_ValueChanged"/>
-                  <TextBlock Grid.Column="1" x:Name="TxtVolumeGain" Text="0 dB" VerticalAlignment="Center" Margin="12,0,0,0" MinWidth="60"/>
-                </Grid>
-                <TextBlock Grid.Row="32" Grid.Column="0" Text="{DynamicResource UI_Audio_VolumeMax}" VerticalAlignment="Center" Margin="0,8,16,0"/>
-                <Grid Grid.Row="32" Grid.Column="1" Margin="0,8,0,0">
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                  </Grid.ColumnDefinitions>
-                  <Slider x:Name="SliderVolumeMax" Grid.Column="0" Minimum="100" Maximum="1000" Value="130" TickFrequency="10" IsSnapToTickEnabled="True" VerticalAlignment="Center" ValueChanged="SliderVolumeMax_ValueChanged"/>
-                  <TextBlock Grid.Column="1" x:Name="TxtVolumeMax" Text="130%" VerticalAlignment="Center" Margin="12,0,0,0" MinWidth="60"/>
-                </Grid>
-                <TextBlock Grid.Row="33" Grid.Column="0" Text="{DynamicResource UI_Audio_Delay}" VerticalAlignment="Center" Margin="0,8,16,0"/>
-                <Grid Grid.Row="33" Grid.Column="1" Margin="0,8,0,0">
-                  <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
-                    <ColumnDefinition Width="Auto"/>
-                  </Grid.ColumnDefinitions>
-                  <Slider x:Name="SliderAudioDelay" Grid.Column="0" Minimum="-10" Maximum="10" Value="0" TickFrequency="0.5" IsSnapToTickEnabled="True" VerticalAlignment="Center" ValueChanged="SliderAudioDelay_ValueChanged"/>
-                  <TextBlock Grid.Column="1" x:Name="TxtAudioDelay" Text="0.0 s" VerticalAlignment="Center" Margin="12,0,0,0" MinWidth="60"/>
-                </Grid>
-              </Grid>
-            </ScrollViewer>
-          </TabItem>
-
-          <!-- EPG Config -->
-          <TabItem x:Name="TabEpg" Header="{DynamicResource UI_Epg_Config}">
-              <controls:EpgDrawer x:Name="EpgSettingsControl"/>
-          </TabItem>
-
-          <!-- Logo Config -->
-          <TabItem x:Name="TabLogo" Header="{DynamicResource UI_Logo_Config}">
-              <controls:LogoDrawer x:Name="LogoSettingsControl"/>
-          </TabItem>
-
-          <!-- Playback (Replay) Settings -->
-          <TabItem x:Name="TabReplay" Header="{DynamicResource UI_Playback_Settings}">
-              <controls:PlaybackDrawer x:Name="ReplaySettingsControl"/>
-          </TabItem>
-
-          <!-- Timeshift Settings -->
-          <TabItem x:Name="TabTimeshift" Header="{DynamicResource UI_Timeshift_Settings}">
-              <controls:TimeshiftDrawer x:Name="TimeshiftSettingsControl"/>
-          </TabItem>
-
-          <!-- Recording Settings -->
-          <TabItem x:Name="TabRecording" Header="{DynamicResource UI_Recording_Settings}">
-              <controls:RecordingDrawer x:Name="RecordingSettingsControl"/>
-          </TabItem>
-
-          <!-- Web Remote Settings -->
-          <TabItem x:Name="TabWebRemote" Header="{DynamicResource UI_WebRemote_Tab}">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
-              <Grid Margin="16,8,16,8">
-                <Grid.RowDefinitions>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="Auto"/>
-                  <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-
-                <!-- Enable/Disable -->
-                <CheckBox x:Name="CbWebRemoteEnabled" Grid.Row="0" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebRemote_Enable}" Margin="0,0,0,16"/>
-
-                <!-- Port -->
-                <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource UI_WebRemote_Port}" VerticalAlignment="Center" Margin="0,0,16,8"/>
-                <TextBox x:Name="TbWebRemotePort" Grid.Row="1" Grid.Column="1" Width="100" Height="30" HorizontalAlignment="Left" Margin="0,0,0,8"/>
-
-                <!-- Password -->
-                <CheckBox x:Name="CbWebRemotePassword" Grid.Row="2" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebRemote_RequirePassword}" Margin="0,16,0,8"/>
-                <TextBox x:Name="TbWebRemotePassword" Grid.Row="3" Grid.ColumnSpan="2" Height="30" Margin="0,0,0,16"/>
-
-                <!-- Show Channel List -->
-                <CheckBox x:Name="CbWebRemoteShowChannels" Grid.Row="4" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebRemote_ShowChannels}" IsChecked="True" Margin="0,0,0,8"/>
-
-                <!-- Show EPG List -->
-                <CheckBox x:Name="CbWebRemoteShowEpg" Grid.Row="5" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebRemote_ShowEpg}" IsChecked="True" Margin="0,0,0,16"/>
-
-                <TextBlock Grid.Row="6" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" TextWrapping="Wrap">
-                  <Run Text="{DynamicResource UI_WebRemote_Hint}"/>
-                </TextBlock>
-              </Grid>
-            </ScrollViewer>
-          </TabItem>
-
-          <!-- 时间覆盖（仅替换时间片段） -->
-          <TabItem x:Name="TabTimeOverride" Header="{DynamicResource UI_TimeOverride_Tab}">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
-              <Grid Margin="16,8,16,8">
-                <Grid.RowDefinitions>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="Auto"/>
-                  <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-
-                <CheckBox x:Name="CbTimeOverrideEnabled" Grid.Row="0" Grid.ColumnSpan="2" Content="{DynamicResource UI_TimeOverride_Enable}" Margin="0,0,0,12"/>
-
-                <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource UI_TimeOverride_Mode}" VerticalAlignment="Center" Margin="0,0,16,0"/>
-                <ComboBox x:Name="CbTimeOverrideMode" Grid.Row="1" Grid.Column="1" Height="30" Width="220">
-                  <ComboBoxItem Content="{DynamicResource UI_TimeOverride_Mode_TimeOnly}" Tag="time_only"/>
-                  <ComboBoxItem Content="{DynamicResource UI_TimeOverride_Mode_ReplaceAll}" Tag="replace_all"/>
-                </ComboBox>
-
-                <TextBlock Grid.Row="2" Grid.Column="0" Text="{DynamicResource UI_TimeOverride_Layout}" VerticalAlignment="Center" Margin="0,8,16,0"/>
-                <ComboBox x:Name="CbTimeLayout" Grid.Row="2" Grid.Column="1" Height="30" Width="220" Margin="0,8,0,0" ToolTip="{DynamicResource UI_TimeOverride_Layout_Tip}">
-                  <ComboBoxItem Content="{DynamicResource UI_TimeOverride_Layout_StartEnd}" Tag="start_end"/>
-                  <ComboBoxItem Content="{DynamicResource UI_TimeOverride_Layout_Playseek}" Tag="playseek"/>
-                  <ComboBoxItem Content="{DynamicResource UI_TimeOverride_Layout_StartDuration}" Tag="start_duration"/>
-                </ComboBox>
-
-                <TextBlock Grid.Row="3" Grid.Column="0" Text="{DynamicResource UI_TimeOverride_Encoding}" VerticalAlignment="Center" Margin="0,8,16,0"/>
-                <ComboBox x:Name="CbTimeEncoding" Grid.Row="3" Grid.Column="1" Height="30" Width="220" Margin="0,8,0,0" ToolTip="{DynamicResource UI_TimeOverride_Encoding_Tip}">
-                  <ComboBoxItem Content="{DynamicResource UI_TimeOverride_Encoding_Local}" Tag="local"/>
-                  <ComboBoxItem Content="{DynamicResource UI_TimeOverride_Encoding_Utc}" Tag="utc"/>
-                  <ComboBoxItem Content="{DynamicResource UI_TimeOverride_Encoding_Unix}" Tag="unix"/>
-                  <ComboBoxItem Content="{DynamicResource UI_TimeOverride_Encoding_UnixMs}" Tag="unix_ms"/>
-                </ComboBox>
-
-                <TextBlock x:Name="LblStartKey" Grid.Row="4" Grid.Column="0" Text="{DynamicResource UI_TimeOverride_StartKey}" VerticalAlignment="Center" Margin="0,8,16,0"/>
-                <ComboBox x:Name="CbStartKey" Grid.Row="4" Grid.Column="1" Height="30" Margin="0,8,0,0" IsEditable="True" ToolTip="{DynamicResource UI_TimeOverride_Key_Tip}">
-                  <ComboBoxItem Content="start"/>
-                  <ComboBoxItem Content="starttime"/>
-                  <ComboBoxItem Content="begin"/>
-                </ComboBox>
-
-                <TextBlock x:Name="LblEndKey" Grid.Row="5" Grid.Column="0" Text="{DynamicResource UI_TimeOverride_EndKey}" VerticalAlignment="Center" Margin="0,8,16,0"/>
-                <ComboBox x:Name="CbEndKey" Grid.Row="5" Grid.Column="1" Height="30" Margin="0,8,0,0" IsEditable="True" ToolTip="{DynamicResource UI_TimeOverride_Key_Tip}">
-                  <ComboBoxItem Content="end"/>
-                  <ComboBoxItem Content="endtime"/>
-                  <ComboBoxItem Content="finish"/>
-                </ComboBox>
-
-                <TextBlock x:Name="LblDurationKey" Grid.Row="6" Grid.Column="0" Text="{DynamicResource UI_TimeOverride_DurationKey}" VerticalAlignment="Center" Margin="0,8,16,0"/>
-                <ComboBox x:Name="CbDurationKey" Grid.Row="6" Grid.Column="1" Height="30" Margin="0,8,0,0" IsEditable="True" ToolTip="{DynamicResource UI_TimeOverride_Key_Tip}">
-                  <ComboBoxItem Content="duration"/>
-                  <ComboBoxItem Content="dur"/>
-                  <ComboBoxItem Content="len"/>
-                </ComboBox>
-
-                <TextBlock x:Name="LblPlayseekKey" Grid.Row="7" Grid.Column="0" Text="{DynamicResource UI_TimeOverride_PlayseekKey}" VerticalAlignment="Center" Margin="0,8,16,0"/>
-                <StackPanel x:Name="SpPlayseekRow" Grid.Row="7" Grid.Column="1" Orientation="Horizontal" Margin="0,8,0,0">
-                  <ComboBox x:Name="CbPlayseekKey" Height="30" Width="160" IsEditable="True" ToolTip="{DynamicResource UI_TimeOverride_Key_Tip}">
-                    <ComboBoxItem Content="playseek"/>
-                  </ComboBox>
-                  <CheckBox x:Name="CbUrlEncode" Content="{DynamicResource UI_TimeOverride_UrlEncode}" Margin="12,6,0,0"/>
-                </StackPanel>
-
-                <TextBlock Grid.Row="8" Grid.ColumnSpan="2" Text="{DynamicResource UI_TimeOverride_Global_Note}" FontSize="12" Foreground="#FF3B30" Margin="0,0,0,8" TextWrapping="Wrap"/>
-                <!-- Bottom container: buttons + advanced + preview, stacked to avoid overlap -->
-                <StackPanel Grid.Row="9" Grid.ColumnSpan="2">
-                  <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
-                    <Button x:Name="BtnOpenDocs" Content="{DynamicResource UI_OpenDocs}" Width="96" Click="BtnOpenDocs_Click" Style="{StaticResource ChipButton}" Margin="0,0,8,0"/>
-                    <Button x:Name="BtnOpenIssues" Content="Issues" Width="96" Click="BtnOpenIssues_Click" Style="{StaticResource ChipButton}"/>
+              <StackPanel Margin="16,8,24,8">
+                <!-- 语言与外观 -->
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
+                  <StackPanel>
+                    <TextBlock Text="{DynamicResource UI_Language}" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                    <ComboBox x:Name="CbLanguage" Width="220" SelectedIndex="0" HorizontalAlignment="Left">
+                      <ComboBoxItem Content="{DynamicResource UI_FollowSystem}" Tag=""/>
+                      <ComboBoxItem Content="{DynamicResource UI_ChineseSimplified}" Tag="zh-CN"/>
+                      <ComboBoxItem Content="{DynamicResource UI_ChineseTraditional}" Tag="zh-TW"/>
+                      <ComboBoxItem Content="{DynamicResource UI_English}" Tag="en-US"/>
+                      <ComboBoxItem Content="{DynamicResource UI_Russian}" Tag="ru-RU"/>
+                    </ComboBox>
+                    <TextBlock Text="{DynamicResource UI_Appearance}" FontWeight="SemiBold" Margin="0,16,0,8"/>
+                    <ComboBox x:Name="CbTheme" Width="220" HorizontalAlignment="Left">
+                      <ComboBoxItem Content="{DynamicResource UI_FollowSystem}" Tag="System"/>
+                      <ComboBoxItem Content="{DynamicResource UI_Light}" Tag="Light"/>
+                      <ComboBoxItem Content="{DynamicResource UI_Dark}" Tag="Dark"/>
+                    </ComboBox>
+                    <TextBlock Text="{DynamicResource UI_LangThemeNote}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,12,0,0" FontSize="10"/>
                   </StackPanel>
-                  
-                  <GroupBox Header="{DynamicResource UI_Advanced_Options}" Margin="0,8,0,0" BorderBrush="{DynamicResource BorderBrushCommon}">
-                    <StackPanel Margin="8">
-                      <TextBlock Text="{DynamicResource UI_Advanced_Desc}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" TextWrapping="Wrap"/>
-                      <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
-                        <TextBlock Text="{DynamicResource UI_Advanced_IsoPreset}" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                        <ComboBox x:Name="CbIsoPreset" Width="220" IsEnabled="False">
-                          <ComboBoxItem Content="ISO-8601 UTC (Z)"/>
-                          <ComboBoxItem Content="ISO-8601 K (auto Z/offset)"/>
-                          <ComboBoxItem Content="ISO-8601 +zzz"/>
-                        </ComboBox>
-                      </StackPanel>
-                      <CheckBox x:Name="CbSplitDateTime" Content="{DynamicResource UI_Advanced_Split}" IsEnabled="False" Margin="0,6,0,0"/>
-                      <CheckBox x:Name="CbPathPlaceholder" Content="{DynamicResource UI_Advanced_Path}" IsEnabled="False" Margin="0,6,0,0"/>
-                    </StackPanel>
-                  </GroupBox>
-                  
-                  <GroupBox Header="{DynamicResource UI_TimeOverride_Preview_Group}" Margin="0,12,0,0" BorderBrush="{DynamicResource BorderBrushCommon}">
-                    <StackPanel Margin="8">
-                      <TextBlock Text="{DynamicResource UI_TimeOverride_Preview_BaseUrl}" FontWeight="SemiBold"/>
-                      <TextBox x:Name="TbBaseUrl" Height="30" Margin="0,6,0,8"/>
-                      <StackPanel Orientation="Horizontal">
-                        <Button x:Name="BtnPreviewReplay" Content="{DynamicResource UI_TimeOverride_Preview_Replay}" Width="96" Click="BtnPreviewReplay_Click" Style="{StaticResource ChipButton}"/>
-                        <Button x:Name="BtnPreviewTimeshift" Content="{DynamicResource UI_TimeOverride_Preview_Timeshift}" Width="96" Margin="8,0,0,0" Click="BtnPreviewTimeshift_Click" Style="{StaticResource ChipButton}"/>
-                      </StackPanel>
-                      <TextBox x:Name="TbPreviewResult" Height="90" Margin="0,8,0,0" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"/>
-                      <TextBlock Text="{DynamicResource UI_TimeOverride_Preview_Template}" FontWeight="SemiBold" Margin="0,8,0,0"/>
-                      <TextBox x:Name="TbPreviewTemplate" Height="74" Margin="0,6,0,0" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"/>
-                    </StackPanel>
-                  </GroupBox>
-                </StackPanel>
-              </Grid>
-            </ScrollViewer>
-          </TabItem>
-          <!-- 更新与镜像 -->
-          <TabItem Header="{DynamicResource UI_TabUpdateMirrors}">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
-              <Grid Margin="16,8,16,8">
-                <Grid.RowDefinitions>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="Auto"/>
-                  <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
+                </Border>
 
-                    <TextBlock Grid.Row="0" Grid.Column="0" Text="{DynamicResource UI_CdnLines}" VerticalAlignment="Top" Margin="0,0,16,0" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                <StackPanel Grid.Row="0" Grid.Column="1">
-                  <Grid>
-                    <Grid.ColumnDefinitions>
-                      <ColumnDefinition Width="*"/>
-                      <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <Grid.RowDefinitions>
-                      <RowDefinition Height="Auto"/>
-                      <RowDefinition Height="Auto"/>
-                    </Grid.RowDefinitions>
-                    <TextBlock Text="{DynamicResource UI_Cdn_Help}" Grid.Row="0" Grid.ColumnSpan="2" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,8" TextWrapping="Wrap"/>
-                        <TextBox x:Name="TbNewCdn" Grid.Row="1" Height="30" Grid.Column="0" ToolTip="{DynamicResource UI_Cdn_Example}"/>
-                        <Button Grid.Row="1" Grid.Column="1" Content="{DynamicResource UI_Add}" Width="68" Margin="8,0,0,0" Click="BtnCdnAdd_Click" Style="{StaticResource ChipButton}"/>
-                  </Grid>
-                  <Grid Margin="0,8,0,0">
-                    <Grid.ColumnDefinitions>
-                      <ColumnDefinition Width="*"/>
-                      <ColumnDefinition Width="Auto"/>
-                    </Grid.ColumnDefinitions>
-                    <ListBox x:Name="ListCdn" Grid.Column="0" Height="160" />
-                    <StackPanel Grid.Column="1" Orientation="Vertical" Margin="8,0,0,0">
-                          <Button Content="{DynamicResource UI_MoveUp}" Width="68" Click="BtnCdnUp_Click" Style="{StaticResource ChipButton}"/>
-                          <Button Content="{DynamicResource UI_MoveDown}" Width="68" Margin="0,6,0,0" Click="BtnCdnDown_Click" Style="{StaticResource ChipButton}"/>
-                          <Button Content="{DynamicResource UI_Delete}" Width="68" Margin="0,6,0,0" Click="BtnCdnRemove_Click" Style="{StaticResource ChipButton}"/>
-                          <Button Content="{DynamicResource UI_SortBySpeed}" Width="68" Margin="0,6,0,0" Click="BtnCdnSpeedTest_Click" Style="{StaticResource ChipButton}"/>
-                    </StackPanel>
-                  </Grid>
-                </StackPanel>
-              </Grid>
-            </ScrollViewer>
-          </TabItem>
-
-          <!-- WebDAV -->
-          <TabItem Header="{DynamicResource UI_WebDAV_Tab}">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
-              <Grid Margin="16,8,16,8">
-                <Grid.RowDefinitions>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/><!-- BaseUrl help -->
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/>
-                  <RowDefinition Height="Auto"/><!-- Root help -->
-                  <RowDefinition Height="Auto"/><!-- Rec help -->
-                  <RowDefinition Height="Auto"/><!-- UserData help -->
-                </Grid.RowDefinitions>
-                <Grid.ColumnDefinitions>
-                  <ColumnDefinition Width="Auto"/>
-                  <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-                <CheckBox x:Name="CbWebDavEnabled" Grid.Row="0" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebDAV_Enable}"/>
-                <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource UI_WebDAV_BaseUrl}" VerticalAlignment="Center" Margin="0,8,16,0"/>
-                <TextBox x:Name="TbWebDavBase" Grid.Row="1" Grid.Column="1" Height="30" Margin="0,8,0,0" MinWidth="320"
-                         />
-                <TextBlock Grid.Row="4" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,2,0,0" TextWrapping="Wrap"
-                           Text="{DynamicResource UI_WebDAV_BaseUrl_Help}"/>
-                <TextBlock Grid.Row="2" Grid.Column="0" Text="{DynamicResource UI_WebDAV_Username}" VerticalAlignment="Center" Margin="0,8,16,0"/>
-                <TextBox x:Name="TbWebDavUser" Grid.Row="2" Grid.Column="1" Height="30" Margin="0,8,0,0" MinWidth="320"/>
-                <TextBlock Grid.Row="3" Grid.Column="0" Text="{DynamicResource UI_WebDAV_Token}" VerticalAlignment="Center" Margin="0,8,16,0"/>
-                <PasswordBox x:Name="PbWebDavToken" Grid.Row="3" Grid.Column="1" Height="30" Margin="0,8,0,0" MinWidth="320"/>
-                <CheckBox x:Name="CbWebDavSelfSigned" Grid.Row="5" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebDAV_AllowSelfSigned}" Margin="0,8,0,0"/>
-                <TextBlock Grid.Row="6" Grid.Column="0" Text="{DynamicResource UI_WebDAV_RootPath}" VerticalAlignment="Center" Margin="0,8,16,0"/>
-                <TextBox x:Name="TbWebDavRoot" Grid.Row="5" Grid.Column="1" Height="30" Margin="0,8,0,0" MinWidth="320"
-                         />
-                <TextBlock Grid.Row="10" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,2,0,0"
-                           Text="{DynamicResource UI_WebDAV_Path_Help}" TextWrapping="Wrap"/>
-                <TextBlock Grid.Row="7" Grid.Column="0" Text="{DynamicResource UI_WebDAV_RecordingsPath}" VerticalAlignment="Center" Margin="0,8,16,0"/>
-                <TextBox x:Name="TbWebDavRec" Grid.Row="6" Grid.Column="1" Height="30" Margin="0,8,0,0" MinWidth="320"
-                         />
-                <TextBlock Grid.Row="11" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,2,0,0"
-                           Text="{DynamicResource UI_WebDAV_Recordings_Help}" TextWrapping="Wrap"/>
-                <TextBlock Grid.Row="8" Grid.Column="0" Text="{DynamicResource UI_WebDAV_UserDataPath}" VerticalAlignment="Center" Margin="0,8,16,0"/>
-                <TextBox x:Name="TbWebDavUserData" Grid.Row="7" Grid.Column="1" Height="30" Margin="0,8,0,0" MinWidth="320"
-                         />
-                <TextBlock Grid.Row="12" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" Margin="0,2,0,0"
-                           Text="{DynamicResource UI_WebDAV_UserData_Help}" TextWrapping="Wrap"/>
-                <WrapPanel Grid.Row="9" Grid.ColumnSpan="2" Margin="0,12,0,0">
-                  <Button x:Name="BtnWebDavTest" Content="{DynamicResource UI_WebDAV_TestConnection}" MinWidth="100" Height="30" Margin="0,0,12,0" Click="BtnWebDavTest_Click" Style="{StaticResource ChipButton}"/>
-                  <Button x:Name="BtnWebDavBackup" Content="{DynamicResource UI_WebDAV_BackupUserData}" MinWidth="120" Height="30" Click="BtnWebDavBackup_Click" Style="{StaticResource ChipButton}"/>
-                  <Button x:Name="BtnWebDavRestore" Content="{DynamicResource UI_WebDAV_RestoreUserData}" MinWidth="120" Height="30" Margin="12,0,0,0" Click="BtnWebDavRestore_Click" Style="{StaticResource ChipButton}"/>
-                  <Button x:Name="BtnWebDavTestRecWrite" Content="{DynamicResource UI_WebDAV_TestRecordingsWrite}" MinWidth="150" Height="30" Margin="12,0,0,0" Click="BtnWebDavTestRecordingsWrite_Click" Style="{StaticResource ChipButton}"/>
-                </WrapPanel>
-              </Grid>
-            </ScrollViewer>
-          </TabItem>
-
-          <!-- 关于 -->
-          <TabItem Header="{DynamicResource UI_TabAbout}">
-            <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
-              <StackPanel Margin="16,12,16,12">
+                <!-- 关于 -->
                 <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16">
                   <StackPanel>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                       <Image Source="/srcbox.png" Width="28" Height="28" Margin="0,0,8,0"/>
-                      <TextBlock Text="{DynamicResource App_Name}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="18" FontWeight="Bold" VerticalAlignment="Center"/>
+                      <TextBlock Text="{DynamicResource App_Name}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="16" FontWeight="Bold" VerticalAlignment="Center"/>
                     </StackPanel>
                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0" VerticalAlignment="Center">
-                      <TextBlock x:Name="TxtVersionInline" Text="v-" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="14" VerticalAlignment="Center"/>
-                      <Border x:Name="BadgeNewInline" Background="#FF3B30" CornerRadius="8" Margin="8,0,0,0" Padding="8,2" Visibility="Collapsed" VerticalAlignment="Center">
-                        <TextBlock Text="{DynamicResource About_NewBadge}" Foreground="White" FontSize="12" FontWeight="Bold"/>
+                      <TextBlock x:Name="TxtVersionInline" Text="v-" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="13" VerticalAlignment="Center"/>
+                      <Border x:Name="BadgeNewInline" Background="{DynamicResource AccentBrush}" CornerRadius="8" Margin="8,0,0,0" Padding="8,2" Visibility="Collapsed" VerticalAlignment="Center">
+                        <TextBlock Text="{DynamicResource About_NewBadge}" Foreground="White" FontSize="10" FontWeight="Bold"/>
                       </Border>
                     </StackPanel>
                     <TextBlock Text="{DynamicResource About_Desc1}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,8,0,0"/>
                     <TextBlock Text="{DynamicResource About_Desc2}" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0"/>
                     <StackPanel Orientation="Horizontal" Margin="0,12,0,0">
                       <Button x:Name="BtnCheckUpdateInline" Content="{DynamicResource UI_CheckUpdate}" Width="100" Height="30" Click="BtnCheckUpdateInline_Click" Style="{StaticResource ChipButton}"/>
-                      <!-- <Button x:Name="BtnViewUpdate" Content="{DynamicResource UI_ViewUpdate}" Width="100" Height="30" Margin="12,0,0,0" Click="BtnViewUpdateInline_Click" Style="{StaticResource ChipButton}"/> -->
                     </StackPanel>
                   </StackPanel>
                 </Border>
+
+                <!-- 项目支持 -->
                 <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,12,0,0">
                   <StackPanel>
                     <TextBlock Text="{DynamicResource UI_ProjectSupport}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="14" FontWeight="SemiBold"/>
                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0" HorizontalAlignment="Left">
                       <TextBlock>
-                        <Hyperlink NavigateUri="https://github.com/CGG888/SrcBox" RequestNavigate="Inline_RequestNavigate" Foreground="#FFC107">
+                        <Hyperlink NavigateUri="https://github.com/CGG888/SrcBox" RequestNavigate="Inline_RequestNavigate">
                           <Run Text="{DynamicResource UI_GitHubHome}"/>
                         </Hyperlink>
                       </TextBlock>
                       <TextBlock Text="  |  " Foreground="{DynamicResource TextSecondaryBrush}" Margin="6,0,6,0"/>
                       <TextBlock>
-                        <Hyperlink NavigateUri="https://github.com/CGG888/SrcBox/issues" RequestNavigate="Inline_RequestNavigate" Foreground="#FFC107">
+                        <Hyperlink NavigateUri="https://github.com/CGG888/SrcBox/issues" RequestNavigate="Inline_RequestNavigate">
                           <Run Text="{DynamicResource UI_Feedback}"/>
                         </Hyperlink>
                       </TextBlock>
@@ -715,6 +277,497 @@
               </StackPanel>
             </ScrollViewer>
           </TabItem>
+
+          <!-- 视频 -->
+          <TabItem Header="视频">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
+              <StackPanel Margin="16,8,24,8">
+                <!-- 硬件解码 -->
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
+                  <StackPanel>
+                    <CheckBox x:Name="CbHwdec" Content="{DynamicResource UI_Playback_EnableHwdec}" Margin="0,0,0,8"/>
+                  </StackPanel>
+                </Border>
+
+                <!-- 反交错设置 -->
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16">
+                  <StackPanel>
+                    <TextBlock Text="{DynamicResource UI_Deinterlace_Section}" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                    <TextBlock Text="{DynamicResource UI_Deinterlace_Mode}" Margin="0,0,0,8"/>
+                    <ComboBox x:Name="CbDeinterlaceMode" Width="200" HorizontalAlignment="Left" Margin="0,0,0,12"
+                              SelectionChanged="CbDeinterlaceMode_SelectionChanged">
+                      <ComboBoxItem Content="Auto" Tag="auto"/>
+                      <ComboBoxItem Content="Force On" Tag="yes"/>
+                      <ComboBoxItem Content="Off" Tag="no"/>
+                    </ComboBox>
+                    <TextBlock Text="{DynamicResource UI_Deinterlace_Algorithm}" Margin="0,0,0,8"/>
+                    <ComboBox x:Name="CbDeinterlaceAlgo" Width="200" HorizontalAlignment="Left" Margin="0,0,0,8"
+                              SelectionChanged="CbDeinterlaceAlgo_SelectionChanged">
+                      <ComboBoxItem Content="yadif" Tag="yadif"/>
+                      <ComboBoxItem Content="bwdif" Tag="bwdif"/>
+                      <ComboBoxItem Content="none" Tag="none"/>
+                    </ComboBox>
+                    <TextBlock Text="{DynamicResource UI_Deinterlace_Hint}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" TextWrapping="Wrap"/>
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </ScrollViewer>
+          </TabItem>
+
+          <!-- 声音 -->
+          <TabItem Header="声音">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
+              <StackPanel Margin="16,8,24,8">
+                <!-- 语言偏好 -->
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
+                  <StackPanel>
+                    <TextBlock Text="{DynamicResource UI_Audio_Section}" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                    <TextBlock Text="{DynamicResource UI_Playback_Alang}" Margin="0,0,0,8"/>
+                    <TextBox x:Name="TbAlang" Height="24" Margin="0,0,0,12"/>
+                    <TextBlock Text="{DynamicResource UI_Playback_Slang}" Margin="0,0,0,8"/>
+                    <TextBox x:Name="TbSlang" Height="24" Margin="0,0,0,8"/>
+                    <TextBlock Text="{DynamicResource UI_Playback_LangHint}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" TextWrapping="Wrap"/>
+                  </StackPanel>
+                </Border>
+
+                <!-- 音量设置 -->
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16">
+                  <StackPanel>
+                    <TextBlock Text="{DynamicResource UI_Audio_VolumeGain}" Margin="0,0,0,8"/>
+                    <Grid Margin="0,0,0,16">
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                      </Grid.ColumnDefinitions>
+                      <Slider x:Name="SliderVolumeGain" Grid.Column="0" Minimum="-200" Maximum="60" Value="0" TickFrequency="10" IsSnapToTickEnabled="True" VerticalAlignment="Center" ValueChanged="SliderVolumeGain_ValueChanged"/>
+                      <TextBlock Grid.Column="1" x:Name="TxtVolumeGain" Text="0 dB" VerticalAlignment="Center" Margin="12,0,0,0" MinWidth="60"/>
+                    </Grid>
+                    <TextBlock Text="{DynamicResource UI_Audio_VolumeMax}" Margin="0,0,0,8"/>
+                    <Grid Margin="0,0,0,16">
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                      </Grid.ColumnDefinitions>
+                      <Slider x:Name="SliderVolumeMax" Grid.Column="0" Minimum="100" Maximum="1000" Value="130" TickFrequency="10" IsSnapToTickEnabled="True" VerticalAlignment="Center" ValueChanged="SliderVolumeMax_ValueChanged"/>
+                      <TextBlock Grid.Column="1" x:Name="TxtVolumeMax" Text="130%" VerticalAlignment="Center" Margin="12,0,0,0" MinWidth="60"/>
+                    </Grid>
+                    <TextBlock Text="{DynamicResource UI_Audio_Delay}" Margin="0,0,0,8"/>
+                    <Grid>
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                      </Grid.ColumnDefinitions>
+                      <Slider x:Name="SliderAudioDelay" Grid.Column="0" Minimum="-10" Maximum="10" Value="0" TickFrequency="0.5" IsSnapToTickEnabled="True" VerticalAlignment="Center" ValueChanged="SliderAudioDelay_ValueChanged"/>
+                      <TextBlock Grid.Column="1" x:Name="TxtAudioDelay" Text="0.0 s" VerticalAlignment="Center" Margin="12,0,0,0" MinWidth="60"/>
+                    </Grid>
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </ScrollViewer>
+          </TabItem>
+
+          <!-- 播放 -->
+          <TabItem Header="播放">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
+              <StackPanel Margin="16,8,24,8">
+                <!-- 回放设置 -->
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
+                  <controls:PlaybackDrawer x:Name="ReplaySettingsControl"/>
+                </Border>
+
+                <!-- 时移设置 -->
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
+                  <controls:TimeshiftDrawer x:Name="TimeshiftSettingsControl"/>
+                </Border>
+
+                <!-- 时间覆盖设置 -->
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16">
+                  <StackPanel>
+                    <TextBlock Text="时间覆盖" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                    <Grid>
+                      <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                      </Grid.RowDefinitions>
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                      </Grid.ColumnDefinitions>
+
+                      <CheckBox x:Name="CbTimeOverrideEnabled" Grid.Row="0" Grid.ColumnSpan="2" Content="{DynamicResource UI_TimeOverride_Enable}" Margin="0,0,0,12"/>
+
+                      <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource UI_TimeOverride_Mode}" VerticalAlignment="Center" Margin="0,0,16,0"/>
+                      <ComboBox x:Name="CbTimeOverrideMode" Grid.Row="1" Grid.Column="1" Width="220" HorizontalAlignment="Left">
+                        <ComboBoxItem Content="{DynamicResource UI_TimeOverride_Mode_TimeOnly}" Tag="time_only"/>
+                        <ComboBoxItem Content="{DynamicResource UI_TimeOverride_Mode_ReplaceAll}" Tag="replace_all"/>
+                      </ComboBox>
+
+                      <TextBlock Grid.Row="2" Grid.Column="0" Text="{DynamicResource UI_TimeOverride_Layout}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                      <ComboBox x:Name="CbTimeLayout" Grid.Row="2" Grid.Column="1" Width="220" Margin="0,8,0,0" ToolTip="{DynamicResource UI_TimeOverride_Layout_Tip}" HorizontalAlignment="Left">
+                        <ComboBoxItem Content="{DynamicResource UI_TimeOverride_Layout_StartEnd}" Tag="start_end"/>
+                        <ComboBoxItem Content="{DynamicResource UI_TimeOverride_Layout_Playseek}" Tag="playseek"/>
+                        <ComboBoxItem Content="{DynamicResource UI_TimeOverride_Layout_StartDuration}" Tag="start_duration"/>
+                      </ComboBox>
+
+                      <TextBlock Grid.Row="3" Grid.Column="0" Text="{DynamicResource UI_TimeOverride_Encoding}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                      <ComboBox x:Name="CbTimeEncoding" Grid.Row="3" Grid.Column="1" Width="220" Margin="0,8,0,0" ToolTip="{DynamicResource UI_TimeOverride_Encoding_Tip}" HorizontalAlignment="Left">
+                        <ComboBoxItem Content="{DynamicResource UI_TimeOverride_Encoding_Local}" Tag="local"/>
+                        <ComboBoxItem Content="{DynamicResource UI_TimeOverride_Encoding_Utc}" Tag="utc"/>
+                        <ComboBoxItem Content="{DynamicResource UI_TimeOverride_Encoding_Unix}" Tag="unix"/>
+                        <ComboBoxItem Content="{DynamicResource UI_TimeOverride_Encoding_UnixMs}" Tag="unix_ms"/>
+                      </ComboBox>
+
+                      <TextBlock x:Name="LblStartKey" Grid.Row="4" Grid.Column="0" Text="{DynamicResource UI_TimeOverride_StartKey}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                      <ComboBox x:Name="CbStartKey" Grid.Row="4" Grid.Column="1" Width="220" Margin="0,8,0,0" IsEditable="True" ToolTip="{DynamicResource UI_TimeOverride_Key_Tip}" HorizontalAlignment="Left">
+                        <ComboBoxItem Content="start"/>
+                        <ComboBoxItem Content="starttime"/>
+                        <ComboBoxItem Content="begin"/>
+                      </ComboBox>
+
+                      <TextBlock x:Name="LblEndKey" Grid.Row="5" Grid.Column="0" Text="{DynamicResource UI_TimeOverride_EndKey}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                      <ComboBox x:Name="CbEndKey" Grid.Row="5" Grid.Column="1" Width="220" Margin="0,8,0,0" IsEditable="True" ToolTip="{DynamicResource UI_TimeOverride_Key_Tip}" HorizontalAlignment="Left">
+                        <ComboBoxItem Content="end"/>
+                        <ComboBoxItem Content="endtime"/>
+                        <ComboBoxItem Content="finish"/>
+                      </ComboBox>
+
+                      <TextBlock x:Name="LblDurationKey" Grid.Row="6" Grid.Column="0" Text="{DynamicResource UI_TimeOverride_DurationKey}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                      <ComboBox x:Name="CbDurationKey" Grid.Row="6" Grid.Column="1" Width="220" Margin="0,8,0,0" IsEditable="True" ToolTip="{DynamicResource UI_TimeOverride_Key_Tip}" HorizontalAlignment="Left">
+                        <ComboBoxItem Content="duration"/>
+                        <ComboBoxItem Content="dur"/>
+                        <ComboBoxItem Content="len"/>
+                      </ComboBox>
+
+                      <TextBlock x:Name="LblPlayseekKey" Grid.Row="7" Grid.Column="0" Text="{DynamicResource UI_TimeOverride_PlayseekKey}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                      <StackPanel x:Name="SpPlayseekRow" Grid.Row="7" Grid.Column="1" Orientation="Horizontal" Margin="0,8,0,0">
+                        <ComboBox x:Name="CbPlayseekKey" Width="220" IsEditable="True" ToolTip="{DynamicResource UI_TimeOverride_Key_Tip}" HorizontalAlignment="Left">
+                          <ComboBoxItem Content="playseek"/>
+                        </ComboBox>
+                        <CheckBox x:Name="CbUrlEncode" Content="{DynamicResource UI_TimeOverride_UrlEncode}" Margin="12,6,0,0"/>
+                      </StackPanel>
+
+                      <TextBlock Grid.Row="8" Grid.ColumnSpan="2" Text="{DynamicResource UI_TimeOverride_Global_Note}" FontSize="10" Foreground="#FF3B30" Margin="0,0,0,8" TextWrapping="Wrap"/>
+                      <StackPanel Grid.Row="9" Grid.ColumnSpan="2">
+                        <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
+                          <Button x:Name="BtnOpenDocs" Content="{DynamicResource UI_OpenDocs}" Width="96" Click="BtnOpenDocs_Click" Style="{StaticResource ChipButton}" Margin="0,0,8,0"/>
+                          <Button x:Name="BtnOpenIssues" Content="Issues" Width="96" Click="BtnOpenIssues_Click" Style="{StaticResource ChipButton}"/>
+                        </StackPanel>
+                        
+                        <GroupBox Header="{DynamicResource UI_Advanced_Options}" Margin="0,8,0,0" BorderBrush="{DynamicResource BorderBrushCommon}">
+                          <StackPanel Margin="8">
+                            <TextBlock Text="{DynamicResource UI_Advanced_Desc}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" TextWrapping="Wrap"/>
+                            <StackPanel Orientation="Horizontal" Margin="0,6,0,0">
+                              <TextBlock Text="{DynamicResource UI_Advanced_IsoPreset}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+                              <ComboBox x:Name="CbIsoPreset" Width="220" IsEnabled="False">
+                                <ComboBoxItem Content="ISO-8601 UTC (Z)"/>
+                                <ComboBoxItem Content="ISO-8601 K (auto Z/offset)"/>
+                                <ComboBoxItem Content="ISO-8601 +zzz"/>
+                              </ComboBox>
+                            </StackPanel>
+                            <CheckBox x:Name="CbSplitDateTime" Content="{DynamicResource UI_Advanced_Split}" IsEnabled="False" Margin="0,6,0,0"/>
+                            <CheckBox x:Name="CbPathPlaceholder" Content="{DynamicResource UI_Advanced_Path}" IsEnabled="False" Margin="0,6,0,0"/>
+                          </StackPanel>
+                        </GroupBox>
+                        
+                        <GroupBox Header="{DynamicResource UI_TimeOverride_Preview_Group}" Margin="0,12,0,0" BorderBrush="{DynamicResource BorderBrushCommon}">
+                          <StackPanel Margin="8">
+                            <TextBlock Text="{DynamicResource UI_TimeOverride_Preview_BaseUrl}" FontWeight="SemiBold"/>
+                            <TextBox x:Name="TbBaseUrl" Height="24" Margin="0,6,0,8"/>
+                            <StackPanel Orientation="Horizontal">
+                              <Button x:Name="BtnPreviewReplay" Content="{DynamicResource UI_TimeOverride_Preview_Replay}" Width="96" Click="BtnPreviewReplay_Click" Style="{StaticResource ChipButton}"/>
+                              <Button x:Name="BtnPreviewTimeshift" Content="{DynamicResource UI_TimeOverride_Preview_Timeshift}" Width="96" Margin="8,0,0,0" Click="BtnPreviewTimeshift_Click" Style="{StaticResource ChipButton}"/>
+                            </StackPanel>
+                            <TextBox x:Name="TbPreviewResult" Height="90" Margin="0,8,0,0" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"/>
+                            <TextBlock Text="{DynamicResource UI_TimeOverride_Preview_Template}" FontWeight="SemiBold" Margin="0,8,0,0"/>
+                            <TextBox x:Name="TbPreviewTemplate" Height="74" Margin="0,6,0,0" TextWrapping="Wrap" AcceptsReturn="True" VerticalScrollBarVisibility="Auto"/>
+                          </StackPanel>
+                        </GroupBox>
+                      </StackPanel>
+                    </Grid>
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </ScrollViewer>
+          </TabItem>
+
+          <!-- 频道 -->
+          <TabItem x:Name="TabChannel" Header="频道">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
+              <StackPanel Margin="16,8,24,8">
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
+                  <controls:EpgDrawer x:Name="EpgSettingsControl"/>
+                </Border>
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16">
+                  <controls:LogoDrawer x:Name="LogoSettingsControl"/>
+                </Border>
+              </StackPanel>
+            </ScrollViewer>
+          </TabItem>
+
+          <!-- 录制 -->
+          <TabItem x:Name="TabRecording" Header="录制">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
+              <StackPanel Margin="16,8,24,8">
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16">
+                  <controls:RecordingDrawer x:Name="RecordingSettingsControl"/>
+                </Border>
+              </StackPanel>
+            </ScrollViewer>
+          </TabItem>
+
+          <!-- Web远程 -->
+          <TabItem x:Name="TabNetwork" Header="网络">
+            <ScrollViewer x:Name="NetworkScrollViewer" VerticalScrollBarVisibility="Auto" Background="Transparent">
+              <StackPanel Margin="16,8,24,8">
+                <!-- Web远程控制 -->
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
+                  <StackPanel>
+                    <TextBlock Text="{DynamicResource UI_WebRemote_Tab}" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                    <Grid>
+                      <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                      </Grid.RowDefinitions>
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                      </Grid.ColumnDefinitions>
+
+                      <CheckBox x:Name="CbWebRemoteEnabled" Grid.Row="0" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebRemote_Enable}" Margin="0,0,0,16"/>
+
+                      <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource UI_WebRemote_Port}" VerticalAlignment="Center" Margin="0,0,16,8"/>
+                      <TextBox x:Name="TbWebRemotePort" Grid.Row="1" Grid.Column="1" Width="100" Height="24" HorizontalAlignment="Left" Margin="0,0,0,8"/>
+
+                      <CheckBox x:Name="CbWebRemotePassword" Grid.Row="2" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebRemote_RequirePassword}" Margin="0,16,0,8"/>
+                      <TextBox x:Name="TbWebRemotePassword" Grid.Row="3" Grid.ColumnSpan="2" Height="24" Margin="0,0,0,16"/>
+
+                      <CheckBox x:Name="CbWebRemoteShowChannels" Grid.Row="4" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebRemote_ShowChannels}" IsChecked="True" Margin="0,0,0,8"/>
+
+                      <CheckBox x:Name="CbWebRemoteShowEpg" Grid.Row="5" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebRemote_ShowEpg}" IsChecked="True" Margin="0,0,0,16"/>
+
+                      <TextBlock Grid.Row="6" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" TextWrapping="Wrap">
+                        <Run Text="{DynamicResource UI_WebRemote_Hint}"/>
+                      </TextBlock>
+                    </Grid>
+                  </StackPanel>
+                </Border>
+
+                <!-- 网络播放设置 -->
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
+                  <StackPanel>
+                    <TextBlock Text="网络播放" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                    <Grid>
+                      <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                      </Grid.RowDefinitions>
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                      </Grid.ColumnDefinitions>
+
+                      <TextBlock Grid.Row="0" Grid.Column="0" Text="{DynamicResource UI_Playback_CacheSecs}" VerticalAlignment="Center" Margin="0,0,16,0"/>
+                      <TextBox x:Name="TbCacheSecs" Grid.Row="0" Grid.Column="1" Height="24"/>
+
+                      <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource UI_Playback_DemuxerMaxBytes}" VerticalAlignment="Center" Margin="0,12,16,0"/>
+                      <TextBox x:Name="TbMaxBytes" Grid.Row="1" Grid.Column="1" Height="24" Margin="0,12,0,0"/>
+
+                      <TextBlock Grid.Row="2" Grid.Column="0" Text="{DynamicResource UI_Playback_DemuxerMaxBackBytes}" VerticalAlignment="Center" Margin="0,12,16,0"/>
+                      <TextBox x:Name="TbMaxBackBytes" Grid.Row="2" Grid.Column="1" Height="24" Margin="0,12,0,0"/>
+
+                      <TextBlock Grid.Row="3" Grid.Column="0" Text="{DynamicResource UI_Playback_FCCPrefetch}" VerticalAlignment="Center" Margin="0,12,16,0"/>
+                      <TextBox x:Name="TbFccPrefetch" Grid.Row="3" Grid.Column="1" Height="24" Margin="0,12,0,0"/>
+
+                      <TextBlock Grid.Row="4" Grid.Column="0" Text="{DynamicResource UI_Playback_TimeoutSec}" VerticalAlignment="Center" Margin="0,12,16,0"/>
+                      <TextBox x:Name="TbSourceTimeout" Grid.Row="4" Grid.Column="1" Height="24" Margin="0,12,0,0"/>
+
+                      <CheckBox x:Name="CbAdaptive" Grid.Row="5" Grid.ColumnSpan="2" Content="{DynamicResource UI_Playback_EnableAdaptive}" Margin="0,12,0,0"/>
+                      <TextBlock Grid.Row="6" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" Margin="0,2,0,0"
+                                 Text="{DynamicResource UI_Playback_AdaptiveHint}" TextWrapping="Wrap"/>
+                      
+                      <CheckBox x:Name="CbHlsStart" Grid.Row="7" Grid.ColumnSpan="2" Content="{DynamicResource UI_Playback_HlsStartLive}" Margin="0,8,0,0"/>
+                      <TextBlock Grid.Row="8" Grid.Column="0" Text="{DynamicResource UI_Playback_HlsReadahead}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                      <TextBox x:Name="TbHlsReadahead" Grid.Row="8" Grid.Column="1" Height="24" />
+                      <TextBlock Grid.Row="9" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" Margin="0,2,0,0"
+                                 Text="{DynamicResource UI_Playback_HlsHint}" TextWrapping="Wrap"/>
+
+                      <TextBlock Grid.Row="10" Grid.Column="0" Text="{DynamicResource UI_Playback_MpvNetworkTimeout}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                      <TextBox x:Name="TbMpvTimeout" Grid.Row="10" Grid.Column="1" Height="24"/>
+                      <TextBlock Grid.Row="11" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" Margin="0,2,0,0"
+                                 Text="{DynamicResource UI_Playback_MpvTimeoutHint}" TextWrapping="Wrap"/>
+
+                      <TextBlock Grid.Row="12" Grid.ColumnSpan="2" Text="{DynamicResource UI_HttpHeader_Section}" FontWeight="SemiBold" Margin="0,16,0,8"/>
+                      <TextBlock Grid.Row="13" Grid.Column="0" Text="{DynamicResource UI_HttpHeader_Headers}" VerticalAlignment="Top" Margin="0,0,16,0"/>
+                      <TextBox x:Name="TbHttpHeaders" Grid.Row="13" Grid.Column="1" Height="72" AcceptsReturn="True" TextWrapping="Wrap" VerticalScrollBarVisibility="Auto"/>
+                      <TextBlock Grid.Row="14" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" Margin="0,4,0,8"
+                                 Text="{DynamicResource UI_HttpHeader_HeadersHint}" TextWrapping="Wrap"/>
+                    </Grid>
+                  </StackPanel>
+                </Border>
+
+                <!-- RTSP设置 -->
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
+                  <StackPanel>
+                    <TextBlock Text="RTSP 设置" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                    <Grid>
+                      <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                      </Grid.RowDefinitions>
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                      </Grid.ColumnDefinitions>
+
+                      <TextBlock Grid.Row="0" Grid.Column="0" Text="{DynamicResource UI_RtspTransport}" VerticalAlignment="Center" Margin="0,0,16,0"/>
+                      <ComboBox x:Name="CbRtspTransport" Grid.Row="0" Grid.Column="1" Width="160" HorizontalAlignment="Left">
+                        <ComboBoxItem Content="TCP" Tag="tcp"/>
+                        <ComboBoxItem Content="UDP" Tag="udp"/>
+                        <ComboBoxItem Content="HTTP Tunnel" Tag="http"/>
+                      </ComboBox>
+
+                      <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource UI_RtspUserAgent}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                      <TextBox x:Name="TbRtspUserAgent" Grid.Row="1" Grid.Column="1" Height="24" Margin="0,8,0,0"/>
+
+                      <TextBlock Grid.Row="2" Grid.Column="0" Text="{DynamicResource UI_RtspUser}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                      <TextBox x:Name="TbRtspUser" Grid.Row="2" Grid.Column="1" Height="24" Margin="0,8,0,0"/>
+
+                      <TextBlock Grid.Row="3" Grid.Column="0" Text="{DynamicResource UI_RtspPassword}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                      <PasswordBox x:Name="PbRtspPassword" Grid.Row="3" Grid.Column="1" Height="30" Margin="0,8,0,0"/>
+
+                      <TextBlock Grid.Row="4" Grid.Column="0" Text="{DynamicResource UI_TestUrl}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                      <TextBox x:Name="TbTestUrl" Grid.Row="4" Grid.Column="1" Height="24" Margin="0,8,0,0"/>
+
+                      <StackPanel Grid.Row="5" Grid.ColumnSpan="2" Orientation="Horizontal" Margin="0,8,0,0">
+                        <Button x:Name="BtnTestHttp" Content="{DynamicResource UI_TestHttp}" Width="80" Height="30" Margin="0,0,8,0" Click="BtnTestHttp_Click" Style="{StaticResource ChipButton}"/>
+                        <Button x:Name="BtnTestRtsp" Content="{DynamicResource UI_TestRtsp}" Width="80" Height="30" Click="BtnTestRtsp_Click" Style="{StaticResource ChipButton}"/>
+                      </StackPanel>
+                    </Grid>
+                  </StackPanel>
+                </Border>
+
+                <!-- CDN/镜像 -->
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
+                  <StackPanel>
+                    <TextBlock Text="{DynamicResource UI_CdnLines}" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                    <Grid>
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                      </Grid.ColumnDefinitions>
+                      <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                      </Grid.RowDefinitions>
+                      <TextBlock Text="{DynamicResource UI_Cdn_Help}" Grid.Row="0" Grid.ColumnSpan="2" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,8" TextWrapping="Wrap"/>
+                      <TextBox x:Name="TbNewCdn" Grid.Row="1" Height="24" Grid.Column="0" ToolTip="{DynamicResource UI_Cdn_Example}"/>
+                      <Button Grid.Row="1" Grid.Column="1" Content="{DynamicResource UI_Add}" Width="68" Margin="8,0,0,0" Click="BtnCdnAdd_Click" Style="{StaticResource ChipButton}"/>
+                    </Grid>
+                    <Grid Margin="0,8,0,0">
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                      </Grid.ColumnDefinitions>
+                      <ListBox x:Name="ListCdn" Grid.Column="0" Height="160" PreviewMouseWheel="ListCdn_PreviewMouseWheel"/>
+                      <StackPanel Grid.Column="1" Orientation="Vertical" Margin="8,0,0,0">
+                        <Button Content="{DynamicResource UI_MoveUp}" Width="68" Click="BtnCdnUp_Click" Style="{StaticResource ChipButton}"/>
+                        <Button Content="{DynamicResource UI_MoveDown}" Width="68" Margin="0,6,0,0" Click="BtnCdnDown_Click" Style="{StaticResource ChipButton}"/>
+                        <Button Content="{DynamicResource UI_Delete}" Width="68" Margin="0,6,0,0" Click="BtnCdnRemove_Click" Style="{StaticResource ChipButton}"/>
+                        <Button Content="{DynamicResource UI_SortBySpeed}" Width="68" Margin="0,6,0,0" Click="BtnCdnSpeedTest_Click" Style="{StaticResource ChipButton}"/>
+                      </StackPanel>
+                    </Grid>
+                  </StackPanel>
+                </Border>
+
+                <!-- WebDAV -->
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16">
+                  <StackPanel>
+                    <TextBlock Text="{DynamicResource UI_WebDAV_Tab}" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                    <Grid>
+                      <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                      </Grid.RowDefinitions>
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                      </Grid.ColumnDefinitions>
+                      <CheckBox x:Name="CbWebDavEnabled" Grid.Row="0" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebDAV_Enable}"/>
+                      <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource UI_WebDAV_BaseUrl}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                      <TextBox x:Name="TbWebDavBase" Grid.Row="1" Grid.Column="1" Height="24" Margin="0,8,0,0" MinWidth="320"/>
+                      <TextBlock Grid.Row="2" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" Margin="0,2,0,0" TextWrapping="Wrap"
+                                 Text="{DynamicResource UI_WebDAV_BaseUrl_Help}"/>
+                      <TextBlock Grid.Row="3" Grid.Column="0" Text="{DynamicResource UI_WebDAV_Username}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                      <TextBox x:Name="TbWebDavUser" Grid.Row="3" Grid.Column="1" Height="24" Margin="0,8,0,0" MinWidth="320"/>
+                      <TextBlock Grid.Row="4" Grid.Column="0" Text="{DynamicResource UI_WebDAV_Token}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                      <PasswordBox x:Name="PbWebDavToken" Grid.Row="4" Grid.Column="1" Height="30" Margin="0,8,0,0" MinWidth="320"/>
+                      <CheckBox x:Name="CbWebDavSelfSigned" Grid.Row="5" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebDAV_AllowSelfSigned}" Margin="0,8,0,0"/>
+                      <TextBlock Grid.Row="6" Grid.Column="0" Text="{DynamicResource UI_WebDAV_RootPath}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                      <TextBox x:Name="TbWebDavRoot" Grid.Row="6" Grid.Column="1" Height="24" Margin="0,8,0,0" MinWidth="320"/>
+                      <TextBlock Grid.Row="7" Grid.Column="0" Text="{DynamicResource UI_WebDAV_RecordingsPath}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                      <TextBox x:Name="TbWebDavRec" Grid.Row="7" Grid.Column="1" Height="24" Margin="0,8,0,0" MinWidth="320"/>
+                      <TextBlock Grid.Row="8" Grid.Column="0" Text="{DynamicResource UI_WebDAV_UserDataPath}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                      <TextBox x:Name="TbWebDavUserData" Grid.Row="8" Grid.Column="1" Height="24" Margin="0,8,0,0" MinWidth="320"/>
+                      <WrapPanel Grid.Row="9" Grid.ColumnSpan="2" Margin="0,12,0,0">
+                        <Button x:Name="BtnWebDavTest" Content="{DynamicResource UI_WebDAV_TestConnection}" MinWidth="100" Height="30" Margin="0,0,12,0" Click="BtnWebDavTest_Click" Style="{StaticResource ChipButton}"/>
+                        <Button x:Name="BtnWebDavBackup" Content="{DynamicResource UI_WebDAV_BackupUserData}" MinWidth="120" Height="30" Click="BtnWebDavBackup_Click" Style="{StaticResource ChipButton}"/>
+                        <Button x:Name="BtnWebDavRestore" Content="{DynamicResource UI_WebDAV_RestoreUserData}" MinWidth="120" Height="30" Margin="12,0,0,0" Click="BtnWebDavRestore_Click" Style="{StaticResource ChipButton}"/>
+                        <Button x:Name="BtnWebDavTestRecWrite" Content="{DynamicResource UI_WebDAV_TestRecordingsWrite}" MinWidth="150" Height="30" Margin="12,0,0,0" Click="BtnWebDavTestRecordingsWrite_Click" Style="{StaticResource ChipButton}"/>
+                      </WrapPanel>
+                    </Grid>
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </ScrollViewer>
+          </TabItem>
+
         </TabControl>
 
         <!-- 底部操作条 -->

@@ -3,7 +3,7 @@
   <SolidColorBrush x:Key="AppBackgroundBrush" Color="#1F1F1F"/>
   <SolidColorBrush x:Key="TitleBarBrush" Color="#252525"/>
   <SolidColorBrush x:Key="CardBackgroundBrush" Color="#202020"/>
-  <SolidColorBrush x:Key="BorderBrushCommon" Color="#333333"/>
+  <SolidColorBrush x:Key="BorderBrushCommon" Color="#555555"/>
   <SolidColorBrush x:Key="DividerBrush" Color="#333333"/>
   <SolidColorBrush x:Key="TextPrimaryBrush" Color="#EEEEEE"/>
   <SolidColorBrush x:Key="TextSecondaryBrush" Color="#CCCCCC"/>
@@ -16,7 +16,7 @@
   <!-- Input Fields -->
   <SolidColorBrush x:Key="InputBackgroundBrush" Color="#333333"/>
   <SolidColorBrush x:Key="InputTextBrush" Color="#FFFFFF"/>
-  <SolidColorBrush x:Key="InputBorderBrush" Color="#555555"/>
+  <SolidColorBrush x:Key="InputBorderBrush" Color="#FFFFFF"/>
 
   <!-- Buttons -->
   <SolidColorBrush x:Key="PrimaryButtonBackgroundBrush" Color="#0078D7"/>

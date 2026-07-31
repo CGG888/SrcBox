@@ -6,73 +6,65 @@
              mc:Ignorable="d"
              d:DesignHeight="600" d:DesignWidth="400"
              Background="Transparent">
-    <Grid Margin="16,8,16,8">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
-        <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
-            <StackPanel>
-                <CheckBox x:Name="CbEnabled" Content="{DynamicResource UI_Recording_Enable}" IsChecked="True" Margin="0,0,0,16"/>
+    <StackPanel Margin="0,0,0,16">
+        <CheckBox x:Name="CbEnabled" Content="{DynamicResource UI_Recording_Enable}" IsChecked="True" Margin="0,0,0,16"/>
 
-                <TextBlock Text="{DynamicResource UI_Recording_DefaultPlayChoice}" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                <ComboBox x:Name="CbPlayChoice" Height="30" Width="240">
-                    <ComboBoxItem Content="{DynamicResource UI_Recording_PlayChoice_Prompt}" Tag="prompt"/>
-                    <ComboBoxItem Content="{DynamicResource UI_Recording_PlayChoice_Local}" Tag="local"/>
-                    <ComboBoxItem Content="{DynamicResource UI_Recording_PlayChoice_Remote}" Tag="remote"/>
-                    <ComboBoxItem Content="{DynamicResource UI_Recording_PlayChoice_Remember}" Tag="remember"/>
-                </ComboBox>
+        <TextBlock Text="{DynamicResource UI_Recording_DefaultPlayChoice}" FontWeight="SemiBold" Margin="0,0,0,8"/>
+        <ComboBox x:Name="CbPlayChoice" Width="220" HorizontalAlignment="Left">
+            <ComboBoxItem Content="{DynamicResource UI_Recording_PlayChoice_Prompt}" Tag="prompt"/>
+            <ComboBoxItem Content="{DynamicResource UI_Recording_PlayChoice_Local}" Tag="local"/>
+            <ComboBoxItem Content="{DynamicResource UI_Recording_PlayChoice_Remote}" Tag="remote"/>
+            <ComboBoxItem Content="{DynamicResource UI_Recording_PlayChoice_Remember}" Tag="remember"/>
+        </ComboBox>
 
-                <TextBlock Text="{DynamicResource UI_Recording_SaveMode}" FontWeight="SemiBold" Margin="0,12,0,8"/>
-                <ComboBox x:Name="CbSaveMode" Height="30" Width="260">
-                    <ComboBoxItem Content="{DynamicResource UI_Recording_SaveMode_LocalOnly}" Tag="local_only"/>
-                    <ComboBoxItem Content="{DynamicResource UI_Recording_SaveMode_RemoteOnly}" Tag="remote_only"/>
-                    <ComboBoxItem Content="{DynamicResource UI_Recording_SaveMode_LocalThenUpload}" Tag="local_then_upload"/>
-                    <ComboBoxItem Content="{DynamicResource UI_Recording_SaveMode_DualRealtime}" Tag="dual_realtime"/>
-                </ComboBox>
+        <TextBlock Text="{DynamicResource UI_Recording_SaveMode}" FontWeight="SemiBold" Margin="0,12,0,8"/>
+        <ComboBox x:Name="CbSaveMode" Width="220" HorizontalAlignment="Left">
+            <ComboBoxItem Content="{DynamicResource UI_Recording_SaveMode_LocalOnly}" Tag="local_only"/>
+            <ComboBoxItem Content="{DynamicResource UI_Recording_SaveMode_RemoteOnly}" Tag="remote_only"/>
+            <ComboBoxItem Content="{DynamicResource UI_Recording_SaveMode_LocalThenUpload}" Tag="local_then_upload"/>
+            <ComboBoxItem Content="{DynamicResource UI_Recording_SaveMode_DualRealtime}" Tag="dual_realtime"/>
+        </ComboBox>
 
-                <TextBlock Text="{DynamicResource UI_Recording_DirTemplate}" FontWeight="SemiBold" Margin="0,12,0,8"/>
-                <TextBox x:Name="TbDirTemplate" Height="32" Padding="4"/>
-                <TextBlock Text="{DynamicResource UI_Recording_FileTemplate}" FontWeight="SemiBold" Margin="0,12,0,8"/>
-                <TextBox x:Name="TbFileTemplate" Height="32" Padding="4"/>
+        <TextBlock Text="{DynamicResource UI_Recording_DirTemplate}" FontWeight="SemiBold" Margin="0,12,0,8"/>
+        <TextBox x:Name="TbDirTemplate" Height="24" Padding="4"/>
+        <TextBlock Text="{DynamicResource UI_Recording_FileTemplate}" FontWeight="SemiBold" Margin="0,12,0,8"/>
+        <TextBox x:Name="TbFileTemplate" Height="24" Padding="4"/>
 
-                <TextBlock Text="{DynamicResource UI_Recording_Reliability}" FontWeight="SemiBold" Margin="0,16,0,8"/>
-                <CheckBox x:Name="CbVerifyDir" Content="{DynamicResource UI_Recording_VerifyDir}" IsChecked="True"/>
-                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                    <TextBlock Text="{DynamicResource UI_Recording_GrowthTimeout}" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                    <TextBox x:Name="TbGrowthTimeout" Width="80" Height="30"/>
-                    <TextBlock Text="{DynamicResource UI_Recording_RetryCount}" VerticalAlignment="Center" Margin="16,0,12,0"/>
-                    <TextBox x:Name="TbRetryCount" Width="80" Height="30"/>
-                </StackPanel>
+        <TextBlock Text="{DynamicResource UI_Recording_Reliability}" FontWeight="SemiBold" Margin="0,16,0,8"/>
+        <CheckBox x:Name="CbVerifyDir" Content="{DynamicResource UI_Recording_VerifyDir}" IsChecked="True"/>
+        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+            <TextBlock Text="{DynamicResource UI_Recording_GrowthTimeout}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+            <TextBox x:Name="TbGrowthTimeout" Width="80" Height="24"/>
+            <TextBlock Text="{DynamicResource UI_Recording_RetryCount}" VerticalAlignment="Center" Margin="16,0,12,0"/>
+            <TextBox x:Name="TbRetryCount" Width="80" Height="24"/>
+        </StackPanel>
 
-                <TextBlock Text="{DynamicResource UI_Recording_Upload}" FontWeight="SemiBold" Margin="0,16,0,8"/>
-                <StackPanel Orientation="Horizontal">
-                    <TextBlock Text="{DynamicResource UI_Recording_UploadConcurrency}" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                    <TextBox x:Name="TbUploadCc" Width="60" Height="30"/>
-                    <TextBlock Text="{DynamicResource UI_Recording_UploadRetry}" VerticalAlignment="Center" Margin="16,0,12,0"/>
-                    <TextBox x:Name="TbUploadRetry" Width="60" Height="30"/>
-                    <TextBlock Text="{DynamicResource UI_Recording_UploadKbps}" VerticalAlignment="Center" Margin="16,0,12,0"/>
-                    <TextBox x:Name="TbUploadKbps" Width="80" Height="30"/>
-                </StackPanel>
-                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                    <TextBlock Text="{DynamicResource UI_Recording_RealtimeInterval}" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                    <TextBox x:Name="TbRealtimeInterval" Width="80" Height="30"/>
-                    <TextBlock Text="{DynamicResource UI_Recording_RemoteTempSuffix}" VerticalAlignment="Center" Margin="16,0,12,0"/>
-                    <TextBox x:Name="TbRemoteTempSuffix" Width="100" Height="30"/>
-                </StackPanel>
-                <CheckBox x:Name="CbFinalize" Content="{DynamicResource UI_Recording_Finalize}" Margin="0,8,0,0"/>
-                <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
-                    <TextBlock Text="{DynamicResource UI_Recording_FinalizeDelay}" VerticalAlignment="Center" Margin="0,0,12,0"/>
-                    <TextBox x:Name="TbFinalizeDelay" Width="80" Height="30"/>
-                    <TextBlock Text="{DynamicResource UI_Recording_FinalizeKbps}" VerticalAlignment="Center" Margin="16,0,12,0"/>
-                    <TextBox x:Name="TbFinalizeKbps" Width="100" Height="30"/>
-                </StackPanel>
-                <CheckBox x:Name="CbResume" Content="{DynamicResource UI_Recording_Resume}" Margin="0,8,0,0"/>
+        <TextBlock Text="{DynamicResource UI_Recording_Upload}" FontWeight="SemiBold" Margin="0,16,0,8"/>
+        <StackPanel Orientation="Horizontal">
+            <TextBlock Text="{DynamicResource UI_Recording_UploadConcurrency}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+            <TextBox x:Name="TbUploadCc" Width="60" Height="24"/>
+            <TextBlock Text="{DynamicResource UI_Recording_UploadRetry}" VerticalAlignment="Center" Margin="16,0,12,0"/>
+            <TextBox x:Name="TbUploadRetry" Width="60" Height="24"/>
+            <TextBlock Text="{DynamicResource UI_Recording_UploadKbps}" VerticalAlignment="Center" Margin="16,0,12,0"/>
+            <TextBox x:Name="TbUploadKbps" Width="80" Height="24"/>
+        </StackPanel>
+        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+            <TextBlock Text="{DynamicResource UI_Recording_RealtimeInterval}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+            <TextBox x:Name="TbRealtimeInterval" Width="80" Height="24"/>
+            <TextBlock Text="{DynamicResource UI_Recording_RemoteTempSuffix}" VerticalAlignment="Center" Margin="16,0,12,0"/>
+            <TextBox x:Name="TbRemoteTempSuffix" Width="100" Height="24"/>
+        </StackPanel>
+        <CheckBox x:Name="CbFinalize" Content="{DynamicResource UI_Recording_Finalize}" Margin="0,8,0,0"/>
+        <StackPanel Orientation="Horizontal" Margin="0,4,0,0">
+            <TextBlock Text="{DynamicResource UI_Recording_FinalizeDelay}" VerticalAlignment="Center" Margin="0,0,12,0"/>
+            <TextBox x:Name="TbFinalizeDelay" Width="80" Height="24"/>
+            <TextBlock Text="{DynamicResource UI_Recording_FinalizeKbps}" VerticalAlignment="Center" Margin="16,0,12,0"/>
+            <TextBox x:Name="TbFinalizeKbps" Width="100" Height="24"/>
+        </StackPanel>
+        <CheckBox x:Name="CbResume" Content="{DynamicResource UI_Recording_Resume}" Margin="0,8,0,0"/>
 
-                <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
-                    <Button x:Name="BtnOpenUploadQueue" Content="{DynamicResource UI_UploadQueue_View}" Width="120" Height="30" Click="BtnOpenUploadQueue_Click"/>
-                </StackPanel>
-            </StackPanel>
-        </ScrollViewer>
-    </Grid>
+        <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
+            <Button x:Name="BtnOpenUploadQueue" Content="{DynamicResource UI_UploadQueue_View}" Width="120" Height="30" Click="BtnOpenUploadQueue_Click"/>
+        </StackPanel>
+    </StackPanel>
 </UserControl>
