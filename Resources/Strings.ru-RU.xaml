@@ -176,18 +176,18 @@
   <sys:String x:Key="Menu_OpenFile">Открыть файл...</sys:String>
   <sys:String x:Key="Menu_OpenUrl">Открыть URL...</sys:String>
   <sys:String x:Key="Menu_M3U">M3U</sys:String>
-  <sys:String x:Key="Menu_AddM3uFile">Добавить M3U файл...</sys:String>
-  <sys:String x:Key="Menu_AddM3uUrl">Добавить M3U URL...</sys:String>
+  <sys:String x:Key="Menu_AddM3uFile">Добавить файл</sys:String>
+  <sys:String x:Key="Menu_AddM3uUrl">Добавить ссылку</sys:String>
   <sys:String x:Key="Menu_EditM3u">Редактировать M3U</sys:String>
   <sys:String x:Key="Menu_Performance">Производительность</sys:String>
   <sys:String x:Key="Menu_FCC">FCC (быстрое переключение)</sys:String>
   <sys:String x:Key="Menu_UDP">UDP (оптимизация мульткаста)</sys:String>
   <sys:String x:Key="Menu_Deinterlace">Деинтерлейсинг (1080i/720i)</sys:String>
   <sys:String x:Key="Menu_List">Список</sys:String>
-  <sys:String x:Key="Menu_EPG">EPG</sys:String>
+  <sys:String x:Key="Menu_EPG">Программа</sys:String>
   <sys:String x:Key="Menu_Channel">Каналы</sys:String>
   <sys:String x:Key="Menu_MinimalMode">Минимальный режим</sys:String>
-  <sys:String x:Key="Menu_SwitchM3u">Сменить M3U</sys:String>
+  <sys:String x:Key="Menu_SwitchM3u">Сменить канал</sys:String>
   <sys:String x:Key="Menu_Settings">Настройки</sys:String>
   <sys:String x:Key="Menu_Exit">Выход</sys:String>
 
@@ -307,7 +307,7 @@
   <sys:String x:Key="CloseConfirm_Label">Выберите действие:</sys:String>
   <sys:String x:Key="CloseConfirm_LineYes">Да: выйти из приложения</sys:String>
   <sys:String x:Key="CloseConfirm_LineNo">Нет: свернуть в трей</sys:String>
-  <sys:String x:Key="Menu_ManageM3u">Управление списком M3U</sys:String>
+  <sys:String x:Key="Menu_ManageM3u">Управление каналами</sys:String>
   
   <sys:String x:Key="UI_Playback_Settings">Настройки записи</sys:String>
   <sys:String x:Key="UI_EnablePlayback">Включить запись</sys:String>
