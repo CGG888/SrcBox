@@ -200,18 +200,58 @@ jobs:
         uses: actions/github-script@v7
         with:
           script: |
-            const currentTag = "v${{ steps.version.outputs.csproj_version }}";
-            const latestTag = "${{ steps.latest_release.outputs.latest_tag }}" || "v0.0.0";
+            const currentVersion = "${{ steps.version.outputs.csproj_version }}";
+            const latestTag = "${{ steps.latest_release.outputs.latest_tag }}" || "";
             
-            // Get commits
-            const commits = await github.rest.repos.compareCommits({
+            // Get current main branch HEAD SHA
+            const mainBranch = await github.rest.repos.getBranch({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              base: latestTag,
-              head: currentTag
+              branch: 'main'
             });
+            const currentSha = mainBranch.data.commit.sha;
+            const lastReleaseDate = mainBranch.data.commit.commit.author.date;
             
-            // Get merged PRs
+            // Get commit SHA for latest release tag
+            let latestSha = null;
+            if (latestTag) {
+              try {
+                const latestTagData = await github.rest.git.getRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `tags/${latestTag}`
+                });
+                latestSha = latestTagData.data.object.sha;
+              } catch (e) {
+                console.log('Could not resolve latest tag SHA');
+              }
+            }
+            
+            let commits = [];
+            
+            if (latestSha) {
+              // Get commits between the latest release and current HEAD
+              const compare = await github.rest.repos.compareCommits({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                base: latestSha,
+                head: currentSha
+              });
+              commits = compare.data.commits.map(c => ({
+                sha: c.sha.substring(0, 7),
+                message: c.commit.message.split('\n')[0],
+                author: c.commit.author.name
+              }));
+            } else {
+              // No previous release
+              commits = [{
+                sha: currentSha.substring(0, 7),
+                message: mainBranch.data.commit.commit.message.split('\n')[0],
+                author: mainBranch.data.commit.commit.author.name
+              }];
+            }
+            
+            // Get merged PRs since last release
             const prs = await github.rest.pulls.list({
               owner: context.repo.owner,
               repo: context.repo.repo,
@@ -223,7 +263,6 @@ jobs:
             const mergedPrs = prs.data.filter(pr => pr.merged_at);
             const relevantPrs = mergedPrs.filter(pr => {
               const prDate = new Date(pr.merged_at);
-              const lastReleaseDate = commits.data.merge_base_commit.commit.author.date;
               return prDate > new Date(lastReleaseDate);
             });
             
@@ -241,11 +280,7 @@ jobs:
             });
             
             const result = {
-              commits: commits.data.commits.map(c => ({
-                sha: c.sha.substring(0, 7),
-                message: c.commit.message.split('\n')[0],
-                author: c.commit.author.name
-              })),
+              commits: commits,
               prs: relevantPrs.map(pr => ({
                 number: pr.number,
                 title: pr.title,
