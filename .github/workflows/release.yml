@@ -6,6 +6,7 @@ on:
     paths:
       - 'LibmpvIptvClient.csproj'
       - 'setup.iss'
+  workflow_dispatch:
 
 permissions:
   contents: write
