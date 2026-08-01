@@ -211,6 +211,7 @@
 
   <!-- Playback/Stream -->
   <sys:String x:Key="UI_Playback_EnableHwdec">啟用硬體解碼 (d3d11va)</sys:String>
+  <sys:String x:Key="UI_Playback_Decoder">解碼器</sys:String>
   <sys:String x:Key="UI_Playback_CacheSecs">快取秒數</sys:String>
   <sys:String x:Key="UI_Playback_DemuxerMaxBytes">demuxer-max-bytes (MiB)</sys:String>
   <sys:String x:Key="UI_Playback_DemuxerMaxBackBytes">demuxer-max-back-bytes (MiB)</sys:String>

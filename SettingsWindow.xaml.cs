@@ -105,7 +105,7 @@ namespace LibmpvIptvClient
             _tempEpg = _epgDrawerViewModel.BuildTempConfig(current.Epg);
             _tempLogo = _logoDrawerViewModel.BuildTempConfig(current.Logo);
 
-            CbHwdec.IsChecked = current.Hwdec;
+            SetComboByTag(CbDecoder, current.Decoder);
             TbCacheSecs.Text = current.CacheSecs.ToString(CultureInfo.InvariantCulture);
             TbMaxBytes.Text = current.DemuxerMaxBytesMiB.ToString(CultureInfo.InvariantCulture);
             TbMaxBackBytes.Text = current.DemuxerMaxBackBytesMiB.ToString(CultureInfo.InvariantCulture);
@@ -299,7 +299,7 @@ namespace LibmpvIptvClient
         SettingsPlaybackFormState ReadPlaybackFormState()
         {
             return new SettingsPlaybackFormState(
-                CbHwdec?.IsChecked == true,
+                GetComboTag(CbDecoder, "auto"),
                 TbCacheSecs?.Text ?? "0",
                 TbMaxBytes?.Text ?? "1",
                 TbMaxBackBytes?.Text ?? "0",
@@ -358,7 +358,7 @@ namespace LibmpvIptvClient
             {
                 // 基础播放设置
                 var pState = _playbackViewModel.BuildFormState(s);
-                CbHwdec.IsChecked = pState.Hwdec;
+                SetComboByTag(CbDecoder, pState.Decoder);
                 TbCacheSecs.Text = pState.CacheSecs;
                 TbMaxBytes.Text = pState.MaxBytes;
                 TbMaxBackBytes.Text = pState.MaxBackBytes;

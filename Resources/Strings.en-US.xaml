@@ -220,6 +220,7 @@
   <sys:String x:Key="Tooltip_PinTop">Always on top</sys:String>
   <!-- Playback page -->
   <sys:String x:Key="UI_Playback_EnableHwdec">Enable hardware decoding (d3d11va)</sys:String>
+  <sys:String x:Key="UI_Playback_Decoder">Decoder</sys:String>
   <sys:String x:Key="UI_Playback_CacheSecs">Cache seconds</sys:String>
   <sys:String x:Key="UI_Playback_DemuxerMaxBytes">demuxer-max-bytes (MiB)</sys:String>
   <sys:String x:Key="UI_Playback_DemuxerMaxBackBytes">demuxer-max-back-bytes (MiB)</sys:String>

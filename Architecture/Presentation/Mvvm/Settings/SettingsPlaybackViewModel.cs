@@ -4,7 +4,7 @@ using LibmpvIptvClient;
 namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.Settings;
 
 public sealed record SettingsPlaybackFormState(
-    bool Hwdec,
+    string Decoder,
     string CacheSecs,
     string MaxBytes,
     string MaxBackBytes,
@@ -22,7 +22,7 @@ public sealed class SettingsPlaybackViewModel : ViewModelBase
     public SettingsPlaybackFormState BuildFormState(PlaybackSettings settings)
     {
         return new SettingsPlaybackFormState(
-            settings.Hwdec,
+            settings.Decoder,
             settings.CacheSecs.ToString(CultureInfo.InvariantCulture),
             settings.DemuxerMaxBytesMiB.ToString(CultureInfo.InvariantCulture),
             settings.DemuxerMaxBackBytesMiB.ToString(CultureInfo.InvariantCulture),
@@ -39,7 +39,7 @@ public sealed class SettingsPlaybackViewModel : ViewModelBase
 
     public void UpdateSettings(PlaybackSettings settings, SettingsPlaybackFormState form)
     {
-        settings.Hwdec = form.Hwdec;
+        settings.Decoder = form.Decoder;
         
         if (double.TryParse(form.CacheSecs, NumberStyles.Any, CultureInfo.InvariantCulture, out var cache)) 
             settings.CacheSecs = Math.Max(0, cache);

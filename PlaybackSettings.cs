@@ -52,7 +52,7 @@ namespace LibmpvIptvClient
 
     public class PlaybackSettings
     {
-        public bool Hwdec { get; set; } = true;
+        public string Decoder { get; set; } = "auto";
         public double CacheSecs { get; set; } = 1.0;
         public int DemuxerMaxBytesMiB { get; set; } = 16;
         public int DemuxerMaxBackBytesMiB { get; set; } = 4;

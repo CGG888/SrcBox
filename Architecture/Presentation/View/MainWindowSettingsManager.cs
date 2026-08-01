@@ -53,7 +53,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             bool wasReplay = _shell.CurrentPlayingProgram != null;
             var old = AppSettings.Current;
             bool mpvWillChange =
-                old.Hwdec != settings.Hwdec
+                !string.Equals(old.Decoder, settings.Decoder, StringComparison.OrdinalIgnoreCase)
                 || old.CacheSecs != settings.CacheSecs
                 || old.DemuxerMaxBytesMiB != settings.DemuxerMaxBytesMiB
                 || old.DemuxerMaxBackBytesMiB != settings.DemuxerMaxBackBytesMiB
@@ -75,7 +75,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 }
             }
             catch { }
-            AppSettings.Current.Hwdec = settings.Hwdec;
+            AppSettings.Current.Decoder = settings.Decoder;
             AppSettings.Current.CacheSecs = settings.CacheSecs;
             AppSettings.Current.DemuxerMaxBytesMiB = settings.DemuxerMaxBytesMiB;
             AppSettings.Current.DemuxerMaxBackBytesMiB = settings.DemuxerMaxBackBytesMiB;
@@ -226,7 +226,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             catch { }
             try
             {
-                Logger.Debug($"[Settings] apply hwdec={settings.Hwdec} cache={settings.CacheSecs} max={settings.DemuxerMaxBytesMiB} back={settings.DemuxerMaxBackBytesMiB} fcc={settings.FccPrefetchCount} src_to={settings.SourceTimeoutSec} adaptive={settings.EnableProtocolAdaptive} hls_live={settings.HlsStartAtLiveEdge} hls_ra={settings.HlsReadaheadSecs} alang={settings.Alang} slang={settings.Slang} mpv_to={settings.MpvNetworkTimeoutSec}");
+                Logger.Debug($"[Settings] apply decoder={settings.Decoder} cache={settings.CacheSecs} max={settings.DemuxerMaxBytesMiB} back={settings.DemuxerMaxBackBytesMiB} fcc={settings.FccPrefetchCount} src_to={settings.SourceTimeoutSec} adaptive={settings.EnableProtocolAdaptive} hls_live={settings.HlsStartAtLiveEdge} hls_ra={settings.HlsReadaheadSecs} alang={settings.Alang} slang={settings.Slang} mpv_to={settings.MpvNetworkTimeoutSec}");
             }
             catch { }
             AppSettings.Current.Save();
@@ -264,18 +264,6 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             {
                 App.ApplyLanguage(AppSettings.Current.Language);
                 App.ApplyTheme(AppSettings.Current.ThemeMode);
-            }
-            catch { }
-            try
-            {
-                var epgOn = AppSettings.Current.Epg.Enabled;
-                if (_window.CbEpg != null)
-                {
-                    _window.CbEpg.IsChecked = epgOn;
-                    // Do NOT call CbEpg_Click here — it would toggle the EPG panel state
-                    // based on the checkbox, overriding the user's manual open/close action.
-                    // The checkbox state is already synced via IsChecked = epgOn above.
-                }
             }
             catch { }
             try

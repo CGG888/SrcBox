@@ -21,7 +21,7 @@ namespace LibmpvIptvClient
             SetFlag("keep-open", true);
             SetFlag("idle", true);
             SetString("ytdl", "no");
-            SetString("hwdec", _settings.Hwdec ? "d3d11va" : "no");
+            SetString("hwdec", _settings.Decoder ?? "auto");
             SetString("gpu-api", "d3d11");
             var threads = Math.Max(2, Environment.ProcessorCount / 2);
             SetString("vd-lavc-threads", threads.ToString(System.Globalization.CultureInfo.InvariantCulture));

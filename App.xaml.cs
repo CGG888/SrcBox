@@ -152,6 +152,11 @@ namespace LibmpvIptvClient
                 SrcBoxArchitectureHost.ShutdownAsync().GetAwaiter().GetResult();
             }
             catch { }
+            try
+            {
+                LibmpvIptvClient.Services.NotificationService.Instance.Dispose();
+            }
+            catch { }
             base.OnExit(e);
         }
         public static void ApplyTheme(string mode)
