@@ -36,7 +36,13 @@ namespace LibmpvIptvClient
         }
         public void SetPlaySymbol(ModernWpf.Controls.Symbol symbol)
         {
-            try { IconPlayPause.Symbol = symbol; } catch { }
+            try
+            {
+                IconPlayPause.Data = symbol == ModernWpf.Controls.Symbol.Pause
+                    ? System.Windows.Media.Geometry.Parse("M3,6 H6 V14 H3 Z M9,6 H12 V14 H9 Z")
+                    : System.Windows.Media.Geometry.Parse("M4,2 L12,8 L4,14 Z");
+            }
+            catch { }
         }
         public void SetMuted(bool muted)
         {

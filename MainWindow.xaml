@@ -67,8 +67,8 @@
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
                 <Setter Property="BorderThickness" Value="0"/>
-                <Setter Property="Width" Value="46"/>
-                <Setter Property="Height" Value="32"/>
+                <Setter Property="Width" Value="24"/>
+                <Setter Property="Height" Value="24"/>
                 <Setter Property="FontSize" Value="12"/> <!-- Adjusted to match top icon visual size -->
                 <Setter Property="VerticalAlignment" Value="Center"/>
                 <Setter Property="Template">
@@ -94,8 +94,8 @@
                 <Setter Property="Background" Value="Transparent"/>
                 <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
                 <Setter Property="BorderThickness" Value="0"/>
-                <Setter Property="Width" Value="46"/>
-                <Setter Property="Height" Value="32"/>
+                <Setter Property="Width" Value="24"/>
+                <Setter Property="Height" Value="24"/>
                 <Setter Property="FontSize" Value="12"/> <!-- Adjusted to match top icon visual size -->
                 <Setter Property="VerticalAlignment" Value="Center"/>
                 <Setter Property="Template">
@@ -1358,19 +1358,21 @@
                             <ColumnDefinition Width="Auto"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
-                        <Button x:Name="BtnMute" Grid.Column="0" Style="{StaticResource BarButton}" ToolTip="{DynamicResource Overlay_Mute}" Click="BtnMute_Click" Width="32" Height="20" Margin="0,0,6,0">
-                            <ui:SymbolIcon x:Name="IconMute" Symbol="Volume">
-                                <ui:SymbolIcon.Style>
-                                    <Style TargetType="ui:SymbolIcon">
-                                        <Setter Property="Symbol" Value="Volume"/>
-                                        <Style.Triggers>
-                                            <DataTrigger Binding="{Binding DataContext.IsMuted, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                                <Setter Property="Symbol" Value="Mute"/>
-                                            </DataTrigger>
-                                        </Style.Triggers>
-                                    </Style>
-                                </ui:SymbolIcon.Style>
-                            </ui:SymbolIcon>
+                        <Button x:Name="BtnMute" Grid.Column="0" Style="{StaticResource BarButton}" ToolTip="{DynamicResource Overlay_Mute}" Click="BtnMute_Click" Margin="0,0,6,0">
+                            <TextBlock FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}">
+                                <ui:SymbolIcon x:Name="IconMute" Symbol="Volume">
+                                    <ui:SymbolIcon.Style>
+                                        <Style TargetType="ui:SymbolIcon">
+                                            <Setter Property="Symbol" Value="Volume"/>
+                                            <Style.Triggers>
+                                                <DataTrigger Binding="{Binding DataContext.IsMuted, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
+                                                    <Setter Property="Symbol" Value="Mute"/>
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </ui:SymbolIcon.Style>
+                                </ui:SymbolIcon>
+                            </TextBlock>
                         </Button>
                         <controls:VolumeSlider Grid.Column="1" x:Name="SliderVolume"
                                                IsMuted="{Binding DataContext.IsMuted, RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}"
@@ -1393,16 +1395,24 @@
                             <TextBlock x:Name="TxtBottomPlaybackStatus" Text="{Binding PlaybackStatusText}" Foreground="{Binding PlaybackStatusBrush}" FontSize="12" FontWeight="Bold" VerticalAlignment="Center"/>
                         </Border>
                         <Button x:Name="BtnPlayPause" Style="{StaticResource BarButton}" Click="BtnPlayPause_Click">
-                            <ui:SymbolIcon x:Name="IconPlayPause" Symbol="{Binding PlayPauseSymbol}"/>
+                            <Viewbox Width="12" Height="12" Stretch="Uniform">
+                                <Path x:Name="IconPlayPause" Fill="{DynamicResource TextPrimaryBrush}" Data="M4,2 L12,8 L4,14 Z"/>
+                            </Viewbox>
                         </Button>
                         <Button x:Name="BtnStop" Style="{StaticResource BarButton}" Click="BtnStop_Click">
-                            <ui:SymbolIcon Symbol="Stop"/>
+                            <Viewbox Width="12" Height="12" Stretch="Uniform">
+                                <Path Fill="{DynamicResource TextPrimaryBrush}" Data="M3,3 H13 V13 H3 Z"/>
+                            </Viewbox>
                         </Button>
                         <Button x:Name="BtnRew" Style="{StaticResource BarButton}" Click="BtnRew_Click">
-                            <ui:SymbolIcon Symbol="Previous"/>
+                            <Viewbox Width="12" Height="12" Stretch="Uniform">
+                                <Path Fill="{DynamicResource TextPrimaryBrush}" Data="M8,2 L2,8 L8,14 M12,2 V14"/>
+                            </Viewbox>
                         </Button>
                         <Button x:Name="BtnFwd" Style="{StaticResource BarButton}" Click="BtnFwd_Click">
-                            <ui:SymbolIcon Symbol="Next"/>
+                            <Viewbox Width="12" Height="12" Stretch="Uniform">
+                                <Path Fill="{DynamicResource TextPrimaryBrush}" Data="M4,2 L10,8 L4,14 M0,2 V14"/>
+                            </Viewbox>
                         </Button>
                         
                         <!-- 时间信息 -->
@@ -1430,32 +1440,43 @@
                     <!-- 右侧：工具 -->
                     <StackPanel Grid.Column="2" Orientation="Horizontal">
                         <!-- FCC/UDP removed from here -->
-                        <Button x:Name="BtnSources" Style="{StaticResource BarButton}" Click="BtnSources_Click" ToolTip="{DynamicResource Overlay_SwitchSource}">
-                            <ui:SymbolIcon Symbol="Shuffle"/>
-                        </Button>
-                        <Button x:Name="BtnRatio" Style="{StaticResource BarButton}" Click="BtnRatio_Click" ToolTip="{DynamicResource Overlay_AspectRatio}">
-                            <ui:SymbolIcon Symbol="Crop"/>
-                        </Button>
+                        <ToggleButton x:Name="BtnSources" Style="{StaticResource BarToggle}" Click="BtnSources_Click" ToolTip="{DynamicResource Overlay_SwitchSource}">
+                            <Viewbox Width="12" Height="12" Stretch="Uniform">
+                                <Path Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1.2" Data="M2,2 V10 H10 V2 Z M8,4 H12 V8"/>
+                            </Viewbox>
+                        </ToggleButton>
+                        <ToggleButton x:Name="BtnRatio" Style="{StaticResource BarToggle}" Click="BtnRatio_Click" ToolTip="{DynamicResource Overlay_AspectRatio}">
+                            <Viewbox Width="12" Height="12" Stretch="Uniform">
+                                <Path Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1.2" Data="M2,2 V10 H10 V2 Z M8,4 H12 V8"/>
+                            </Viewbox>
+                        </ToggleButton>
                         <!-- 倍速按钮（窗口模式） -->
                         <ToggleButton x:Name="BtnSpeed" Style="{StaticResource BarToggle}" Click="BtnSpeed_Click" ToolTip="{DynamicResource Overlay_Speed}" IsEnabled="{Binding IsSpeedEnabled}">
-                            <TextBlock x:Name="LblSpeedBar" Text="{Binding SpeedText}"/>
+                            <Viewbox Width="12" Height="12" Stretch="Uniform">
+                                <Path Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1.2" Data="M6,1 A5,5 0 1,1 6,11 A5,5 0 1,1 6,1 M6,4 L8,6 L6,8"/>
+                            </Viewbox>
                         </ToggleButton>
                         <!-- 实时录播 -->
                         <ToggleButton x:Name="BtnRecordNow" Style="{StaticResource BarToggle}" Click="BtnRecordNow_Click" ToolTip="{DynamicResource Overlay_RecordNow}">
-                            <TextBlock Text="REC"/>
+                            <Viewbox Width="12" Height="12" Stretch="Uniform">
+                                <Path Fill="{DynamicResource TextPrimaryBrush}" Data="M12,2 C17.5,2 22,6.5 22,12 C22,17.5 17.5,22 12,22 C6.5,22 2,17.5 2,12 C2,6.5 6.5,2 12,2 M12,2 L12,12"/>
+                            </Viewbox>
                         </ToggleButton>
                         <ToggleButton x:Name="CbTimeshift" Style="{StaticResource BarToggle}" IsChecked="{Binding IsTimeshiftActive, Mode=TwoWay}" ToolTip="{DynamicResource Overlay_Timeshift}">
-                            <ui:SymbolIcon Symbol="Clock"/>
+                            <Viewbox Width="12" Height="12" Stretch="Uniform">
+                                <Path Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1.2" Data="M6,1 A5,5 0 1,1 6,11 A5,5 0 1,1 6,1 M6,3 V6.5 L8.5,8"/>
+                            </Viewbox>
                         </ToggleButton>
 
                         <ToggleButton x:Name="CbEpg" Style="{StaticResource BarToggle}" Click="CbEpg_Click" ToolTip="{DynamicResource Overlay_EPG}">
-                            <ui:SymbolIcon Symbol="Calendar"/>
+                            <Viewbox Width="12" Height="12" Stretch="Uniform">
+                                <Path Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1.2" Data="M2,3 V13 H14 V3 Z M2,5 H14 M5,1 V3 M11,1 V3"/>
+                            </Viewbox>
                         </ToggleButton>
                         <ToggleButton x:Name="CbDrawer" Style="{StaticResource BarToggle}" Click="CbDrawer_Click" ToolTip="{DynamicResource Overlay_ToggleDrawer}">
-                            <ui:SymbolIcon Symbol="List"/>
-                        </ToggleButton>
-                        <ToggleButton x:Name="BtnMinimalRight" Style="{StaticResource BarToggle}" Click="BtnMinimal_Click" ToolTip="{DynamicResource Overlay_ToggleMinimal}" IsChecked="{Binding IsMinimalMode, Mode=OneWay}">
-                            <TextBlock Text="简"/>
+                            <Viewbox Width="12" Height="12" Stretch="Uniform">
+                                <Path Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1.2" Data="M2,4 H14 M2,8 H14 M2,12 H14 M5,4 V4.01 M5,8 V8.01 M5,12 V12.01"/>
+                            </Viewbox>
                         </ToggleButton>
                     </StackPanel>
                 </Grid>

@@ -103,6 +103,13 @@ namespace LibmpvIptvClient
                 TaskbarItemInfo.ProgressState = _shell.IsPaused
                     ? System.Windows.Shell.TaskbarItemProgressState.Paused
                     : System.Windows.Shell.TaskbarItemProgressState.Normal;
+
+                if (IconPlayPause != null)
+                {
+                    IconPlayPause.Data = _shell.IsPaused
+                        ? Geometry.Parse("M3,6 H6 V14 H3 Z M9,6 H12 V14 H9 Z")
+                        : Geometry.Parse("M4,2 L12,8 L4,14 Z");
+                }
             }
             catch { }
         }
@@ -427,7 +434,7 @@ namespace LibmpvIptvClient
         {
             _menuManager?.BtnRatio_Click(sender, e);
         }
-        void OpenSourceMenuAtButton(System.Windows.Controls.Button target)
+        void OpenSourceMenuAtButton(System.Windows.Controls.Primitives.ToggleButton target)
         {
             _menuManager?.OpenSourceMenuAtButton(target);
         }

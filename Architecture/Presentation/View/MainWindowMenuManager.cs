@@ -257,7 +257,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             catch { }
         }
 
-        public void OpenSourceMenuAtButton(System.Windows.Controls.Button target)
+        public void OpenSourceMenuAtButton(System.Windows.Controls.Primitives.ToggleButton target)
         {
             try
             {

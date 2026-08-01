@@ -18,8 +18,8 @@
             <Setter Property="Background" Value="Transparent"/>
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
             <Setter Property="BorderThickness" Value="0"/>
-            <Setter Property="Width" Value="46"/>
-            <Setter Property="Height" Value="32"/>
+            <Setter Property="Width" Value="24"/>
+            <Setter Property="Height" Value="24"/>
             <Setter Property="VerticalAlignment" Value="Center"/>
             <Setter Property="Template">
                 <Setter.Value>
@@ -175,8 +175,10 @@
             <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
                 <!-- 1. Topmost (Pin) -->
                 <ToggleButton x:Name="BtnPin" Style="{StaticResource TopBtnStyle}" Click="BtnPin_Click" ToolTip="{DynamicResource Tooltip_PinTop}">
-                    <Path Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"
-                          Data="M8,15 V11 M4,11 H12 M5,11 V5 H11 V11 M4,5 H12"/>
+                    <Viewbox Width="12" Height="12" Stretch="Uniform">
+                        <Path Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1.5"
+                              Data="M8,15 V11 M4,11 H12 M5,11 V5 H11 V11 M4,5 H12"/>
+                    </Viewbox>
                     <ToggleButton.Template>
                         <ControlTemplate TargetType="ToggleButton">
                             <Border x:Name="bd" Background="{TemplateBinding Background}">
@@ -187,9 +189,10 @@
                                     <Setter TargetName="bd" Property="Background" Value="{DynamicResource ButtonPressedBackgroundBrush}"/>
                                     <Setter Property="Content">
                                         <Setter.Value>
-                                            <!-- Pinned State (Yellow) -->
-                                            <Path Stroke="{DynamicResource AccentBrush}" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"
-                                                  Data="M8,15 V11 M4,11 H12 M5,11 V5 H11 V11 M4,5 H12"/>
+                                            <Viewbox Width="12" Height="12" Stretch="Uniform">
+                                                <Path Stroke="{DynamicResource AccentBrush}" StrokeThickness="1.5"
+                                                      Data="M8,15 V11 M4,11 H12 M5,11 V5 H11 V11 M4,5 H12"/>
+                                            </Viewbox>
                                         </Setter.Value>
                                     </Setter>
                                 </Trigger>
@@ -203,18 +206,24 @@
 
                 <!-- 2. Minimize -->
                 <Button x:Name="BtnMin" Style="{StaticResource TopBtnStyle}" Click="BtnMin_Click">
-                    <Path Data="M4,12 H12" Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    <Viewbox Width="12" Height="12" Stretch="Uniform">
+                        <Path Data="M4,12 H12" Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1.5"/>
+                    </Viewbox>
                 </Button>
 
                 <!-- 3. Maximize/Restore -->
                 <Button x:Name="BtnMax" Style="{StaticResource TopBtnStyle}" Click="BtnMax_Click">
-                    <Path x:Name="PathMaxIcon" Data="M4.5,4.5 H11.5 V11.5 H4.5 Z" Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    <Viewbox Width="12" Height="12" Stretch="Uniform">
+                        <Path x:Name="PathMaxIcon" Data="M4.5,4.5 H11.5 V11.5 H4.5 Z" Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1.5"/>
+                    </Viewbox>
                 </Button>
                 
                 <!-- 4. Fullscreen (Exit/Toggle) -->
                 <Button x:Name="BtnFullscreen" Style="{StaticResource TopBtnStyle}" Click="BtnFullscreen_Click">
-                     <Path x:Name="PathFullscreenIcon" Data="M3.5,6.5 V3.5 H6.5 M9.5,3.5 H12.5 V6.5 M12.5,9.5 V12.5 H9.5 M6.5,12.5 H3.5 V9.5" 
-                           Stroke="{DynamicResource AccentBrush}" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    <Viewbox Width="12" Height="12" Stretch="Uniform">
+                        <Path x:Name="PathFullscreenIcon" Data="M3.5,6.5 V3.5 H6.5 M9.5,3.5 H12.5 V6.5 M12.5,9.5 V12.5 H9.5 M6.5,12.5 H3.5 V9.5" 
+                              Stroke="{DynamicResource AccentBrush}" StrokeThickness="1.5"/>
+                    </Viewbox>
                 </Button>
 
                 <ToggleButton x:Name="BtnMinimal" Click="BtnMinimal_Click" ToolTip="{DynamicResource Overlay_ToggleMinimal}">
@@ -228,7 +237,9 @@
                             </Style.Triggers>
                         </Style>
                     </ToggleButton.Style>
-                    <Path x:Name="PathMinimalIcon" Data="M4,6 H12 M4,9 H12 M4,12 H12" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    <Viewbox Width="12" Height="12" Stretch="Uniform">
+                        <Path x:Name="PathMinimalIcon" Data="M4,6 H12 M4,9 H12 M4,12 H12" Stroke="{Binding Foreground, RelativeSource={RelativeSource AncestorType=ToggleButton}}" StrokeThickness="1.5"/>
+                    </Viewbox>
                 </ToggleButton>
 
                 <!-- 5. Close -->
@@ -243,7 +254,9 @@
                             </Style.Triggers>
                         </Style>
                     </Button.Style>
-                    <Path Data="M4.5,4.5 L11.5,11.5 M11.5,4.5 L4.5,11.5" Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                    <Viewbox Width="12" Height="12" Stretch="Uniform">
+                        <Path Data="M4.5,4.5 L11.5,11.5 M11.5,4.5 L4.5,11.5" Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1.5"/>
+                    </Viewbox>
                 </Button>
             </StackPanel>
         </Grid>
