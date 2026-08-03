@@ -188,6 +188,20 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             return false;
         }
 
+        public void UpdateSpeedLabelWindow(double speed)
+        {
+            try
+            {
+                if (_window.LblSpeedWindow != null)
+                {
+                    var noXxList = new double[] { 0.75, 1.25, 1.75 };
+                    var suffix = noXxList.Contains(speed) ? "" : "x";
+                    _window.LblSpeedWindow.Text = $"{speed:0.##}{suffix}";
+                }
+            }
+            catch { }
+        }
+
         public void BtnSpeed_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -204,6 +218,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                     {
                         _shell.PlaybackSpeed = sp.Speed;
                         _shell.IsSpeedEnabled = true;
+                        UpdateSpeedLabelWindow(sp.Speed);
                     };
                     menu.Items.Add(mi);
                 }
