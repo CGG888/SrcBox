@@ -24,6 +24,7 @@ namespace LibmpvIptvClient
         bool _minimalPrevEpgChecked;
         bool _minimalPrevDrawerCollapsed;
         bool _minimalStateCaptured;
+        double _minimalPrevWindowWidth;
         System.Windows.Forms.Panel? _minimalToolbarPanel;
         System.Windows.Forms.Button? _minimalBtnFullscreen;
         System.Windows.Forms.Button? _minimalBtnWindow;
@@ -537,6 +538,7 @@ namespace LibmpvIptvClient
                 {
                     _minimalPrevEpgChecked = CbEpg.IsChecked == true;
                     _minimalPrevDrawerCollapsed = _shell.IsDrawerCollapsed;
+                    _minimalPrevWindowWidth = Width;
                     _minimalStateCaptured = true;
 
                     try
@@ -634,6 +636,9 @@ namespace LibmpvIptvClient
                         }
                     }
                     catch { }
+
+                    // 恢复窗口宽度
+                    try { Width = _minimalPrevWindowWidth; } catch { }
 
                     // 修复 Bug #2：精简模式退出时强制刷新频道列表
                     // 解决 ListBox 虚拟化（Recycling）在 DrawerPanel 隐藏→显示后容器未重新生成的问题
