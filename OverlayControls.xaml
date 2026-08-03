@@ -181,16 +181,8 @@
             <!-- 右侧：工具 -->
             <StackPanel Grid.Column="2" Orientation="Horizontal">
                 <!-- FCC/UDP removed from here -->
-                <Button x:Name="BtnSources" Style="{StaticResource OverlayIconButton}" ToolTip="{DynamicResource Overlay_SwitchSource}" Click="BtnSourceMenu_Click">
-                    <Viewbox Width="12" Height="12" Stretch="Uniform">
-                        <Path Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1.2" Data="M1,4 H3 L5,7 M11,4 H9 L7,7 M1,12 H7 L5,10 M11,12 H5 L7,10"/>
-                    </Viewbox>
-                </Button>
-                <Button x:Name="BtnRatio" Style="{StaticResource OverlayIconButton}" ToolTip="{DynamicResource Overlay_AspectRatio}" Click="BtnRatio_Click">
-                    <Viewbox Width="12" Height="12" Stretch="Uniform">
-                        <Path Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1.2" Data="M2,2 V10 H10 V2 Z M8,4 H12 V8"/>
-                    </Viewbox>
-                </Button>
+                <Button x:Name="BtnSources" Style="{StaticResource OverlayIconButton}" ToolTip="{DynamicResource Overlay_SwitchSource}" Click="BtnSourceMenu_Click" Content="切"/>
+                <Button x:Name="BtnRatio" Style="{StaticResource OverlayIconButton}" ToolTip="{DynamicResource Overlay_AspectRatio}" Click="BtnRatio_Click" Content="比"/>
                 <!-- 倍速按钮：采用 OverlayToggle 样式以适配文本宽度，保持与现有按钮配色一致 -->
                 <ToggleButton x:Name="BtnSpeed" Style="{StaticResource OverlayToggle}" ToolTip="Speed" Click="BtnSpeed_Click">
                     <TextBlock x:Name="LblSpeed" Text="1.0x" FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}"/>
