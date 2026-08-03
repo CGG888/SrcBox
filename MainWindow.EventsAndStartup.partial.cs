@@ -163,7 +163,12 @@ namespace LibmpvIptvClient
                 {
                     try
                     {
-                        if (!_shell.WindowStateActions.IsFullscreen) return;
+                        if (!_shell.WindowStateActions.IsFullscreen)
+                        {
+                            UpdateIconBrushes();
+                            _overlayManager?.UpdateOverlayIconBrushes();
+                            return;
+                        }
 
                         if (CbEpg.IsChecked == true)
                         {
@@ -180,6 +185,7 @@ namespace LibmpvIptvClient
                         try { _epgManager?.UpdateEpgDisplay(); } catch { }
                         try { _shell.ApplyChannelFilter(); } catch { }
                         try { UpdateMinimalToolbarStyle(); } catch { }
+                        _overlayManager?.UpdateOverlayIconBrushes();
                     }
                     catch { }
                 }), System.Windows.Threading.DispatcherPriority.Background);

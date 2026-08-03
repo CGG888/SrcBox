@@ -1440,8 +1440,12 @@
                     <!-- 右侧：工具 -->
                     <StackPanel Grid.Column="2" Orientation="Horizontal">
                         <!-- FCC/UDP removed from here -->
-                        <ToggleButton x:Name="BtnSources" Style="{StaticResource BarToggle}" Click="BtnSources_Click" ToolTip="{DynamicResource Overlay_SwitchSource}" Content="切"/>
-                        <ToggleButton x:Name="BtnRatio" Style="{StaticResource BarToggle}" Click="BtnRatio_Click" ToolTip="{DynamicResource Overlay_AspectRatio}" Content="比"/>
+                        <ToggleButton x:Name="BtnSources" Style="{StaticResource BarToggle}" Click="BtnSources_Click" ToolTip="{DynamicResource Overlay_SwitchSource}">
+                            <ContentControl x:Name="BtnSourcesIcon"/>
+                        </ToggleButton>
+                        <ToggleButton x:Name="BtnRatio" Style="{StaticResource BarToggle}" Click="BtnRatio_Click" ToolTip="{DynamicResource Overlay_AspectRatio}">
+                            <ContentControl x:Name="BtnRatioIcon"/>
+                        </ToggleButton>
                         <!-- 倍速按钮（窗口模式） -->
                         <ToggleButton x:Name="BtnSpeed" Style="{StaticResource BarToggle}" Click="BtnSpeed_Click" ToolTip="{DynamicResource Overlay_Speed}" IsEnabled="{Binding IsSpeedEnabled}">
                             <TextBlock x:Name="LblSpeedWindow" Text="1.0x" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>

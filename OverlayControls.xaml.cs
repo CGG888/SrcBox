@@ -31,8 +31,95 @@ namespace LibmpvIptvClient
         public OverlayControls()
         {
             InitializeComponent();
+            InitializeSourceRatioIcons();
             try { CbTimeshift.Checked += (s, e) => TimeshiftToggled?.Invoke(true); } catch { }
             try { CbTimeshift.Unchecked += (s, e) => TimeshiftToggled?.Invoke(false); } catch { }
+        }
+
+        private void InitializeSourceRatioIcons()
+        {
+            try
+            {
+                double thickness = 1.0;
+
+                // 切换源图标 - 圆环+两个对称箭头
+                var sourcePath1 = new System.Windows.Shapes.Path
+                {
+                    StrokeThickness = thickness,
+                    Fill = System.Windows.Media.Brushes.Transparent,
+                    Data = System.Windows.Media.Geometry.Parse("M 1.5,6 A 4.5,4.5 0 1,1 10.5,6 A 4.5,4.5 0 1,1 1.5,6")
+                };
+                var sourcePath2 = new System.Windows.Shapes.Path
+                {
+                    StrokeThickness = thickness,
+                    Fill = System.Windows.Media.Brushes.Transparent,
+                    Data = System.Windows.Media.Geometry.Parse("M 6.7,4.2 A 0.5,0.5 0 0,1 7.4,4.2 L 9.1,5.9 A 0.5,0.5 0 0,1 8.9,6.8 L 3.9,6.8 A 0.5,0.5 0 0,1 3.9,5.8 L 6.1,5.0 A 0.5,0.5 0 0,1 6.7,4.2 Z")
+                };
+                var sourcePath3 = new System.Windows.Shapes.Path
+                {
+                    StrokeThickness = thickness,
+                    Fill = System.Windows.Media.Brushes.Transparent,
+                    Data = System.Windows.Media.Geometry.Parse("M 5.3,7.8 A 0.5,0.5 0 0,1 4.6,7.8 L 2.9,6.1 A 0.5,0.5 0 0,1 3.1,5.2 L 8.1,5.2 A 0.5,0.5 0 0,1 8.1,6.2 L 5.9,7.0 A 0.5,0.5 0 0,1 5.3,7.8 Z")
+                };
+                var sourceCanvas = new System.Windows.Controls.Canvas { Width = 12, Height = 12 };
+                sourceCanvas.Children.Add(sourcePath1);
+                sourceCanvas.Children.Add(sourcePath2);
+                sourceCanvas.Children.Add(sourcePath3);
+                System.Windows.Controls.Viewbox sourceViewbox = new System.Windows.Controls.Viewbox { Width = 12, Height = 12, Stretch = System.Windows.Media.Stretch.Uniform };
+                sourceViewbox.Child = sourceCanvas;
+                BtnSourcesIcon.Content = sourceViewbox;
+
+                // 画面比例图标 - 矩形套矩形
+                var ratioPath1 = new System.Windows.Shapes.Path
+                {
+                    StrokeThickness = thickness,
+                    Fill = System.Windows.Media.Brushes.Transparent,
+                    Data = System.Windows.Media.Geometry.Parse("M1,2 H11 V10 H1 Z")
+                };
+                var ratioPath2 = new System.Windows.Shapes.Path
+                {
+                    StrokeThickness = thickness,
+                    Fill = System.Windows.Media.Brushes.Transparent,
+                    Data = System.Windows.Media.Geometry.Parse("M3,4 H9 V8 H3 Z")
+                };
+                var ratioCanvas = new System.Windows.Controls.Canvas { Width = 12, Height = 12 };
+                ratioCanvas.Children.Add(ratioPath1);
+                ratioCanvas.Children.Add(ratioPath2);
+                System.Windows.Controls.Viewbox ratioViewbox = new System.Windows.Controls.Viewbox { Width = 12, Height = 12, Stretch = System.Windows.Media.Stretch.Uniform };
+                ratioViewbox.Child = ratioCanvas;
+                BtnRatioIcon.Content = ratioViewbox;
+
+                // 延迟设置颜色，等待主题资源加载完成
+                this.Loaded += (s, e) => UpdateIconBrushes();
+            }
+            catch { }
+        }
+
+        public void UpdateIconBrushes()
+        {
+            try
+            {
+                var brush = (System.Windows.Media.Brush)FindResource("TextPrimaryBrush");
+                var sourceCanvas = BtnSourcesIcon.Content as System.Windows.Controls.Viewbox;
+                if (sourceCanvas?.Child is System.Windows.Controls.Canvas sourceCanvasChild)
+                {
+                    foreach (var child in sourceCanvasChild.Children)
+                    {
+                        if (child is System.Windows.Shapes.Path path)
+                            path.Stroke = brush;
+                    }
+                }
+                var ratioCanvas = BtnRatioIcon.Content as System.Windows.Controls.Viewbox;
+                if (ratioCanvas?.Child is System.Windows.Controls.Canvas ratioCanvasChild)
+                {
+                    foreach (var child in ratioCanvasChild.Children)
+                    {
+                        if (child is System.Windows.Shapes.Path path)
+                            path.Stroke = brush;
+                    }
+                }
+            }
+            catch { }
         }
         public void SetPlaySymbol(ModernWpf.Controls.Symbol symbol)
         {

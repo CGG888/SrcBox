@@ -70,11 +70,24 @@
       <Style x:Key="OverlayToggle" TargetType="ToggleButton" BasedOn="{StaticResource OverlayButtonBase}">
         <Setter Property="Width" Value="24"/>
         <Setter Property="Padding" Value="8,0"/>
-        <Style.Triggers>
-          <Trigger Property="IsChecked" Value="True">
-            <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
-          </Trigger>
-        </Style.Triggers>
+        <Setter Property="Template">
+          <Setter.Value>
+            <ControlTemplate TargetType="ToggleButton">
+              <Border x:Name="bd" Background="{TemplateBinding Background}" CornerRadius="4">
+                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+              </Border>
+              <ControlTemplate.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                  <Setter TargetName="bd" Property="Background" Value="{DynamicResource ButtonHoverBackgroundBrush}"/>
+                </Trigger>
+                <Trigger Property="IsChecked" Value="True">
+                  <Setter Property="Foreground" Value="{DynamicResource AccentBrush}"/>
+                  <Setter TargetName="bd" Property="Background" Value="{DynamicResource ButtonPressedBackgroundBrush}"/>
+                </Trigger>
+              </ControlTemplate.Triggers>
+            </ControlTemplate>
+          </Setter.Value>
+        </Setter>
       </Style>
 
     </Window.Resources>
@@ -181,8 +194,12 @@
             <!-- 右侧：工具 -->
             <StackPanel Grid.Column="2" Orientation="Horizontal">
                 <!-- FCC/UDP removed from here -->
-                <Button x:Name="BtnSources" Style="{StaticResource OverlayIconButton}" ToolTip="{DynamicResource Overlay_SwitchSource}" Click="BtnSourceMenu_Click" Content="切"/>
-                <Button x:Name="BtnRatio" Style="{StaticResource OverlayIconButton}" ToolTip="{DynamicResource Overlay_AspectRatio}" Click="BtnRatio_Click" Content="比"/>
+                <Button x:Name="BtnSources" Style="{StaticResource OverlayIconButton}" ToolTip="{DynamicResource Overlay_SwitchSource}" Click="BtnSourceMenu_Click">
+                    <ContentControl x:Name="BtnSourcesIcon"/>
+                </Button>
+                <Button x:Name="BtnRatio" Style="{StaticResource OverlayIconButton}" ToolTip="{DynamicResource Overlay_AspectRatio}" Click="BtnRatio_Click">
+                    <ContentControl x:Name="BtnRatioIcon"/>
+                </Button>
                 <!-- 倍速按钮：采用 OverlayToggle 样式以适配文本宽度，保持与现有按钮配色一致 -->
                 <ToggleButton x:Name="BtnSpeed" Style="{StaticResource OverlayToggle}" ToolTip="Speed" Click="BtnSpeed_Click">
                     <TextBlock x:Name="LblSpeed" Text="1.0x" FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}"/>

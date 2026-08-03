@@ -233,6 +233,11 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                     }
                 }
                 catch { }
+                menu.Closed += (s, ev) =>
+                {
+                    if (_window.BtnSpeed is System.Windows.Controls.Primitives.ToggleButton tb)
+                        tb.IsChecked = false;
+                };
                 _window.BtnSpeed.ContextMenu = menu;
                 _window.BtnSpeed.ContextMenu.PlacementTarget = _window.BtnSpeed;
                 _window.BtnSpeed.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Custom;
@@ -246,6 +251,8 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
         public void BtnSources_Click(object sender, RoutedEventArgs e)
         {
             OpenSourceMenuAtButton(_window.BtnSources);
+            if (_window.BtnSources is System.Windows.Controls.Primitives.ToggleButton tb)
+                tb.IsChecked = false;
         }
 
         public void BtnRatio_Click(object sender, RoutedEventArgs e)
@@ -262,6 +269,11 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                     mi.Command = item.Command;
                     menu.Items.Add(mi);
                 }
+                menu.Closed += (s, ev) =>
+                {
+                    if (_window.BtnRatio is System.Windows.Controls.Primitives.ToggleButton tb)
+                        tb.IsChecked = false;
+                };
                 _window.BtnRatio.ContextMenu = menu;
                 _window.BtnRatio.ContextMenu.PlacementTarget = _window.BtnRatio;
                 _window.BtnRatio.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Custom;

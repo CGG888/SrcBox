@@ -17,15 +17,18 @@ namespace LibmpvIptvClient
                 Mpv = _mpv,
                 WindowedPanel = VideoPanel,
                 SyncTimeshiftUi = () => { if (on || _shell.IsTimeshiftActive) _overlayManager.SyncTimeshiftUi(); },
-                ResetOverlayForOwner = () => _overlayManager.ResetOverlayForOwner(
-                    _shell.WindowStateActions.FullscreenWindow ?? (Window)this,
-                    _shell.WindowStateActions.IsFullscreen,
-                    () => BtnPlayPause_Click(this, new RoutedEventArgs()),
-                    () => BtnStop_Click(this, new RoutedEventArgs()),
-                    () => BtnRew_Click(this, new RoutedEventArgs()),
-                    () => BtnFwd_Click(this, new RoutedEventArgs()),
-                    () => OpenSourceMenuAtOverlay()
-                ),
+                ResetOverlayForOwner = () => {
+                    _overlayManager.ResetOverlayForOwner(
+                        _shell.WindowStateActions.FullscreenWindow ?? (Window)this,
+                        _shell.WindowStateActions.IsFullscreen,
+                        () => BtnPlayPause_Click(this, new RoutedEventArgs()),
+                        () => BtnStop_Click(this, new RoutedEventArgs()),
+                        () => BtnRew_Click(this, new RoutedEventArgs()),
+                        () => BtnFwd_Click(this, new RoutedEventArgs()),
+                        () => OpenSourceMenuAtOverlay()
+                    );
+                    if (!on) UpdateIconBrushes();
+                },
                 ShowFsOverlayNow = _overlayManager.ShowFsOverlayNow,
                 TryArrowSeek = (dir) =>
                 {

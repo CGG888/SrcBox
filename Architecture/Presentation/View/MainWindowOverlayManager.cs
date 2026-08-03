@@ -192,11 +192,14 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                     }
                     catch { }
                 },
-                DrawerToggled: (visible) => _window.SetDrawerCollapsed(!visible),
-                EpgToggled: (visible) =>
-                {
+                DrawerToggled: (visible) => {
+                    _window.SetDrawerCollapsed(!visible);
+                    try { _overlayWpf?.SetDrawerVisible(visible); } catch { }
+                },
+                EpgToggled: (visible) => {
                     _window.CbEpg.IsChecked = visible;
                     _window.CbEpg_Click(_window, new RoutedEventArgs());
+                    try { _overlayWpf?.SetEpgVisible(visible); } catch { }
                 },
                 SeekStart: () => _shell.IsSeeking = true,
                 SeekEnd: (val) =>
@@ -220,7 +223,10 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 VolumeChanged: (val) => _shell.Volume = val,
                 MuteChanged: (on) => { _shell.IsMuted = on; },
                 SourceMenuRequested: openSourceMenu,
-                TimeshiftToggled: (on) => { _shell.IsTimeshiftActive = on; }
+                TimeshiftToggled: (on) => {
+                    _shell.IsTimeshiftActive = on;
+                    try { _overlayWpf?.SetTimeshift(on); } catch { }
+                }
             ));
         }
 
@@ -239,6 +245,9 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             try { _overlayWpf.SetMuted(_shell.IsMuted); } catch { }
             try { _overlayWpf.SetSpeedEnabled(_shell.IsSpeedEnabled); } catch { }
             try { _overlayWpf.SetSpeed(_shell.PlaybackSpeed); } catch { }
+            try { _overlayWpf.SetTimeshift(_shell.IsTimeshiftActive); } catch { }
+            try { _overlayWpf.SetEpgVisible(_window.CbEpg.IsChecked == true); } catch { }
+            try { _overlayWpf.SetDrawerVisible(_window.CbDrawer.IsChecked == true); } catch { }
             try
             {
                 _overlayWpf.SetInfo(_shell.MediaInfo.InfoText);
@@ -753,6 +762,15 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
         public void StartTimers()
         {
             _overlayPollTimer.Start();
+        }
+
+        public void UpdateOverlayIconBrushes()
+        {
+            try
+            {
+                _overlayWpf?.UpdateIconBrushes();
+            }
+            catch { }
         }
 
         [DllImport("user32.dll")]
