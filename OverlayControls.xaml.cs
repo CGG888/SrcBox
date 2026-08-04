@@ -32,6 +32,15 @@ namespace LibmpvIptvClient
         {
             InitializeComponent();
             InitializeSourceRatioIcons();
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                try
+                {
+                    var brush = (System.Windows.Media.Brush)FindResource("TextPrimaryBrush");
+                    if (IconMute != null) IconMute.Foreground = brush;
+                }
+                catch { }
+            }), System.Windows.Threading.DispatcherPriority.Loaded);
             PreviewKeyDown += OnPreviewKeyDown;
             try { CbTimeshift.Checked += (s, e) => TimeshiftToggled?.Invoke(true); } catch { }
             try { CbTimeshift.Unchecked += (s, e) => TimeshiftToggled?.Invoke(false); } catch { }

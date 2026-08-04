@@ -44,6 +44,15 @@ namespace LibmpvIptvClient
         {
             InitializeComponent();
             InitializeSourceRatioIcons();
+            Dispatcher.BeginInvoke(new Action(() =>
+            {
+                try
+                {
+                    var brush = (System.Windows.Media.Brush)FindResource("TextPrimaryBrush");
+                    if (IconMute != null) IconMute.Foreground = brush;
+                }
+                catch { }
+            }), System.Windows.Threading.DispatcherPriority.Loaded);
             this.Loaded += (s, e) => UpdateIconBrushes();
             CbM3uList.ItemsSource = AppSettings.Current.SavedSources;
             CbM3uListGroups.ItemsSource = AppSettings.Current.SavedSources;
