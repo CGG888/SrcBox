@@ -168,15 +168,37 @@ public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
 
     void TrySeekTimeshift(MainShellViewModel shell, int seconds)
     {
-        if (shell.PlayerEngine == null)
+        if (shell.CurrentChannel == null || shell.PlayerEngine == null)
         {
-            Diagnostics.Logger.Warn("[Seek] PlayerEngine is null");
+            Diagnostics.Logger.Warn("[Seek] CurrentChannel or PlayerEngine is null");
             return;
         }
 
         var currentPos = shell.PlayerEngine.GetTimePos() ?? 0;
-        Diagnostics.Logger.Info($"[Seek] Timeshift seek: currentPos={currentPos}, seconds={seconds}");
+        var currentTime = shell.TimeshiftMin.AddSeconds(shell.TimeshiftCursorSec);
+        var targetTime = currentTime.AddSeconds(seconds);
+        var minTime = shell.TimeshiftMin;
+        var maxTime = shell.TimeshiftMax;
 
-        shell.PlayerEngine.SeekRelative(seconds);
+        Diagnostics.Logger.Info($"[Seek] Timeshift seek: currentPos={currentPos}, seconds={seconds}, currentTime={currentTime:HH:mm:ss}, targetTime={targetTime:HH:mm:ss}");
+
+        if (targetTime < minTime || targetTime > maxTime)
+        {
+            Diagnostics.Logger.Info($"[Seek] Target time out of timeshift range, reloading URL");
+            shell.ChannelPlaybackActions.PlayCatchupAt(shell.CurrentChannel, targetTime);
+            return;
+        }
+
+        if (shell.CurrentPlayingProgram != null &&
+            targetTime >= shell.CurrentPlayingProgram.Start &&
+            targetTime < shell.CurrentPlayingProgram.End)
+        {
+            Diagnostics.Logger.Info($"[Seek] Target time within current program, seeking");
+            shell.PlayerEngine.SeekRelative(seconds);
+            return;
+        }
+
+        Diagnostics.Logger.Info($"[Seek] Target time outside current program, reloading URL");
+        shell.ChannelPlaybackActions.PlayCatchupAt(shell.CurrentChannel, targetTime);
     }
 }
