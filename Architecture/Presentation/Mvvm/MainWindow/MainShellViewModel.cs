@@ -420,6 +420,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             if (ev is StartLivePlayback or StartReplayPlayback or StartTimeshiftPlayback or StartRecordingPlayback or StartLocalFilePlayback)
             {
                 IsPaused = false;
+                UpdatePlayPauseSymbol();
             }
             ApplyPlaybackProjection(next);
         }
