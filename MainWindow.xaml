@@ -724,7 +724,7 @@
         </Grid>
 
         <!-- 视频区域 -->
-        <Grid Grid.Row="1" Grid.Column="1" Background="Black" PreviewMouseWheel="VideoArea_PreviewMouseWheel" MouseLeftButtonDown="VideoArea_MouseLeftButtonDown" MouseMove="VideoArea_MouseMove">
+        <Grid Grid.Row="1" Grid.Column="1" Background="Black" PreviewMouseWheel="VideoArea_PreviewMouseWheel" MouseLeftButtonDown="VideoArea_MouseLeftButtonDown" PreviewMouseLeftButtonDown="VideoArea_PreviewMouseLeftButtonDown" MouseMove="VideoArea_MouseMove">
             <wfi:WindowsFormsHost x:Name="VideoHost" Background="Black" PreviewMouseWheel="VideoHost_PreviewMouseWheel" PreviewMouseMove="VideoHost_PreviewMouseMove">
                 <wf:Panel x:Name="VideoPanel" BackColor="Black"/>
             </wfi:WindowsFormsHost>

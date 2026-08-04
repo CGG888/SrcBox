@@ -340,6 +340,14 @@ namespace LibmpvIptvClient
             catch { }
             try { DragMove(); } catch { }
         }
+        void VideoArea_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ClickCount == 2)
+            {
+                ToggleFullscreen(true);
+                e.Handled = true;
+            }
+        }
         void BottomBar_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
         {
             _windowedInputManager?.BottomBar_PreviewMouseWheel(sender, e);
