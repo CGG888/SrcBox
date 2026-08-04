@@ -140,6 +140,7 @@ namespace LibmpvIptvClient
                 BtnMute.Background = _muted
                     ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(0x33, 0xFF, 0x45, 0x3A))
                     : null;
+                SliderVolume.IsMuted = _muted;
             }
             catch { }
         }

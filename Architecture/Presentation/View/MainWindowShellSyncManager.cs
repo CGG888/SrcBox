@@ -45,6 +45,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             else if (e.PropertyName == nameof(MainShellViewModel.IsMuted))
             {
                 try { _overlayManager.OverlayWpf?.SetMuted(_shell.IsMuted); } catch { }
+                try { _window.UpdateMuteIcon(_shell.IsMuted); } catch { }
             }
             else if (e.PropertyName == nameof(MainShellViewModel.IsDrawerCollapsed))
             {

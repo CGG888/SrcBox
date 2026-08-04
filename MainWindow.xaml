@@ -1360,18 +1360,7 @@
                         </Grid.ColumnDefinitions>
                         <Button x:Name="BtnMute" Grid.Column="0" Style="{StaticResource BarButton}" ToolTip="{DynamicResource Overlay_Mute}" Click="BtnMute_Click" Margin="0,0,6,0">
                             <TextBlock FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}">
-                                <ui:SymbolIcon x:Name="IconMute" Symbol="Volume">
-                                    <ui:SymbolIcon.Style>
-                                        <Style TargetType="ui:SymbolIcon">
-                                            <Setter Property="Symbol" Value="Volume"/>
-                                            <Style.Triggers>
-                                                <DataTrigger Binding="{Binding DataContext.IsMuted, RelativeSource={RelativeSource AncestorType=Window}}" Value="True">
-                                                    <Setter Property="Symbol" Value="Mute"/>
-                                                </DataTrigger>
-                                            </Style.Triggers>
-                                        </Style>
-                                    </ui:SymbolIcon.Style>
-                                </ui:SymbolIcon>
+                                <ui:SymbolIcon x:Name="IconMute" Symbol="Volume"/>
                             </TextBlock>
                         </Button>
                         <controls:VolumeSlider Grid.Column="1" x:Name="SliderVolume"

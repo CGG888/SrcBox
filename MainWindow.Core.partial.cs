@@ -204,5 +204,14 @@ private void InitializeSourceRatioIcons()
             }
             catch { }
         }
+
+        public void UpdateMuteIcon(bool isMuted)
+        {
+            try
+            {
+                IconMute.Symbol = isMuted ? ModernWpf.Controls.Symbol.Mute : ModernWpf.Controls.Symbol.Volume;
+            }
+            catch { }
+        }
     }
 }
