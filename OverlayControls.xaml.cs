@@ -399,7 +399,7 @@ namespace LibmpvIptvClient
                 foreach (var t in tags)
                 {
                     var b = new System.Windows.Controls.Border { Style = style };
-                    var tb = new TextBlock { Text = t, Foreground = brush, FontSize = 11, VerticalAlignment = VerticalAlignment.Center };
+                    var tb = new TextBlock { Text = t, Foreground = brush, FontSize = 10, VerticalAlignment = VerticalAlignment.Center };
                     b.Child = tb;
                     TagPanelOverlay.Children.Add(b);
                 }

@@ -87,6 +87,12 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                     var up = vcodec.ToUpperInvariant();
                     if (up.Contains("HEVC") || up.Contains("H265")) newTags.Add("HEVC");
                     else if (up.Contains("H264") || up.Contains("AVC")) newTags.Add("H.264");
+                    else if (up.Contains("MPEG-1") || up.Contains("MPEG1")) newTags.Add("MPEG-1");
+                    else if (up.Contains("MPEG-2") || up.Contains("MPEG2")) newTags.Add("MPEG-2");
+                    else if (up.Contains("VP8")) newTags.Add("VP8");
+                    else if (up.Contains("VP9")) newTags.Add("VP9");
+                    else if (up.Contains("AV1")) newTags.Add("AV1");
+                    else if (up.Contains("WMV")) newTags.Add("WMV");
                     else newTags.Add(up);
                 }
 

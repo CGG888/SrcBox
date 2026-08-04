@@ -1429,7 +1429,7 @@
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
                                         <Border Style="{StaticResource TagChip}" Margin="0,0,4,0">
-                                            <TextBlock Text="{Binding}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="11" VerticalAlignment="Center"/>
+                                            <TextBlock Text="{Binding}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="10" VerticalAlignment="Center"/>
                                         </Border>
                                     </DataTemplate>
                                 </ItemsControl.ItemTemplate>
