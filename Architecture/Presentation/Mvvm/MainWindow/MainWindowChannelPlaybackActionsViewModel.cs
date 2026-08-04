@@ -353,7 +353,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             try
             {
                 _shell.MarkTimeshiftSeeked();
-                DateTime end = start.AddHours(1);
+                DateTime end = DateTime.Now.AddYears(10);
                 EpgProgram? targetProgram = null;
                 try
                 {
@@ -365,7 +365,6 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                             var prog = programs.FirstOrDefault(p => p.Start <= start && p.End > start);
                             if (prog != null)
                             {
-                                end = prog.End;
                                 targetProgram = prog;
                             }
                         }
