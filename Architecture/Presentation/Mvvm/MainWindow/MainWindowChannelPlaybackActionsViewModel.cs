@@ -226,7 +226,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 url = ProcessUrlPlaceholders(url, prog.Start, prog.End, AppSettings.Current.Replay.AppendEpgTime);
                 try { url = LibmpvIptvClient.Services.UrlTimeRewriter.RewriteIfEnabled(AppSettings.Current, url, prog.Start, prog.End, false); } catch { }
 
-                LibmpvIptvClient.Diagnostics.Logger.Info($"开始回看: {prog.Title} ({prog.Start:HH:mm}-{prog.End:HH:mm})");
+                LibmpvIptvClient.Diagnostics.Logger.Info($"[Replay] 开始回看: {prog.Title} ({prog.Start:HH:mm}-{prog.End:HH:mm}), URL: {url}");
                 _shell.PlayerEngine.Play(url);
                 _shell.CurrentUrl = url;
                 RequestVideoShow?.Invoke();
@@ -375,7 +375,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 url = ProcessUrlPlaceholders(url, start, end, AppSettings.Current.Timeshift.AppendEpgTime);
                 try { url = LibmpvIptvClient.Services.UrlTimeRewriter.RewriteIfEnabled(AppSettings.Current, url, start, end, _shell.IsTimeshiftActive); } catch { }
                 
-                LibmpvIptvClient.Diagnostics.Logger.Info($"[Timeshift] Start Timeshift - Channel: {ch.Name}, Time: {start:yyyy-MM-dd HH:mm:ss}, targetProgram={targetProgram?.Title ?? "null"}");
+                LibmpvIptvClient.Diagnostics.Logger.Info($"[Timeshift] Start Timeshift - Channel: {ch.Name}, Time: {start:yyyy-MM-dd HH:mm:ss}, URL: {url}");
                 _shell.PlayerEngine.Play(url);
                 _shell.CurrentUrl = url;
                 LibmpvIptvClient.Diagnostics.Logger.Info($"[Timeshift] After Play - CurrentPlayingProgram={_shell.CurrentPlayingProgram?.Title ?? "null"}");
