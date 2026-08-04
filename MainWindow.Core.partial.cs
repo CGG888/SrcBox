@@ -201,6 +201,10 @@ private void InitializeSourceRatioIcons()
                             path.Stroke = brush;
                     }
                 }
+                if (IconMute != null)
+                {
+                    IconMute.Foreground = brush;
+                }
             }
             catch { }
         }
