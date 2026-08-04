@@ -174,31 +174,37 @@ public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
             return;
         }
 
-        var currentPos = shell.PlayerEngine.GetTimePos() ?? 0;
         var currentTime = shell.TimeshiftMin.AddSeconds(shell.TimeshiftCursorSec);
         var targetTime = currentTime.AddSeconds(seconds);
         var minTime = shell.TimeshiftMin;
         var maxTime = shell.TimeshiftMax;
 
-        Diagnostics.Logger.Info($"[Seek] Timeshift seek: currentPos={currentPos}, seconds={seconds}, currentTime={currentTime:HH:mm:ss}, targetTime={targetTime:HH:mm:ss}");
+        Diagnostics.Logger.Info($"[Seek] Timeshift seek: seconds={seconds}, currentTime={currentTime:HH:mm:ss}, targetTime={targetTime:HH:mm:ss}, range=[{minTime:HH:mm:ss}, {maxTime:HH:mm:ss}]");
 
-        if (targetTime < minTime || targetTime > maxTime)
+        if (targetTime < minTime)
         {
-            Diagnostics.Logger.Info($"[Seek] Target time out of timeshift range, reloading URL");
-            shell.ChannelPlaybackActions.PlayCatchupAt(shell.CurrentChannel, targetTime);
-            return;
+            targetTime = minTime;
+        }
+        else if (targetTime > maxTime)
+        {
+            targetTime = maxTime;
         }
 
-        if (shell.CurrentPlayingProgram != null &&
-            targetTime >= shell.CurrentPlayingProgram.Start &&
-            targetTime < shell.CurrentPlayingProgram.End)
+        var currentProgram = shell.CurrentPlayingProgram;
+        bool withinCurrentProgram = currentProgram != null &&
+            targetTime >= currentProgram.Start &&
+            targetTime < currentProgram.End;
+
+        Diagnostics.Logger.Info($"[Seek] CurrentPlayingProgram={currentProgram?.Title ?? "null"}, withinCurrentProgram={withinCurrentProgram}");
+
+        if (withinCurrentProgram)
         {
-            Diagnostics.Logger.Info($"[Seek] Target time within current program, seeking");
+            Diagnostics.Logger.Info($"[Seek] Within current program, seeking directly");
             shell.PlayerEngine.SeekRelative(seconds);
             return;
         }
 
-        Diagnostics.Logger.Info($"[Seek] Target time outside current program, reloading URL");
+        Diagnostics.Logger.Info($"[Seek] Outside current program or no program info, reloading URL");
         shell.ChannelPlaybackActions.PlayCatchupAt(shell.CurrentChannel, targetTime);
     }
 }

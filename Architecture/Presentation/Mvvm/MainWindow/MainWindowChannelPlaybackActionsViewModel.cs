@@ -379,8 +379,9 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 LibmpvIptvClient.Diagnostics.Logger.Info($"[Timeshift] Start Timeshift - Channel: {ch.Name}, Time: {start:yyyy-MM-dd HH:mm:ss}, URL: {url}");
                 _shell.PlayerEngine.Play(url);
                 _shell.CurrentUrl = url;
+                _shell.CurrentPlayingProgram = targetProgram;
                 RequestVideoShow?.Invoke();
-                
+
                 _shell.DispatchPlaybackEvent(new StartTimeshiftPlayback(
                     ch.TvgId ?? ch.Id ?? ch.Name ?? "",
                     start,
