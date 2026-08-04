@@ -132,9 +132,7 @@
                     <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
                 <Button x:Name="BtnMute" Grid.Column="0" Style="{StaticResource OverlayIconButton}" ToolTip="{DynamicResource Overlay_Mute}" Click="BtnMute_Click" Margin="0,0,6,0">
-                    <TextBlock FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}">
-                        <ui:SymbolIcon x:Name="IconMute" Symbol="Volume"/>
-                    </TextBlock>
+                    <ui:SymbolIcon x:Name="IconMute" Symbol="Volume" Foreground="{DynamicResource TextPrimaryBrush}"/>
                 </Button>
                 <controls:VolumeSlider Grid.Column="1" x:Name="SliderVolume"
                                        IsMuted="{Binding IsMuted, Mode=OneWay}"
