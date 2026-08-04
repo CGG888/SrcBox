@@ -140,8 +140,15 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             {
                 try { _overlayManager.OverlayWpf?.SetPlaybackStatus(_shell.PlaybackStatusText, _shell.PlaybackStatusBrush); } catch { }
             }
-            if (e.PropertyName == nameof(MainShellViewModel.PlaybackMode)
-                || e.PropertyName == nameof(MainShellViewModel.CurrentChannel)
+            if (e.PropertyName == nameof(MainShellViewModel.PlaybackMode))
+            {
+                RefreshTrayTooltip();
+                if (_shell.PlaybackMode != PlaybackMode.Stopped)
+                {
+                    _window.UpdatePlayPauseIconFromManager();
+                }
+            }
+            else if (e.PropertyName == nameof(MainShellViewModel.CurrentChannel)
                 || e.PropertyName == nameof(MainShellViewModel.CurrentPlayingProgram)
                 || e.PropertyName == nameof(MainShellViewModel.PlaybackFocusTime)
                 || e.PropertyName == nameof(MainShellViewModel.IsTimeshiftActive))

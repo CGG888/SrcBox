@@ -100,15 +100,11 @@ namespace LibmpvIptvClient
         {
             try
             {
-                TaskbarItemInfo.ProgressState = _shell.IsPaused
-                    ? System.Windows.Shell.TaskbarItemProgressState.Paused
-                    : System.Windows.Shell.TaskbarItemProgressState.Normal;
-
-                if (IconPlayPause != null)
+                if (TaskbarItemInfo != null)
                 {
-                    IconPlayPause.Data = _shell.IsPaused
-                        ? Geometry.Parse("M3,6 H6 V14 H3 Z M9,6 H12 V14 H9 Z")
-                        : Geometry.Parse("M4,2 L12,8 L4,14 Z");
+                    TaskbarItemInfo.ProgressState = _shell.IsPaused
+                        ? System.Windows.Shell.TaskbarItemProgressState.Paused
+                        : System.Windows.Shell.TaskbarItemProgressState.Normal;
                 }
             }
             catch { }
