@@ -353,7 +353,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             try
             {
                 _shell.MarkTimeshiftSeeked();
-                DateTime end = DateTime.Now.AddDays(7);
+                DateTime end = DateTime.Now;
                 EpgProgram? targetProgram = null;
                 try
                 {
