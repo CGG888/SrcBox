@@ -255,52 +255,8 @@ public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
             return;
         }
 
-        var currentTime = shell.TimeshiftMin.AddSeconds(shell.TimeshiftCursorSec);
-        var targetTime = currentTime.AddSeconds(seconds);
-
-        Diagnostics.Logger.Info($"[Seek] Timeshift seek: seconds={seconds}, currentTime={currentTime:HH:mm:ss}, targetTime={targetTime:HH:mm:ss}");
-
-        var currentProgram = shell.CurrentPlayingProgram;
-        if (currentProgram == null && shell.EpgService != null)
-        {
-            var programs = shell.EpgService.GetPrograms(shell.CurrentChannel.TvgId, shell.CurrentChannel.TvgName, shell.CurrentChannel.Name);
-            if (programs != null && programs.Count > 0)
-            {
-                currentProgram = programs.FirstOrDefault(p => p.Start <= currentTime && p.End > currentTime);
-            }
-        }
-
-        Diagnostics.Logger.Info($"[Seek] CurrentPlayingProgram={currentProgram?.Title ?? "null"} [{currentProgram?.Start:HH:mm:ss}-{currentProgram?.End:HH:mm:ss}]");
-
-        if (currentProgram == null)
-        {
-            Diagnostics.Logger.Warn("[Seek] currentProgram is null, falling back to SeekRelative");
-            shell.PlayerEngine.SeekRelative(seconds);
-            return;
-        }
-
-        bool targetBeyondEnd = seconds > 0 && targetTime >= currentProgram.End;
-        bool targetBeyondStart = seconds < 0 && targetTime < currentProgram.Start;
-
-        if (targetBeyondEnd)
-        {
-            Diagnostics.Logger.Info($"[Seek] Beyond program end, clamping to program boundary");
-            var clampSec = (currentProgram.End - shell.TimeshiftMin).TotalSeconds - 1;
-            shell.PlayerEngine.SeekRelative(clampSec - shell.TimeshiftCursorSec);
-            shell.TimeshiftCursorSec = clampSec;
-            return;
-        }
-
-        if (targetBeyondStart)
-        {
-            Diagnostics.Logger.Info($"[Seek] Beyond program start, clamping to program boundary");
-            var clampSec = (currentProgram.Start - shell.TimeshiftMin).TotalSeconds;
-            shell.PlayerEngine.SeekRelative(clampSec - shell.TimeshiftCursorSec);
-            shell.TimeshiftCursorSec = clampSec;
-            return;
-        }
-
-        Diagnostics.Logger.Info($"[Seek] Within bounds, seeking directly");
+        Diagnostics.Logger.Info($"[Seek] Timeshift seek: seconds={seconds}, currentCursor={shell.TimeshiftCursorSec}");
+        Diagnostics.Logger.Info($"[Seek] Timeshift mode - seeking directly without program boundary limits");
         shell.PlayerEngine.SeekRelative(seconds);
         shell.TimeshiftCursorSec = Math.Max(0, shell.TimeshiftCursorSec + seconds);
         Diagnostics.Logger.Info($"[Seek] After seek, TimeshiftCursorSec updated to {shell.TimeshiftCursorSec}");
