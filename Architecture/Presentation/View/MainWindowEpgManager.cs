@@ -27,6 +27,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
         private string? _lastCenteredChannelKey;
         private DateTime _lastCenteredStart;
         private DateTime _lastCenteredEnd;
+        private DateTime _lastLoggedEpgDate;
 
         public MainWindowEpgManager(MainWindow window, MainShellViewModel shell, MainWindowOverlayManager overlayManager, EpgService? epgService)
         {
@@ -311,7 +312,11 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             catch { }
             var priorOffset = suppressAutoScroll ? _epgScrollViewer?.VerticalOffset : null;
             _window.ListEpg.ItemsSource = filtered;
-            try { LibmpvIptvClient.Diagnostics.Logger.Debug($"[EPG] 日期 {_shell.CurrentEpgDate:yyyy-MM-dd} 可见节目数 {filtered.Count}"); } catch { }
+            if (_shell.CurrentEpgDate.Date != _lastLoggedEpgDate.Date)
+            {
+                _lastLoggedEpgDate = _shell.CurrentEpgDate.Date;
+                try { LibmpvIptvClient.Diagnostics.Logger.Debug($"[EPG] 日期 {_shell.CurrentEpgDate:yyyy-MM-dd} 可见节目数 {filtered.Count}"); } catch { }
+            }
 
             if (forceScroll || !suppressAutoScroll)
             {
