@@ -74,13 +74,13 @@ public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
                 }
                 break;
             case MainWindowShortcutAction.SeekBackward:
-                if (_shell.CurrentPlayingProgram != null)
+                if (_shell.IsTimeshiftActive || _shell.CurrentPlayingProgram != null)
                 {
                     _shell.PlaybackActions.TrySeekRelative(_shell.PlayerEngine, -10);
                 }
                 break;
             case MainWindowShortcutAction.SeekForward:
-                if (_shell.CurrentPlayingProgram != null)
+                if (_shell.IsTimeshiftActive || _shell.CurrentPlayingProgram != null)
                 {
                     _shell.PlaybackActions.TrySeekRelative(_shell.PlayerEngine, 10);
                 }
