@@ -76,13 +76,27 @@ public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
             case MainWindowShortcutAction.SeekBackward:
                 if (_shell.IsTimeshiftActive || _shell.CurrentPlayingProgram != null)
                 {
-                    _shell.PlaybackActions.TrySeekRelative(_shell.PlayerEngine, -10);
+                    if (_shell.IsTimeshiftActive)
+                    {
+                        TrySeekTimeshift(_shell, -10);
+                    }
+                    else
+                    {
+                        _shell.PlaybackActions.TrySeekRelative(_shell.PlayerEngine, -10);
+                    }
                 }
                 break;
             case MainWindowShortcutAction.SeekForward:
                 if (_shell.IsTimeshiftActive || _shell.CurrentPlayingProgram != null)
                 {
-                    _shell.PlaybackActions.TrySeekRelative(_shell.PlayerEngine, 10);
+                    if (_shell.IsTimeshiftActive)
+                    {
+                        TrySeekTimeshift(_shell, 10);
+                    }
+                    else
+                    {
+                        _shell.PlaybackActions.TrySeekRelative(_shell.PlayerEngine, 10);
+                    }
                 }
                 break;
             case MainWindowShortcutAction.NextChannel:
@@ -150,5 +164,19 @@ public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
             targetIdx = (idx - 1 + list.Count) % list.Count;
         }
         _shell.ChannelPlaybackActions.PlayChannel(list[targetIdx], null);
+    }
+
+    void TrySeekTimeshift(MainShellViewModel shell, int seconds)
+    {
+        if (shell.CurrentChannel == null) return;
+        var min = shell.TimeshiftMin;
+        var max = shell.TimeshiftMax;
+        var currentSec = shell.TimeshiftCursorSec;
+        var totalSec = (max - min).TotalSeconds;
+
+        var newSec = Math.Max(0, Math.Min(totalSec, currentSec + seconds));
+        var targetTime = min.AddSeconds(newSec);
+
+        shell.ChannelPlaybackActions.PlayCatchupAt(shell.CurrentChannel, targetTime);
     }
 }
