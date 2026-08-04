@@ -16,16 +16,22 @@ namespace LibmpvIptvClient.Services
 
         private static readonly string[] CctvTypeSuffixes = new[]
         {
-            "综合", "综合频道", "中文国际", "中文国际频道",
+            "综合", "综合频道", "中文国际", "中文国际频道", "中文国际",
             "财经", "综艺", "体育", "电影", "纪录", "科教", "戏曲",
             "社会与法", "社会与法频道", "新闻", "少儿", "音乐",
             "军事农业", "国防军事", "农业农村", "电视剧",
-            "体育赛事", "奥林匹克", "4K综艺", "4K"
-        };
-
-        private static readonly string[] CctvPrefixes = new[]
-        {
-            "CCTV", "CCTV-", "CCTV", "中央台", "中央电视台"
+            "体育赛事", "奥林匹克", "4K综艺", "4K",
+            "美洲", "欧洲", "亚洲",
+            "兵器科技", "第一剧场", "电视指南", "风云剧场", "风云音乐", "风云足球",
+            "高尔夫网球", "怀旧剧场", "女性时尚", "世界地理", "卫生健康",
+            "央视台球", "央视文化精品", "央视国学", "央视资讯",
+            "文化精品", "发现之旅", "中学生", "纪录国际", "全球资讯榜",
+            "欢乐大本营", "欢乐综艺", "家庭健康", "健康之路", "中国音乐",
+            "早期教育", "职业教育", "电视批判", "学术导视", "旅游天地",
+            "走进科学", "自然之谜", "科技博览", "人文地图", "大家谈",
+            "文化视界", "科技教育", "法治在线", "天天快乐", "生活广角",
+            "生活空间", "健康之星", "夕阳红", "老年之家", "父母大人",
+            "儿童影院", "动画王国", "童话剧场", "儿童故事", "智慧树"
         };
 
         public static string? Match(string sourceName, IEnumerable<string> epgNames)
@@ -98,25 +104,54 @@ namespace LibmpvIptvClient.Services
 
         private static bool IsCctvTypeMatch(string textSrc, string textDst)
         {
-            if (!IsCctvName(textSrc) || !IsCctvName(textDst)) return false;
+            if (!IsCctvRelatedName(textSrc) || !IsCctvRelatedName(textDst)) return false;
+
+            var srcPrefix = ExtractCctvPrefix(textSrc);
+            var dstPrefix = ExtractCctvPrefix(textDst);
+
+            if (srcPrefix != dstPrefix && !(srcPrefix == "CCTV" && dstPrefix == "CETV") &&
+                !(srcPrefix == "CETV" && dstPrefix == "CCTV"))
+            {
+                return false;
+            }
 
             foreach (var suffix in CctvTypeSuffixes)
             {
                 var normalizedSrc = textSrc.Replace(suffix, "");
                 var normalizedDst = textDst.Replace(suffix, "");
 
-                if (normalizedSrc == normalizedDst && normalizedSrc.StartsWith("CCTV"))
+                if (normalizedSrc == normalizedDst &&
+                    (normalizedSrc.StartsWith("CCTV") || normalizedSrc.StartsWith("CETV") || normalizedSrc.StartsWith("CGTN")))
                 {
                     return true;
                 }
             }
 
+            var numSrc = ExtractNumbers(textSrc);
+            var numDst = ExtractNumbers(textDst);
+            if (numSrc.Count > 0 && numDst.Count > 0 && numSrc.SequenceEqual(numDst))
+            {
+                var prefixMatch = srcPrefix == dstPrefix ||
+                                 (srcPrefix == "CCTV" && dstPrefix == "CETV") ||
+                                 (srcPrefix == "CETV" && dstPrefix == "CCTV");
+                if (prefixMatch) return true;
+            }
+
             return false;
         }
 
-        private static bool IsCctvName(string name)
+        private static bool IsCctvRelatedName(string name)
         {
-            return name.StartsWith("CCTV") && name.Length > 4;
+            return name.StartsWith("CCTV") || name.StartsWith("CETV") || name.StartsWith("CGTN") || name.StartsWith("CHTV");
+        }
+
+        private static string ExtractCctvPrefix(string name)
+        {
+            if (name.StartsWith("CCTV")) return "CCTV";
+            if (name.StartsWith("CETV")) return "CETV";
+            if (name.StartsWith("CGTN")) return "CGTN";
+            if (name.StartsWith("CHTV")) return "CHTV";
+            return "";
         }
 
         private static List<int> ExtractNumbers(string s)
