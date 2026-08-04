@@ -32,15 +32,6 @@ namespace LibmpvIptvClient
         {
             InitializeComponent();
             InitializeSourceRatioIcons();
-            Dispatcher.BeginInvoke(new Action(() =>
-            {
-                try
-                {
-                    var brush = (System.Windows.Media.Brush)TryFindResource("TextPrimaryBrush") ?? System.Windows.Media.Brushes.White;
-                    if (IconMute != null) IconMute.Foreground = brush;
-                }
-                catch { }
-            }), System.Windows.Threading.DispatcherPriority.Loaded);
             PreviewKeyDown += OnPreviewKeyDown;
             try { CbTimeshift.Checked += (s, e) => TimeshiftToggled?.Invoke(true); } catch { }
             try { CbTimeshift.Unchecked += (s, e) => TimeshiftToggled?.Invoke(false); } catch { }
@@ -142,7 +133,7 @@ namespace LibmpvIptvClient
                 }
                 if (IconMute != null)
                 {
-                    IconMute.Foreground = brush;
+                    IconMute.Fill = brush;
                 }
             }
             catch { }
@@ -157,13 +148,17 @@ namespace LibmpvIptvClient
             }
             catch { }
         }
+        private const string VolumeData = "M2,5 L2,11 L5,11 L9,15 L9,1 L5,5 Z M11,5 Q13,8 11,11 M14,3 Q17,8 14,13";
+        private const string MuteData = "M2,5 L2,11 L5,11 L9,15 L9,1 L5,5 Z M11,3 L15,13 M15,3 L11,13";
+
         public void SetMuted(bool muted)
         {
             _muted = muted;
             try
             {
-                IconMute.Symbol = _muted ? ModernWpf.Controls.Symbol.Mute : ModernWpf.Controls.Symbol.Volume;
-                IconMute.Foreground = (System.Windows.Media.Brush)TryFindResource("TextPrimaryBrush") ?? System.Windows.Media.Brushes.White;
+                IconMute.Data = _muted
+                    ? System.Windows.Media.Geometry.Parse(MuteData)
+                    : System.Windows.Media.Geometry.Parse(VolumeData);
                 BtnMute.Background = _muted
                     ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(0x33, 0xFF, 0x45, 0x3A))
                     : null;
@@ -285,8 +280,9 @@ namespace LibmpvIptvClient
         void BtnMute_Click(object sender, RoutedEventArgs e)
         {
             _muted = !_muted;
-            IconMute.Symbol = _muted ? ModernWpf.Controls.Symbol.Mute : ModernWpf.Controls.Symbol.Volume;
-            IconMute.Foreground = (System.Windows.Media.Brush)TryFindResource("TextPrimaryBrush") ?? System.Windows.Media.Brushes.White;
+            IconMute.Data = _muted
+                ? System.Windows.Media.Geometry.Parse(MuteData)
+                : System.Windows.Media.Geometry.Parse(VolumeData);
             // 静音时按钮背景变为浅红色
             BtnMute.Background = _muted
                 ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(0x33, 0xFF, 0x45, 0x3A))
@@ -462,8 +458,7 @@ namespace LibmpvIptvClient
             if (_muted)
             {
                 _muted = false;
-                IconMute.Symbol = ModernWpf.Controls.Symbol.Volume;
-                IconMute.Foreground = (System.Windows.Media.Brush)TryFindResource("TextPrimaryBrush") ?? System.Windows.Media.Brushes.White;
+                IconMute.Data = System.Windows.Media.Geometry.Parse(VolumeData);
                 BtnMute.Background = null;
                 MuteChanged?.Invoke(_muted);
             }

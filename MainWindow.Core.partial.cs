@@ -44,15 +44,6 @@ namespace LibmpvIptvClient
         {
             InitializeComponent();
             InitializeSourceRatioIcons();
-            Dispatcher.BeginInvoke(new Action(() =>
-            {
-                try
-                {
-                    var brush = (System.Windows.Media.Brush)TryFindResource("TextPrimaryBrush") ?? System.Windows.Media.Brushes.White;
-                    if (IconMute != null) IconMute.Foreground = brush;
-                }
-                catch { }
-            }), System.Windows.Threading.DispatcherPriority.Loaded);
             this.Loaded += (s, e) => UpdateIconBrushes();
             CbM3uList.ItemsSource = AppSettings.Current.SavedSources;
             CbM3uListGroups.ItemsSource = AppSettings.Current.SavedSources;
@@ -212,18 +203,22 @@ private void InitializeSourceRatioIcons()
                 }
                 if (IconMute != null)
                 {
-                    IconMute.Foreground = brush;
+                    IconMute.Fill = brush;
                 }
             }
             catch { }
         }
 
+        private const string VolumeData = "M2,5 L2,11 L5,11 L9,15 L9,1 L5,5 Z M11,5 Q13,8 11,11 M14,3 Q17,8 14,13";
+        private const string MuteData = "M2,5 L2,11 L5,11 L9,15 L9,1 L5,5 Z M11,3 L15,13 M15,3 L11,13";
+
         public void UpdateMuteIcon(bool isMuted)
         {
             try
             {
-                IconMute.Symbol = isMuted ? ModernWpf.Controls.Symbol.Mute : ModernWpf.Controls.Symbol.Volume;
-                IconMute.Foreground = (System.Windows.Media.Brush)TryFindResource("TextPrimaryBrush") ?? System.Windows.Media.Brushes.White;
+                IconMute.Data = isMuted
+                    ? System.Windows.Media.Geometry.Parse(MuteData)
+                    : System.Windows.Media.Geometry.Parse(VolumeData);
             }
             catch { }
         }
