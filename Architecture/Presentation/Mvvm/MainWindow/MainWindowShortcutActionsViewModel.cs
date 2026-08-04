@@ -195,7 +195,7 @@ public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
             targetTime >= currentProgram.Start &&
             targetTime < currentProgram.End;
 
-        Diagnostics.Logger.Info($"[Seek] CurrentPlayingProgram={currentProgram?.Title ?? "null"}, withinCurrentProgram={withinCurrentProgram}");
+        Diagnostics.Logger.Info($"[Seek] CurrentPlayingProgram={currentProgram?.Title ?? "null"} [{currentProgram?.Start:HH:mm:ss}-{currentProgram?.End:HH:mm:ss}], withinCurrentProgram={withinCurrentProgram}");
 
         if (withinCurrentProgram)
         {
@@ -204,7 +204,22 @@ public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
             return;
         }
 
-        Diagnostics.Logger.Info($"[Seek] Outside current program or no program info, reloading URL");
+        var targetProgram = currentProgram;
+        if (shell.EpgService != null)
+        {
+            var programs = shell.EpgService.GetPrograms(shell.CurrentChannel.TvgId, shell.CurrentChannel.TvgName, shell.CurrentChannel.Name);
+            if (programs != null && programs.Count > 0)
+            {
+                var prog = programs.FirstOrDefault(p => p.Start <= targetTime && p.End > targetTime);
+                if (prog != null)
+                {
+                    targetProgram = prog;
+                    Diagnostics.Logger.Info($"[Seek] Found target program: {prog.Title} [{prog.Start:HH:mm:ss}-{prog.End:HH:mm:ss}]");
+                }
+            }
+        }
+
+        Diagnostics.Logger.Info($"[Seek] Reloading URL for target program: {targetProgram?.Title ?? "null"}");
         shell.ChannelPlaybackActions.PlayCatchupAt(shell.CurrentChannel, targetTime);
     }
 }
