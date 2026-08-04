@@ -36,7 +36,7 @@ namespace LibmpvIptvClient
             {
                 try
                 {
-                    var brush = (System.Windows.Media.Brush)FindResource("TextPrimaryBrush");
+                    var brush = (System.Windows.Media.Brush)TryFindResource("TextPrimaryBrush") ?? System.Windows.Media.Brushes.White;
                     if (IconMute != null) IconMute.Foreground = brush;
                 }
                 catch { }
@@ -121,7 +121,7 @@ namespace LibmpvIptvClient
         {
             try
             {
-                var brush = (System.Windows.Media.Brush)FindResource("TextPrimaryBrush");
+                var brush = (System.Windows.Media.Brush)TryFindResource("TextPrimaryBrush") ?? System.Windows.Media.Brushes.White;
                 var sourceCanvas = BtnSourcesIcon.Content as System.Windows.Controls.Viewbox;
                 if (sourceCanvas?.Child is System.Windows.Controls.Canvas sourceCanvasChild)
                 {
@@ -163,6 +163,7 @@ namespace LibmpvIptvClient
             try
             {
                 IconMute.Symbol = _muted ? ModernWpf.Controls.Symbol.Mute : ModernWpf.Controls.Symbol.Volume;
+                IconMute.Foreground = (System.Windows.Media.Brush)TryFindResource("TextPrimaryBrush") ?? System.Windows.Media.Brushes.White;
                 BtnMute.Background = _muted
                     ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(0x33, 0xFF, 0x45, 0x3A))
                     : null;
@@ -285,6 +286,7 @@ namespace LibmpvIptvClient
         {
             _muted = !_muted;
             IconMute.Symbol = _muted ? ModernWpf.Controls.Symbol.Mute : ModernWpf.Controls.Symbol.Volume;
+            IconMute.Foreground = (System.Windows.Media.Brush)TryFindResource("TextPrimaryBrush") ?? System.Windows.Media.Brushes.White;
             // 静音时按钮背景变为浅红色
             BtnMute.Background = _muted
                 ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(0x33, 0xFF, 0x45, 0x3A))
@@ -461,6 +463,7 @@ namespace LibmpvIptvClient
             {
                 _muted = false;
                 IconMute.Symbol = ModernWpf.Controls.Symbol.Volume;
+                IconMute.Foreground = (System.Windows.Media.Brush)TryFindResource("TextPrimaryBrush") ?? System.Windows.Media.Brushes.White;
                 BtnMute.Background = null;
                 MuteChanged?.Invoke(_muted);
             }

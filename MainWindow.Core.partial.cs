@@ -48,7 +48,7 @@ namespace LibmpvIptvClient
             {
                 try
                 {
-                    var brush = (System.Windows.Media.Brush)FindResource("TextPrimaryBrush");
+                    var brush = (System.Windows.Media.Brush)TryFindResource("TextPrimaryBrush") ?? System.Windows.Media.Brushes.White;
                     if (IconMute != null) IconMute.Foreground = brush;
                 }
                 catch { }
@@ -191,7 +191,7 @@ private void InitializeSourceRatioIcons()
         {
             try
             {
-                var brush = (System.Windows.Media.Brush)FindResource("TextPrimaryBrush");
+                var brush = (System.Windows.Media.Brush)TryFindResource("TextPrimaryBrush") ?? System.Windows.Media.Brushes.White;
                 var sourceCanvas = BtnSourcesIcon.Content as System.Windows.Controls.Viewbox;
                 if (sourceCanvas?.Child is System.Windows.Controls.Canvas sourceCanvasChild)
                 {
@@ -223,7 +223,7 @@ private void InitializeSourceRatioIcons()
             try
             {
                 IconMute.Symbol = isMuted ? ModernWpf.Controls.Symbol.Mute : ModernWpf.Controls.Symbol.Volume;
-                IconMute.Foreground = (System.Windows.Media.Brush)FindResource("TextPrimaryBrush");
+                IconMute.Foreground = (System.Windows.Media.Brush)TryFindResource("TextPrimaryBrush") ?? System.Windows.Media.Brushes.White;
             }
             catch { }
         }
