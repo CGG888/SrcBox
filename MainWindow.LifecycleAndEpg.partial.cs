@@ -229,10 +229,7 @@ namespace LibmpvIptvClient
             if (sender is System.Windows.Controls.ComboBox cb && cb.SelectedItem is M3uSource src)
             {
                 if (cb.Name == nameof(CbM3uList))
-                    CbM3uListGroups.SelectedItem = src;
-                else if (cb.Name == nameof(CbM3uListGroups))
-                    CbM3uList.SelectedItem = src;
-                _shell.MenuActions.LoadM3u(src);
+                    _shell.MenuActions.LoadM3u(src);
             }
         }
 
@@ -272,6 +269,145 @@ namespace LibmpvIptvClient
             {
                 _shell.SelectedGroup = null;
             }
+        }
+
+        private string? _activeGroupForMove;
+
+        private void GroupSelectIndicator_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.Button btn && btn.Tag is string groupName)
+                {
+                    _activeGroupForMove = groupName;
+                    UpdateGroupSelectionIndicators();
+                }
+            }
+            catch { }
+        }
+
+        private void GroupHeader_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.TextBlock tb && tb.DataContext is LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow.ChannelGroupItem item)
+                {
+                    _activeGroupForMove = item.Name;
+                    UpdateGroupSelectionIndicators();
+                }
+            }
+            catch { }
+        }
+
+        private void GroupExpander_Expanded(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                if (sender is System.Windows.Controls.Expander expander && expander.DataContext is LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow.ChannelGroupItem item)
+                {
+                    _activeGroupForMove = item.Name;
+                    UpdateGroupSelectionIndicators();
+                }
+            }
+            catch { }
+        }
+
+        private void UpdateGroupSelectionIndicators()
+        {
+            try
+            {
+                if (ListGroups?.Items == null) return;
+                foreach (var item in ListGroups.Items)
+                {
+                    if (item is LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow.ChannelGroupItem group)
+                    {
+                        var container = ListGroups.ItemContainerGenerator.ContainerFromItem(item) as System.Windows.Controls.ContentPresenter;
+                        if (container != null)
+                        {
+                            var expander = FindVisualChild<System.Windows.Controls.Expander>(container);
+                            if (expander?.Header is System.Windows.Controls.DockPanel dock)
+                            {
+                                foreach (var child in dock.Children)
+                                {
+                                    if (child is System.Windows.Controls.Button btn && btn.Tag != null)
+                                    {
+                                        bool isSelected = btn.Tag.ToString() == _activeGroupForMove;
+                                        btn.Foreground = isSelected
+                                            ? (System.Windows.Media.Brush)FindResource("AccentBrush")
+                                            : (System.Windows.Media.Brush)FindResource("TextSecondaryBrush");
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private static T? FindVisualChild<T>(System.Windows.DependencyObject parent) where T : System.Windows.DependencyObject
+        {
+            for (int i = 0; i < System.Windows.Media.VisualTreeHelper.GetChildrenCount(parent); i++)
+            {
+                var child = System.Windows.Media.VisualTreeHelper.GetChild(parent, i);
+                if (child is T result) return result;
+                if (FindVisualChild<T>(child) is T found) return found;
+            }
+            return null;
+        }
+
+        private void BtnMoveGroupUp_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var groupName = _activeGroupForMove ?? _shell.ChannelGroups?.FirstOrDefault()?.Name;
+                if (!string.IsNullOrEmpty(groupName))
+                {
+                    MoveGroup(groupName, -1);
+                }
+            }
+            catch { }
+        }
+
+        private void BtnMoveGroupDown_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var groupName = _activeGroupForMove ?? _shell.ChannelGroups?.FirstOrDefault()?.Name;
+                if (!string.IsNullOrEmpty(groupName))
+                {
+                    MoveGroup(groupName, 1);
+                }
+            }
+            catch { }
+        }
+
+        private void MoveGroup(string groupName, int direction)
+        {
+            try
+            {
+                var order = AppSettings.Current.ChannelGroupOrder;
+                if (order == null) order = new List<string>();
+
+                int idx = order.IndexOf(groupName);
+                if (idx < 0)
+                {
+                    order = _shell.ChannelGroups?.Select(g => g.Name).ToList() ?? new List<string>();
+                    idx = order.IndexOf(groupName);
+                }
+                if (idx < 0) return;
+
+                int newIdx = idx + direction;
+                if (newIdx < 0 || newIdx >= order.Count) return;
+
+                order.RemoveAt(idx);
+                order.Insert(newIdx, groupName);
+                AppSettings.Current.ChannelGroupOrder = order;
+                AppSettings.Current.Save();
+
+                _shell.UpdateGroups();
+            }
+            catch { }
         }
 
         void OnPreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)

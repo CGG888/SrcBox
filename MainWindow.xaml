@@ -927,14 +927,17 @@
                             <!-- 搜索区 -->
                             <Grid Grid.Row="0" Margin="10,10,10,0">
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="*"/>
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
+                                    <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <ComboBox x:Name="CbM3uListGroups" Grid.Column="0" Height="30" Width="140" DisplayMemberPath="Name" IsEditable="True" SelectionChanged="CbM3uList_SelectionChanged" ToolTip="{DynamicResource Drawer_M3uList}" Background="{DynamicResource ChipButtonBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                <TextBox x:Name="TxtSearchGroups" Grid.Column="1" Height="30" Background="{DynamicResource ChipButtonBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0" VerticalContentAlignment="Center" Padding="6,0" TextChanged="TxtSearchGroups_TextChanged" />
-                                <Button x:Name="BtnClearSearchGroups" Grid.Column="2" Content="{DynamicResource Drawer_Clear}" Margin="8,0,0,0" Click="BtnClearSearchGroups_Click" Style="{StaticResource ItemActionChipButton}"/>
+                                <TextBox x:Name="TxtSearchGroups" Grid.Column="0" MinHeight="20" Background="{DynamicResource ChipButtonBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0" VerticalContentAlignment="Center" TextChanged="TxtSearchGroups_TextChanged" FontSize="10"/>
+                                <Button x:Name="BtnClearSearchGroups" Grid.Column="1" Content="{DynamicResource Drawer_Clear}" Margin="8,0,0,0" Click="BtnClearSearchGroups_Click" Style="{StaticResource ItemActionChipButton}"/>
+                                <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="8,0,0,0" VerticalAlignment="Center">
+                                    <Button Content="▲" Width="24" Height="24" Click="BtnMoveGroupUp_Click" Style="{StaticResource ItemActionChipButton}" ToolTip="上移" FontSize="10"/>
+                                    <Button Content="▼" Width="24" Height="24" Click="BtnMoveGroupDown_Click" Style="{StaticResource ItemActionChipButton}" ToolTip="下移" FontSize="10" Margin="2,0,0,0"/>
+                                </StackPanel>
                                 <Button x:Name="BtnChannelsRefreshGroups" Grid.Column="3" Content="{DynamicResource Drawer_Recordings_Refresh}" Margin="8,0,0,0" Click="BtnChannelsRefreshGroups_Click" Style="{StaticResource ItemActionChipButton}"/>
                             </Grid>
                             <!-- 列表区 -->
@@ -942,11 +945,14 @@
                             <ItemsControl x:Name="ListGroups" >
                                 <ItemsControl.ItemTemplate>
                                     <DataTemplate>
-                                        <Expander IsExpanded="False" Margin="0,4,0,0" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}">
+                                        <Expander IsExpanded="False" Margin="0,4,0,0" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" Expanded="GroupExpander_Expanded">
                                             <Expander.Header>
                                                 <DockPanel LastChildFill="True" Margin="6,4">
-                                                    <TextBlock Text="{Binding Name}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="13"/>
-                                                    <TextBlock Text="{Binding Count, StringFormat=(\{0\})}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" DockPanel.Dock="Right"/>
+                                                    <Button DockPanel.Dock="Left" Content="●" Width="18" Height="18" Click="GroupSelectIndicator_Click" Tag="{Binding Name}"
+                                                            Style="{StaticResource ItemActionChipButton}" FontSize="10" Padding="0" VerticalAlignment="Center" Margin="0,0,8,0"
+                                                            Foreground="{DynamicResource TextSecondaryBrush}"/>
+                                                    <TextBlock Text="{Binding Name}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="13" VerticalAlignment="Center" MouseLeftButtonDown="GroupHeader_Click"/>
+                                                    <TextBlock Text="{Binding Count, StringFormat=(\{0\})}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" VerticalAlignment="Center" Margin="8,0,0,0"/>
                                                 </DockPanel>
                                             </Expander.Header>
                                             <ItemsControl ItemsSource="{Binding Items}" AlternationCount="2">

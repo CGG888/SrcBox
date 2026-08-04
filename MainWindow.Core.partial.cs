@@ -46,7 +46,7 @@ namespace LibmpvIptvClient
             InitializeSourceRatioIcons();
             this.Loaded += (s, e) => UpdateIconBrushes();
             CbM3uList.ItemsSource = AppSettings.Current.SavedSources;
-            CbM3uListGroups.ItemsSource = AppSettings.Current.SavedSources;
+            //CbM3uListGroups.ItemsSource = AppSettings.Current.SavedSources;
             SyncM3uComboBoxSelection();
             DataContext = _shell;
             _overlayManager = new LibmpvIptvClient.Architecture.Presentation.View.MainWindowOverlayManager(this, _shell);
@@ -112,13 +112,13 @@ namespace LibmpvIptvClient
                 {
                     CbM3uList.SelectedIndex = -1;
                     CbM3uList.Text = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Drawer_M3uList", "选择M3U列表");
-                    CbM3uListGroups.SelectedIndex = -1;
-                    CbM3uListGroups.Text = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Drawer_M3uList", "选择M3U列表");
+                    //CbM3uListGroups.SelectedIndex = -1;
+                    //CbM3uListGroups.Text = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Drawer_M3uList", "选择M3U列表");
                     return;
                 }
                 var selected = sources.FirstOrDefault(s => s.IsSelected);
                 CbM3uList.SelectedItem = selected;
-                CbM3uListGroups.SelectedItem = selected;
+                //CbM3uListGroups.SelectedItem = selected;
             }
             catch { }
         }

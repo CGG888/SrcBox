@@ -124,6 +124,7 @@ namespace LibmpvIptvClient
         public List<ScheduledReminder> ScheduledReminders { get; set; } = new List<ScheduledReminder>();
         public bool ConfirmOnClose { get; set; } = true;
         public string CloseMode { get; set; } = "";
+        public List<string> ChannelGroupOrder { get; set; } = new List<string>();
 
         public static PlaybackSettings Load()
         {

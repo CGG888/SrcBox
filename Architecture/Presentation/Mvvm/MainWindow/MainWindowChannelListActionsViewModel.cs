@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using LibmpvIptvClient.Architecture.Presentation.Mvvm;
 using LibmpvIptvClient.Models;
+using LibmpvIptvClient.Services;
 
 namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow;
 
@@ -61,7 +62,16 @@ public sealed class MainWindowChannelListActionsViewModel : ViewModelBase
             for (int i = 0; i < items.Count; i++) items[i].DisplayIndex = i + 1;
             groups.Add(new ChannelGroupItem { Name = $"{kv.Key}", Items = items });
         }
-        groups.Sort((a, b) => string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase));
+        var savedOrder = AppSettings.Current.ChannelGroupOrder;
+        groups.Sort((a, b) =>
+        {
+            int indexA = savedOrder.IndexOf(a.Name);
+            int indexB = savedOrder.IndexOf(b.Name);
+            if (indexA >= 0 && indexB >= 0) return indexA.CompareTo(indexB);
+            if (indexA >= 0) return -1;
+            if (indexB >= 0) return 1;
+            return string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
+        });
         return groups;
     }
 
