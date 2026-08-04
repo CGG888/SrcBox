@@ -91,8 +91,8 @@ namespace LibmpvIptvClient.Services
             var endStr = end.ToString("yyyyMMddHHmmss");
 
             var appended = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<string,string>>();
-            appended.Add(new KeyValuePair<string, string>("ztestarttime", beginStr));
-            appended.Add(new KeyValuePair<string, string>("zteendtime", endStr));
+            appended.Add(new KeyValuePair<string, string>("starttime", beginStr));
+            appended.Add(new KeyValuePair<string, string>("endtime", endStr));
 
             var rebuilt = BuildQueryOrdered(items, appended);
             if (rebuilt.Length == 0) return path;
