@@ -11,6 +11,12 @@ namespace LibmpvIptvClient.Services
         {
             if (settings == null) return url;
             var cfg = settings.TimeOverride;
+
+            if (isTimeshift)
+            {
+                return RewriteUrlWithDuration(url, start, end, "start", "duration");
+            }
+
             if (cfg == null || !cfg.Enabled) return url;
             var mode = (cfg.Mode ?? "time_only").ToLowerInvariant();
             if (mode != "time_only" && mode != "replace_all") return url;
@@ -46,7 +52,7 @@ namespace LibmpvIptvClient.Services
                 var val = beginStr + "-" + endStr;
                 appended.Add(new System.Collections.Generic.KeyValuePair<string, string>(playseekKey, urlEncode ? Uri.EscapeDataString(val) : val));
             }
-            else if (layout == "start_duration" || layout == "auto" || isTimeshift)
+            else if (layout == "start_duration" || layout == "auto")
             {
                 appended.Add(new System.Collections.Generic.KeyValuePair<string, string>(startKey, urlEncode ? Uri.EscapeDataString(beginStr) : beginStr));
                 appended.Add(new System.Collections.Generic.KeyValuePair<string, string>(durationKey, urlEncode ? Uri.EscapeDataString(durStr) : durStr));
@@ -61,6 +67,33 @@ namespace LibmpvIptvClient.Services
             {
                 path = path;
             }
+
+            var rebuilt = BuildQueryOrdered(items, appended);
+            if (rebuilt.Length == 0) return path;
+            return path + "?" + rebuilt;
+        }
+
+        private static string RewriteUrlWithDuration(string url, DateTime start, DateTime end, string startKey, string durationKey)
+        {
+            string path = url;
+            string query = "";
+            int qIdx = url.IndexOf('?');
+            if (qIdx >= 0)
+            {
+                path = url.Substring(0, qIdx);
+                query = qIdx < url.Length - 1 ? url.Substring(qIdx + 1) : "";
+            }
+
+            var items = ParseQueryOrdered(query);
+            RemoveTimeParamsOrdered(items, startKey, "end", durationKey, "playseek");
+
+            var beginStr = start.ToString("yyyyMMddHHmmss");
+            var dur = end > start ? (long)(end - start).TotalSeconds : 0L;
+            var durStr = dur.ToString();
+
+            var appended = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<string,string>>();
+            appended.Add(new KeyValuePair<string, string>(startKey, beginStr));
+            appended.Add(new KeyValuePair<string, string>(durationKey, durStr));
 
             var rebuilt = BuildQueryOrdered(items, appended);
             if (rebuilt.Length == 0) return path;

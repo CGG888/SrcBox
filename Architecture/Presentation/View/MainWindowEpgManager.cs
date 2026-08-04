@@ -28,6 +28,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
         private DateTime _lastCenteredStart;
         private DateTime _lastCenteredEnd;
         private DateTime _lastLoggedEpgDate;
+        private string? _lastLoggedEpgChannel;
 
         public MainWindowEpgManager(MainWindow window, MainShellViewModel shell, MainWindowOverlayManager overlayManager, EpgService? epgService)
         {
@@ -274,7 +275,11 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
 
             _window.LblEpgChannel.Text = ch.Name;
             var programs = _epgService?.GetPrograms(ch.TvgId, ch.TvgName, ch.Name);
-            try { LibmpvIptvClient.Diagnostics.Logger.Debug($"[EPG] 渲染频道 {ch.Name} EPG 列表，数据条数={(programs?.Count ?? 0)}"); } catch { }
+            if (!string.Equals(_lastLoggedEpgChannel, ch.Name, StringComparison.OrdinalIgnoreCase))
+            {
+                _lastLoggedEpgChannel = ch.Name;
+                try { LibmpvIptvClient.Diagnostics.Logger.Debug($"[EPG] 渲染频道 {ch.Name} EPG 列表，数据条数={(programs?.Count ?? 0)}"); } catch { }
+            }
 
             var suppressAutoScroll = _suppressAutoScroll || !allowAutoScroll;
             var useFocusDate = focusTime.HasValue && (!suppressAutoScroll || forceScroll);
