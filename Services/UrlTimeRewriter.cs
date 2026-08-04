@@ -14,7 +14,7 @@ namespace LibmpvIptvClient.Services
 
             if (isTimeshift)
             {
-                return RewriteUrlWithDuration(url, start, end, "start", "duration");
+                return RewriteUrlWithDuration(url, start, end);
             }
 
             if (cfg == null || !cfg.Enabled) return url;
@@ -73,7 +73,7 @@ namespace LibmpvIptvClient.Services
             return path + "?" + rebuilt;
         }
 
-        private static string RewriteUrlWithDuration(string url, DateTime start, DateTime end, string startKey, string durationKey)
+        private static string RewriteUrlWithDuration(string url, DateTime start, DateTime end)
         {
             string path = url;
             string query = "";
@@ -85,15 +85,14 @@ namespace LibmpvIptvClient.Services
             }
 
             var items = ParseQueryOrdered(query);
-            RemoveTimeParamsOrdered(items, startKey, "end", durationKey, "playseek");
+            RemoveTimeParamsOrdered(items, "start", "end", "duration", "playseek");
 
             var beginStr = start.ToString("yyyyMMddHHmmss");
-            var dur = end > start ? (long)(end - start).TotalSeconds : 0L;
-            var durStr = dur.ToString();
+            var endStr = end.ToString("yyyyMMddHHmmss");
 
             var appended = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<string,string>>();
-            appended.Add(new KeyValuePair<string, string>(startKey, beginStr));
-            appended.Add(new KeyValuePair<string, string>(durationKey, durStr));
+            appended.Add(new KeyValuePair<string, string>("ztestarttime", beginStr));
+            appended.Add(new KeyValuePair<string, string>("zteendtime", endStr));
 
             var rebuilt = BuildQueryOrdered(items, appended);
             if (rebuilt.Length == 0) return path;
