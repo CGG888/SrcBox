@@ -19,7 +19,8 @@ public sealed record OverlayBindingContext(
     Action<double>? VolumeChanged,
     Action<bool>? MuteChanged,
     Action? SourceMenuRequested,
-    Action<bool>? TimeshiftToggled);
+    Action<bool>? TimeshiftToggled,
+    Func<System.Windows.Input.Key, bool>? ShortcutKeyPressed);
 
 public sealed record TopOverlayBindingContext(
     Action? Minimize,
@@ -45,7 +46,8 @@ public sealed record TopOverlayBindingContext(
     Func<bool>? IsTopmost,
     Func<bool>? IsEpgVisible,
     Func<bool>? IsDrawerVisible,
-    Func<bool>? IsMinimalMode);
+    Func<bool>? IsMinimalMode,
+    Func<System.Windows.Input.Key, bool>? ShortcutKeyPressed);
 
 public sealed class MainWindowOverlayBindingActionsViewModel : ViewModelBase
 {
@@ -66,6 +68,7 @@ public sealed class MainWindowOverlayBindingActionsViewModel : ViewModelBase
         if (context.MuteChanged != null) overlay.MuteChanged += context.MuteChanged;
         if (context.SourceMenuRequested != null) overlay.SourceMenuRequested += context.SourceMenuRequested;
         if (context.TimeshiftToggled != null) overlay.TimeshiftToggled += context.TimeshiftToggled;
+        if (context.ShortcutKeyPressed != null) overlay.ShortcutKeyPressed += context.ShortcutKeyPressed;
     }
 
     public void BindTopOverlay(TopOverlay topOverlay, TopOverlayBindingContext context)
@@ -93,5 +96,6 @@ public sealed class MainWindowOverlayBindingActionsViewModel : ViewModelBase
         topOverlay.IsEpgVisible = context.IsEpgVisible;
         topOverlay.IsDrawerVisible = context.IsDrawerVisible;
         topOverlay.IsMinimalMode = context.IsMinimalMode;
+        if (context.ShortcutKeyPressed != null) topOverlay.ShortcutKeyPressed += context.ShortcutKeyPressed;
     }
 }

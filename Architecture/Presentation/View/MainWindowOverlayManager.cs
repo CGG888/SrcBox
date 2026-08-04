@@ -226,6 +226,15 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 TimeshiftToggled: (on) => {
                     _shell.IsTimeshiftActive = on;
                     try { _overlayWpf?.SetTimeshift(on); } catch { }
+                },
+                ShortcutKeyPressed: (key) => {
+                    var action = _shell.ShortcutActions.ResolveAction(key);
+                    if (action != MainWindowShortcutAction.None)
+                    {
+                        _shell.ShortcutActions.ExecuteAction(action);
+                        return true;
+                    }
+                    return false;
                 }
             ));
         }

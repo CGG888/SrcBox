@@ -33,6 +33,7 @@ namespace LibmpvIptvClient
         public Func<bool>? IsEpgVisible;
         public Func<bool>? IsDrawerVisible;
         public Func<bool>? IsMinimalMode;
+        public event Func<System.Windows.Input.Key, bool>? ShortcutKeyPressed;
         private readonly MainWindowTopOverlayMenuViewModel _menuViewModel = new();
 
         public bool IsMenuOpen => BtnTitle.ContextMenu?.IsOpen == true;
@@ -40,12 +41,25 @@ namespace LibmpvIptvClient
         public TopOverlay()
         {
             InitializeComponent();
+            PreviewKeyDown += OnPreviewKeyDown;
             Loaded += (s, e) =>
             {
                 if (IsTopmost != null && BtnPin != null) BtnPin.IsChecked = IsTopmost();
                 var minimalOn = IsMinimalMode?.Invoke() ?? false;
                 SyncWindowVisual(false, WindowState.Normal, minimalOn);
             };
+        }
+
+        void OnPreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (ShortcutKeyPressed != null)
+            {
+                bool handled = ShortcutKeyPressed.Invoke(e.Key);
+                if (handled)
+                {
+                    e.Handled = true;
+                }
+            }
         }
 
         public void SetCloseVisible(bool visible)

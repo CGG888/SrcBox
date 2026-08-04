@@ -32,8 +32,21 @@ namespace LibmpvIptvClient
         {
             InitializeComponent();
             InitializeSourceRatioIcons();
+            PreviewKeyDown += OnPreviewKeyDown;
             try { CbTimeshift.Checked += (s, e) => TimeshiftToggled?.Invoke(true); } catch { }
             try { CbTimeshift.Unchecked += (s, e) => TimeshiftToggled?.Invoke(false); } catch { }
+        }
+
+        void OnPreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+        {
+            if (ShortcutKeyPressed != null)
+            {
+                bool handled = ShortcutKeyPressed.Invoke(e.Key);
+                if (handled)
+                {
+                    e.Handled = true;
+                }
+            }
         }
 
         private void InitializeSourceRatioIcons()
@@ -324,6 +337,7 @@ namespace LibmpvIptvClient
         public event Action<bool>? MuteChanged;
         public event Action? PreviewRequested;
         public event Action<double>? SpeedSelected;
+        public event Func<System.Windows.Input.Key, bool>? ShortcutKeyPressed;
         public void OpenSourceContextMenu(ContextMenu menu)
         {
             try

@@ -597,7 +597,16 @@ namespace LibmpvIptvClient
                                 IsTopmost: () => Topmost,
                                 IsEpgVisible: () => CbEpg.IsChecked == true,
                                 IsDrawerVisible: () => !_shell.IsDrawerCollapsed,
-                                IsMinimalMode: () => _shell.IsMinimalMode
+                                IsMinimalMode: () => _shell.IsMinimalMode,
+                                ShortcutKeyPressed: (key) => {
+                                    var action = _shell.ShortcutActions.ResolveAction(key);
+                                    if (action != MainWindowShortcutAction.None)
+                                    {
+                                        _shell.ShortcutActions.ExecuteAction(action);
+                                        return true;
+                                    }
+                                    return false;
+                                }
                             ));
                             try { _shell.WindowStateActions.TopOverlay.Height = 28; } catch { }
                             try { _shell.WindowStateActions.TopOverlay.Show(); } catch { }
