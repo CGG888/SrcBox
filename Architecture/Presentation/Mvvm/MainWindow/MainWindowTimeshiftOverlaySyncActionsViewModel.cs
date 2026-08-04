@@ -145,7 +145,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                     if (programs != null && programs.Count > 0)
                     {
                         var earliest = programs.Min(p => p.Start);
-                        if (earliest > min) min = earliest;
+                        if (earliest < min) min = earliest;
                     }
                 }
                 catch { }
