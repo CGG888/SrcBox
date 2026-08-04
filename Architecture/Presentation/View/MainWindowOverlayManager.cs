@@ -227,8 +227,8 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                     _shell.IsTimeshiftActive = on;
                     try { _overlayWpf?.SetTimeshift(on); } catch { }
                 },
-                ShortcutKeyPressed: (key) => {
-                    var action = _shell.ShortcutActions.ResolveAction(key);
+                ShortcutKeyPressed: (key, modifiers) => {
+                    var action = _shell.ShortcutActions.ResolveAction(key, modifiers);
                     if (action != MainWindowShortcutAction.None)
                     {
                         _shell.ShortcutActions.ExecuteAction(action);

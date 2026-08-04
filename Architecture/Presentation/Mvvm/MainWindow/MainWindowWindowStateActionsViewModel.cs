@@ -28,7 +28,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         public Action CreateTopOverlay { get; set; } = delegate { };
         public RoutedEventHandler OnLoaded { get; set; } = delegate { };
         public Action SyncEpgVisibility { get; set; } = delegate { };
-        public Func<Key, bool>? HandleShortcutKey { get; set; }
+        public Func<Key, ModifierKeys, bool>? HandleShortcutKey { get; set; }
     }
 
     public class MainWindowWindowStateActionsViewModel : ViewModelBase
@@ -124,7 +124,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 FullscreenWindow.ExitRequested += () => ToggleFullscreen(false, ctx);
                 FullscreenWindow.PlayPauseRequested += ctx.TogglePlayPause;
                 FullscreenWindow.SeekRequested += ctx.TryArrowSeek;
-                FullscreenWindow.ShortcutKeyPressed += (key) => ctx.HandleShortcutKey?.Invoke(key) ?? false;
+                FullscreenWindow.ShortcutKeyPressed += (key, modifiers) => ctx.HandleShortcutKey?.Invoke(key, modifiers) ?? false;
 
                 if (FullscreenPanel != null)
                 {

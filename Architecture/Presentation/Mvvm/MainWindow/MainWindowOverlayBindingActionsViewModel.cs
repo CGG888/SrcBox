@@ -20,7 +20,7 @@ public sealed record OverlayBindingContext(
     Action<bool>? MuteChanged,
     Action? SourceMenuRequested,
     Action<bool>? TimeshiftToggled,
-    Func<System.Windows.Input.Key, bool>? ShortcutKeyPressed);
+    Func<System.Windows.Input.Key, System.Windows.Input.ModifierKeys, bool>? ShortcutKeyPressed);
 
 public sealed record TopOverlayBindingContext(
     Action? Minimize,
@@ -47,7 +47,7 @@ public sealed record TopOverlayBindingContext(
     Func<bool>? IsEpgVisible,
     Func<bool>? IsDrawerVisible,
     Func<bool>? IsMinimalMode,
-    Func<System.Windows.Input.Key, bool>? ShortcutKeyPressed);
+    Func<System.Windows.Input.Key, System.Windows.Input.ModifierKeys, bool>? ShortcutKeyPressed);
 
 public sealed class MainWindowOverlayBindingActionsViewModel : ViewModelBase
 {

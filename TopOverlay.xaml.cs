@@ -33,7 +33,7 @@ namespace LibmpvIptvClient
         public Func<bool>? IsEpgVisible;
         public Func<bool>? IsDrawerVisible;
         public Func<bool>? IsMinimalMode;
-        public event Func<System.Windows.Input.Key, bool>? ShortcutKeyPressed;
+        public event Func<System.Windows.Input.Key, System.Windows.Input.ModifierKeys, bool>? ShortcutKeyPressed;
         private readonly MainWindowTopOverlayMenuViewModel _menuViewModel = new();
 
         public bool IsMenuOpen => BtnTitle.ContextMenu?.IsOpen == true;
@@ -54,7 +54,7 @@ namespace LibmpvIptvClient
         {
             if (ShortcutKeyPressed != null)
             {
-                bool handled = ShortcutKeyPressed.Invoke(e.Key);
+                bool handled = ShortcutKeyPressed.Invoke(e.Key, e.KeyboardDevice.Modifiers);
                 if (handled)
                 {
                     e.Handled = true;

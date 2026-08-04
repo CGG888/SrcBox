@@ -4,7 +4,7 @@ using LibmpvIptvClient.Models;
 
 namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow;
 
-public enum MainWindowShortcutAction
+    public enum MainWindowShortcutAction
 {
     None,
     TogglePlayPause,
@@ -19,7 +19,9 @@ public enum MainWindowShortcutAction
     ToggleFullscreen,
     ToggleDrawer,
     ToggleEpg,
-    OpenDebug
+    OpenDebug,
+    PreviousProgram,
+    NextProgram
 }
 
 public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
@@ -35,10 +37,20 @@ public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
         _shell = shell;
     }
 
-    public MainWindowShortcutAction ResolveAction(Key key)
+    public MainWindowShortcutAction ResolveAction(Key key, ModifierKeys modifiers)
     {
-        // 根据播放状态决定 Left/Right 的行为
         bool isTimeshiftMode = _shell.IsTimeshiftActive || _shell.CurrentPlayingProgram != null;
+        bool isCtrlPressed = (modifiers & ModifierKeys.Control) == ModifierKeys.Control;
+
+        if (isTimeshiftMode && isCtrlPressed)
+        {
+            return key switch
+            {
+                Key.Up => MainWindowShortcutAction.PreviousProgram,
+                Key.Down => MainWindowShortcutAction.NextProgram,
+                _ => MainWindowShortcutAction.None
+            };
+        }
 
         return key switch
         {
@@ -106,6 +118,12 @@ public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
             case MainWindowShortcutAction.NextSource:
                 _shell.MenuActions.SwitchSourceCycle(true);
                 break;
+            case MainWindowShortcutAction.PreviousProgram:
+                TrySwitchProgram(false);
+                break;
+            case MainWindowShortcutAction.NextProgram:
+                TrySwitchProgram(true);
+                break;
             case MainWindowShortcutAction.PreviousSource:
                 _shell.MenuActions.SwitchSourceCycle(false);
                 break;
@@ -166,6 +184,66 @@ public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
         _shell.ChannelPlaybackActions.PlayChannel(list[targetIdx], null);
     }
 
+    public void TrySwitchProgram(bool next)
+    {
+        if (_shell.CurrentChannel == null || _shell.PlayerEngine == null)
+        {
+            Diagnostics.Logger.Warn("[Program] CurrentChannel or PlayerEngine is null");
+            return;
+        }
+
+        if (!_shell.IsTimeshiftActive)
+        {
+            Diagnostics.Logger.Info("[Program] Not in timeshift mode, ignored");
+            return;
+        }
+
+        var currentProgram = _shell.CurrentPlayingProgram;
+        if (currentProgram == null)
+        {
+            Diagnostics.Logger.Warn("[Program] CurrentPlayingProgram is null");
+            return;
+        }
+
+        var programs = _shell.EpgService?.GetPrograms(_shell.CurrentChannel.TvgId, _shell.CurrentChannel.TvgName, _shell.CurrentChannel.Name);
+        if (programs == null || programs.Count == 0)
+        {
+            Diagnostics.Logger.Warn("[Program] No programs found");
+            return;
+        }
+
+        EpgProgram? targetProgram = null;
+        if (next)
+        {
+            var nextPrograms = programs.Where(p => p.Start >= currentProgram.End).OrderBy(p => p.Start);
+            targetProgram = nextPrograms.FirstOrDefault();
+            if (targetProgram != null)
+            {
+                Diagnostics.Logger.Info($"[Program] Switching to next: {targetProgram.Title} [{targetProgram.Start:HH:mm:ss}-{targetProgram.End:HH:mm:ss}]");
+            }
+        }
+        else
+        {
+            var prevPrograms = programs.Where(p => p.End <= currentProgram.Start).OrderByDescending(p => p.End);
+            targetProgram = prevPrograms.FirstOrDefault();
+            if (targetProgram != null)
+            {
+                Diagnostics.Logger.Info($"[Program] Switching to previous: {targetProgram.Title} [{targetProgram.Start:HH:mm:ss}-{targetProgram.End:HH:mm:ss}]");
+            }
+        }
+
+        if (targetProgram != null)
+        {
+            _shell.PlayerEngine.EnsureReadyForLoad();
+            _shell.ChannelPlaybackActions.PlayCatchupAt(_shell.CurrentChannel, targetProgram.Start);
+            _shell.TimeshiftStart = targetProgram.Start;
+        }
+        else
+        {
+            Diagnostics.Logger.Info($"[Program] No {(next ? "next" : "previous")} program found");
+        }
+    }
+
     void TrySeekTimeshift(MainShellViewModel shell, int seconds)
     {
         if (shell.CurrentChannel == null || shell.PlayerEngine == null)
@@ -176,50 +254,52 @@ public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
 
         var currentTime = shell.TimeshiftMin.AddSeconds(shell.TimeshiftCursorSec);
         var targetTime = currentTime.AddSeconds(seconds);
-        var minTime = shell.TimeshiftMin;
-        var maxTime = shell.TimeshiftMax;
 
-        Diagnostics.Logger.Info($"[Seek] Timeshift seek: seconds={seconds}, currentTime={currentTime:HH:mm:ss}, targetTime={targetTime:HH:mm:ss}, range=[{minTime:HH:mm:ss}, {maxTime:HH:mm:ss}]");
-
-        if (targetTime < minTime)
-        {
-            targetTime = minTime;
-        }
-        else if (targetTime > maxTime)
-        {
-            targetTime = maxTime;
-        }
+        Diagnostics.Logger.Info($"[Seek] Timeshift seek: seconds={seconds}, currentTime={currentTime:HH:mm:ss}, targetTime={targetTime:HH:mm:ss}");
 
         var currentProgram = shell.CurrentPlayingProgram;
-        bool withinCurrentProgram = currentProgram != null &&
-            targetTime >= currentProgram.Start &&
-            targetTime < currentProgram.End;
-
-        Diagnostics.Logger.Info($"[Seek] CurrentPlayingProgram={currentProgram?.Title ?? "null"} [{currentProgram?.Start:HH:mm:ss}-{currentProgram?.End:HH:mm:ss}], withinCurrentProgram={withinCurrentProgram}");
-
-        if (withinCurrentProgram)
-        {
-            Diagnostics.Logger.Info($"[Seek] Within current program, seeking directly");
-            shell.PlayerEngine.SeekRelative(seconds);
-            return;
-        }
-
-        var targetProgram = currentProgram;
-        if (shell.EpgService != null)
+        if (currentProgram == null && shell.EpgService != null)
         {
             var programs = shell.EpgService.GetPrograms(shell.CurrentChannel.TvgId, shell.CurrentChannel.TvgName, shell.CurrentChannel.Name);
             if (programs != null && programs.Count > 0)
             {
-                var prog = programs.FirstOrDefault(p => p.Start <= targetTime && p.End > targetTime);
-                if (prog != null)
-                {
-                    targetProgram = prog;
-                    Diagnostics.Logger.Info($"[Seek] Found target program: {prog.Title} [{prog.Start:HH:mm:ss}-{prog.End:HH:mm:ss}]");
-                }
+                currentProgram = programs.FirstOrDefault(p => p.Start <= currentTime && p.End > currentTime);
             }
         }
 
-        Diagnostics.Logger.Info($"[Seek] Reloading URL for target program: {targetProgram?.Title ?? "null"}");
-        shell.ChannelPlaybackActions.PlayCatchupAt(shell.CurrentChannel, targetTime);
+        Diagnostics.Logger.Info($"[Seek] CurrentPlayingProgram={currentProgram?.Title ?? "null"} [{currentProgram?.Start:HH:mm:ss}-{currentProgram?.End:HH:mm:ss}]");
+
+        if (currentProgram == null)
+        {
+            Diagnostics.Logger.Warn("[Seek] currentProgram is null, falling back to SeekRelative");
+            shell.PlayerEngine.SeekRelative(seconds);
+            return;
+        }
+
+        bool targetBeyondEnd = seconds > 0 && targetTime >= currentProgram.End;
+        bool targetBeyondStart = seconds < 0 && targetTime < currentProgram.Start;
+
+        if (targetBeyondEnd)
+        {
+            Diagnostics.Logger.Info($"[Seek] Beyond program end, clamping to program boundary");
+            var clampSec = (currentProgram.End - shell.TimeshiftMin).TotalSeconds - 1;
+            shell.PlayerEngine.SeekRelative(clampSec - shell.TimeshiftCursorSec);
+            shell.TimeshiftCursorSec = clampSec;
+            return;
+        }
+
+        if (targetBeyondStart)
+        {
+            Diagnostics.Logger.Info($"[Seek] Beyond program start, clamping to program boundary");
+            var clampSec = (currentProgram.Start - shell.TimeshiftMin).TotalSeconds;
+            shell.PlayerEngine.SeekRelative(clampSec - shell.TimeshiftCursorSec);
+            shell.TimeshiftCursorSec = clampSec;
+            return;
+        }
+
+        Diagnostics.Logger.Info($"[Seek] Within bounds, seeking directly");
+        shell.PlayerEngine.SeekRelative(seconds);
+        shell.TimeshiftCursorSec = Math.Max(0, shell.TimeshiftCursorSec + seconds);
+        Diagnostics.Logger.Info($"[Seek] After seek, TimeshiftCursorSec updated to {shell.TimeshiftCursorSec}");
     }
 }

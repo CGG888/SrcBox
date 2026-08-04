@@ -41,7 +41,7 @@ namespace LibmpvIptvClient
         {
             if (ShortcutKeyPressed != null)
             {
-                bool handled = ShortcutKeyPressed.Invoke(e.Key);
+                bool handled = ShortcutKeyPressed.Invoke(e.Key, e.KeyboardDevice.Modifiers);
                 if (handled)
                 {
                     e.Handled = true;
@@ -348,7 +348,7 @@ namespace LibmpvIptvClient
         public event Action<bool>? MuteChanged;
         public event Action? PreviewRequested;
         public event Action<double>? SpeedSelected;
-        public event Func<System.Windows.Input.Key, bool>? ShortcutKeyPressed;
+        public event Func<System.Windows.Input.Key, System.Windows.Input.ModifierKeys, bool>? ShortcutKeyPressed;
         public void OpenSourceContextMenu(ContextMenu menu)
         {
             try

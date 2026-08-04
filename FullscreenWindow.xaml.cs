@@ -13,7 +13,7 @@ namespace LibmpvIptvClient
         public event System.Action? ExitRequested;
         public event System.Action? PlayPauseRequested;
         public event System.Action<int>? SeekRequested; // -1 left, +1 right
-        public event System.Func<Key, bool>? ShortcutKeyPressed;
+        public event System.Func<Key, ModifierKeys, bool>? ShortcutKeyPressed;
         public FullscreenWindow()
         {
             InitializeComponent();
@@ -45,7 +45,7 @@ namespace LibmpvIptvClient
         void OnKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
             // 所有快捷键都通过 ShortcutKeyPressed 处理
-            bool handledByShortcut = ShortcutKeyPressed?.Invoke(e.Key) ?? false;
+            bool handledByShortcut = ShortcutKeyPressed?.Invoke(e.Key, e.KeyboardDevice.Modifiers) ?? false;
             if (handledByShortcut)
             {
                 e.Handled = true;

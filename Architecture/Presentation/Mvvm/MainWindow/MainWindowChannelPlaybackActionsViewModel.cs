@@ -376,10 +376,15 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 url = ProcessUrlPlaceholders(url, start, end, AppSettings.Current.Timeshift.AppendEpgTime);
                 try { url = LibmpvIptvClient.Services.UrlTimeRewriter.RewriteIfEnabled(AppSettings.Current, url, start, end, _shell.IsTimeshiftActive); } catch { }
                 
-                LibmpvIptvClient.Diagnostics.Logger.Info($"[Timeshift] Start Timeshift - Channel: {ch.Name}, Time: {start:yyyy-MM-dd HH:mm:ss}, URL: {url}");
+                LibmpvIptvClient.Diagnostics.Logger.Info($"[Timeshift] Start Timeshift - Channel: {ch.Name}, Time: {start:yyyy-MM-dd HH:mm:ss}, targetProgram={targetProgram?.Title ?? "null"}");
                 _shell.PlayerEngine.Play(url);
                 _shell.CurrentUrl = url;
+                LibmpvIptvClient.Diagnostics.Logger.Info($"[Timeshift] After Play - CurrentPlayingProgram={_shell.CurrentPlayingProgram?.Title ?? "null"}");
                 _shell.CurrentPlayingProgram = targetProgram;
+                LibmpvIptvClient.Diagnostics.Logger.Info($"[Timeshift] After assignment - CurrentPlayingProgram={_shell.CurrentPlayingProgram?.Title ?? "null"}");
+                var cursorSec = (start - _shell.TimeshiftMin).TotalSeconds;
+                _shell.TimeshiftCursorSec = Math.Max(0, cursorSec);
+                LibmpvIptvClient.Diagnostics.Logger.Info($"[Timeshift] TimeshiftCursorSec updated to {_shell.TimeshiftCursorSec}");
                 RequestVideoShow?.Invoke();
 
                 _shell.DispatchPlaybackEvent(new StartTimeshiftPlayback(

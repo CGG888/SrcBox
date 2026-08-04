@@ -204,7 +204,7 @@ namespace LibmpvIptvClient
                     e.Handled = true;
                     return;
                 }
-                var action = _shell.ShortcutActions.ResolveAction(e.Key);
+                var action = _shell.ShortcutActions.ResolveAction(e.Key, e.KeyboardDevice.Modifiers);
                 if (action != MainWindowShortcutAction.None)
                 {
                     _shell.ShortcutActions.ExecuteAction(action);
@@ -606,8 +606,8 @@ namespace LibmpvIptvClient
                                 IsEpgVisible: () => CbEpg.IsChecked == true,
                                 IsDrawerVisible: () => !_shell.IsDrawerCollapsed,
                                 IsMinimalMode: () => _shell.IsMinimalMode,
-                                ShortcutKeyPressed: (key) => {
-                                    var action = _shell.ShortcutActions.ResolveAction(key);
+                                ShortcutKeyPressed: (key, modifiers) => {
+                                    var action = _shell.ShortcutActions.ResolveAction(key, modifiers);
                                     if (action != MainWindowShortcutAction.None)
                                     {
                                         _shell.ShortcutActions.ExecuteAction(action);

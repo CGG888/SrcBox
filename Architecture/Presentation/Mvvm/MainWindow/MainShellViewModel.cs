@@ -224,6 +224,17 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 
             if (IsTimeshiftActive)
             {
+                bool eofReached = PlayerEngine?.IsEofReached() == true;
+                if (eofReached && !_programSwitchInProgress)
+                {
+                    _programSwitchInProgress = true;
+                    ShortcutActions.TrySwitchProgram(true);
+                }
+                else if (!eofReached)
+                {
+                    _programSwitchInProgress = false;
+                }
+
                 TimeshiftMax = DateTime.Now;
                 var posMpv = timePos ?? 0;
                 var t = TimeshiftStart.AddSeconds(posMpv);
@@ -270,6 +281,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         private bool _suppressTimeshiftAutoReturn;
         private EpgProgram? _timeshiftReturnProgram;
         private PlaybackState _playbackState = PlaybackState.Default;
+        private bool _programSwitchInProgress;
         public bool IsTimeshiftActive
         {
             get => _isTimeshiftActive;
