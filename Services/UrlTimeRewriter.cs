@@ -46,7 +46,7 @@ namespace LibmpvIptvClient.Services
                 var val = beginStr + "-" + endStr;
                 appended.Add(new System.Collections.Generic.KeyValuePair<string, string>(playseekKey, urlEncode ? Uri.EscapeDataString(val) : val));
             }
-            else if (layout == "start_duration" || (layout == "auto" && isTimeshift))
+            else if (layout == "start_duration" || layout == "auto" || isTimeshift)
             {
                 appended.Add(new System.Collections.Generic.KeyValuePair<string, string>(startKey, urlEncode ? Uri.EscapeDataString(beginStr) : beginStr));
                 appended.Add(new System.Collections.Generic.KeyValuePair<string, string>(durationKey, urlEncode ? Uri.EscapeDataString(durStr) : durStr));
