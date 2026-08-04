@@ -168,15 +168,15 @@ public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
 
     void TrySeekTimeshift(MainShellViewModel shell, int seconds)
     {
-        if (shell.CurrentChannel == null) return;
-        var min = shell.TimeshiftMin;
-        var max = shell.TimeshiftMax;
-        var currentSec = shell.TimeshiftCursorSec;
-        var totalSec = (max - min).TotalSeconds;
+        if (shell.PlayerEngine == null)
+        {
+            Diagnostics.Logger.Warn("[Seek] PlayerEngine is null");
+            return;
+        }
 
-        var newSec = Math.Max(0, Math.Min(totalSec, currentSec + seconds));
-        var targetTime = min.AddSeconds(newSec);
+        var currentPos = shell.PlayerEngine.GetTimePos() ?? 0;
+        Diagnostics.Logger.Info($"[Seek] Timeshift seek: currentPos={currentPos}, seconds={seconds}");
 
-        shell.ChannelPlaybackActions.PlayCatchupAt(shell.CurrentChannel, targetTime);
+        shell.PlayerEngine.SeekRelative(seconds);
     }
 }
