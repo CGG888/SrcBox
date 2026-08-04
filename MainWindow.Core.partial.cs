@@ -223,6 +223,7 @@ private void InitializeSourceRatioIcons()
             try
             {
                 IconMute.Symbol = isMuted ? ModernWpf.Controls.Symbol.Mute : ModernWpf.Controls.Symbol.Volume;
+                IconMute.Foreground = (System.Windows.Media.Brush)FindResource("TextPrimaryBrush");
             }
             catch { }
         }

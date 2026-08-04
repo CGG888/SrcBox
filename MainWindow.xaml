@@ -1360,7 +1360,7 @@
                         </Grid.ColumnDefinitions>
                         <Button x:Name="BtnMute" Grid.Column="0" Style="{StaticResource BarButton}" ToolTip="{DynamicResource Overlay_Mute}" Click="BtnMute_Click" Margin="0,0,6,0">
                             <Viewbox Width="12" Height="12">
-                                <ui:SymbolIcon x:Name="IconMute" Symbol="Volume" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                <ui:SymbolIcon x:Name="IconMute" Symbol="Volume"/>
                             </Viewbox>
                         </Button>
                         <controls:VolumeSlider Grid.Column="1" x:Name="SliderVolume"
