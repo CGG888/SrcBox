@@ -22,6 +22,9 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             MediaInfo = new MainWindowMediaInfoViewModel(this);
         }
 
+        public event Action? RequestClose;
+        public void CloseWindow() => RequestClose?.Invoke();
+
         // Sub-ViewModels
         public MainWindowMenuActionsViewModel MenuActions { get; }
         public MainWindowChannelPlaybackActionsViewModel ChannelPlaybackActions { get; }

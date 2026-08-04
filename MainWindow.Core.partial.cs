@@ -60,6 +60,7 @@ namespace LibmpvIptvClient
             _fullscreenInputManager = new LibmpvIptvClient.Architecture.Presentation.View.MainWindowFullscreenInputManager(this);
             _windowedInputManager = new LibmpvIptvClient.Architecture.Presentation.View.MainWindowWindowedInputManager(this);
             _shell.PropertyChanged += OnShellPropertyChanged;
+            _shell.RequestClose += () => Close();
             Loaded += OnLoaded;
             Closed += OnClosed;
             PreviewKeyDown += OnPreviewKeyDown;

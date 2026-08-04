@@ -18,6 +18,24 @@ namespace LibmpvIptvClient
         {
             try
             {
+                var closeMode = AppSettings.Current.CloseMode;
+                if (!string.IsNullOrEmpty(closeMode))
+                {
+                    if (closeMode == "exit")
+                    {
+                        try { _mpv?.Dispose(); } catch { }
+                        System.Windows.Application.Current.Shutdown();
+                        return;
+                    }
+                    else if (closeMode == "minimize_to_tray")
+                    {
+                        e.Cancel = true;
+                        try { if (_shell.WindowStateActions.IsFullscreen) ToggleFullscreen(false); } catch { }
+                        Hide();
+                        return;
+                    }
+                }
+
                 if (AppSettings.Current.ConfirmOnClose)
                 {
                     e.Cancel = true;
@@ -27,15 +45,25 @@ namespace LibmpvIptvClient
                     var noLine = LibmpvIptvClient.Helpers.Localizer.S("CloseConfirm_LineNo", "否：最小化到系统托盘");
                     var msg = label + Environment.NewLine + Environment.NewLine + yesLine + Environment.NewLine + noLine;
                     var owner = (_shell.WindowStateActions.IsFullscreen && _shell.WindowStateActions.FullscreenWindow != null) ? (Window)_shell.WindowStateActions.FullscreenWindow : this;
-                    var r = ModernMessageBox.Show(owner, msg, title, MessageBoxButton.YesNo);
+                    var (r, remember) = ModernMessageBox.ShowWithRemember(owner, msg, title, MessageBoxButton.YesNo);
                     if (r.HasValue && r.Value == true)
                     {
+                        if (remember)
+                        {
+                            AppSettings.Current.CloseMode = "exit";
+                            AppSettings.Current.Save();
+                        }
                         try { _mpv?.Dispose(); } catch { }
                         System.Windows.Application.Current.Shutdown();
                         return;
                     }
                     else if (r.HasValue && r.Value == false)
                     {
+                        if (remember)
+                        {
+                            AppSettings.Current.CloseMode = "minimize_to_tray";
+                            AppSettings.Current.Save();
+                        }
                         try { if (_shell.WindowStateActions.IsFullscreen) ToggleFullscreen(false); } catch { }
                         Hide();
                         return;

@@ -112,7 +112,8 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 toggleTopmost: (on) => { _window.Topmost = on; },
                 openDebug: null,
                 showShortcuts: null,
-                isTopmostChecked: _window.Topmost
+                isTopmostChecked: _window.Topmost,
+                clearCloseMode: null
             );
         }
 

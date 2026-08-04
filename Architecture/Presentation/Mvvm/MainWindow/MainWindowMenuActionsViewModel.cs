@@ -268,7 +268,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 
         public void ExitApp()
         {
-            System.Windows.Application.Current.Shutdown();
+            _shell.CloseWindow();
         }
 
         public void ToggleFcc(bool on)

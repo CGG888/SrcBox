@@ -39,7 +39,8 @@ namespace LibmpvIptvClient.Helpers
             Action<bool>? toggleTopmost = null,
             Action? openDebug = null,
             Action? showShortcuts = null,
-            bool isTopmostChecked = false)
+            bool isTopmostChecked = false,
+            Action? clearCloseMode = null)
         {
             var cm = new ContextMenu();
 
@@ -362,6 +363,19 @@ namespace LibmpvIptvClient.Helpers
             var miShortcuts = new MenuItem { Header = Localizer.S("Menu_Shortcuts", "快捷键说明"), InputGestureText = "Ctrl+/" };
             miShortcuts.Click += (s, args) => showShortcuts?.Invoke();
             miApp.Items.Add(miShortcuts);
+
+            // 清除关闭记忆 - 仅在已记住时显示（放在快捷键说明下面）
+            if (!string.IsNullOrEmpty(AppSettings.Current.CloseMode))
+            {
+                var miClearCloseMode = new MenuItem { Header = Localizer.S("Menu_ClearCloseMode", "清除关闭记忆") };
+                miClearCloseMode.Click += (s, args) =>
+                {
+                    AppSettings.Current.CloseMode = "";
+                    AppSettings.Current.Save();
+                    clearCloseMode?.Invoke();
+                };
+                miApp.Items.Add(miClearCloseMode);
+            }
 
             cm.Items.Add(miApp);
 

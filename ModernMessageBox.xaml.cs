@@ -8,10 +8,11 @@ namespace LibmpvIptvClient
     public partial class ModernMessageBox : Window
     {
         public bool Result { get; private set; } = false;
+        public bool Remember { get; private set; } = false;
         enum Choice { Dismiss, Yes, No, Ok }
         private Choice _choice = Choice.Dismiss;
 
-        public ModernMessageBox(string title, string message, MessageBoxButton buttons = MessageBoxButton.OK, string? linkUrl = null)
+        public ModernMessageBox(string title, string message, MessageBoxButton buttons = MessageBoxButton.OK, string? linkUrl = null, bool showRemember = false)
         {
             InitializeComponent();
             TxtTitle.Text = title;
@@ -37,6 +38,12 @@ namespace LibmpvIptvClient
                         }
                     }
                 }
+            }
+
+            if (showRemember)
+            {
+                ChkRemember.Visibility = Visibility.Visible;
+                TxtRemember.Text = LibmpvIptvClient.Helpers.Localizer.S("CloseConfirm_Remember", "记住此次选择");
             }
 
             if (buttons == MessageBoxButton.YesNo)
@@ -76,6 +83,7 @@ namespace LibmpvIptvClient
 
         private void BtnYes_Click(object sender, RoutedEventArgs e)
         {
+            Remember = ChkRemember.IsChecked == true;
             Result = true;
             _choice = Choice.Yes;
             DialogResult = true;
@@ -84,6 +92,7 @@ namespace LibmpvIptvClient
 
         private void BtnNo_Click(object sender, RoutedEventArgs e)
         {
+            Remember = ChkRemember.IsChecked == true;
             Result = false;
             _choice = Choice.No;
             DialogResult = false;
@@ -107,9 +116,9 @@ namespace LibmpvIptvClient
             catch { }
         }
 
-        public static bool? Show(Window? owner, string message, string title, MessageBoxButton buttons = MessageBoxButton.OK, string? linkUrl = null)
+        public static bool? Show(Window? owner, string message, string title, MessageBoxButton buttons = MessageBoxButton.OK, string? linkUrl = null, bool showRemember = false)
         {
-            var dlg = new ModernMessageBox(title, message, buttons, linkUrl);
+            var dlg = new ModernMessageBox(title, message, buttons, linkUrl, showRemember);
             if (owner != null)
             {
                 dlg.Owner = owner;
@@ -129,6 +138,30 @@ namespace LibmpvIptvClient
                 Choice.No => false,
                 _ => (bool?)null
             };
+        }
+
+        public static (bool? Result, bool Remember) ShowWithRemember(Window? owner, string message, string title, MessageBoxButton buttons = MessageBoxButton.OK, string? linkUrl = null)
+        {
+            var dlg = new ModernMessageBox(title, message, buttons, linkUrl, true);
+            if (owner != null)
+            {
+                dlg.Owner = owner;
+                dlg.WindowStartupLocation = WindowStartupLocation.CenterOwner;
+                if (owner.Topmost) dlg.Topmost = true;
+            }
+            else
+            {
+                dlg.WindowStartupLocation = WindowStartupLocation.CenterScreen;
+                dlg.Topmost = true;
+            }
+            dlg.ShowDialog();
+            var result = dlg._choice switch
+            {
+                Choice.Yes => true,
+                Choice.No => false,
+                _ => (bool?)null
+            };
+            return (result, dlg.Remember);
         }
 
         public static bool? ShowCustom(Window? owner, string message, string title, string yesLabel, string noLabel, bool enableYes, bool enableNo, string? linkUrl = null)

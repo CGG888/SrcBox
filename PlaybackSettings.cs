@@ -123,6 +123,7 @@ namespace LibmpvIptvClient
         public bool AutoLoadLastSource { get; set; } = true;
         public List<ScheduledReminder> ScheduledReminders { get; set; } = new List<ScheduledReminder>();
         public bool ConfirmOnClose { get; set; } = true;
+        public string CloseMode { get; set; } = "";
 
         public static PlaybackSettings Load()
         {

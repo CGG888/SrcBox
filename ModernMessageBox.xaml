@@ -36,13 +36,18 @@
             <!-- Content -->
             <StackPanel Grid.Row="1" Margin="24,16">
                 <TextBlock x:Name="TxtMessage" Text="Message Content" Foreground="{DynamicResource TextPrimaryBrush}" TextWrapping="Wrap" FontSize="15" Margin="0,0,0,12" LineHeight="22"/>
-                
+
                 <!-- Link for About dialog -->
                 <TextBlock x:Name="TxtLink" Visibility="Collapsed" Margin="0,8,0,0">
                     <Hyperlink NavigateUri="https://github.com/your-repo" RequestNavigate="Hyperlink_RequestNavigate" Foreground="#FFC107">
                         <TextBlock Text="GitHub Repository"/>
                     </Hyperlink>
                 </TextBlock>
+
+                <!-- Remember checkbox for close confirmation -->
+                <CheckBox x:Name="ChkRemember" Visibility="Collapsed" Margin="0,8,0,0">
+                    <TextBlock x:Name="TxtRemember" Text="记住此次选择" Foreground="{DynamicResource TextSecondaryBrush}"/>
+                </CheckBox>
             </StackPanel>
 
             <!-- Buttons -->
