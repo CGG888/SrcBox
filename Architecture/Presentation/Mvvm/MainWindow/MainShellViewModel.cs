@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Windows;
 using ModernWpf.Controls;
 using LibmpvIptvClient.Architecture.Application.Player;
@@ -224,21 +225,10 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 
             if (IsTimeshiftActive)
             {
-                bool eofReached = PlayerEngine?.IsEofReached() == true;
-                if (eofReached && !_programSwitchInProgress)
-                {
-                    _programSwitchInProgress = true;
-                    ShortcutActions.TrySwitchProgram(true);
-                }
-                else if (!eofReached)
-                {
-                    _programSwitchInProgress = false;
-                }
-
                 TimeshiftMax = DateTime.Now;
                 var posMpv = timePos ?? 0;
-                var t = TimeshiftStart.AddSeconds(posMpv);
-                var current = (t - TimeshiftMin).TotalSeconds;
+                var currentPlaybackTime = TimeshiftStart.AddSeconds(posMpv);
+                var current = (currentPlaybackTime - TimeshiftMin).TotalSeconds;
                 var total = (TimeshiftMax - TimeshiftMin).TotalSeconds;
                 
                 if (!IsSeeking)
@@ -253,6 +243,16 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                         DurationText = TimeshiftMax.ToString("yyyy-MM-dd HH:mm:ss");
                         _overlayRangeSync?.Invoke(TimeshiftMin, TimeshiftMax);
                     } catch { }
+                }
+
+                if (CurrentChannel != null && EpgService != null)
+                {
+                    var programs = EpgService.GetPrograms(CurrentChannel.TvgId, CurrentChannel.TvgName, CurrentChannel.Name);
+                    var programAtTime = programs?.FirstOrDefault(p => currentPlaybackTime >= p.Start && currentPlaybackTime < p.End);
+                    if (programAtTime != null && programAtTime != CurrentPlayingProgram)
+                    {
+                        CurrentPlayingProgram = programAtTime;
+                    }
                 }
             }
             else
@@ -281,7 +281,6 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         private bool _suppressTimeshiftAutoReturn;
         private EpgProgram? _timeshiftReturnProgram;
         private PlaybackState _playbackState = PlaybackState.Default;
-        private bool _programSwitchInProgress;
         public bool IsTimeshiftActive
         {
             get => _isTimeshiftActive;

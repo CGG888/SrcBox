@@ -14,7 +14,6 @@ namespace LibmpvIptvClient.Architecture.Platform.Player
         public void Play(string url)
         {
             _mpv.LoadFile(url);
-            System.Threading.Thread.Sleep(100);
         }
 
         public void Stop()
@@ -116,12 +115,12 @@ namespace LibmpvIptvClient.Architecture.Platform.Player
         {
             try
             {
+                _mpv.Pause(false);
                 var eof = _mpv.GetString("eof-reached");
                 if (string.Equals(eof ?? "", "yes", System.StringComparison.OrdinalIgnoreCase))
                 {
                     _mpv.Stop();
-                    System.Threading.Thread.Sleep(200);
-                    _mpv.Pause(false);
+                    System.Threading.Thread.Sleep(80);
                 }
             }
             catch { }

@@ -198,6 +198,9 @@ public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
             return;
         }
 
+        Diagnostics.Logger.Info("[Program] Switching programs in timeshift mode is disabled - program follows playback position automatically");
+        return;
+
         var currentProgram = _shell.CurrentPlayingProgram;
         if (currentProgram == null)
         {
