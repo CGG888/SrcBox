@@ -183,6 +183,7 @@
   <sys:String x:Key="CloseConfirm_Label">选择操作：</sys:String>
   <sys:String x:Key="CloseConfirm_LineYes">是：退出软件</sys:String>
   <sys:String x:Key="CloseConfirm_LineNo">否：最小化到系统托盘</sys:String>
+  <sys:String x:Key="CloseConfirm_Remember">记住此次选择</sys:String>
   <sys:String x:Key="Menu_ManageM3u">管理频道数据</sys:String>
 
   <!-- Drawer -->
@@ -479,4 +480,108 @@
   <sys:String x:Key="Log_Record_Stop">停止录制</sys:String>
   <sys:String x:Key="Log_Update_Paused">下载已暂停</sys:String>
   <sys:String x:Key="Log_Update_Resumed">下载继续</sys:String>
+
+  <!-- Shortcuts Window -->
+  <sys:String x:Key="Shortcuts_Title">快捷键</sys:String>
+  <sys:String x:Key="Shortcuts_WindowTitle">快捷键说明</sys:String>
+  <sys:String x:Key="Shortcuts_Playback">播放控制</sys:String>
+  <sys:String x:Key="Shortcuts_PlayPause">播放/暂停</sys:String>
+  <sys:String x:Key="Shortcuts_Stop">停止</sys:String>
+  <sys:String x:Key="Shortcuts_SeekTimeshift">快退/快进（时移模式）&#x0a;切换上一/下一源（正常模式）</sys:String>
+  <sys:String x:Key="Shortcuts_PrevNextChannel">上一频道 / 下一频道</sys:String>
+  <sys:String x:Key="Shortcuts_Interface">界面控制</sys:String>
+  <sys:String x:Key="Shortcuts_Fullscreen">全屏切换</sys:String>
+  <sys:String x:Key="Shortcuts_ChannelList">频道列表</sys:String>
+  <sys:String x:Key="Shortcuts_MinimalMode">精简模式</sys:String>
+  <sys:String x:Key="Shortcuts_EpgToggle">EPG开关</sys:String>
+  <sys:String x:Key="Shortcuts_DoubleClickVideo">双击视频区</sys:String>
+  <sys:String x:Key="Shortcuts_FileChannel">文件/频道</sys:String>
+  <sys:String x:Key="Shortcuts_OpenFile">打开文件</sys:String>
+  <sys:String x:Key="Shortcuts_OpenUrl">打开链接</sys:String>
+  <sys:String x:Key="Shortcuts_AddFile">添加文件</sys:String>
+  <sys:String x:Key="Shortcuts_AddUrl">添加链接</sys:String>
+  <sys:String x:Key="Shortcuts_ManageChannels">管理频道数据</sys:String>
+  <sys:String x:Key="Shortcuts_RefreshChannels">刷新频道</sys:String>
+  <sys:String x:Key="Shortcuts_Volume">音量</sys:String>
+  <sys:String x:Key="Shortcuts_Mute">静音</sys:String>
+  <sys:String x:Key="Shortcuts_VolumeUp">音量+</sys:String>
+  <sys:String x:Key="Shortcuts_VolumeDown">音量-</sys:String>
+  <sys:String x:Key="Shortcuts_MouseWheel">滚轮</sys:String>
+  <sys:String x:Key="Shortcuts_VolumeAdjust">音量调节</sys:String>
+  <sys:String x:Key="Shortcuts_Other">其他</sys:String>
+  <sys:String x:Key="Shortcuts_DebugWindow">调试窗口</sys:String>
+  <sys:String x:Key="Shortcuts_Settings">设置</sys:String>
+  <sys:String x:Key="Shortcuts_About">关于</sys:String>
+  <sys:String x:Key="Shortcuts_ShortcutsHelp">快捷键说明</sys:String>
+  <sys:String x:Key="Shortcuts_ExitMinimal">退出精简模式</sys:String>
+  <sys:String x:Key="Shortcuts_Exit">退出</sys:String>
+  <sys:String x:Key="Shortcuts_Record">开始/停止录制</sys:String>
+  <sys:String x:Key="Shortcuts_TimeshiftMode">时移模式（附加）</sys:String>
+  <sys:String x:Key="Shortcuts_PrevNextProgram">上一节目 / 下一节目</sys:String>
+
+  <!-- Decoder Options -->
+  <sys:String x:Key="Decoder_Auto">自动</sys:String>
+  <sys:String x:Key="Decoder_D3D11VA">D3D11VA (硬件)</sys:String>
+  <sys:String x:Key="Decoder_DXVA2">DXVA2 (硬件)</sys:String>
+  <sys:String x:Key="Decoder_NVDEC">NVDEC (硬件)</sys:String>
+  <sys:String x:Key="Decoder_Software">软件解码</sys:String>
+
+  <!-- Settings Items -->
+  <sys:String x:Key="UI_NetworkPlayback">网络播放</sys:String>
+  <sys:String x:Key="UI_RtspSettings">RTSP 设置</sys:String>
+  <sys:String x:Key="UI_Issues">Issues</sys:String>
+  <sys:String x:Key="UI_RtspTransport_TCP">TCP</sys:String>
+  <sys:String x:Key="UI_RtspTransport_UDP">UDP</sys:String>
+  <sys:String x:Key="UI_RtspTransport_HTTP">HTTP Tunnel</sys:String>
+
+  <!-- Settings Decoder ComboBox -->
+  <sys:String x:Key="UI_Decoder_Auto">自动</sys:String>
+  <sys:String x:Key="UI_Decoder_D3D11VA">D3D11VA (硬件)</sys:String>
+  <sys:String x:Key="UI_Decoder_DXVA2">DXVA2 (硬件)</sys:String>
+  <sys:String x:Key="UI_Decoder_NVDEC">NVDEC (硬件)</sys:String>
+  <sys:String x:Key="UI_Decoder_Software">软件解码</sys:String>
+
+  <!-- Settings Deinterlace ComboBox -->
+  <sys:String x:Key="UI_Deinterlace_Auto">自动</sys:String>
+  <sys:String x:Key="UI_Deinterlace_ForceOn">强制开启</sys:String>
+  <sys:String x:Key="UI_Deinterlace_Off">关闭</sys:String>
+  <sys:String x:Key="UI_Deinterlace_Yadif">yadif</sys:String>
+  <sys:String x:Key="UI_Deinterlace_Bwdif">bwdif</sys:String>
+  <sys:String x:Key="UI_Deinterlace_None">none</sys:String>
+
+  <!-- Time Override -->
+  <sys:String x:Key="UI_TimeOverride_TabTitle">时间覆盖</sys:String>
+
+  <!-- Menu - Missing -->
+  <sys:String x:Key="Menu_About">关于</sys:String>
+  <sys:String x:Key="Menu_Application">应用</sys:String>
+  <sys:String x:Key="Menu_AspectRatio">画面比例</sys:String>
+  <sys:String x:Key="Menu_ClearCloseMode">清除关闭记忆</sys:String>
+  <sys:String x:Key="Menu_Control">控制</sys:String>
+  <sys:String x:Key="Menu_Debug">调试</sys:String>
+  <sys:String x:Key="Menu_Decoder">解码器</sys:String>
+  <sys:String x:Key="Menu_Drawer">频道列表</sys:String>
+  <sys:String x:Key="Menu_FastForward">快进</sys:String>
+  <sys:String x:Key="Menu_Mute">静音</sys:String>
+  <sys:String x:Key="Menu_Network">网络</sys:String>
+  <sys:String x:Key="Menu_NextChannel">下一频道</sys:String>
+  <sys:String x:Key="Menu_PlayPause">播放/暂停</sys:String>
+  <sys:String x:Key="Menu_Playback">播放</sys:String>
+  <sys:String x:Key="Menu_PrevChannel">上一频道</sys:String>
+  <sys:String x:Key="Menu_Record">录制</sys:String>
+  <sys:String x:Key="Menu_RecordNow">实时录制</sys:String>
+  <sys:String x:Key="Menu_RecordSettings">录制设置</sys:String>
+  <sys:String x:Key="Menu_RecordingsList">录制列表</sys:String>
+  <sys:String x:Key="Menu_RefreshChannels">刷新频道</sys:String>
+  <sys:String x:Key="Menu_Rewind">快退</sys:String>
+  <sys:String x:Key="Menu_Shortcuts">快捷键说明</sys:String>
+  <sys:String x:Key="Menu_Sound">声音</sys:String>
+  <sys:String x:Key="Menu_Speed">播放速度</sys:String>
+  <sys:String x:Key="Menu_Stop">停止</sys:String>
+  <sys:String x:Key="Menu_SwitchSource">切换源</sys:String>
+  <sys:String x:Key="Menu_Timeshift">时间偏移</sys:String>
+  <sys:String x:Key="Menu_Topmost">置顶</sys:String>
+  <sys:String x:Key="Menu_Video">视频</sys:String>
+  <sys:String x:Key="Menu_VolumeDown">音量-</sys:String>
+  <sys:String x:Key="Menu_VolumeUp">音量+</sys:String>
 </ResourceDictionary>

@@ -1,7 +1,7 @@
 <Window x:Class="LibmpvIptvClient.ShortcutsWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="快捷键"
+        Title="{DynamicResource Shortcuts_Title}"
         Height="500" Width="500"
         WindowStartupLocation="CenterOwner"
         WindowStyle="None"
@@ -20,13 +20,13 @@
             </Grid.RowDefinitions>
 
             <!-- Title -->
-            <TextBlock Grid.Row="0" Text="快捷键说明" Foreground="White" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,20"/>
+            <TextBlock Grid.Row="0" Text="{DynamicResource Shortcuts_WindowTitle}" Foreground="White" FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" Margin="0,0,0,20"/>
 
             <!-- Shortcuts Content -->
             <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Disabled">
                 <StackPanel>
                     <!-- 播放控制 -->
-                    <TextBlock Text="播放控制" Foreground="{DynamicResource AccentBrush}" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                    <TextBlock Text="{DynamicResource Shortcuts_Playback}" Foreground="{DynamicResource AccentBrush}" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8"/>
                     <Grid Margin="0,0,0,16">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="130"/>
@@ -40,20 +40,20 @@
                         </Grid.RowDefinitions>
 
                         <TextBlock Grid.Row="0" Grid.Column="0" Text="Space" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
-                        <TextBlock Grid.Row="0" Grid.Column="1" Text="播放/暂停" Foreground="White" Margin="20,0,0,4"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{DynamicResource Shortcuts_PlayPause}" Foreground="White" Margin="20,0,0,4"/>
 
                         <TextBlock Grid.Row="1" Grid.Column="0" Text="S" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
-                        <TextBlock Grid.Row="1" Grid.Column="1" Text="停止" Foreground="White" Margin="20,0,0,4"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{DynamicResource Shortcuts_Stop}" Foreground="White" Margin="20,0,0,4"/>
 
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="← / →" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
-                        <TextBlock Grid.Row="2" Grid.Column="1" Text="快退/快进（时移模式）&#x0a;切换上一/下一源（正常模式）" Foreground="White" Margin="20,0,0,4" TextWrapping="Wrap"/>
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="&#x2190; / &#x2192;" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{DynamicResource Shortcuts_SeekTimeshift}" Foreground="White" Margin="20,0,0,4" TextWrapping="Wrap"/>
 
-                        <TextBlock Grid.Row="3" Grid.Column="0" Text="↑ / ↓" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
-                        <TextBlock Grid.Row="3" Grid.Column="1" Text="上一频道 / 下一频道" Foreground="White" Margin="20,0,0,4"/>
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="&#x2191; / &#x2193;" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{DynamicResource Shortcuts_PrevNextChannel}" Foreground="White" Margin="20,0,0,4"/>
                     </Grid>
 
                     <!-- 界面控制 -->
-                    <TextBlock Text="界面控制" Foreground="{DynamicResource AccentBrush}" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                    <TextBlock Text="{DynamicResource Shortcuts_Interface}" Foreground="{DynamicResource AccentBrush}" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8"/>
                     <Grid Margin="0,0,0,16">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="130"/>
@@ -68,23 +68,23 @@
                         </Grid.RowDefinitions>
 
                         <TextBlock Grid.Row="0" Grid.Column="0" Text="Enter" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
-                        <TextBlock Grid.Row="0" Grid.Column="1" Text="全屏切换" Foreground="White" Margin="20,0,0,4"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{DynamicResource Shortcuts_Fullscreen}" Foreground="White" Margin="20,0,0,4"/>
 
                         <TextBlock Grid.Row="1" Grid.Column="0" Text="L" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
-                        <TextBlock Grid.Row="1" Grid.Column="1" Text="频道列表" Foreground="White" Margin="20,0,0,4"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{DynamicResource Shortcuts_ChannelList}" Foreground="White" Margin="20,0,0,4"/>
 
                         <TextBlock Grid.Row="2" Grid.Column="0" Text="Ctrl+Shift+L" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
-                        <TextBlock Grid.Row="2" Grid.Column="1" Text="精简模式" Foreground="White" Margin="20,0,0,4"/>
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{DynamicResource Shortcuts_MinimalMode}" Foreground="White" Margin="20,0,0,4"/>
 
                         <TextBlock Grid.Row="3" Grid.Column="0" Text="E" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
-                        <TextBlock Grid.Row="3" Grid.Column="1" Text="EPG开关" Foreground="White" Margin="20,0,0,4"/>
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{DynamicResource Shortcuts_EpgToggle}" Foreground="White" Margin="20,0,0,4"/>
 
-                        <TextBlock Grid.Row="4" Grid.Column="0" Text="双击视频区" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
-                        <TextBlock Grid.Row="4" Grid.Column="1" Text="全屏切换" Foreground="White" Margin="20,0,0,4"/>
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="{DynamicResource Shortcuts_DoubleClickVideo}" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
+                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{DynamicResource Shortcuts_Fullscreen}" Foreground="White" Margin="20,0,0,4"/>
                     </Grid>
 
                     <!-- 文件/频道 -->
-                    <TextBlock Text="文件/频道" Foreground="{DynamicResource AccentBrush}" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                    <TextBlock Text="{DynamicResource Shortcuts_FileChannel}" Foreground="{DynamicResource AccentBrush}" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8"/>
                     <Grid Margin="0,0,0,16">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="130"/>
@@ -100,26 +100,26 @@
                         </Grid.RowDefinitions>
 
                         <TextBlock Grid.Row="0" Grid.Column="0" Text="Ctrl+O" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
-                        <TextBlock Grid.Row="0" Grid.Column="1" Text="打开文件" Foreground="White" Margin="20,0,0,4"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{DynamicResource Shortcuts_OpenFile}" Foreground="White" Margin="20,0,0,4"/>
 
                         <TextBlock Grid.Row="1" Grid.Column="0" Text="Ctrl+U" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
-                        <TextBlock Grid.Row="1" Grid.Column="1" Text="打开链接" Foreground="White" Margin="20,0,0,4"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{DynamicResource Shortcuts_OpenUrl}" Foreground="White" Margin="20,0,0,4"/>
 
                         <TextBlock Grid.Row="2" Grid.Column="0" Text="Ctrl+N" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
-                        <TextBlock Grid.Row="2" Grid.Column="1" Text="添加文件" Foreground="White" Margin="20,0,0,4"/>
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{DynamicResource Shortcuts_AddFile}" Foreground="White" Margin="20,0,0,4"/>
 
                         <TextBlock Grid.Row="3" Grid.Column="0" Text="Ctrl+B" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
-                        <TextBlock Grid.Row="3" Grid.Column="1" Text="添加链接" Foreground="White" Margin="20,0,0,4"/>
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{DynamicResource Shortcuts_AddUrl}" Foreground="White" Margin="20,0,0,4"/>
 
                         <TextBlock Grid.Row="4" Grid.Column="0" Text="Ctrl+M" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
-                        <TextBlock Grid.Row="4" Grid.Column="1" Text="管理频道数据" Foreground="White" Margin="20,0,0,4"/>
+                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{DynamicResource Shortcuts_ManageChannels}" Foreground="White" Margin="20,0,0,4"/>
 
                         <TextBlock Grid.Row="5" Grid.Column="0" Text="F5" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
-                        <TextBlock Grid.Row="5" Grid.Column="1" Text="刷新频道" Foreground="White" Margin="20,0,0,4"/>
+                        <TextBlock Grid.Row="5" Grid.Column="1" Text="{DynamicResource Shortcuts_RefreshChannels}" Foreground="White" Margin="20,0,0,4"/>
                     </Grid>
 
                     <!-- 音量 -->
-                    <TextBlock Text="音量" Foreground="{DynamicResource AccentBrush}" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                    <TextBlock Text="{DynamicResource Shortcuts_Volume}" Foreground="{DynamicResource AccentBrush}" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8"/>
                     <Grid Margin="0,0,0,16">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="130"/>
@@ -133,20 +133,20 @@
                         </Grid.RowDefinitions>
 
                         <TextBlock Grid.Row="0" Grid.Column="0" Text="M" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
-                        <TextBlock Grid.Row="0" Grid.Column="1" Text="静音" Foreground="White" Margin="20,0,0,4"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{DynamicResource Shortcuts_Mute}" Foreground="White" Margin="20,0,0,4"/>
 
                         <TextBlock Grid.Row="1" Grid.Column="0" Text="= / +" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
-                        <TextBlock Grid.Row="1" Grid.Column="1" Text="音量+" Foreground="White" Margin="20,0,0,4"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{DynamicResource Shortcuts_VolumeUp}" Foreground="White" Margin="20,0,0,4"/>
 
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="- / 小键盘-" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
-                        <TextBlock Grid.Row="2" Grid.Column="1" Text="音量-" Foreground="White" Margin="20,0,0,4"/>
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="- / Num-" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{DynamicResource Shortcuts_VolumeDown}" Foreground="White" Margin="20,0,0,4"/>
 
-                        <TextBlock Grid.Row="3" Grid.Column="0" Text="滚轮" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
-                        <TextBlock Grid.Row="3" Grid.Column="1" Text="音量调节" Foreground="White" Margin="20,0,0,4"/>
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="{DynamicResource Shortcuts_MouseWheel}" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{DynamicResource Shortcuts_VolumeAdjust}" Foreground="White" Margin="20,0,0,4"/>
                     </Grid>
 
                     <!-- 其他 -->
-                    <TextBlock Text="其他" Foreground="{DynamicResource AccentBrush}" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                    <TextBlock Text="{DynamicResource Shortcuts_Other}" Foreground="{DynamicResource AccentBrush}" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8"/>
                     <Grid Margin="0,0,0,16">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="130"/>
@@ -163,29 +163,29 @@
                         </Grid.RowDefinitions>
 
                         <TextBlock Grid.Row="0" Grid.Column="0" Text="F1" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
-                        <TextBlock Grid.Row="0" Grid.Column="1" Text="调试窗口" Foreground="White" Margin="20,0,0,4"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{DynamicResource Shortcuts_DebugWindow}" Foreground="White" Margin="20,0,0,4"/>
 
                         <TextBlock Grid.Row="1" Grid.Column="0" Text="Ctrl+," Foreground="#FFD0D0D0" FontFamily="Consolas"/>
-                        <TextBlock Grid.Row="1" Grid.Column="1" Text="设置" Foreground="White" Margin="20,0,0,4"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{DynamicResource Shortcuts_Settings}" Foreground="White" Margin="20,0,0,4"/>
 
                         <TextBlock Grid.Row="2" Grid.Column="0" Text="Ctrl+I" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
-                        <TextBlock Grid.Row="2" Grid.Column="1" Text="关于" Foreground="White" Margin="20,0,0,4"/>
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{DynamicResource Shortcuts_About}" Foreground="White" Margin="20,0,0,4"/>
 
                         <TextBlock Grid.Row="3" Grid.Column="0" Text="Ctrl+/" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
-                        <TextBlock Grid.Row="3" Grid.Column="1" Text="快捷键说明" Foreground="White" Margin="20,0,0,4"/>
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{DynamicResource Shortcuts_ShortcutsHelp}" Foreground="White" Margin="20,0,0,4"/>
 
                         <TextBlock Grid.Row="4" Grid.Column="0" Text="ESC" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
-                        <TextBlock Grid.Row="4" Grid.Column="1" Text="退出精简模式" Foreground="White" Margin="20,0,0,4"/>
+                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{DynamicResource Shortcuts_ExitMinimal}" Foreground="White" Margin="20,0,0,4"/>
 
                         <TextBlock Grid.Row="5" Grid.Column="0" Text="Alt+F4" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
-                        <TextBlock Grid.Row="5" Grid.Column="1" Text="退出" Foreground="White" Margin="20,0,0,4"/>
+                        <TextBlock Grid.Row="5" Grid.Column="1" Text="{DynamicResource Shortcuts_Exit}" Foreground="White" Margin="20,0,0,4"/>
 
                         <TextBlock Grid.Row="6" Grid.Column="0" Text="R" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
-                        <TextBlock Grid.Row="6" Grid.Column="1" Text="开始/停止录制" Foreground="White" Margin="20,0,0,4"/>
+                        <TextBlock Grid.Row="6" Grid.Column="1" Text="{DynamicResource Shortcuts_Record}" Foreground="White" Margin="20,0,0,4"/>
                     </Grid>
 
                     <!-- 时移模式 -->
-                    <TextBlock Text="时移模式（附加）" Foreground="{DynamicResource AccentBrush}" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                    <TextBlock Text="{DynamicResource Shortcuts_TimeshiftMode}" Foreground="{DynamicResource AccentBrush}" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8"/>
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="130"/>
@@ -195,15 +195,15 @@
                             <RowDefinition Height="Auto"/>
                         </Grid.RowDefinitions>
 
-                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Ctrl+↑ / ↓" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
-                        <TextBlock Grid.Row="0" Grid.Column="1" Text="上一节目 / 下一节目" Foreground="White" Margin="20,0,0,4"/>
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Ctrl+&#x2191; / &#x2193;" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{DynamicResource Shortcuts_PrevNextProgram}" Foreground="White" Margin="20,0,0,4"/>
                     </Grid>
                 </StackPanel>
             </ScrollViewer>
 
             <!-- Bottom -->
             <StackPanel Grid.Row="2" Margin="0,16,0,0" HorizontalAlignment="Center">
-                <Button x:Name="BtnClose" Content="关闭" Click="BtnClose_Click" HorizontalAlignment="Center" Width="100" Style="{StaticResource AccentButtonStyle}"/>
+                <Button x:Name="BtnClose" Content="{DynamicResource Common_Close}" Click="BtnClose_Click" HorizontalAlignment="Center" Width="100" Style="{StaticResource AccentButtonStyle}"/>
             </StackPanel>
         </Grid>
     </Border>

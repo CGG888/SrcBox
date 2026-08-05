@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using LibmpvIptvClient.Helpers;
 
 namespace LibmpvIptvClient
 {
@@ -13,11 +14,11 @@ namespace LibmpvIptvClient
         {
             return decoder switch
             {
-                "auto" => "Auto",
-                "d3d11va" => "D3D11VA (HW)",
-                "dxva2" => "DXVA2 (HW)",
-                "nvdec" => "NVDEC (HW)",
-                "no" => "Software",
+                "auto" => Localizer.S("Decoder_Auto", "Auto"),
+                "d3d11va" => Localizer.S("Decoder_D3D11VA", "D3D11VA (HW)"),
+                "dxva2" => Localizer.S("Decoder_DXVA2", "DXVA2 (HW)"),
+                "nvdec" => Localizer.S("Decoder_NVDEC", "NVDEC (HW)"),
+                "no" => Localizer.S("Decoder_Software", "Software"),
                 _ => decoder
             };
         }

@@ -345,6 +345,7 @@
   <sys:String x:Key="CloseConfirm_Label">Choose an action:</sys:String>
   <sys:String x:Key="CloseConfirm_LineYes">Yes: Exit app</sys:String>
   <sys:String x:Key="CloseConfirm_LineNo">No: Minimize to system tray</sys:String>
+  <sys:String x:Key="CloseConfirm_Remember">Remember this choice</sys:String>
   <sys:String x:Key="Menu_ManageM3u">Manage channels</sys:String>
   
   <sys:String x:Key="UI_Playback_Settings">Replay Settings</sys:String>
@@ -482,4 +483,108 @@
   <sys:String x:Key="Log_Record_Stop">Recording stopped</sys:String>
   <sys:String x:Key="Log_Update_Paused">Download paused</sys:String>
   <sys:String x:Key="Log_Update_Resumed">Download resumed</sys:String>
+
+  <!-- Shortcuts Window -->
+  <sys:String x:Key="Shortcuts_Title">Shortcuts</sys:String>
+  <sys:String x:Key="Shortcuts_WindowTitle">Keyboard Shortcuts</sys:String>
+  <sys:String x:Key="Shortcuts_Playback">Playback Control</sys:String>
+  <sys:String x:Key="Shortcuts_PlayPause">Play/Pause</sys:String>
+  <sys:String x:Key="Shortcuts_Stop">Stop</sys:String>
+  <sys:String x:Key="Shortcuts_SeekTimeshift">Rewind/Forward (Timeshift mode)&#x0a;Prev/Next source (Normal mode)</sys:String>
+  <sys:String x:Key="Shortcuts_PrevNextChannel">Previous/Next Channel</sys:String>
+  <sys:String x:Key="Shortcuts_Interface">Interface Control</sys:String>
+  <sys:String x:Key="Shortcuts_Fullscreen">Toggle Fullscreen</sys:String>
+  <sys:String x:Key="Shortcuts_ChannelList">Channel List</sys:String>
+  <sys:String x:Key="Shortcuts_MinimalMode">Minimal Mode</sys:String>
+  <sys:String x:Key="Shortcuts_EpgToggle">Toggle EPG</sys:String>
+  <sys:String x:Key="Shortcuts_DoubleClickVideo">Double-click video</sys:String>
+  <sys:String x:Key="Shortcuts_FileChannel">File/Channel</sys:String>
+  <sys:String x:Key="Shortcuts_OpenFile">Open File</sys:String>
+  <sys:String x:Key="Shortcuts_OpenUrl">Open URL</sys:String>
+  <sys:String x:Key="Shortcuts_AddFile">Add File</sys:String>
+  <sys:String x:Key="Shortcuts_AddUrl">Add URL</sys:String>
+  <sys:String x:Key="Shortcuts_ManageChannels">Manage Channels</sys:String>
+  <sys:String x:Key="Shortcuts_RefreshChannels">Refresh Channels</sys:String>
+  <sys:String x:Key="Shortcuts_Volume">Volume</sys:String>
+  <sys:String x:Key="Shortcuts_Mute">Mute</sys:String>
+  <sys:String x:Key="Shortcuts_VolumeUp">Volume+</sys:String>
+  <sys:String x:Key="Shortcuts_VolumeDown">Volume-</sys:String>
+  <sys:String x:Key="Shortcuts_MouseWheel">Mouse Wheel</sys:String>
+  <sys:String x:Key="Shortcuts_VolumeAdjust">Volume Adjustment</sys:String>
+  <sys:String x:Key="Shortcuts_Other">Other</sys:String>
+  <sys:String x:Key="Shortcuts_DebugWindow">Debug Window</sys:String>
+  <sys:String x:Key="Shortcuts_Settings">Settings</sys:String>
+  <sys:String x:Key="Shortcuts_About">About</sys:String>
+  <sys:String x:Key="Shortcuts_ShortcutsHelp">Shortcuts Help</sys:String>
+  <sys:String x:Key="Shortcuts_ExitMinimal">Exit Minimal Mode</sys:String>
+  <sys:String x:Key="Shortcuts_Exit">Exit</sys:String>
+  <sys:String x:Key="Shortcuts_Record">Start/Stop Recording</sys:String>
+  <sys:String x:Key="Shortcuts_TimeshiftMode">Timeshift Mode (Additional)</sys:String>
+  <sys:String x:Key="Shortcuts_PrevNextProgram">Previous/Next Program</sys:String>
+
+  <!-- Decoder Options -->
+  <sys:String x:Key="Decoder_Auto">Auto</sys:String>
+  <sys:String x:Key="Decoder_D3D11VA">D3D11VA (HW)</sys:String>
+  <sys:String x:Key="Decoder_DXVA2">DXVA2 (HW)</sys:String>
+  <sys:String x:Key="Decoder_NVDEC">NVDEC (HW)</sys:String>
+  <sys:String x:Key="Decoder_Software">Software</sys:String>
+
+  <!-- Settings Items -->
+  <sys:String x:Key="UI_NetworkPlayback">Network Playback</sys:String>
+  <sys:String x:Key="UI_RtspSettings">RTSP Settings</sys:String>
+  <sys:String x:Key="UI_Issues">Issues</sys:String>
+  <sys:String x:Key="UI_RtspTransport_TCP">TCP</sys:String>
+  <sys:String x:Key="UI_RtspTransport_UDP">UDP</sys:String>
+  <sys:String x:Key="UI_RtspTransport_HTTP">HTTP Tunnel</sys:String>
+
+  <!-- Settings Decoder ComboBox -->
+  <sys:String x:Key="UI_Decoder_Auto">Auto</sys:String>
+  <sys:String x:Key="UI_Decoder_D3D11VA">D3D11VA (HW)</sys:String>
+  <sys:String x:Key="UI_Decoder_DXVA2">DXVA2 (HW)</sys:String>
+  <sys:String x:Key="UI_Decoder_NVDEC">NVDEC (HW)</sys:String>
+  <sys:String x:Key="UI_Decoder_Software">Software</sys:String>
+
+  <!-- Settings Deinterlace ComboBox -->
+  <sys:String x:Key="UI_Deinterlace_Auto">Auto</sys:String>
+  <sys:String x:Key="UI_Deinterlace_ForceOn">Force On</sys:String>
+  <sys:String x:Key="UI_Deinterlace_Off">Off</sys:String>
+  <sys:String x:Key="UI_Deinterlace_Yadif">yadif</sys:String>
+  <sys:String x:Key="UI_Deinterlace_Bwdif">bwdif</sys:String>
+  <sys:String x:Key="UI_Deinterlace_None">none</sys:String>
+
+  <!-- Time Override -->
+  <sys:String x:Key="UI_TimeOverride_TabTitle">Time Override</sys:String>
+
+  <!-- Menu - Missing -->
+  <sys:String x:Key="Menu_About">About</sys:String>
+  <sys:String x:Key="Menu_Application">Application</sys:String>
+  <sys:String x:Key="Menu_AspectRatio">Aspect Ratio</sys:String>
+  <sys:String x:Key="Menu_ClearCloseMode">Clear Close Mode</sys:String>
+  <sys:String x:Key="Menu_Control">Control</sys:String>
+  <sys:String x:Key="Menu_Debug">Debug</sys:String>
+  <sys:String x:Key="Menu_Decoder">Decoder</sys:String>
+  <sys:String x:Key="Menu_Drawer">Channel List</sys:String>
+  <sys:String x:Key="Menu_FastForward">Fast Forward</sys:String>
+  <sys:String x:Key="Menu_Mute">Mute</sys:String>
+  <sys:String x:Key="Menu_Network">Network</sys:String>
+  <sys:String x:Key="Menu_NextChannel">Next Channel</sys:String>
+  <sys:String x:Key="Menu_PlayPause">Play/Pause</sys:String>
+  <sys:String x:Key="Menu_Playback">Playback</sys:String>
+  <sys:String x:Key="Menu_PrevChannel">Previous Channel</sys:String>
+  <sys:String x:Key="Menu_Record">Record</sys:String>
+  <sys:String x:Key="Menu_RecordNow">Record Now</sys:String>
+  <sys:String x:Key="Menu_RecordSettings">Recording Settings</sys:String>
+  <sys:String x:Key="Menu_RecordingsList">Recording List</sys:String>
+  <sys:String x:Key="Menu_RefreshChannels">Refresh Channels</sys:String>
+  <sys:String x:Key="Menu_Rewind">Rewind</sys:String>
+  <sys:String x:Key="Menu_Shortcuts">Shortcuts</sys:String>
+  <sys:String x:Key="Menu_Sound">Sound</sys:String>
+  <sys:String x:Key="Menu_Speed">Speed</sys:String>
+  <sys:String x:Key="Menu_Stop">Stop</sys:String>
+  <sys:String x:Key="Menu_SwitchSource">Switch Source</sys:String>
+  <sys:String x:Key="Menu_Timeshift">Timeshift</sys:String>
+  <sys:String x:Key="Menu_Topmost">Always on Top</sys:String>
+  <sys:String x:Key="Menu_Video">Video</sys:String>
+  <sys:String x:Key="Menu_VolumeDown">Volume-</sys:String>
+  <sys:String x:Key="Menu_VolumeUp">Volume+</sys:String>
 </ResourceDictionary>

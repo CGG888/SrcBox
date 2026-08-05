@@ -281,7 +281,7 @@
           </TabItem>
 
           <!-- 视频 -->
-          <TabItem Header="视频">
+          <TabItem Header="{DynamicResource UI_TabVideo}">
             <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
               <StackPanel Margin="16,8,24,8">
                 <!-- 解码器 -->
@@ -289,11 +289,11 @@
                   <StackPanel>
                     <TextBlock Text="{DynamicResource UI_Playback_Decoder}" FontWeight="SemiBold" Margin="0,0,0,8"/>
                     <ComboBox x:Name="CbDecoder" Width="200" HorizontalAlignment="Left">
-                      <ComboBoxItem Content="Auto" Tag="auto"/>
-                      <ComboBoxItem Content="D3D11VA (HW)" Tag="d3d11va"/>
-                      <ComboBoxItem Content="DXVA2 (HW)" Tag="dxva2"/>
-                      <ComboBoxItem Content="NVDEC (HW)" Tag="nvdec"/>
-                      <ComboBoxItem Content="Software" Tag="no"/>
+                      <ComboBoxItem Content="{DynamicResource UI_Decoder_Auto}" Tag="auto"/>
+                      <ComboBoxItem Content="{DynamicResource UI_Decoder_D3D11VA}" Tag="d3d11va"/>
+                      <ComboBoxItem Content="{DynamicResource UI_Decoder_DXVA2}" Tag="dxva2"/>
+                      <ComboBoxItem Content="{DynamicResource UI_Decoder_NVDEC}" Tag="nvdec"/>
+                      <ComboBoxItem Content="{DynamicResource UI_Decoder_Software}" Tag="no"/>
                     </ComboBox>
                   </StackPanel>
                 </Border>
@@ -305,16 +305,16 @@
                     <TextBlock Text="{DynamicResource UI_Deinterlace_Mode}" Margin="0,0,0,8"/>
                     <ComboBox x:Name="CbDeinterlaceMode" Width="200" HorizontalAlignment="Left" Margin="0,0,0,12"
                               SelectionChanged="CbDeinterlaceMode_SelectionChanged">
-                      <ComboBoxItem Content="Auto" Tag="auto"/>
-                      <ComboBoxItem Content="Force On" Tag="yes"/>
-                      <ComboBoxItem Content="Off" Tag="no"/>
+                      <ComboBoxItem Content="{DynamicResource UI_Deinterlace_Auto}" Tag="auto"/>
+                      <ComboBoxItem Content="{DynamicResource UI_Deinterlace_ForceOn}" Tag="yes"/>
+                      <ComboBoxItem Content="{DynamicResource UI_Deinterlace_Off}" Tag="no"/>
                     </ComboBox>
                     <TextBlock Text="{DynamicResource UI_Deinterlace_Algorithm}" Margin="0,0,0,8"/>
                     <ComboBox x:Name="CbDeinterlaceAlgo" Width="200" HorizontalAlignment="Left" Margin="0,0,0,8"
                               SelectionChanged="CbDeinterlaceAlgo_SelectionChanged">
-                      <ComboBoxItem Content="yadif" Tag="yadif"/>
-                      <ComboBoxItem Content="bwdif" Tag="bwdif"/>
-                      <ComboBoxItem Content="none" Tag="none"/>
+                      <ComboBoxItem Content="{DynamicResource UI_Deinterlace_Yadif}" Tag="yadif"/>
+                      <ComboBoxItem Content="{DynamicResource UI_Deinterlace_Bwdif}" Tag="bwdif"/>
+                      <ComboBoxItem Content="{DynamicResource UI_Deinterlace_None}" Tag="none"/>
                     </ComboBox>
                     <TextBlock Text="{DynamicResource UI_Deinterlace_Hint}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" TextWrapping="Wrap"/>
                   </StackPanel>
@@ -324,7 +324,7 @@
           </TabItem>
 
           <!-- 声音 -->
-          <TabItem Header="声音">
+          <TabItem Header="{DynamicResource UI_TabAudio}">
             <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
               <StackPanel Margin="16,8,24,8">
                 <!-- 语言偏好 -->
@@ -376,7 +376,7 @@
           </TabItem>
 
           <!-- 播放 -->
-          <TabItem Header="播放">
+          <TabItem Header="{DynamicResource UI_TabPlayback}">
             <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
               <StackPanel Margin="16,8,24,8">
                 <!-- 回放设置 -->
@@ -392,7 +392,7 @@
                 <!-- 时间覆盖设置 -->
                 <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16">
                   <StackPanel>
-                    <TextBlock Text="时间覆盖" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                    <TextBlock Text="{DynamicResource UI_TimeOverride_TabTitle}" FontWeight="SemiBold" Margin="0,0,0,12"/>
                     <Grid>
                       <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -468,7 +468,7 @@
                       <StackPanel Grid.Row="9" Grid.ColumnSpan="2">
                         <StackPanel Orientation="Horizontal" Margin="0,0,0,8">
                           <Button x:Name="BtnOpenDocs" Content="{DynamicResource UI_OpenDocs}" Width="96" Click="BtnOpenDocs_Click" Style="{StaticResource ChipButton}" Margin="0,0,8,0"/>
-                          <Button x:Name="BtnOpenIssues" Content="Issues" Width="96" Click="BtnOpenIssues_Click" Style="{StaticResource ChipButton}"/>
+                          <Button x:Name="BtnOpenIssues" Content="{DynamicResource UI_Issues}" Width="96" Click="BtnOpenIssues_Click" Style="{StaticResource ChipButton}"/>
                         </StackPanel>
                         
                         <GroupBox Header="{DynamicResource UI_Advanced_Options}" Margin="0,8,0,0" BorderBrush="{DynamicResource BorderBrushCommon}">
@@ -509,7 +509,7 @@
           </TabItem>
 
           <!-- 频道 -->
-          <TabItem x:Name="TabChannel" Header="频道">
+          <TabItem x:Name="TabChannel" Header="{DynamicResource UI_TabChannel}">
             <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
               <StackPanel Margin="16,8,24,8">
                 <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
@@ -523,7 +523,7 @@
           </TabItem>
 
           <!-- 录制 -->
-          <TabItem x:Name="TabRecording" Header="录制">
+          <TabItem x:Name="TabRecording" Header="{DynamicResource UI_TabRecording}">
             <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
               <StackPanel Margin="16,8,24,8">
                 <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16">
@@ -534,7 +534,7 @@
           </TabItem>
 
           <!-- Web远程 -->
-          <TabItem x:Name="TabNetwork" Header="网络">
+          <TabItem x:Name="TabNetwork" Header="{DynamicResource UI_TabNetwork}">
             <ScrollViewer x:Name="NetworkScrollViewer" VerticalScrollBarVisibility="Auto" Background="Transparent">
               <StackPanel Margin="16,8,24,8">
                 <!-- Web远程控制 -->
@@ -578,7 +578,7 @@
                 <!-- 网络播放设置 -->
                 <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
                   <StackPanel>
-                    <TextBlock Text="网络播放" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                    <TextBlock Text="{DynamicResource UI_NetworkPlayback}" FontWeight="SemiBold" Margin="0,0,0,12"/>
                     <Grid>
                       <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -644,7 +644,7 @@
                 <!-- RTSP设置 -->
                 <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
                   <StackPanel>
-                    <TextBlock Text="RTSP 设置" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                    <TextBlock Text="{DynamicResource UI_RtspSettings}" FontWeight="SemiBold" Margin="0,0,0,12"/>
                     <Grid>
                       <Grid.RowDefinitions>
                         <RowDefinition Height="Auto"/>
@@ -661,9 +661,9 @@
 
                       <TextBlock Grid.Row="0" Grid.Column="0" Text="{DynamicResource UI_RtspTransport}" VerticalAlignment="Center" Margin="0,0,16,0"/>
                       <ComboBox x:Name="CbRtspTransport" Grid.Row="0" Grid.Column="1" Width="160" HorizontalAlignment="Left">
-                        <ComboBoxItem Content="TCP" Tag="tcp"/>
-                        <ComboBoxItem Content="UDP" Tag="udp"/>
-                        <ComboBoxItem Content="HTTP Tunnel" Tag="http"/>
+                        <ComboBoxItem Content="{DynamicResource UI_RtspTransport_TCP}" Tag="tcp"/>
+                        <ComboBoxItem Content="{DynamicResource UI_RtspTransport_UDP}" Tag="udp"/>
+                        <ComboBoxItem Content="{DynamicResource UI_RtspTransport_HTTP}" Tag="http"/>
                       </ComboBox>
 
                       <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource UI_RtspUserAgent}" VerticalAlignment="Center" Margin="0,8,16,0"/>

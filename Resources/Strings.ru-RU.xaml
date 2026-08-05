@@ -99,6 +99,7 @@
   <sys:String x:Key="UI_CopyAll">Копировать всё</sys:String>
   <sys:String x:Key="Common_Close">Закрыть</sys:String>
   <sys:String x:Key="Common_Tips">Сведения</sys:String>
+  <sys:String x:Key="Common_OK">ОК</sys:String>
   <sys:String x:Key="UI_Pause">Пауза</sys:String>
   <sys:String x:Key="UI_Resume">Продолжить</sys:String>
   <sys:String x:Key="Err_UnhandledTitle">Ошибка</sys:String>
@@ -313,6 +314,7 @@
   <sys:String x:Key="CloseConfirm_Label">Выберите действие:</sys:String>
   <sys:String x:Key="CloseConfirm_LineYes">Да: выйти из приложения</sys:String>
   <sys:String x:Key="CloseConfirm_LineNo">Нет: свернуть в трей</sys:String>
+  <sys:String x:Key="CloseConfirm_Remember">Запомнить выбор</sys:String>
   <sys:String x:Key="Menu_ManageM3u">Управление каналами</sys:String>
   
   <sys:String x:Key="UI_Playback_Settings">Настройки записи</sys:String>
@@ -471,4 +473,108 @@
   <sys:String x:Key="UI_WebRemote_ShowChannels">Показывать список каналов</sys:String>
   <sys:String x:Key="UI_WebRemote_ShowEpg">Показывать программу</sys:String>
   <sys:String x:Key="UI_WebRemote_Hint">После включения управляйте плеером из браузера телефона по адресу http://IP-ПК:порт в той же локальной сети.</sys:String>
+
+  <!-- Shortcuts Window -->
+  <sys:String x:Key="Shortcuts_Title">Горячие клавиши</sys:String>
+  <sys:String x:Key="Shortcuts_WindowTitle">Справка по горячим клавишам</sys:String>
+  <sys:String x:Key="Shortcuts_Playback">Управление воспроизведением</sys:String>
+  <sys:String x:Key="Shortcuts_PlayPause">Воспроизведение/Пауза</sys:String>
+  <sys:String x:Key="Shortcuts_Stop">Стоп</sys:String>
+  <sys:String x:Key="Shortcuts_SeekTimeshift">Перемотка назад/вперёд (режим таймшифта)&#x0a;Предыдущий/следующий источник (обычный режим)</sys:String>
+  <sys:String x:Key="Shortcuts_PrevNextChannel">Предыдущий/следующий канал</sys:String>
+  <sys:String x:Key="Shortcuts_Interface">Управление интерфейсом</sys:String>
+  <sys:String x:Key="Shortcuts_Fullscreen">Полноэкранный режим</sys:String>
+  <sys:String x:Key="Shortcuts_ChannelList">Список каналов</sys:String>
+  <sys:String x:Key="Shortcuts_MinimalMode">Минимальный режим</sys:String>
+  <sys:String x:Key="Shortcuts_EpgToggle">Переключить EPG</sys:String>
+  <sys:String x:Key="Shortcuts_DoubleClickVideo">Двойной клик на видео</sys:String>
+  <sys:String x:Key="Shortcuts_FileChannel">Файл/Канал</sys:String>
+  <sys:String x:Key="Shortcuts_OpenFile">Открыть файл</sys:String>
+  <sys:String x:Key="Shortcuts_OpenUrl">Открыть URL</sys:String>
+  <sys:String x:Key="Shortcuts_AddFile">Добавить файл</sys:String>
+  <sys:String x:Key="Shortcuts_AddUrl">Добавить ссылку</sys:String>
+  <sys:String x:Key="Shortcuts_ManageChannels">Управление каналами</sys:String>
+  <sys:String x:Key="Shortcuts_RefreshChannels">Обновить каналы</sys:String>
+  <sys:String x:Key="Shortcuts_Volume">Громкость</sys:String>
+  <sys:String x:Key="Shortcuts_Mute">Без звука</sys:String>
+  <sys:String x:Key="Shortcuts_VolumeUp">Громкость+</sys:String>
+  <sys:String x:Key="Shortcuts_VolumeDown">Громкость-</sys:String>
+  <sys:String x:Key="Shortcuts_MouseWheel">Колёсико мыши</sys:String>
+  <sys:String x:Key="Shortcuts_VolumeAdjust">Регулировка громкости</sys:String>
+  <sys:String x:Key="Shortcuts_Other">Другое</sys:String>
+  <sys:String x:Key="Shortcuts_DebugWindow">Окно отладки</sys:String>
+  <sys:String x:Key="Shortcuts_Settings">Настройки</sys:String>
+  <sys:String x:Key="Shortcuts_About">О программе</sys:String>
+  <sys:String x:Key="Shortcuts_ShortcutsHelp">Справка по горячим клавишам</sys:String>
+  <sys:String x:Key="Shortcuts_ExitMinimal">Выйти из минимального режима</sys:String>
+  <sys:String x:Key="Shortcuts_Exit">Выход</sys:String>
+  <sys:String x:Key="Shortcuts_Record">Начать/остановить запись</sys:String>
+  <sys:String x:Key="Shortcuts_TimeshiftMode">Режим таймшифта (доп.)</sys:String>
+  <sys:String x:Key="Shortcuts_PrevNextProgram">Предыдущая/следующая передача</sys:String>
+
+  <!-- Decoder Options -->
+  <sys:String x:Key="Decoder_Auto">Автоматически</sys:String>
+  <sys:String x:Key="Decoder_D3D11VA">D3D11VA (АО)</sys:String>
+  <sys:String x:Key="Decoder_DXVA2">DXVA2 (АО)</sys:String>
+  <sys:String x:Key="Decoder_NVDEC">NVDEC (АО)</sys:String>
+  <sys:String x:Key="Decoder_Software">Программный</sys:String>
+
+  <!-- Settings Items -->
+  <sys:String x:Key="UI_NetworkPlayback">Сетевое воспроизведение</sys:String>
+  <sys:String x:Key="UI_RtspSettings">Настройки RTSP</sys:String>
+  <sys:String x:Key="UI_Issues">Issues</sys:String>
+  <sys:String x:Key="UI_RtspTransport_TCP">TCP</sys:String>
+  <sys:String x:Key="UI_RtspTransport_UDP">UDP</sys:String>
+  <sys:String x:Key="UI_RtspTransport_HTTP">HTTP Tunnel</sys:String>
+
+  <!-- Settings Decoder ComboBox -->
+  <sys:String x:Key="UI_Decoder_Auto">Автоматически</sys:String>
+  <sys:String x:Key="UI_Decoder_D3D11VA">D3D11VA (АО)</sys:String>
+  <sys:String x:Key="UI_Decoder_DXVA2">DXVA2 (АО)</sys:String>
+  <sys:String x:Key="UI_Decoder_NVDEC">NVDEC (АО)</sys:String>
+  <sys:String x:Key="UI_Decoder_Software">Программный</sys:String>
+
+  <!-- Settings Deinterlace ComboBox -->
+  <sys:String x:Key="UI_Deinterlace_Auto">Автоматически</sys:String>
+  <sys:String x:Key="UI_Deinterlace_ForceOn">Принудительно вкл.</sys:String>
+  <sys:String x:Key="UI_Deinterlace_Off">Выкл.</sys:String>
+  <sys:String x:Key="UI_Deinterlace_Yadif">yadif</sys:String>
+  <sys:String x:Key="UI_Deinterlace_Bwdif">bwdif</sys:String>
+  <sys:String x:Key="UI_Deinterlace_None">none</sys:String>
+
+  <!-- Time Override -->
+  <sys:String x:Key="UI_TimeOverride_TabTitle">Переопределение времени</sys:String>
+
+  <!-- Menu - Missing -->
+  <sys:String x:Key="Menu_About">О программе</sys:String>
+  <sys:String x:Key="Menu_Application">Приложение</sys:String>
+  <sys:String x:Key="Menu_AspectRatio">Соотношение сторон</sys:String>
+  <sys:String x:Key="Menu_ClearCloseMode">Очистить память закрытия</sys:String>
+  <sys:String x:Key="Menu_Control">Управление</sys:String>
+  <sys:String x:Key="Menu_Debug">Отладка</sys:String>
+  <sys:String x:Key="Menu_Decoder">Декодер</sys:String>
+  <sys:String x:Key="Menu_Drawer">Список каналов</sys:String>
+  <sys:String x:Key="Menu_FastForward">Перемотка вперёд</sys:String>
+  <sys:String x:Key="Menu_Mute">Без звука</sys:String>
+  <sys:String x:Key="Menu_Network">Сеть</sys:String>
+  <sys:String x:Key="Menu_NextChannel">Следующий канал</sys:String>
+  <sys:String x:Key="Menu_PlayPause">Воспроизведение/Пауза</sys:String>
+  <sys:String x:Key="Menu_Playback">Воспроизведение</sys:String>
+  <sys:String x:Key="Menu_PrevChannel">Предыдущий канал</sys:String>
+  <sys:String x:Key="Menu_Record">Запись</sys:String>
+  <sys:String x:Key="Menu_RecordNow">Запись сейчас</sys:String>
+  <sys:String x:Key="Menu_RecordSettings">Настройки записи</sys:String>
+  <sys:String x:Key="Menu_RecordingsList">Список записей</sys:String>
+  <sys:String x:Key="Menu_RefreshChannels">Обновить каналы</sys:String>
+  <sys:String x:Key="Menu_Rewind">Перемотка назад</sys:String>
+  <sys:String x:Key="Menu_Shortcuts">Справка по горячим клавишам</sys:String>
+  <sys:String x:Key="Menu_Sound">Звук</sys:String>
+  <sys:String x:Key="Menu_Speed">Скорость</sys:String>
+  <sys:String x:Key="Menu_Stop">Стоп</sys:String>
+  <sys:String x:Key="Menu_SwitchSource">Сменить источник</sys:String>
+  <sys:String x:Key="Menu_Timeshift">Таймшифт</sys:String>
+  <sys:String x:Key="Menu_Topmost">Поверх всех</sys:String>
+  <sys:String x:Key="Menu_Video">Видео</sys:String>
+  <sys:String x:Key="Menu_VolumeDown">Громкость-</sys:String>
+  <sys:String x:Key="Menu_VolumeUp">Громкость+</sys:String>
 </ResourceDictionary>

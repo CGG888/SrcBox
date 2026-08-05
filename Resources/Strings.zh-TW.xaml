@@ -99,6 +99,7 @@
   <sys:String x:Key="UI_CopyAll">複製全部</sys:String>
   <sys:String x:Key="Common_Close">關閉</sys:String>
   <sys:String x:Key="Common_Tips">提示</sys:String>
+  <sys:String x:Key="Common_OK">確定</sys:String>
   <sys:String x:Key="UI_Pause">暫停</sys:String>
   <sys:String x:Key="UI_Resume">繼續</sys:String>
   <sys:String x:Key="Err_UnhandledTitle">錯誤</sys:String>
@@ -328,6 +329,7 @@
   <sys:String x:Key="CloseConfirm_Label">選擇操作：</sys:String>
   <sys:String x:Key="CloseConfirm_LineYes">是：退出軟體</sys:String>
   <sys:String x:Key="CloseConfirm_LineNo">否：最小化到系統托盤</sys:String>
+  <sys:String x:Key="CloseConfirm_Remember">記住此次選擇</sys:String>
   <sys:String x:Key="Menu_ManageM3u">管理頻道資料</sys:String>
   
   <sys:String x:Key="UI_Playback_Settings">回放設定</sys:String>
@@ -470,4 +472,108 @@
   <sys:String x:Key="UI_WebRemote_ShowChannels">顯示頻道列表</sys:String>
   <sys:String x:Key="UI_WebRemote_ShowEpg">顯示節目單</sys:String>
   <sys:String x:Key="UI_WebRemote_Hint">啟用後，在同一區域網內可透過手機瀏覽器存取 http://電腦IP:埠 來控制播放器。</sys:String>
+
+  <!-- Shortcuts Window -->
+  <sys:String x:Key="Shortcuts_Title">快捷鍵</sys:String>
+  <sys:String x:Key="Shortcuts_WindowTitle">快捷鍵說明</sys:String>
+  <sys:String x:Key="Shortcuts_Playback">播放控制</sys:String>
+  <sys:String x:Key="Shortcuts_PlayPause">播放/暫停</sys:String>
+  <sys:String x:Key="Shortcuts_Stop">停止</sys:String>
+  <sys:String x:Key="Shortcuts_SeekTimeshift">快退/快進（時移模式）&#x0a;切換上一/下一源（正常模式）</sys:String>
+  <sys:String x:Key="Shortcuts_PrevNextChannel">上一頻道 / 下一頻道</sys:String>
+  <sys:String x:Key="Shortcuts_Interface">介面控制</sys:String>
+  <sys:String x:Key="Shortcuts_Fullscreen">全螢幕切換</sys:String>
+  <sys:String x:Key="Shortcuts_ChannelList">頻道列表</sys:String>
+  <sys:String x:Key="Shortcuts_MinimalMode">精簡模式</sys:String>
+  <sys:String x:Key="Shortcuts_EpgToggle">EPG開關</sys:String>
+  <sys:String x:Key="Shortcuts_DoubleClickVideo">雙擊視訊區</sys:String>
+  <sys:String x:Key="Shortcuts_FileChannel">檔案/頻道</sys:String>
+  <sys:String x:Key="Shortcuts_OpenFile">打開檔案</sys:String>
+  <sys:String x:Key="Shortcuts_OpenUrl">打開連結</sys:String>
+  <sys:String x:Key="Shortcuts_AddFile">新增檔案</sys:String>
+  <sys:String x:Key="Shortcuts_AddUrl">新增連結</sys:String>
+  <sys:String x:Key="Shortcuts_ManageChannels">管理頻道資料</sys:String>
+  <sys:String x:Key="Shortcuts_RefreshChannels">重新整理頻道</sys:String>
+  <sys:String x:Key="Shortcuts_Volume">音量</sys:String>
+  <sys:String x:Key="Shortcuts_Mute">靜音</sys:String>
+  <sys:String x:Key="Shortcuts_VolumeUp">音量+</sys:String>
+  <sys:String x:Key="Shortcuts_VolumeDown">音量-</sys:String>
+  <sys:String x:Key="Shortcuts_MouseWheel">滾輪</sys:String>
+  <sys:String x:Key="Shortcuts_VolumeAdjust">音量調節</sys:String>
+  <sys:String x:Key="Shortcuts_Other">其他</sys:String>
+  <sys:String x:Key="Shortcuts_DebugWindow">除錯視窗</sys:String>
+  <sys:String x:Key="Shortcuts_Settings">設定</sys:String>
+  <sys:String x:Key="Shortcuts_About">關於</sys:String>
+  <sys:String x:Key="Shortcuts_ShortcutsHelp">快捷鍵說明</sys:String>
+  <sys:String x:Key="Shortcuts_ExitMinimal">退出精簡模式</sys:String>
+  <sys:String x:Key="Shortcuts_Exit">退出</sys:String>
+  <sys:String x:Key="Shortcuts_Record">開始/停止錄製</sys:String>
+  <sys:String x:Key="Shortcuts_TimeshiftMode">時移模式（附加）</sys:String>
+  <sys:String x:Key="Shortcuts_PrevNextProgram">上一節目 / 下一節目</sys:String>
+
+  <!-- Decoder Options -->
+  <sys:String x:Key="Decoder_Auto">自動</sys:String>
+  <sys:String x:Key="Decoder_D3D11VA">D3D11VA (硬體)</sys:String>
+  <sys:String x:Key="Decoder_DXVA2">DXVA2 (硬體)</sys:String>
+  <sys:String x:Key="Decoder_NVDEC">NVDEC (硬體)</sys:String>
+  <sys:String x:Key="Decoder_Software">軟體解碼</sys:String>
+
+  <!-- Settings Items -->
+  <sys:String x:Key="UI_NetworkPlayback">網絡播放</sys:String>
+  <sys:String x:Key="UI_RtspSettings">RTSP 設定</sys:String>
+  <sys:String x:Key="UI_Issues">Issues</sys:String>
+  <sys:String x:Key="UI_RtspTransport_TCP">TCP</sys:String>
+  <sys:String x:Key="UI_RtspTransport_UDP">UDP</sys:String>
+  <sys:String x:Key="UI_RtspTransport_HTTP">HTTP Tunnel</sys:String>
+
+  <!-- Settings Decoder ComboBox -->
+  <sys:String x:Key="UI_Decoder_Auto">自動</sys:String>
+  <sys:String x:Key="UI_Decoder_D3D11VA">D3D11VA (硬體)</sys:String>
+  <sys:String x:Key="UI_Decoder_DXVA2">DXVA2 (硬體)</sys:String>
+  <sys:String x:Key="UI_Decoder_NVDEC">NVDEC (硬體)</sys:String>
+  <sys:String x:Key="UI_Decoder_Software">軟體解碼</sys:String>
+
+  <!-- Settings Deinterlace ComboBox -->
+  <sys:String x:Key="UI_Deinterlace_Auto">自動</sys:String>
+  <sys:String x:Key="UI_Deinterlace_ForceOn">強制開啟</sys:String>
+  <sys:String x:Key="UI_Deinterlace_Off">關閉</sys:String>
+  <sys:String x:Key="UI_Deinterlace_Yadif">yadif</sys:String>
+  <sys:String x:Key="UI_Deinterlace_Bwdif">bwdif</sys:String>
+  <sys:String x:Key="UI_Deinterlace_None">none</sys:String>
+
+  <!-- Time Override -->
+  <sys:String x:Key="UI_TimeOverride_TabTitle">時間覆蓋</sys:String>
+
+  <!-- Menu - Missing -->
+  <sys:String x:Key="Menu_About">關於</sys:String>
+  <sys:String x:Key="Menu_Application">應用</sys:String>
+  <sys:String x:Key="Menu_AspectRatio">畫面比例</sys:String>
+  <sys:String x:Key="Menu_ClearCloseMode">清除關閉記憶</sys:String>
+  <sys:String x:Key="Menu_Control">控制</sys:String>
+  <sys:String x:Key="Menu_Debug">除錯</sys:String>
+  <sys:String x:Key="Menu_Decoder">解碼器</sys:String>
+  <sys:String x:Key="Menu_Drawer">頻道列表</sys:String>
+  <sys:String x:Key="Menu_FastForward">快進</sys:String>
+  <sys:String x:Key="Menu_Mute">靜音</sys:String>
+  <sys:String x:Key="Menu_Network">網路</sys:String>
+  <sys:String x:Key="Menu_NextChannel">下一頻道</sys:String>
+  <sys:String x:Key="Menu_PlayPause">播放/暫停</sys:String>
+  <sys:String x:Key="Menu_Playback">播放</sys:String>
+  <sys:String x:Key="Menu_PrevChannel">上一頻道</sys:String>
+  <sys:String x:Key="Menu_Record">錄製</sys:String>
+  <sys:String x:Key="Menu_RecordNow">即時錄製</sys:String>
+  <sys:String x:Key="Menu_RecordSettings">錄製設定</sys:String>
+  <sys:String x:Key="Menu_RecordingsList">錄製列表</sys:String>
+  <sys:String x:Key="Menu_RefreshChannels">重新整理頻道</sys:String>
+  <sys:String x:Key="Menu_Rewind">快退</sys:String>
+  <sys:String x:Key="Menu_Shortcuts">快捷鍵說明</sys:String>
+  <sys:String x:Key="Menu_Sound">聲音</sys:String>
+  <sys:String x:Key="Menu_Speed">播放速度</sys:String>
+  <sys:String x:Key="Menu_Stop">停止</sys:String>
+  <sys:String x:Key="Menu_SwitchSource">切換來源</sys:String>
+  <sys:String x:Key="Menu_Timeshift">時間偏移</sys:String>
+  <sys:String x:Key="Menu_Topmost">置頂</sys:String>
+  <sys:String x:Key="Menu_Video">視頻</sys:String>
+  <sys:String x:Key="Menu_VolumeDown">音量-</sys:String>
+  <sys:String x:Key="Menu_VolumeUp">音量+</sys:String>
 </ResourceDictionary>
