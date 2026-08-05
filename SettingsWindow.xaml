@@ -291,6 +291,7 @@
                     <ComboBox x:Name="CbDecoder" Width="200" HorizontalAlignment="Left">
                       <ComboBoxItem Content="Auto" Tag="auto"/>
                       <ComboBoxItem Content="D3D11VA (HW)" Tag="d3d11va"/>
+                      <ComboBoxItem Content="DXVA2 (HW)" Tag="dxva2"/>
                       <ComboBoxItem Content="NVDEC (HW)" Tag="nvdec"/>
                       <ComboBoxItem Content="Software" Tag="no"/>
                     </ComboBox>

@@ -68,7 +68,7 @@ namespace LibmpvIptvClient
                             FullscreenToggle: () => ToggleFullscreen(false),
                             OpenFile: () => { ToggleFullscreen(false); _shell.MenuActions.OpenFile(); },
                             OpenUrl: () => { ToggleFullscreen(false); _shell.MenuActions.OpenUrl(); },
-                            OpenSettings: OpenSettings,
+                            OpenSettings: () => OpenSettings(),
                             AddM3u: () => { ToggleFullscreen(false); _shell.MenuActions.AddM3uUrl(); },
                             AddM3uFile: () => { ToggleFullscreen(false); _shell.MenuActions.AddM3uFile(); },
                             LoadM3u: (src) => _shell.MenuActions.LoadM3u(src),

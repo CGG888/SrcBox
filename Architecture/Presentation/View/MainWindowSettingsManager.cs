@@ -18,7 +18,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             _overlayManager = overlayManager;
         }
 
-        public void OpenSettings()
+        public void OpenSettings(int tabIndex = 0)
         {
             var owner = (_shell.WindowStateActions.IsFullscreen && _shell.WindowStateActions.FullscreenWindow != null) ? (Window)_shell.WindowStateActions.FullscreenWindow : _window;
             try
@@ -28,6 +28,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                     if (w is SettingsWindow existing)
                     {
                         try { existing.Owner = owner; } catch { }
+                        try { existing.SelectTab(tabIndex); } catch { }
                         try { existing.Activate(); existing.Topmost = existing.Topmost; } catch { }
                         return;
                     }
@@ -42,6 +43,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             try { dlg.SetPreviewPlayerEngine(_shell.PlayerEngine); } catch { }
 
             dlg.ApplySettingsRequested += ApplySettings;
+            try { dlg.SelectTab(tabIndex); } catch { }
             dlg.Show();
         }
 

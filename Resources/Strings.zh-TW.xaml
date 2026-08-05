@@ -155,7 +155,7 @@
   <sys:String x:Key="Tab_Groups">分組</sys:String>
   <sys:String x:Key="Tab_History">歷史</sys:String>
   <sys:String x:Key="Tab_Favorites">收藏</sys:String>
-  <sys:String x:Key="Drawer_Recordings_Tab">錄播</sys:String>
+  <sys:String x:Key="Drawer_Recordings_Tab">錄製</sys:String>
   <sys:String x:Key="Drawer_Recordings_Title">錄播列表</sys:String>
   <sys:String x:Key="Drawer_Recordings_Refresh">重新整理</sys:String>
   <sys:String x:Key="Drawer_Recordings_Play">播放</sys:String>
@@ -201,7 +201,7 @@
   <sys:String x:Key="Overlay_SwitchSource">切換來源</sys:String>
   <sys:String x:Key="Overlay_AspectRatio">畫面比例</sys:String>
   <sys:String x:Key="Overlay_Timeshift">時移</sys:String>
-  <sys:String x:Key="Overlay_RecordNow">即時錄播</sys:String>
+  <sys:String x:Key="Overlay_RecordNow">即時錄製</sys:String>
   <sys:String x:Key="Overlay_RecordStop">停止錄播</sys:String>
   <sys:String x:Key="Overlay_EPG">節目指南</sys:String>
   <sys:String x:Key="Overlay_ToggleDrawer">折疊頻道列表</sys:String>

@@ -6,6 +6,23 @@ using System.Text.Json.Serialization;
 
 namespace LibmpvIptvClient
 {
+    public static class DecoderOptions
+    {
+        public static readonly string[] AllDecoders = new[] { "auto", "d3d11va", "dxva2", "nvdec", "no" };
+        public static string GetDisplayName(string decoder)
+        {
+            return decoder switch
+            {
+                "auto" => "Auto",
+                "d3d11va" => "D3D11VA (HW)",
+                "dxva2" => "DXVA2 (HW)",
+                "nvdec" => "NVDEC (HW)",
+                "no" => "Software",
+                _ => decoder
+            };
+        }
+    }
+
     public class M3uSource
     {
         public string Name { get; set; } = "";
@@ -125,6 +142,7 @@ namespace LibmpvIptvClient
         public bool ConfirmOnClose { get; set; } = true;
         public string CloseMode { get; set; } = "";
         public List<string> ChannelGroupOrder { get; set; } = new List<string>();
+        public bool SkipShortcutsDialog { get; set; } = false;
 
         public static PlaybackSettings Load()
         {

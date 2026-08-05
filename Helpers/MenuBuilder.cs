@@ -40,7 +40,8 @@ namespace LibmpvIptvClient.Helpers
             Action? openDebug = null,
             Action? showShortcuts = null,
             bool isTopmostChecked = false,
-            Action? clearCloseMode = null)
+            Action? clearCloseMode = null,
+            Action<string>? decoderChanged = null)
         {
             var cm = new ContextMenu();
 
@@ -219,6 +220,22 @@ namespace LibmpvIptvClient.Helpers
             miVideo.Items.Add(miRatio);
             RegisterRatioMenu(cm);
 
+            var miDecoder = new MenuItem { Header = Localizer.S("Menu_Decoder", "解码器") };
+            foreach (var val in DecoderOptions.AllDecoders)
+            {
+                var label = DecoderOptions.GetDisplayName(val);
+                var miDecoderItem = new MenuItem { Header = label, Tag = val, IsCheckable = true, IsChecked = string.Equals(val, _currentDecoder, StringComparison.OrdinalIgnoreCase) };
+                miDecoderItem.Click += (s, args) =>
+                {
+                    _currentDecoder = val;
+                    if (_decoderCallback != null)
+                        _decoderCallback(val);
+                };
+                miDecoder.Items.Add(miDecoderItem);
+                _decoderMenuItems.Add(miDecoderItem);
+            }
+            miVideo.Items.Add(miDecoder);
+
             var miDeinterlace = new MenuItem
             {
                 Header = Localizer.S("Menu_Deinterlace", "反交错"),
@@ -286,7 +303,7 @@ namespace LibmpvIptvClient.Helpers
 
             // 7. 录制
             var miRecord = new MenuItem { Header = Localizer.S("Menu_Record", "录制") };
-            var miRecNow = new MenuItem { Header = Localizer.S("Menu_RecordNow", "实时录播"), InputGestureText = "REC", IsCheckable = true };
+            var miRecNow = new MenuItem { Header = Localizer.S("Menu_RecordNow", "实时录制"), InputGestureText = "R", IsCheckable = true };
             miRecNow.Click += (s, args) =>
             {
                 if (_recToggleCallback != null)
@@ -306,14 +323,14 @@ namespace LibmpvIptvClient.Helpers
             miRecSettings.Click += (s, args) =>
             {
                 if (_recSettingsCallback != null)
-                    _recSettingsCallback();
+                    _recSettingsCallback(5);
             };
             miRecord.Items.Add(miRecSettings);
 
             cm.Items.Add(miRecord);
 
             // 8. 预约
-            var miReminder = new MenuItem { Header = Localizer.S("Menu_Reminders", "预约"), InputGestureText = "Ctrl+R" };
+            var miReminder = new MenuItem { Header = Localizer.S("Menu_Reminders", "预约") };
             var miNotify = new MenuItem { Header = Localizer.S("Menu_ReminderNotify", "通知") };
             miNotify.Click += (s, a) =>
             {
@@ -398,20 +415,33 @@ namespace LibmpvIptvClient.Helpers
         private static Action<string>? _ratioCallback;
         private static Action<bool>? _recToggleCallback;
         private static Action? _recListCallback;
-        private static Action? _recSettingsCallback;
+        private static Action<int>? _recSettingsCallback;
         private static Action? _switchSourceCallback;
+        private static Action<string>? _decoderCallback;
         private static string _currentAspectRatio = "default";
+        private static string _currentDecoder = "auto";
         private static double _currentSpeed = 1.0;
         private static readonly List<System.Windows.Controls.MenuItem> _ratioMenuItems = new();
         private static readonly List<System.Windows.Controls.ContextMenu> _ratioMenus = new();
+        private static readonly List<System.Windows.Controls.MenuItem> _decoderMenuItems = new();
         private static readonly List<System.Windows.Controls.MenuItem> _speedMenuItems = new();
         private static readonly List<System.Windows.Controls.ContextMenu> _speedMenus = new();
 
         public static void SetSpeedCallback(Action<double> callback) { System.Diagnostics.Debug.WriteLine($"[MenuBuilder] SetSpeedCallback called, callback is null: {callback == null}"); _speedCallback = callback; }
         public static void SetRatioCallback(Action<string> callback) => _ratioCallback = callback;
+        public static void SetDecoderCallback(Action<string> callback) => _decoderCallback = callback;
+        public static void SetCurrentDecoder(string decoder) { _currentDecoder = decoder; }
+        public static void RefreshAllDecoderChecks(string currentDecoder)
+        {
+            _currentDecoder = currentDecoder;
+            foreach (var mi in _decoderMenuItems)
+            {
+                mi.IsChecked = string.Equals(mi.Tag?.ToString(), currentDecoder, StringComparison.OrdinalIgnoreCase);
+            }
+        }
         public static void SetRecToggleCallback(Action<bool> callback) => _recToggleCallback = callback;
         public static void SetRecListCallback(Action callback) => _recListCallback = callback;
-        public static void SetRecSettingsCallback(Action callback) => _recSettingsCallback = callback;
+        public static void SetRecSettingsCallback(Action<int> callback) => _recSettingsCallback = callback;
         public static void SetSwitchSourceCallback(Action callback) => _switchSourceCallback = callback;
         public static void SetCurrentAspectRatio(string ratio) => _currentAspectRatio = ratio;
         public static void SetCurrentSpeed(double speed) => _currentSpeed = speed;

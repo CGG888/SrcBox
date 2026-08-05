@@ -4,6 +4,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using LibmpvIptvClient.Architecture.Application.Player;
 using LibmpvIptvClient.Architecture.Presentation.Mvvm;
+using LibmpvIptvClient.Diagnostics;
 
 namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 {
@@ -34,8 +35,12 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 var h = (int)(engine.GetPropertyDouble("height") ?? 0);
                 var fps = engine.GetPropertyDouble("estimated-vf-fps") ?? engine.GetPropertyDouble("fps");
                 var hw = engine.GetPropertyString("hwdec-current");
+                var hwdecSetting = engine.GetPropertyString("hwdec");
                 var vcodec = engine.GetPropertyString("video-codec");
                 var acodec = engine.GetPropertyString("audio-codec");
+                
+                // Debug logging
+                Logger.Debug($"[MediaInfo] hwdec-current={hw}, hwdec setting={hwdecSetting}, w={w}, h={h}");
                 
                 // Bitrate calculation
                 var brKbit = engine.GetPropertyDouble("video-params/bitrate");
@@ -80,7 +85,22 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 }
 
                 var newTags = new List<string>();
-                newTags.Add(string.IsNullOrEmpty(hw) ? "SW" : "HW");
+                var isHw = !string.IsNullOrEmpty(hw) && !string.Equals(hw, "no", StringComparison.OrdinalIgnoreCase);
+                if (isHw)
+                {
+                    newTags.Add("HW:" + hw.ToUpperInvariant());
+                }
+                else
+                {
+                    if (!string.IsNullOrEmpty(hwdecSetting) && !string.Equals(hwdecSetting, "no", StringComparison.OrdinalIgnoreCase))
+                    {
+                        newTags.Add("HW:" + hwdecSetting.ToUpperInvariant());
+                    }
+                    else
+                    {
+                        newTags.Add("SW");
+                    }
+                }
 
                 if (!string.IsNullOrWhiteSpace(vcodec))
                 {

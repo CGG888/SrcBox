@@ -82,13 +82,14 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             {
                 _window.Dispatcher.Invoke(() =>
                 {
-                    _shell.IsDrawerCollapsed = false;
+                    _window.SetDrawerCollapsed(false);
+                    _window.DrawerTabs.SelectedIndex = 3;
                 });
             });
 
-            MenuBuilder.SetRecSettingsCallback(() =>
+            MenuBuilder.SetRecSettingsCallback((tabIndex) =>
             {
-                _window.Dispatcher.Invoke(() => OpenSettings());
+                _window.Dispatcher.Invoke(() => OpenSettings(tabIndex));
             });
 
             MenuBuilder.SetSwitchSourceCallback(() =>
@@ -98,6 +99,16 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
 
             MenuBuilder.SetCurrentAspectRatio(_shell.CurrentAspect);
             MenuBuilder.SetCurrentSpeed(_shell.PlaybackSpeed);
+            MenuBuilder.SetCurrentDecoder(AppSettings.Current.Decoder);
+            MenuBuilder.SetDecoderCallback((decoder) =>
+            {
+                _window.Dispatcher.Invoke(() =>
+                {
+                    AppSettings.Current.Decoder = decoder;
+                    AppSettings.Current.Save();
+                    try { _window.ApplyDecoder(decoder); } catch { }
+                });
+            });
             return MenuBuilder.BuildMainMenu(
                 openFile: () => _shell.MenuActions.OpenFile(),
                 openUrl: () => _shell.MenuActions.OpenUrl(),
@@ -129,13 +140,13 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 volumeDown: null,
                 toggleTopmost: (on) => { _window.Topmost = on; },
                 openDebug: null,
-                showShortcuts: null,
+                showShortcuts: () => _window.Dispatcher.Invoke(() => _window.ShowShortcuts()),
                 isTopmostChecked: _window.Topmost,
                 clearCloseMode: null
             );
         }
 
-        private void OpenSettings()
+        private void OpenSettings(int tabIndex = 0)
         {
             // Delegate back to MainWindow or implement here?
             // OpenSettings logic is complex (dialog creation, callback handling).
@@ -144,7 +155,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             // Since OpenSettings is private in MainWindow, we might need to make it internal.
             // Or use reflection? No.
             // Let's assume we'll make MainWindow.OpenSettings internal.
-            _window.OpenSettings(); 
+            _window.OpenSettings(tabIndex);
         }
 
         public void VideoPanel_MouseClick(object? sender, System.Windows.Forms.MouseEventArgs e)

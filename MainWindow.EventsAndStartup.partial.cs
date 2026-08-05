@@ -505,6 +505,22 @@ namespace LibmpvIptvClient
                 CbEpg.IsChecked = !(CbEpg.IsChecked == true);
                 CbEpg_Click(CbEpg, new RoutedEventArgs());
             };
+            _shell.ShortcutActions.RequestOpenFile += () => _shell.MenuActions.OpenFile();
+            _shell.ShortcutActions.RequestOpenUrl += () => _shell.MenuActions.OpenUrl();
+            _shell.ShortcutActions.RequestAddM3uFile += () => _shell.MenuActions.AddM3uFile();
+            _shell.ShortcutActions.RequestAddM3uUrl += () => _shell.MenuActions.AddM3uUrl();
+            _shell.ShortcutActions.RequestManageM3u += () => { LibmpvIptvClient.Helpers.M3uWindowManager.OpenOrActivate(); };
+            _shell.ShortcutActions.RequestRefreshChannels += () => {
+                var selected = AppSettings.Current.SavedSources?.FirstOrDefault(s => s.IsSelected);
+                if (selected != null) _shell.MenuActions.LoadM3u(selected);
+            };
+            _shell.ShortcutActions.RequestVolumeUp += () => AdjustVolumeByWheel(120);
+            _shell.ShortcutActions.RequestVolumeDown += () => AdjustVolumeByWheel(-120);
+            _shell.ShortcutActions.RequestToggleMinimalMode += (on) => _shell.MenuActions.ToggleMinimalMode(on);
+            _shell.ShortcutActions.RequestOpenSettings += () => OpenSettings();
+            _shell.ShortcutActions.RequestShowAbout += () => _shell.MenuActions.ShowAbout();
+            _shell.ShortcutActions.RequestShowShortcuts += () => ShowShortcuts();
+            _shell.ShortcutActions.RequestStartRecording += () => { try { _recordingManager?.ToggleRecordNow(); } catch { } };
 
             _timer.Interval = TimeSpan.FromMilliseconds(500);
             _timer.Tick += OnTick;
@@ -589,7 +605,7 @@ namespace LibmpvIptvClient
                                 FullscreenToggle: () => ToggleFullscreen(true),
                                 OpenFile: () => _shell.MenuActions.OpenFile(),
                                 OpenUrl: () => _shell.MenuActions.OpenUrl(),
-                                OpenSettings: OpenSettings,
+                                OpenSettings: () => OpenSettings(),
                                 AddM3u: () => _shell.MenuActions.AddM3uUrl(),
                                 AddM3uFile: () => _shell.MenuActions.AddM3uFile(),
                                 LoadM3u: (src) => _shell.MenuActions.LoadM3u(src),

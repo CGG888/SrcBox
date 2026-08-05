@@ -21,7 +21,20 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow;
     ToggleEpg,
     OpenDebug,
     PreviousProgram,
-    NextProgram
+    NextProgram,
+    OpenFile,
+    OpenUrl,
+    AddM3uFile,
+    AddM3uUrl,
+    ManageM3u,
+    RefreshChannels,
+    VolumeUp,
+    VolumeDown,
+    ToggleMinimalMode,
+    OpenSettings,
+    ShowAbout,
+    ShowShortcuts,
+    StartRecording
 }
 
 public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
@@ -31,6 +44,19 @@ public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
     public event System.Action? RequestDebugWindow;
     public event System.Action? RequestToggleDrawer;
     public event System.Action? RequestToggleEpg;
+    public event System.Action? RequestOpenFile;
+    public event System.Action? RequestOpenUrl;
+    public event System.Action? RequestAddM3uFile;
+    public event System.Action? RequestAddM3uUrl;
+    public event System.Action? RequestManageM3u;
+    public event System.Action? RequestRefreshChannels;
+    public event System.Action? RequestVolumeUp;
+    public event System.Action? RequestVolumeDown;
+    public event System.Action<bool>? RequestToggleMinimalMode;
+    public event System.Action? RequestOpenSettings;
+    public event System.Action? RequestShowAbout;
+    public event System.Action? RequestShowShortcuts;
+    public event System.Action? RequestStartRecording;
 
     public MainWindowShortcutActionsViewModel(MainShellViewModel shell)
     {
@@ -41,6 +67,7 @@ public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
     {
         bool isTimeshiftMode = _shell.IsTimeshiftActive || _shell.CurrentPlayingProgram != null;
         bool isCtrlPressed = (modifiers & ModifierKeys.Control) == ModifierKeys.Control;
+        bool isShiftPressed = (modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
 
         if (isTimeshiftMode && isCtrlPressed)
         {
@@ -60,11 +87,23 @@ public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
             Key.Right => isTimeshiftMode ? MainWindowShortcutAction.SeekForward : MainWindowShortcutAction.NextSource,
             Key.Up => MainWindowShortcutAction.PreviousChannel,
             Key.Down => MainWindowShortcutAction.NextChannel,
-            Key.M => MainWindowShortcutAction.ToggleMute,
+            Key.M => isCtrlPressed ? MainWindowShortcutAction.ManageM3u : MainWindowShortcutAction.ToggleMute,
             Key.Enter => MainWindowShortcutAction.ToggleFullscreen,
-            Key.L => MainWindowShortcutAction.ToggleDrawer,
             Key.E => MainWindowShortcutAction.ToggleEpg,
             Key.F1 => MainWindowShortcutAction.OpenDebug,
+            Key.F5 => MainWindowShortcutAction.RefreshChannels,
+            Key.O => isCtrlPressed ? MainWindowShortcutAction.OpenFile : MainWindowShortcutAction.None,
+            Key.U => isCtrlPressed ? MainWindowShortcutAction.OpenUrl : MainWindowShortcutAction.None,
+            Key.N => isCtrlPressed ? MainWindowShortcutAction.AddM3uFile : MainWindowShortcutAction.None,
+            Key.B => isCtrlPressed ? MainWindowShortcutAction.AddM3uUrl : MainWindowShortcutAction.None,
+            Key.OemPlus => MainWindowShortcutAction.VolumeUp,
+            Key.Add => MainWindowShortcutAction.VolumeUp,
+            Key.OemMinus => MainWindowShortcutAction.VolumeDown,
+            Key.Subtract => MainWindowShortcutAction.VolumeDown,
+            Key.L => isCtrlPressed && isShiftPressed ? MainWindowShortcutAction.ToggleMinimalMode : (!isCtrlPressed ? MainWindowShortcutAction.ToggleDrawer : MainWindowShortcutAction.None),
+            Key.I => isCtrlPressed ? MainWindowShortcutAction.ShowAbout : MainWindowShortcutAction.None,
+            Key.OemQuestion => isCtrlPressed ? MainWindowShortcutAction.ShowShortcuts : MainWindowShortcutAction.None,
+            Key.R => !isCtrlPressed ? MainWindowShortcutAction.StartRecording : MainWindowShortcutAction.None,
             _ => MainWindowShortcutAction.None
         };
     }
@@ -142,6 +181,45 @@ public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
                 break;
             case MainWindowShortcutAction.OpenDebug:
                 RequestDebugWindow?.Invoke();
+                break;
+            case MainWindowShortcutAction.OpenFile:
+                RequestOpenFile?.Invoke();
+                break;
+            case MainWindowShortcutAction.OpenUrl:
+                RequestOpenUrl?.Invoke();
+                break;
+            case MainWindowShortcutAction.AddM3uFile:
+                RequestAddM3uFile?.Invoke();
+                break;
+            case MainWindowShortcutAction.AddM3uUrl:
+                RequestAddM3uUrl?.Invoke();
+                break;
+            case MainWindowShortcutAction.ManageM3u:
+                RequestManageM3u?.Invoke();
+                break;
+            case MainWindowShortcutAction.RefreshChannels:
+                RequestRefreshChannels?.Invoke();
+                break;
+            case MainWindowShortcutAction.VolumeUp:
+                RequestVolumeUp?.Invoke();
+                break;
+            case MainWindowShortcutAction.VolumeDown:
+                RequestVolumeDown?.Invoke();
+                break;
+            case MainWindowShortcutAction.ToggleMinimalMode:
+                RequestToggleMinimalMode?.Invoke(!_shell.IsMinimalMode);
+                break;
+            case MainWindowShortcutAction.OpenSettings:
+                RequestOpenSettings?.Invoke();
+                break;
+            case MainWindowShortcutAction.ShowAbout:
+                RequestShowAbout?.Invoke();
+                break;
+            case MainWindowShortcutAction.ShowShortcuts:
+                RequestShowShortcuts?.Invoke();
+                break;
+            case MainWindowShortcutAction.StartRecording:
+                RequestStartRecording?.Invoke();
                 break;
         }
     }

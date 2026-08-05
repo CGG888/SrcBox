@@ -89,6 +89,18 @@ namespace LibmpvIptvClient
         {
             SetDouble("speed", speed);
         }
+        public void SetHwdec(string hwdec)
+        {
+            try
+            {
+                SetString("hwdec", hwdec ?? "auto");
+                Logger.Debug($"[mpv] hwdec changed to: {hwdec}");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"[mpv] SetHwdec failed: {ex.Message}");
+            }
+        }
         public void SetWid(IntPtr hwnd)
         {
             var prop = "wid";

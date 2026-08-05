@@ -8,6 +8,7 @@ using System.Windows.Interop;
 using System.Windows.Media;
 using LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow;
 using LibmpvIptvClient.Models;
+using LibmpvIptvClient.Helpers;
 using LibmpvIptvClient.Services;
 
 namespace LibmpvIptvClient
@@ -139,10 +140,54 @@ namespace LibmpvIptvClient
         }
         internal void UpdatePlayPauseIconFromManager() => UpdatePlayPauseIcon();
 
-        internal void OpenSettings()
+        internal void OpenSettings(int tabIndex = 0)
         {
-            _settingsManager?.OpenSettings();
+            _settingsManager?.OpenSettings(tabIndex);
         }
+
+        internal void ShowShortcuts()
+        {
+            var wnd = new ShortcutsWindow { Owner = this };
+            wnd.ShowDialog();
+        }
+
+        internal Rect GetVideoAreaRect()
+        {
+            try
+            {
+                return new Rect(VideoHost.PointToScreen(new System.Windows.Point(0, 0)), new System.Windows.Size(VideoHost.ActualWidth, VideoHost.ActualHeight));
+            }
+            catch
+            {
+                return new Rect(Left, Top, ActualWidth, ActualHeight);
+            }
+        }
+
+        internal void ShowShortcutsDialogIfNeeded()
+        {
+            if (!AppSettings.Current.SkipShortcutsDialog)
+            {
+                ShowShortcuts();
+            }
+        }
+
+        internal void ApplyDecoder(string decoder)
+        {
+            AppSettings.Current.Decoder = decoder;
+            AppSettings.Current.Save();
+            try { Diagnostics.Logger.Info($"[Decoder] 设置已更改: {decoder}"); } catch { }
+            try
+            {
+                if (PlayerInterop != null)
+                {
+                    PlayerInterop.SetSettings(AppSettings.Current);
+                    PlayerInterop.SetHwdec(decoder);
+                }
+            }
+            catch { }
+            MenuBuilder.RefreshAllDecoderChecks(decoder);
+        }
+
         internal void SetDrawerCollapsed(bool collapsed)
         {
             if (_shell.IsDrawerCollapsed == collapsed) return;

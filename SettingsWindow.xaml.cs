@@ -1133,5 +1133,11 @@ namespace LibmpvIptvClient
             return null;
         }
 
+        public void SelectTab(int index)
+        {
+            if (index >= 0 && index < NavTabs.Items.Count)
+                NavTabs.SelectedIndex = index;
+        }
+
     }
 }
