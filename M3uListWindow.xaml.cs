@@ -86,5 +86,16 @@ namespace LibmpvIptvClient
         {
             try { foreach (var i in _items) i.IsSelected = !i.IsSelected; Grid.Items.Refresh(); } catch { }
         }
+        void TitleBar_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (e.ClickCount == 2) { BtnMaximize_Click(sender, e); return; }
+            try { DragMove(); } catch { }
+        }
+        void BtnMinimize_Click(object sender, RoutedEventArgs e) { WindowState = WindowState.Minimized; }
+        void BtnMaximize_Click(object sender, RoutedEventArgs e)
+        {
+            WindowState = WindowState == WindowState.Maximized ? WindowState.Normal : WindowState.Maximized;
+        }
+        void BtnClose_Click(object sender, RoutedEventArgs e) { Close(); }
     }
 }

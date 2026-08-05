@@ -28,7 +28,7 @@
                     </Grid.ColumnDefinitions>
                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                         <Image Source="/srcbox.png" Width="18" Height="18" Margin="0,0,8,0"/>
-                        <TextBlock Text="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                        <TextBlock Text="{Binding Title, RelativeSource={RelativeSource AncestorType=Window}}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" FontWeight="Bold" VerticalAlignment="Center"/>
                     </StackPanel>
                     <Button Grid.Column="2" Click="BtnCloseTitle_Click" shell:WindowChrome.IsHitTestVisibleInChrome="True" Width="46" Height="32" Background="Transparent" BorderThickness="0">
                         <Button.Style>
@@ -75,7 +75,7 @@
                 <TextBox x:Name="TxtUrl" Grid.Row="1" Grid.Column="1" Height="30" Margin="0,0,0,10" Background="{DynamicResource InputBackgroundBrush}" Foreground="{DynamicResource InputTextBrush}" BorderBrush="{DynamicResource InputBorderBrush}" BorderThickness="1" Padding="4" VerticalContentAlignment="Center"/>
 
                 <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
-                    <Button Content="{DynamicResource Common_Delete}" Width="80" Height="30" Click="BtnDelete_Click" Background="{DynamicResource DangerButtonBackgroundBrush}" Foreground="{DynamicResource DangerButtonForegroundBrush}" BorderThickness="0" Margin="0,0,10,0">
+                    <Button Content="{DynamicResource Common_Delete}" Width="80" Height="30" Click="BtnDelete_Click" Background="{DynamicResource DangerButtonBackgroundBrush}" Foreground="{DynamicResource DangerButtonForegroundBrush}" BorderThickness="0" Margin="0,0,10,0" FontSize="12">
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
                                 <Border Background="{TemplateBinding Background}" CornerRadius="4">
@@ -84,7 +84,7 @@
                             </ControlTemplate>
                         </Button.Template>
                     </Button>
-                    <Button Content="{DynamicResource UI_Save}" Width="80" Height="30" Click="BtnOk_Click" Background="{DynamicResource PrimaryButtonBackgroundBrush}" Foreground="{DynamicResource PrimaryButtonForegroundBrush}" BorderThickness="0" Margin="0,0,10,0">
+                    <Button Content="{DynamicResource UI_Save}" Width="80" Height="30" Click="BtnOk_Click" Background="{DynamicResource PrimaryButtonBackgroundBrush}" Foreground="{DynamicResource PrimaryButtonForegroundBrush}" BorderThickness="0" Margin="0,0,10,0" FontSize="12">
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
                                 <Border Background="{TemplateBinding Background}" CornerRadius="4">
@@ -93,7 +93,7 @@
                             </ControlTemplate>
                         </Button.Template>
                     </Button>
-                    <Button Content="{DynamicResource UI_Cancel}" Width="80" Height="30" Click="BtnCancel_Click" Background="{DynamicResource SecondaryButtonBackgroundBrush}" Foreground="{DynamicResource SecondaryButtonForegroundBrush}" BorderThickness="0">
+                    <Button Content="{DynamicResource UI_Cancel}" Width="80" Height="30" Click="BtnCancel_Click" Background="{DynamicResource SecondaryButtonBackgroundBrush}" Foreground="{DynamicResource SecondaryButtonForegroundBrush}" BorderThickness="0" FontSize="12">
                         <Button.Template>
                             <ControlTemplate TargetType="Button">
                                 <Border Background="{TemplateBinding Background}" CornerRadius="4">

@@ -35,7 +35,7 @@ public sealed class MainWindowChannelListActionsViewModel : ViewModelBase
             baseList = baseList.Where(c => string.Equals(c.Group, selectedGroup, StringComparison.OrdinalIgnoreCase));
         }
         var distinct = DistinctByName(baseList);
-        var totalCount = channels?.Count ?? 0;
+        var totalCount = distinct.Count;
         var countText = string.IsNullOrEmpty(safeSearch)
             ? string.Format(LibmpvIptvClient.Helpers.ResxLocalizer.Get("Drawer_CountAll", "共 {0} 个频道"), totalCount)
             : string.Format(LibmpvIptvClient.Helpers.ResxLocalizer.Get("Drawer_FilteredCount", "筛选到 {0} / {1}"), distinct.Count, totalCount);

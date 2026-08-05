@@ -43,4 +43,15 @@ namespace LibmpvIptvClient
 
         public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => System.Windows.Data.Binding.DoNothing;
     }
+
+    public class IntPlusOneConverter : IValueConverter
+    {
+        public object Convert(object value, Type targetType, object parameter, CultureInfo culture)
+        {
+            if (value is int i) return (i + 1).ToString();
+            return "0";
+        }
+
+        public object ConvertBack(object value, Type targetType, object parameter, CultureInfo culture) => System.Windows.Data.Binding.DoNothing;
+    }
 }

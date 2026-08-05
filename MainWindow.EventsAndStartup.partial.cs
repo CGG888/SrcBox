@@ -606,6 +606,10 @@ namespace LibmpvIptvClient
                                 IsEpgVisible: () => CbEpg.IsChecked == true,
                                 IsDrawerVisible: () => !_shell.IsDrawerCollapsed,
                                 IsMinimalMode: () => _shell.IsMinimalMode,
+                                GetCurrentAspectRatio: () => _shell.CurrentAspect,
+                                RatioChanged: (val) => { _shell.CurrentAspect = val; LibmpvIptvClient.Helpers.MenuBuilder.SetCurrentAspectRatio(val); LibmpvIptvClient.Helpers.MenuBuilder.RefreshAllRatioChecks(val); _shell.PlayerEngine?.SetAspectRatio(val); _overlayManager.SetOverlayAspectRatio(val); },
+                                GetCurrentSpeed: () => _shell.PlaybackSpeed,
+                                SpeedChanged: (sp) => { _shell.PlaybackSpeed = sp; _shell.IsSpeedEnabled = true; LibmpvIptvClient.Helpers.MenuBuilder.SetCurrentSpeed(sp); LibmpvIptvClient.Helpers.MenuBuilder.RefreshAllSpeedChecks(sp); try { _overlayManager.OverlayWpf?.SetSpeed(sp); } catch { } },
                                 ShortcutKeyPressed: (key, modifiers) => {
                                     var action = _shell.ShortcutActions.ResolveAction(key, modifiers);
                                     if (action != MainWindowShortcutAction.None)

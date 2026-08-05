@@ -28,11 +28,15 @@ namespace LibmpvIptvClient
         public event Action<bool>? DrawerToggled;
         public event Action<bool>? MinimalModeChanged;
         public event Action<bool>? DeinterlaceChanged;
+        public event Action<string>? RatioChanged;
+        public event Action<double>? SpeedChanged;
         public Func<bool>? IsUdpEnabled;
         public Func<bool>? IsTopmost;
         public Func<bool>? IsEpgVisible;
         public Func<bool>? IsDrawerVisible;
         public Func<bool>? IsMinimalMode;
+        public Func<string>? GetCurrentAspectRatio;
+        public Func<double>? GetCurrentSpeed;
         public event Func<System.Windows.Input.Key, System.Windows.Input.ModifierKeys, bool>? ShortcutKeyPressed;
         private readonly MainWindowTopOverlayMenuViewModel _menuViewModel = new();
 
@@ -157,7 +161,11 @@ namespace LibmpvIptvClient
                 toggleTopmost: null,
                 openDebug: null,
                 showShortcuts: null,
-                isTopmostChecked: false);
+                isTopmostChecked: false,
+                currentAspectRatio: GetCurrentAspectRatio?.Invoke() ?? "default",
+                ratioChanged: (val) => { RatioChanged?.Invoke(val); },
+                currentSpeed: GetCurrentSpeed?.Invoke() ?? 1.0,
+                speedChanged: (sp) => { SpeedChanged?.Invoke(sp); });
 
             BtnTitle.ContextMenu = cm;
             BtnTitle.ContextMenu.PlacementTarget = BtnTitle;

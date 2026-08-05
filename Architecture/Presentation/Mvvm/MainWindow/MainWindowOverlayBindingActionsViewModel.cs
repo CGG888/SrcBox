@@ -42,11 +42,15 @@ public sealed record TopOverlayBindingContext(
     Action<bool>? MinimalModeChanged,
     Action<bool>? DeinterlaceChanged,
     Action<bool>? TopmostChanged,
+    Action<string>? RatioChanged,
+    Action<double>? SpeedChanged,
     Func<bool>? IsUdpEnabled,
     Func<bool>? IsTopmost,
     Func<bool>? IsEpgVisible,
     Func<bool>? IsDrawerVisible,
     Func<bool>? IsMinimalMode,
+    Func<string>? GetCurrentAspectRatio,
+    Func<double>? GetCurrentSpeed,
     Func<System.Windows.Input.Key, System.Windows.Input.ModifierKeys, bool>? ShortcutKeyPressed);
 
 public sealed class MainWindowOverlayBindingActionsViewModel : ViewModelBase
@@ -96,6 +100,10 @@ public sealed class MainWindowOverlayBindingActionsViewModel : ViewModelBase
         topOverlay.IsEpgVisible = context.IsEpgVisible;
         topOverlay.IsDrawerVisible = context.IsDrawerVisible;
         topOverlay.IsMinimalMode = context.IsMinimalMode;
+        topOverlay.GetCurrentAspectRatio = context.GetCurrentAspectRatio;
+        topOverlay.GetCurrentSpeed = context.GetCurrentSpeed;
+        if (context.RatioChanged != null) topOverlay.RatioChanged += context.RatioChanged;
+        if (context.SpeedChanged != null) topOverlay.SpeedChanged += context.SpeedChanged;
         if (context.ShortcutKeyPressed != null) topOverlay.ShortcutKeyPressed += context.ShortcutKeyPressed;
     }
 }

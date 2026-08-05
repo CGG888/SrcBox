@@ -48,6 +48,11 @@ namespace LibmpvIptvClient
             CbM3uList.ItemsSource = AppSettings.Current.SavedSources;
             //CbM3uListGroups.ItemsSource = AppSettings.Current.SavedSources;
             SyncM3uComboBoxSelection();
+            CbM3uList.Loaded += (s, e) => {
+                if (CbM3uList.Template.FindName("PART_EditableTextBox", CbM3uList) is System.Windows.Controls.TextBox tb) {
+                    tb.FontSize = 10;
+                }
+            };
             DataContext = _shell;
             _overlayManager = new LibmpvIptvClient.Architecture.Presentation.View.MainWindowOverlayManager(this, _shell);
             _menuManager = new LibmpvIptvClient.Architecture.Presentation.View.MainWindowMenuManager(this, _shell, _overlayManager);

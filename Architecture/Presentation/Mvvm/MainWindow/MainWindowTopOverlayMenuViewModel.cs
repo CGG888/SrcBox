@@ -4,9 +4,9 @@ using LibmpvIptvClient.Architecture.Presentation.Mvvm;
 
 namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow;
 
-public sealed class MainWindowTopOverlayMenuViewModel : ViewModelBase
-{
-    public ContextMenu BuildMenu(
+    public sealed class MainWindowTopOverlayMenuViewModel : ViewModelBase
+    {
+        public ContextMenu BuildMenu(
         Action? openFile,
         Action? openUrl,
         Action? addM3uFile,
@@ -38,8 +38,18 @@ public sealed class MainWindowTopOverlayMenuViewModel : ViewModelBase
         Action<bool>? toggleTopmost = null,
         Action? openDebug = null,
         Action? showShortcuts = null,
-        bool isTopmostChecked = false)
+        bool isTopmostChecked = false,
+        string currentAspectRatio = "default",
+        Action<string>? ratioChanged = null,
+        double currentSpeed = 1.0,
+        Action<double>? speedChanged = null)
     {
+        LibmpvIptvClient.Helpers.MenuBuilder.SetCurrentAspectRatio(currentAspectRatio);
+        if (ratioChanged != null)
+            LibmpvIptvClient.Helpers.MenuBuilder.SetRatioCallback(ratioChanged);
+        LibmpvIptvClient.Helpers.MenuBuilder.SetCurrentSpeed(currentSpeed);
+        if (speedChanged != null)
+            LibmpvIptvClient.Helpers.MenuBuilder.SetSpeedCallback(speedChanged);
         return LibmpvIptvClient.Helpers.MenuBuilder.BuildMainMenu(
             openFile: openFile,
             openUrl: openUrl,

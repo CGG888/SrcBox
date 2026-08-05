@@ -118,9 +118,11 @@
             <Image Source="/srcbox.png" Width="18" Height="18" Margin="0,0,8,0"/>
             <TextBlock Text="{DynamicResource UI_SettingsTitle}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="14" FontWeight="SemiBold" VerticalAlignment="Center"/>
           </StackPanel>
-          <Button Grid.Column="2" Click="BtnCloseTitle_Click" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+          <Button Grid.Column="2" Width="24" Height="24" Click="BtnCloseTitle_Click" shell:WindowChrome.IsHitTestVisibleInChrome="True">
             <Button.Style>
               <Style TargetType="ButtonBase" BasedOn="{StaticResource TitleBarButton}">
+                <Setter Property="Width" Value="24"/>
+                <Setter Property="Height" Value="24"/>
                 <Style.Triggers>
                   <Trigger Property="IsMouseOver" Value="True">
                     <Setter Property="Background" Value="#E81123"/>
@@ -128,7 +130,7 @@
                 </Style.Triggers>
               </Style>
             </Button.Style>
-            <Path Data="M4.5,4.5 L11.5,11.5 M11.5,4.5 L4.5,11.5" Stroke="#DDD" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+            <TextBlock Text="✕" FontSize="12" Foreground="#DDD" HorizontalAlignment="Center" VerticalAlignment="Center"/>
           </Button>
         </Grid>
       </Border>

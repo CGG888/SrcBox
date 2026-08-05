@@ -1,22 +1,54 @@
-<Window x:Class="LibmpvIptvClient.M3uListWindow"
-        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+<Window xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="M3U 管理" Width="720" Height="420" WindowStartupLocation="CenterOwner"
-        Background="{DynamicResource AppBackgroundBrush}">
-  <DockPanel Margin="12">
-    <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0,0,0,8">
-      <Button Content="编辑" Width="80" Margin="0,0,8,0" Click="BtnEdit_Click" Style="{StaticResource ChipButton}"/>
-      <Button Content="删除" Width="80" Margin="0,0,8,0" Click="BtnDelete_Click" Style="{StaticResource ChipButton}"/>
-      <Button Content="全选" Width="72" Margin="12,0,4,0" Click="BtnSelectAll_Click" Style="{StaticResource ChipButton}"/>
-      <Button Content="反选" Width="72" Margin="4,0,8,0" Click="BtnInvert_Click" Style="{StaticResource ChipButton}"/>
-    </StackPanel>
-    <DataGrid x:Name="Grid" AutoGenerateColumns="False" CanUserAddRows="False" HeadersVisibility="Column" RowHeaderWidth="0"
-              Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" GridLinesVisibility="Horizontal">
-      <DataGrid.Columns>
-        <DataGridCheckBoxColumn Header="" Binding="{Binding IsSelected}" Width="48"/>
-        <DataGridTextColumn Header="名称" Binding="{Binding Name}" Width="2*"/>
-        <DataGridTextColumn Header="地址" Binding="{Binding Url}" Width="4*"/>
-      </DataGrid.Columns>
-    </DataGrid>
-  </DockPanel>
+        xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
+        x:Class="LibmpvIptvClient.M3uListWindow"
+        Title="频道数据" Width="720" Height="420" WindowStartupLocation="CenterOwner"
+        WindowStyle="None" Icon="pack://application:,,,/srcbox.ico"
+        Background="Transparent" AllowsTransparency="True" Foreground="{DynamicResource TextPrimaryBrush}">
+
+    <WindowChrome.WindowChrome>
+        <shell:WindowChrome CaptionHeight="40" GlassFrameThickness="0" CornerRadius="8" ResizeBorderThickness="4" UseAeroCaptionButtons="False"/>
+    </WindowChrome.WindowChrome>
+
+    <Border Background="{DynamicResource AppBackgroundBrush}" CornerRadius="8" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1">
+        <DockPanel>
+            <!-- Title Bar -->
+            <Border DockPanel.Dock="Top" Background="{DynamicResource TitleBarBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="0,0,0,1" MouseLeftButtonDown="TitleBar_MouseLeftButtonDown" CornerRadius="8,8,0,0" Height="40">
+                <Grid Margin="12,0">
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Left">
+                        <TextBlock Text="频道数据" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" FontWeight="Bold" VerticalAlignment="Center"/>
+                    </StackPanel>
+                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Right">
+                        <Button x:Name="BtnMinimize" Width="24" Height="24" Click="BtnMinimize_Click" Background="Transparent" BorderThickness="0" Margin="0,0,4,0" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                            <TextBlock Text="─" FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Button>
+                        <Button x:Name="BtnMaximize" Width="24" Height="24" Click="BtnMaximize_Click" Background="Transparent" BorderThickness="0" Margin="0,0,4,0" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                            <TextBlock x:Name="TxtMaximize" Text="□" FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Button>
+                        <Button x:Name="BtnClose" Width="24" Height="24" Click="BtnClose_Click" Background="Transparent" BorderThickness="0" shell:WindowChrome.IsHitTestVisibleInChrome="True">
+                            <TextBlock Text="✕" FontSize="12" Foreground="{DynamicResource TextPrimaryBrush}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Content -->
+            <DockPanel Margin="12">
+                <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0,12,0,8">
+                    <Button Content="编辑" Width="80" Margin="0,0,8,0" Click="BtnEdit_Click" Style="{StaticResource ChipButton}"/>
+                    <Button Content="删除" Width="80" Margin="0,0,8,0" Click="BtnDelete_Click" Style="{StaticResource ChipButton}"/>
+                    <Button Content="全选" Width="72" Margin="12,0,4,0" Click="BtnSelectAll_Click" Style="{StaticResource ChipButton}"/>
+                    <Button Content="反选" Width="72" Margin="4,0,8,0" Click="BtnInvert_Click" Style="{StaticResource ChipButton}"/>
+                </StackPanel>
+                <DataGrid x:Name="Grid" AutoGenerateColumns="False" CanUserAddRows="False" HeadersVisibility="Column" RowHeaderWidth="0"
+                          Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" GridLinesVisibility="Horizontal" FontSize="10" VerticalContentAlignment="Center">
+                    <DataGrid.Columns>
+                        <DataGridCheckBoxColumn Header="" Binding="{Binding IsSelected}" Width="48"/>
+                        <DataGridTextColumn Header="名称" Binding="{Binding Name}" Width="2*"/>
+                        <DataGridTextColumn Header="地址" Binding="{Binding Url}" Width="4*"/>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
+        </DockPanel>
+    </Border>
 </Window>

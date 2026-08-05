@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Windows;
 using System.Windows.Controls;
 
@@ -314,10 +315,11 @@ namespace LibmpvIptvClient
              DrawerToggled?.Invoke(CbDrawer.IsChecked == true);
         }
         void CbEpg_Checked(object sender, RoutedEventArgs e) => EpgToggled?.Invoke(CbEpg.IsChecked == true);
-        void BtnRatio_Click(object sender, RoutedEventArgs e)
+        private List<System.Windows.Controls.MenuItem>? _bottomBarRatioItems;
+        public void RefreshRatioMenu()
         {
             var menu = new ContextMenu();
-            var options = new[] { 
+            var options = new[] {
                 ("默认", "default"),
                 ("16:9", "16:9"),
                 ("4:3", "4:3"),
@@ -325,14 +327,17 @@ namespace LibmpvIptvClient
                 ("填充", "fill"),
                 ("裁剪", "crop")
             };
+            var items = new List<System.Windows.Controls.MenuItem>();
             foreach (var (label, val) in options)
             {
                 var mi = new MenuItem();
                 mi.Header = label;
+                mi.Tag = val;
                 mi.IsCheckable = true;
                 mi.IsChecked = string.Equals(CurrentAspect, val, StringComparison.OrdinalIgnoreCase);
                 mi.Click += (s, ev) => AspectRatioChanged?.Invoke(val);
                 menu.Items.Add(mi);
+                items.Add(mi);
             }
             menu.Opened += (s, ev) => IsRatioMenuOpen = true;
             menu.Closed += (s, ev) => IsRatioMenuOpen = false;
@@ -341,6 +346,37 @@ namespace LibmpvIptvClient
             BtnRatio.ContextMenu.Placement = System.Windows.Controls.Primitives.PlacementMode.Custom;
             BtnRatio.ContextMenu.CustomPopupPlacementCallback = (popupSize, targetSize, offset) =>
                 new[] { new System.Windows.Controls.Primitives.CustomPopupPlacement(new System.Windows.Point((targetSize.Width - popupSize.Width) / 2, -popupSize.Height - 30), System.Windows.Controls.Primitives.PopupPrimaryAxis.Horizontal) };
+            try
+            {
+                if (_bottomBarRatioItems != null)
+                    LibmpvIptvClient.Helpers.MenuBuilder.RemoveRatioMenuItems(_bottomBarRatioItems);
+                LibmpvIptvClient.Helpers.MenuBuilder.AddRatioMenuItems(items);
+                _bottomBarRatioItems = items;
+            }
+            catch { }
+        }
+
+        public void UpdateRatioMenuItems()
+        {
+            try
+            {
+                if (BtnRatio.ContextMenu == null) return;
+                var options = new[] { "default", "16:9", "4:3", "stretch", "fill", "crop" };
+                int i = 0;
+                foreach (var item in BtnRatio.ContextMenu.Items)
+                {
+                    if (item is System.Windows.Controls.MenuItem mi && i < options.Length)
+                    {
+                        mi.IsChecked = string.Equals(options[i], CurrentAspect, StringComparison.OrdinalIgnoreCase);
+                    }
+                    i++;
+                }
+            }
+            catch { }
+        }
+        void BtnRatio_Click(object sender, RoutedEventArgs e)
+        {
+            RefreshRatioMenu();
             BtnRatio.ContextMenu.IsOpen = true;
         }
         public void SetInfo(string text) { LblInfo.Text = text; }
@@ -374,20 +410,32 @@ namespace LibmpvIptvClient
         void BtnPreview_Click(object sender, RoutedEventArgs e) => PreviewRequested?.Invoke();
         public void SetSpeed(double v)
         {
-            try { LblSpeed.Text = $"{v:0.##}x"; } catch { }
+            System.Diagnostics.Debug.WriteLine($"[OverlayControls.SetSpeed] ENTER v={v}, LblSpeed is null: {LblSpeed == null}");
+            try 
+            { 
+                LblSpeed.Text = $"{v:0.##}x"; 
+                System.Diagnostics.Debug.WriteLine($"[OverlayControls.SetSpeed] Set LblSpeed.Text to {LblSpeed.Text}");
+            } 
+            catch (Exception ex) 
+            { 
+                System.Diagnostics.Debug.WriteLine($"[OverlayControls.SetSpeed] Exception: {ex.GetType().Name}: {ex.Message}");
+            }
         }
         public void SetSpeedEnabled(bool enabled)
         {
             try { BtnSpeed.IsEnabled = enabled; } catch { }
         }
+        private List<System.Windows.Controls.MenuItem>? _bottomBarSpeedItems;
         void BtnSpeed_Click(object sender, RoutedEventArgs e)
         {
             var menu = new ContextMenu();
             double[] speeds = new double[] { 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 3.0, 5.0 };
+            var items = new List<MenuItem>();
             foreach (var sp in speeds)
             {
                 var mi = new MenuItem();
                 mi.Header = $"{sp:0.##}x";
+                mi.Tag = sp;
                 mi.IsCheckable = true;
                 try { mi.IsChecked = LblSpeed.Text == $"{sp:0.##}x"; } catch { }
                 mi.Click += (s, ev) =>
@@ -396,6 +444,7 @@ namespace LibmpvIptvClient
                     SpeedSelected?.Invoke(sp);
                 };
                 menu.Items.Add(mi);
+                items.Add(mi);
             }
             try
             {
@@ -406,6 +455,14 @@ namespace LibmpvIptvClient
                 {
                     if (obj is MenuItem mi && miStyle != null) mi.Style = miStyle;
                 }
+            }
+            catch { }
+            try
+            {
+                if (_bottomBarSpeedItems != null)
+                    LibmpvIptvClient.Helpers.MenuBuilder.RemoveSpeedMenuItems(_bottomBarSpeedItems);
+                LibmpvIptvClient.Helpers.MenuBuilder.AddSpeedMenuItems(items);
+                _bottomBarSpeedItems = items;
             }
             catch { }
             BtnSpeed.ContextMenu = menu;

@@ -39,13 +39,29 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
         {
             MenuBuilder.SetSpeedCallback((speed) =>
             {
+                System.Diagnostics.Debug.WriteLine($"[MenuManager.SetSpeedCallback] ENTER speed={speed}");
+                System.Diagnostics.Debug.WriteLine($"[MenuManager.SetSpeedCallback] OverlayWpf is null: {_overlayManager.OverlayWpf == null}");
                 _shell.PlaybackSpeed = speed;
                 _shell.IsSpeedEnabled = true;
+                MenuBuilder.SetCurrentSpeed(speed);
+                MenuBuilder.RefreshAllSpeedChecks(speed);
+                if (_overlayManager.OverlayWpf != null)
+                {
+                    System.Diagnostics.Debug.WriteLine($"[MenuManager.SetSpeedCallback] calling SetSpeed {speed}");
+                    _overlayManager.OverlayWpf.SetSpeed(speed);
+                    System.Diagnostics.Debug.WriteLine($"[MenuManager.SetSpeedCallback] SetSpeed called successfully");
+                }
+                else
+                {
+                    System.Diagnostics.Debug.WriteLine($"[MenuManager.SetSpeedCallback] OverlayWpf is NULL, skipping SetSpeed");
+                }
             });
 
             MenuBuilder.SetRatioCallback((val) =>
             {
                 _shell.CurrentAspect = val;
+                MenuBuilder.SetCurrentAspectRatio(val);
+                MenuBuilder.RefreshAllRatioChecks(val);
                 _shell.PlayerEngine?.SetAspectRatio(val);
             });
 
@@ -80,6 +96,8 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 _shell.MenuActions.SwitchSourceCycle(true);
             });
 
+            MenuBuilder.SetCurrentAspectRatio(_shell.CurrentAspect);
+            MenuBuilder.SetCurrentSpeed(_shell.PlaybackSpeed);
             return MenuBuilder.BuildMainMenu(
                 openFile: () => _shell.MenuActions.OpenFile(),
                 openUrl: () => _shell.MenuActions.OpenUrl(),

@@ -173,15 +173,19 @@ namespace LibmpvIptvClient.Helpers
             var speeds = new[] { 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 3.0, 5.0 };
             foreach (var sp in speeds)
             {
-                var miSp = new MenuItem { Header = $"{sp:0.##}x", IsCheckable = true };
+                var miSp = new MenuItem { Header = $"{sp:0.##}x", Tag = sp, IsCheckable = true, IsChecked = Math.Abs(sp - _currentSpeed) < 0.001 };
                 miSp.Click += (s, args) =>
                 {
+                    System.Diagnostics.Debug.WriteLine($"[MenuBuilder] Speed item clicked: {sp}, _speedCallback is null: {_speedCallback == null}");
+                    _currentSpeed = sp;
                     if (_speedCallback != null)
                         _speedCallback(sp);
                 };
                 miSpeed.Items.Add(miSp);
+                _speedMenuItems.Add(miSp);
             }
             miPlay.Items.Add(miSpeed);
+            RegisterSpeedMenu(cm);
 
             cm.Items.Add(miPlay);
 
@@ -202,15 +206,18 @@ namespace LibmpvIptvClient.Helpers
             };
             foreach (var (label, val) in ratios)
             {
-                var miRatioItem = new MenuItem { Header = label, IsCheckable = true };
+                var miRatioItem = new MenuItem { Header = label, Tag = val, IsCheckable = true, IsChecked = string.Equals(val, _currentAspectRatio, StringComparison.OrdinalIgnoreCase) };
                 miRatioItem.Click += (s, args) =>
                 {
+                    _currentAspectRatio = val;
                     if (_ratioCallback != null)
                         _ratioCallback(val);
                 };
                 miRatio.Items.Add(miRatioItem);
+                _ratioMenuItems.Add(miRatioItem);
             }
             miVideo.Items.Add(miRatio);
+            RegisterRatioMenu(cm);
 
             var miDeinterlace = new MenuItem
             {
@@ -393,12 +400,224 @@ namespace LibmpvIptvClient.Helpers
         private static Action? _recListCallback;
         private static Action? _recSettingsCallback;
         private static Action? _switchSourceCallback;
+        private static string _currentAspectRatio = "default";
+        private static double _currentSpeed = 1.0;
+        private static readonly List<System.Windows.Controls.MenuItem> _ratioMenuItems = new();
+        private static readonly List<System.Windows.Controls.ContextMenu> _ratioMenus = new();
+        private static readonly List<System.Windows.Controls.MenuItem> _speedMenuItems = new();
+        private static readonly List<System.Windows.Controls.ContextMenu> _speedMenus = new();
 
-        public static void SetSpeedCallback(Action<double> callback) => _speedCallback = callback;
+        public static void SetSpeedCallback(Action<double> callback) { System.Diagnostics.Debug.WriteLine($"[MenuBuilder] SetSpeedCallback called, callback is null: {callback == null}"); _speedCallback = callback; }
         public static void SetRatioCallback(Action<string> callback) => _ratioCallback = callback;
         public static void SetRecToggleCallback(Action<bool> callback) => _recToggleCallback = callback;
         public static void SetRecListCallback(Action callback) => _recListCallback = callback;
         public static void SetRecSettingsCallback(Action callback) => _recSettingsCallback = callback;
         public static void SetSwitchSourceCallback(Action callback) => _switchSourceCallback = callback;
+        public static void SetCurrentAspectRatio(string ratio) => _currentAspectRatio = ratio;
+        public static void SetCurrentSpeed(double speed) => _currentSpeed = speed;
+
+        public static void RefreshAllRatioChecks(string currentRatio)
+        {
+            _currentAspectRatio = currentRatio;
+            System.Diagnostics.Debug.WriteLine($"[MenuBuilder] RefreshAllRatioChecks: {currentRatio}, _ratioMenuItems: {_ratioMenuItems.Count}, _ratioMenus: {_ratioMenus.Count}");
+            foreach (var mi in _ratioMenuItems)
+            {
+                var val = mi.Tag as string;
+                mi.IsChecked = !string.IsNullOrEmpty(val) && string.Equals(val, currentRatio, StringComparison.OrdinalIgnoreCase);
+                System.Diagnostics.Debug.WriteLine($"[MenuBuilder] _ratioMenuItems: Header={mi.Header}, Tag={val}, IsChecked={mi.IsChecked}");
+            }
+            var knownRatios = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "default", "16:9", "4:3", "stretch", "fill", "crop" };
+            foreach (var menu in _ratioMenus.ToList())
+            {
+                try
+                {
+                    UpdateRatioItemsRecursive(menu.Items, currentRatio, knownRatios);
+                    foreach (var topItem in menu.Items)
+                    {
+                        if (topItem is System.Windows.Controls.MenuItem topMi && topMi.HasItems)
+                        {
+                            foreach (var subItem in topMi.Items)
+                            {
+                                if (subItem is System.Windows.Controls.MenuItem subMi && subMi.HasItems)
+                                {
+                                    UpdateRatioItemsRecursive(subMi.Items, currentRatio, knownRatios);
+                                }
+                            }
+                        }
+                    }
+                }
+                catch (System.Exception ex) { System.Diagnostics.Debug.WriteLine($"[MenuBuilder] Exception: {ex.Message}"); }
+            }
+            try
+            {
+                System.Windows.Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    foreach (var mi in _ratioMenuItems)
+                    {
+                        var val = mi.Tag as string;
+                        mi.IsChecked = !string.IsNullOrEmpty(val) && string.Equals(val, currentRatio, StringComparison.OrdinalIgnoreCase);
+                    }
+                    foreach (var menu in _ratioMenus.ToList())
+                    {
+                        UpdateRatioItemsRecursive(menu.Items, currentRatio, knownRatios);
+                    }
+                }), System.Windows.Threading.DispatcherPriority.Render);
+            }
+            catch { }
+        }
+
+        private static void UpdateRatioItemsRecursive(ItemCollection items, string currentRatio, HashSet<string> knownRatios)
+        {
+            foreach (var item in items)
+            {
+                if (item is System.Windows.Controls.MenuItem mi)
+                {
+                    if (mi.IsCheckable && mi.Tag is string tag && knownRatios.Contains(tag))
+                    {
+                        mi.IsChecked = string.Equals(tag, currentRatio, StringComparison.OrdinalIgnoreCase);
+                        System.Diagnostics.Debug.WriteLine($"[MenuBuilder] Recursive update: Header={mi.Header}, Tag={tag}, IsChecked={mi.IsChecked}");
+                    }
+                    if (mi.HasItems)
+                    {
+                        UpdateRatioItemsRecursive(mi.Items, currentRatio, knownRatios);
+                    }
+                }
+            }
+        }
+
+        public static void RegisterRatioMenu(System.Windows.Controls.ContextMenu menu)
+        {
+            if (!_ratioMenus.Contains(menu))
+                _ratioMenus.Add(menu);
+        }
+
+        public static void ClearRatioMenus()
+        {
+            _ratioMenus.Clear();
+            _ratioMenuItems.Clear();
+        }
+
+        public static void AddRatioMenuItems(IEnumerable<System.Windows.Controls.MenuItem> items)
+        {
+            _ratioMenuItems.AddRange(items);
+        }
+
+        public static void RemoveRatioMenuItems(IEnumerable<System.Windows.Controls.MenuItem> items)
+        {
+            foreach (var item in items)
+            {
+                _ratioMenuItems.Remove(item);
+            }
+        }
+
+        public static void RefreshRatioMenuChecks(ContextMenu menu, string currentRatio)
+        {
+            try
+            {
+                foreach (var item in menu.Items)
+                {
+                    if (item is System.Windows.Controls.MenuItem mi && mi.Header?.ToString() == Localizer.S("Menu_Video", "视频"))
+                    {
+                        foreach (var subItem in mi.Items)
+                        {
+                            if (subItem is System.Windows.Controls.MenuItem ratioItem && ratioItem.IsCheckable)
+                            {
+                                var ratios = new[] { "default", "16:9", "4:3", "stretch", "fill", "crop" };
+                                var labelMap = new Dictionary<string, string>
+                                {
+                                    { "default", Localizer.S("Ratio_Default", "默认") },
+                                    { "16:9", "16:9" },
+                                    { "4:3", "4:3" },
+                                    { "stretch", Localizer.S("Ratio_Stretch", "拉伸") },
+                                    { "fill", Localizer.S("Ratio_Fill", "填充") },
+                                    { "crop", Localizer.S("Ratio_Crop", "裁剪") }
+                                };
+                                foreach (var r in ratios)
+                                {
+                                    if (ratioItem.Header?.ToString() == labelMap[r])
+                                    {
+                                        ratioItem.IsChecked = string.Equals(r, currentRatio, StringComparison.OrdinalIgnoreCase);
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+            catch { }
+        }
+
+        public static void RegisterSpeedMenu(System.Windows.Controls.ContextMenu menu)
+        {
+            if (!_speedMenus.Contains(menu))
+                _speedMenus.Add(menu);
+        }
+
+        public static void AddSpeedMenuItems(IEnumerable<System.Windows.Controls.MenuItem> items)
+        {
+            _speedMenuItems.AddRange(items);
+        }
+
+        public static void RemoveSpeedMenuItems(IEnumerable<System.Windows.Controls.MenuItem> items)
+        {
+            foreach (var item in items)
+            {
+                _speedMenuItems.Remove(item);
+            }
+        }
+
+        public static void RefreshAllSpeedChecks(double currentSpeed)
+        {
+            _currentSpeed = currentSpeed;
+            foreach (var mi in _speedMenuItems)
+            {
+                if (mi.Tag is double sp)
+                    mi.IsChecked = Math.Abs(sp - currentSpeed) < 0.001;
+            }
+            foreach (var menu in _speedMenus.ToList())
+            {
+                try
+                {
+                    UpdateSpeedItemsRecursive(menu.Items, currentSpeed);
+                }
+                catch { }
+            }
+            try
+            {
+                System.Windows.Application.Current?.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    foreach (var mi in _speedMenuItems)
+                    {
+                        if (mi.Tag is double sp)
+                            mi.IsChecked = Math.Abs(sp - currentSpeed) < 0.001;
+                    }
+                    foreach (var menu in _speedMenus.ToList())
+                    {
+                        UpdateSpeedItemsRecursive(menu.Items, currentSpeed);
+                    }
+                }), System.Windows.Threading.DispatcherPriority.Render);
+            }
+            catch { }
+        }
+
+        private static void UpdateSpeedItemsRecursive(System.Windows.Controls.ItemCollection items, double currentSpeed)
+        {
+            foreach (var item in items)
+            {
+                if (item is System.Windows.Controls.MenuItem mi)
+                {
+                    if (mi.IsCheckable && mi.Tag is double sp)
+                    {
+                        mi.IsChecked = Math.Abs(sp - currentSpeed) < 0.001;
+                    }
+                    if (mi.HasItems)
+                    {
+                        UpdateSpeedItemsRecursive(mi.Items, currentSpeed);
+                    }
+                }
+            }
+        }
     }
 }

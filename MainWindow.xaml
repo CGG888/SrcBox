@@ -250,6 +250,7 @@
             <local:ListIndexConverter x:Key="IndexConverter"/>
             <local:AsyncImageConverter x:Key="AsyncImage"/>
             <local:StringToVisibilityConverter x:Key="StringToVis"/>
+            <local:IntPlusOneConverter x:Key="IntPlusOne"/>
 
             <!-- ContextMenu Styles -->
             <Style TargetType="{x:Type ContextMenu}">
@@ -518,11 +519,11 @@
                 <RowDefinition Height="Auto"/>
             </Grid.RowDefinitions>
             <DockPanel Grid.Row="0" Margin="12,16,12,8">
-                <TextBlock Text="{DynamicResource EPG_Title}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="16" FontWeight="Bold" DockPanel.Dock="Left"/>
+                <TextBlock Text="{DynamicResource EPG_Title}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" FontWeight="Bold" DockPanel.Dock="Left"/>
                 <Button x:Name="BtnEpgCollapse" DockPanel.Dock="Right" Style="{StaticResource BarButton}" ToolTip="{DynamicResource EPG_Collapse}" Click="BtnEpgCollapse_Click">
                     <Path Data="M6,0 L0,4 L6,8" Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="2" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                 </Button>
-                <TextBlock x:Name="LblEpgChannel" Text="" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="14" Margin="12,2,0,0" TextTrimming="CharacterEllipsis" 
+                <TextBlock x:Name="LblEpgChannel" Text="" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" FontWeight="Bold" Margin="12,2,0,0" TextTrimming="CharacterEllipsis" 
                            HorizontalAlignment="Center" TextAlignment="Center"/>
             </DockPanel>
             <Grid Grid.Row="1" Margin="12,0,12,8">
@@ -535,7 +536,7 @@
                     <TextBlock Text="{DynamicResource EPG_PrevDay}" FontSize="12"/>
                 </Button>
                 <Border Grid.Column="1" Background="{StaticResource AccentBrush}" CornerRadius="4" Margin="12,0" HorizontalAlignment="Stretch">
-                    <TextBlock x:Name="TxtCurrentDate" Text="{DynamicResource EPG_Today}" Foreground="Black" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="14"/>
+                    <TextBlock x:Name="TxtCurrentDate" Text="{DynamicResource EPG_Today}" Foreground="Black" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center" FontSize="12"/>
                 </Border>
                 <Button x:Name="BtnNextDay" Grid.Column="2" Click="BtnNextDay_Click" Style="{StaticResource BarButton}" Width="60" Background="{DynamicResource ChipButtonBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" ToolTip="{DynamicResource EPG_NextDay}">
                     <TextBlock Text="{DynamicResource EPG_NextDay}" FontSize="12"/>
@@ -606,17 +607,17 @@
                                 <ColumnDefinition Width="Auto"/>
                             </Grid.ColumnDefinitions>
                             <StackPanel Grid.Column="0" VerticalAlignment="Center">
-                                <TextBlock Text="{Binding Start, StringFormat=HH:mm}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="13"/>
-                                <TextBlock Text="{Binding End, StringFormat=HH:mm}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11"/>
+                                <TextBlock Text="{Binding Start, StringFormat=HH:mm}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" FontWeight="Bold"/>
+                                <TextBlock Text="{Binding End, StringFormat=HH:mm}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" FontWeight="Bold"/>
                             </StackPanel>
                             <StackPanel Grid.Column="1" VerticalAlignment="Center" Margin="8,0">
-                                <TextBlock Text="{Binding Title}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="13" TextWrapping="Wrap"/>
-                                <TextBlock Text="{Binding Description}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" TextTrimming="CharacterEllipsis" Visibility="{Binding Description, Converter={StaticResource StringToVis}}"/>
+                                <TextBlock Text="{Binding Title}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="10" FontWeight="Bold" TextWrapping="Wrap"/>
+                                <TextBlock Text="{Binding Description}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" TextTrimming="CharacterEllipsis" Visibility="{Binding Description, Converter={StaticResource StringToVis}}"/>
                             </StackPanel>
                             <Grid Grid.Column="2">
                                 <!-- 状态芯片做成可点击按钮（仅直播可点击），带阴影更立体 -->
                                 <Button x:Name="BtnStatusChip" HorizontalAlignment="Right" VerticalAlignment="Center"
-                                        Padding="10,2" MinWidth="60" Height="26" Click="EpgLiveChip_Click" Cursor="Arrow">
+                                        Padding="10,2" MinWidth="60" Height="26" Click="EpgLiveChip_Click" Cursor="Arrow" Margin="0,0,20,0">
                                     <Button.Template>
                                         <ControlTemplate TargetType="Button">
                                             <Border x:Name="Chip" CornerRadius="6" Background="{DynamicResource ChipButtonBackgroundBrush}" BorderBrush="{DynamicResource ChipButtonBorderBrush}" BorderThickness="1">
@@ -625,7 +626,7 @@
                                                 </Border.Effect>
                                                 <Grid>
                                                     <TextBlock x:Name="TxtStatusChip" Text="{Binding Status}" Foreground="{DynamicResource TextPrimaryBrush}" 
-                                                               FontSize="12" VerticalAlignment="Center" HorizontalAlignment="Center" TextAlignment="Center"/>
+                                                               FontSize="10" VerticalAlignment="Center" HorizontalAlignment="Center" TextAlignment="Center"/>
                                                 </Grid>
                                             </Border>
                                             <ControlTemplate.Triggers>
@@ -681,14 +682,14 @@
                                     </Button.Template>
                                 </Button>
                                 <!-- 预约按钮（同位置），仅未来节目显示；已预约则禁用并显示“已预约” -->
-                                <Button Margin="0,0,0,0" HorizontalAlignment="Right" VerticalAlignment="Center"
+                                <Button Margin="0,0,20,0" HorizontalAlignment="Right" VerticalAlignment="Center"
                                         Height="26" MinWidth="60"
                                         Click="EpgRemindButton_Click">
                                     <Button.Style>
                                         <Style TargetType="Button">
                                             <Setter Property="Padding" Value="10,2"/>
                                             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-                                            <Setter Property="FontSize" Value="12"/>
+                                            <Setter Property="FontSize" Value="10"/>
                                             <Setter Property="Content" Value="{DynamicResource EPG_Remind}"/>
                                             <Setter Property="Visibility" Value="Collapsed"/>
                                             <Setter Property="Template">
@@ -739,43 +740,47 @@
             <!-- Playback Status Indicator (Live/Catchup) -->
             <Border x:Name="PlaybackStatusIndicator" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="20,0,0,140" 
                     Background="{DynamicResource StatusIndicatorBackgroundBrush}" CornerRadius="4" Padding="8,4" Visibility="{Binding PlaybackStatusText, Converter={StaticResource StringToVis}}" IsHitTestVisible="False">
-                <TextBlock x:Name="TxtPlaybackStatus" Text="{Binding PlaybackStatusText}" Foreground="{Binding PlaybackStatusBrush}" FontSize="14" FontWeight="Bold"/>
+                <TextBlock x:Name="TxtPlaybackStatus" Text="{Binding PlaybackStatusText}" Foreground="{Binding PlaybackStatusBrush}" FontSize="12" FontWeight="Bold"/>
             </Border>
         </Grid>
 
         <!-- 右侧频道/分组抽屉 (Row 1，底部有边框) -->
         <Border Grid.Row="1" Grid.Column="2" Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1,0,0,1" x:Name="DrawerPanel">
              <!-- ... Drawer Content (Same as before) ... -->
-             <Grid>
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="*"/>
-                </Grid.RowDefinitions>
+              <Grid>
+                 <Grid.RowDefinitions>
+                     <RowDefinition Height="Auto"/>
+                     <RowDefinition Height="*"/>
+                 </Grid.RowDefinitions>
 
                 <DockPanel Grid.Row="0" Margin="12,16,12,8">
-                    <TextBlock Text="{DynamicResource Drawer_Title}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="16" FontWeight="Bold" DockPanel.Dock="Left"/>
+                    <TextBlock Text="{DynamicResource Drawer_Title}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" FontWeight="Bold" DockPanel.Dock="Left"/>
                     <Button x:Name="BtnDrawerCollapse" DockPanel.Dock="Right" Style="{StaticResource BarButton}" ToolTip="{DynamicResource Drawer_Collapse}" Click="BtnDrawerCollapse_Click" HorizontalAlignment="Right">
                         <Path Data="M0,0 L6,4 L0,8" Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="2" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"/>
                     </Button>
                 </DockPanel>
                 
                 <!-- 抽屉顶部（标签式导航） -->
-                <TabControl Grid.Row="1" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0" x:Name="DrawerTabs">
+                <TabControl Grid.Row="1" Background="{DynamicResource CardBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0" x:Name="DrawerTabs" Padding="2,0,2,0">
                     <TabControl.Resources>
                         <Style x:Key="DarkTabItem" TargetType="{x:Type TabItem}">
-                            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
-                            <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
-                            <Setter Property="Padding" Value="16,10"/>
-                            <Setter Property="Margin" Value="0,0,6,0"/>
+                            <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+                            <Setter Property="Background" Value="Transparent"/>
+                            <Setter Property="Padding" Value="12,8"/>
+                            <Setter Property="Margin" Value="0,0,2,0"/>
+                            <Setter Property="FontSize" Value="12"/>
                             <Setter Property="Template">
                                 <Setter.Value>
                                     <ControlTemplate TargetType="{x:Type TabItem}">
-                                        <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
-                                            <ContentPresenter ContentSource="Header" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                                        <Border x:Name="Bd" Background="{TemplateBinding Background}" CornerRadius="4" Padding="{TemplateBinding Padding}" BorderThickness="1" BorderBrush="Transparent" Margin="0,2,2,2">
+                                            <ContentPresenter ContentSource="Header" HorizontalAlignment="Stretch" VerticalAlignment="Center" />
                                         </Border>
                                         <ControlTemplate.Triggers>
                                             <Trigger Property="IsSelected" Value="True">
-                                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ChipButtonHoverBrush}"/>
+                                                <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+                                                <Setter Property="FontWeight" Value="SemiBold"/>
+                                                <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ChipButtonBackgroundBrush}"/>
+                                                <Setter TargetName="Bd" Property="BorderBrush" Value="{DynamicResource BorderBrushCommon}"/>
                                             </Trigger>
                                             <Trigger Property="IsMouseOver" Value="True">
                                                 <Setter TargetName="Bd" Property="Background" Value="{DynamicResource ChipButtonHoverBrush}"/>
@@ -803,19 +808,25 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <ComboBox x:Name="CbM3uList" Grid.Column="0" Height="30" Width="140" DisplayMemberPath="Name" IsEditable="True" SelectionChanged="CbM3uList_SelectionChanged" ToolTip="{DynamicResource Drawer_M3uList}" Background="{DynamicResource ChipButtonBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}"/>
-                                <TextBox x:Name="TxtSearch" Grid.Column="1" Height="30" Background="{DynamicResource ChipButtonBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0" VerticalContentAlignment="Center" Padding="6,0" TextChanged="TxtSearch_TextChanged" />
+                                <ComboBox x:Name="CbM3uList" Grid.Column="0" Height="28" Width="140" DisplayMemberPath="Name" IsEditable="True" SelectionChanged="CbM3uList_SelectionChanged" ToolTip="{DynamicResource Drawer_M3uList}" Background="{DynamicResource ChipButtonBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="10">
+                                    <ComboBox.ItemContainerStyle>
+                                        <Style TargetType="ComboBoxItem">
+                                            <Setter Property="FontSize" Value="10"/>
+                                        </Style>
+                                    </ComboBox.ItemContainerStyle>
+                                </ComboBox>
+                                <TextBox x:Name="TxtSearch" Grid.Column="1" Height="28" Background="{DynamicResource ChipButtonBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0" VerticalContentAlignment="Center" Padding="6,0" TextChanged="TxtSearch_TextChanged" ToolTip="搜索" FontSize="10"/>
                                 <Button x:Name="BtnClearSearch" Grid.Column="2" Content="{DynamicResource Drawer_Clear}" Margin="8,0,0,0" Click="BtnClearSearch_Click" Style="{StaticResource ItemActionChipButton}"/>
                                 <Button x:Name="BtnChannelsRefresh" Grid.Column="3" Content="{DynamicResource Drawer_Recordings_Refresh}" Margin="8,0,0,0" Click="BtnChannelsRefresh_Click" Style="{StaticResource ItemActionChipButton}"/>
                             </Grid>
                             <!-- 列表区 -->
-                            <Grid Grid.Row="1" Margin="0,10,0,0">
+                            <Grid Grid.Row="1" Margin="0,10,10,0">
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="*"/>
                                 </Grid.RowDefinitions>
                                 <TextBlock x:Name="TxtCount" Grid.Row="0" Margin="10,0,10,5" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11"/>
-                                <ListBox x:Name="ListChannels" Grid.Row="1" Background="Transparent" BorderThickness="0"
+                                <ListBox x:Name="ListChannels" Grid.Row="1" Background="Transparent" BorderThickness="0" HorizontalAlignment="Stretch"
                                          ScrollViewer.CanContentScroll="True"
                                          ScrollViewer.VerticalScrollBarVisibility="Auto"
                                          VirtualizingPanel.IsVirtualizing="True"
@@ -850,7 +861,7 @@
                                     </ListBox.ItemContainerStyle>
                                     <ListBox.ItemTemplate>
                                         <DataTemplate>
-                                            <Border x:Name="ItemBorder" Margin="6,4,6,4" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="6" PreviewMouseLeftButtonDown="OnPreviewMouseLeftButtonDown" BorderThickness="1" BorderBrush="{DynamicResource BorderBrushCommon}">
+                                            <Border x:Name="ItemBorder" Margin="6,4,18,4" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="6" PreviewMouseLeftButtonDown="OnPreviewMouseLeftButtonDown" BorderThickness="1" BorderBrush="{DynamicResource BorderBrushCommon}">
                                                 <Border.Style>
                                                     <Style TargetType="Border">
                                                         <Style.Triggers>
@@ -879,7 +890,7 @@
                                                     <Ellipse Grid.Column="2" Width="6" Height="6" Fill="#35C759" VerticalAlignment="Center"/>
                                                     <StackPanel Grid.Column="4" VerticalAlignment="Center">
                                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                                            <TextBlock Text="{Binding Name}" FontSize="14" TextTrimming="CharacterEllipsis">
+                                                            <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="Bold" TextTrimming="CharacterEllipsis">
                                                                 <TextBlock.Style>
                                                                     <Style TargetType="TextBlock">
                                                                         <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
@@ -901,8 +912,8 @@
                                                                            Visibility="{Binding HasTimeshift, Converter={StaticResource BoolToVis}}" ToolTip="{DynamicResource Channel_TimeshiftAvailable}"/>
                                                             </StackPanel>
                                                         </StackPanel>
-                                                        <TextBlock Text="{Binding Group}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
-                                                        <TextBlock Text="{Binding CurrentProgramTitle}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" TextTrimming="CharacterEllipsis" Visibility="{Binding CurrentProgramTitle, Converter={StaticResource StringToVis}}"/>
+                                                        <TextBlock Text="{Binding Group}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                                                        <TextBlock Text="{Binding CurrentProgramTitle}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" Margin="0,2,0,0" TextTrimming="CharacterEllipsis" Visibility="{Binding CurrentProgramTitle, Converter={StaticResource StringToVis}}"/>
                                                     </StackPanel>
                                                     <Button Grid.Column="5" Style="{StaticResource BarButton}" Click="ToggleFavorite_Click" ToolTip="{DynamicResource Favorite_Toggle}">
                                                         <TextBlock Text="{Binding Favorite, Converter={StaticResource BoolToStar}}" FontSize="16" Foreground="{DynamicResource TextPrimaryBrush}"/>
@@ -932,7 +943,7 @@
                                     <ColumnDefinition Width="Auto"/>
                                     <ColumnDefinition Width="Auto"/>
                                 </Grid.ColumnDefinitions>
-                                <TextBox x:Name="TxtSearchGroups" Grid.Column="0" MinHeight="20" Background="{DynamicResource ChipButtonBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0" VerticalContentAlignment="Center" TextChanged="TxtSearchGroups_TextChanged" FontSize="10"/>
+                                <TextBox x:Name="TxtSearchGroups" Grid.Column="0" MinHeight="28" Height="28" Background="{DynamicResource ChipButtonBackgroundBrush}" Foreground="{DynamicResource TextPrimaryBrush}" BorderThickness="0" VerticalContentAlignment="Center" TextChanged="TxtSearchGroups_TextChanged" FontSize="10"/>
                                 <Button x:Name="BtnClearSearchGroups" Grid.Column="1" Content="{DynamicResource Drawer_Clear}" Margin="8,0,0,0" Click="BtnClearSearchGroups_Click" Style="{StaticResource ItemActionChipButton}"/>
                                 <StackPanel Grid.Column="2" Orientation="Horizontal" Margin="8,0,0,0" VerticalAlignment="Center">
                                     <Button Content="▲" Width="24" Height="24" Click="BtnMoveGroupUp_Click" Style="{StaticResource ItemActionChipButton}" ToolTip="上移" FontSize="10"/>
@@ -958,7 +969,7 @@
                                             <ItemsControl ItemsSource="{Binding Items}" AlternationCount="2">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
-                                                        <Border Margin="6,8,6,0" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="6" PreviewMouseLeftButtonDown="OnPreviewMouseLeftButtonDown">
+                                                        <Border Margin="6,4,18,4" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="6" PreviewMouseLeftButtonDown="OnPreviewMouseLeftButtonDown" BorderThickness="1" BorderBrush="{DynamicResource BorderBrushCommon}">
                                                             <Grid Margin="8,8">
                                                                 <Grid.ColumnDefinitions>
                                                                     <ColumnDefinition Width="28"/>
@@ -974,7 +985,7 @@
                                                                 <Ellipse Grid.Column="2" Width="6" Height="6" Fill="#35C759" VerticalAlignment="Center"/>
                                                                 <StackPanel Grid.Column="4" VerticalAlignment="Center">
                                                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                                                        <TextBlock Text="{Binding Name}" FontSize="14" TextTrimming="CharacterEllipsis">
+                                                            <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="Bold" TextTrimming="CharacterEllipsis">
                                                                             <TextBlock.Style>
                                                                                 <Style TargetType="TextBlock">
                                                                                     <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
@@ -996,8 +1007,8 @@
                                                                                        Visibility="{Binding HasTimeshift, Converter={StaticResource BoolToVis}}" ToolTip="{DynamicResource Channel_TimeshiftAvailable}"/>
                                                                         </StackPanel>
                                                                     </StackPanel>
-                                                                    <TextBlock Text="{Binding Group}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
-                                                                    <TextBlock Text="{Binding CurrentProgramTitle}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,2,0,0" TextTrimming="CharacterEllipsis" Visibility="{Binding CurrentProgramTitle, Converter={StaticResource StringToVis}}"/>
+                                                                    <TextBlock Text="{Binding Group}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" Margin="0,2,0,0" TextTrimming="CharacterEllipsis"/>
+                                                                    <TextBlock Text="{Binding CurrentProgramTitle}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" Margin="0,2,0,0" TextTrimming="CharacterEllipsis" Visibility="{Binding CurrentProgramTitle, Converter={StaticResource StringToVis}}"/>
                                                                 </StackPanel>
                                                                 <Button Grid.Column="5" Style="{StaticResource BarButton}" Click="ToggleFavorite_Click" ToolTip="{DynamicResource Favorite_Toggle}">
                                                                     <TextBlock Text="{Binding Favorite, Converter={StaticResource BoolToStar}}" FontSize="16" Foreground="{DynamicResource TextPrimaryBrush}"/>
@@ -1024,13 +1035,13 @@
                                 <RowDefinition Height="*"/>
                             </Grid.RowDefinitions>
                             <DockPanel Grid.Row="0" Margin="12,12,12,8">
-                                <TextBlock Text="{DynamicResource History_Title}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="14" FontWeight="Bold" DockPanel.Dock="Left" VerticalAlignment="Center"/>
-                                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center">
+                                <TextBlock Text="{DynamicResource History_Title}" Foreground="{DynamicResource TextPrimaryBrush}" FontSize="12" FontWeight="Bold" DockPanel.Dock="Left" VerticalAlignment="Center"/>
+                                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" VerticalAlignment="Center" HorizontalAlignment="Right">
                                     <Button x:Name="BtnHistoryDelete" Content="{DynamicResource History_DeleteSelected}" Click="BtnHistoryDelete_Click" Style="{StaticResource ItemActionChipButton}"/>
                                     <Button x:Name="BtnHistoryClear" Content="{DynamicResource History_ClearAll}" Click="BtnHistoryClear_Click" Style="{StaticResource ItemActionChipButton}" Margin="8,0,0,0"/>
                                 </StackPanel>
                             </DockPanel>
-                            <ListBox x:Name="ListHistory" Grid.Row="1" Background="Transparent" BorderThickness="0" Margin="10,0,10,0" SelectionMode="Extended" MouseDoubleClick="ListHistory_MouseDoubleClick"
+                            <ListBox x:Name="ListHistory" Grid.Row="1" Background="Transparent" BorderThickness="0" Margin="10,0,10,0" SelectionMode="Extended" MouseDoubleClick="ListHistory_MouseDoubleClick" HorizontalAlignment="Stretch" AlternationCount="100"
                                      ScrollViewer.CanContentScroll="True"
                                      ScrollViewer.VerticalScrollBarVisibility="Auto"
                                      VirtualizingPanel.IsVirtualizing="True"
@@ -1044,7 +1055,7 @@
                                 </ListBox.ItemContainerStyle>
                                 <ListBox.ItemTemplate>
                                     <DataTemplate>
-                                        <Border Margin="6,8,6,0" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="6">
+                                        <Border Margin="6,4,18,4" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="6" BorderThickness="1" BorderBrush="{DynamicResource BorderBrushCommon}">
                                             <Grid Margin="8,8">
                                                 <Grid.ColumnDefinitions>
                                                     <ColumnDefinition Width="28"/>
@@ -1054,11 +1065,11 @@
                                                     <ColumnDefinition Width="*"/>
                                                     <ColumnDefinition Width="80"/>
                                                 </Grid.ColumnDefinitions>
-                                                <TextBlock Grid.Column="0" Text="{Binding Name}" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12" Visibility="Collapsed"/>
+                                                <TextBlock Grid.Column="0" Text="{Binding (ItemsControl.AlternationIndex), RelativeSource={RelativeSource AncestorType=ListBoxItem}, Converter={StaticResource IntPlusOne}}" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"/>
                                                 <Ellipse Grid.Column="2" Width="6" Height="6" Fill="#0A84FF" VerticalAlignment="Center"/>
                                                 <StackPanel Grid.Column="4" VerticalAlignment="Center">
                                                     <StackPanel Orientation="Horizontal">
-                                                        <TextBlock Text="{Binding Name}" FontSize="14" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextPrimaryBrush}"/>
+                                                        <TextBlock Text="{Binding Name}" FontSize="12" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextPrimaryBrush}"/>
                                                         <Border Style="{StaticResource TagChip}">
                                                             <TextBlock Text="{Binding PlayTypeLabel}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11"/>
                                                         </Border>
@@ -1265,7 +1276,7 @@
                         </Grid>
                     </TabItem>
                     <TabItem Header="{DynamicResource Tab_Favorites}">
-                        <ListBox x:Name="ListFavorites" Background="Transparent" BorderThickness="0" Margin="10,10,10,0">
+                        <ListBox x:Name="ListFavorites" Background="Transparent" BorderThickness="0" Margin="10,10,10,0" HorizontalAlignment="Stretch">
                             <ListBox.ItemContainerStyle>
                                 <Style TargetType="ListBoxItem">
                                     <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
@@ -1275,7 +1286,7 @@
                             </ListBox.ItemContainerStyle>
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Margin="6,8,6,0" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="6" PreviewMouseLeftButtonDown="OnPreviewMouseLeftButtonDown">
+                                    <Border Margin="6,4,18,4" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="6" PreviewMouseLeftButtonDown="OnPreviewMouseLeftButtonDown" BorderThickness="1" BorderBrush="{DynamicResource BorderBrushCommon}">
                                         <Grid Margin="8,8">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="28"/>
@@ -1290,7 +1301,7 @@
                                             <Ellipse Grid.Column="2" Width="6" Height="6" Fill="#35C759" VerticalAlignment="Center"/>
                                             <StackPanel Grid.Column="4" VerticalAlignment="Center">
                                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                                    <TextBlock Text="{Binding Name}" FontSize="14" TextTrimming="CharacterEllipsis">
+                                                    <TextBlock Text="{Binding Name}" FontSize="12" TextTrimming="CharacterEllipsis">
                                                         <TextBlock.Style>
                                                             <Style TargetType="TextBlock">
                                                                 <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>

@@ -3,6 +3,7 @@ using System.Windows;
 using System.Windows.Threading;
 using LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow;
 using LibmpvIptvClient.Controls;
+using LibmpvIptvClient.Helpers;
 using System.Runtime.InteropServices;
 
 namespace LibmpvIptvClient.Architecture.Presentation.View
@@ -55,6 +56,19 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 _overlayWpf = null;
                 _overlayHideTimer.Stop();
                 _overlayPollTimer.Stop();
+            }
+            catch { }
+        }
+
+        public void SetOverlayAspectRatio(string ratio)
+        {
+            try
+            {
+                if (_overlayWpf != null)
+                {
+                    _overlayWpf.CurrentAspect = ratio;
+                    _overlayWpf.UpdateRatioMenuItems();
+                }
             }
             catch { }
         }
@@ -166,13 +180,16 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 Stop: stop,
                 Rew: rew,
                 Fwd: fwd,
-                AspectRatioChanged: (ratio) => _shell.PlayerEngine?.SetAspectRatio(ratio),
+                AspectRatioChanged: (ratio) => { _shell.CurrentAspect = ratio; MenuBuilder.SetCurrentAspectRatio(ratio); MenuBuilder.RefreshAllRatioChecks(ratio); _shell.PlayerEngine?.SetAspectRatio(ratio); try { if (_overlayWpf != null) { _overlayWpf.CurrentAspect = ratio; _overlayWpf.UpdateRatioMenuItems(); } } catch { } },
                 SpeedSelected: (sp) =>
                 {
                     try
                     {
                         _shell.PlaybackSpeed = sp;
                         _shell.IsSpeedEnabled = _shell.PlaybackSpeedOverlaySyncActions.ResolveEnabled(_shell.IsTimeshiftActive, _shell.CurrentPlayingProgram != null, _shell.CurrentRecordingPlaying != null);
+                        MenuBuilder.SetCurrentSpeed(sp);
+                        MenuBuilder.RefreshAllSpeedChecks(sp);
+                        try { if (_overlayWpf != null) _overlayWpf.SetSpeed(sp); } catch { }
                     }
                     catch { }
                 },
