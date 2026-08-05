@@ -577,4 +577,30 @@
   <sys:String x:Key="Menu_Video">Видео</sys:String>
   <sys:String x:Key="Menu_VolumeDown">Громкость-</sys:String>
   <sys:String x:Key="Menu_VolumeUp">Громкость+</sys:String>
+
+  <!-- MultiScreen -->
+  <sys:String x:Key="MultiScreen_Title">Мультиэкран</sys:String>
+  <sys:String x:Key="MultiScreen_4Screen">4 экрана</sys:String>
+  <sys:String x:Key="MultiScreen_6Screen">6 экранов</sys:String>
+  <sys:String x:Key="MultiScreen_9Screen">9 экранов</sys:String>
+  <sys:String x:Key="MultiScreen_ExitFullscreen">Выйти из полноэкранного</sys:String>
+  <sys:String x:Key="MultiScreen_ExitMultiScreen">Выйти из мультиэкрана</sys:String>
+  <sys:String x:Key="MultiScreen_PlayControl">Управление воспроизведением</sys:String>
+  <sys:String x:Key="MultiScreen_PlayPause">Воспроизведение/Пауза</sys:String>
+  <sys:String x:Key="MultiScreen_Stop">Стоп</sys:String>
+  <sys:String x:Key="MultiScreen_Mute">Без звука</sys:String>
+  <sys:String x:Key="MultiScreen_VolumeUp">Громкость +</sys:String>
+  <sys:String x:Key="MultiScreen_VolumeDown">Громкость -</sys:String>
+  <sys:String x:Key="MultiScreen_CurrentVolume">Текущая громкость: {0}%</sys:String>
+  <sys:String x:Key="MultiScreen_SwitchChannel">Сменить канал</sys:String>
+  <sys:String x:Key="MultiScreen_ChannelNav">Переключение каналов</sys:String>
+  <sys:String x:Key="MultiScreen_PrevChannel">Предыдущий канал</sys:String>
+  <sys:String x:Key="MultiScreen_NextChannel">Следующий канал</sys:String>
+  <sys:String x:Key="MultiScreen_AspectRatio">Соотношение сторон</sys:String>
+  <sys:String x:Key="MultiScreen_CloseThisScreen">Закрыть этот экран</sys:String>
+  <sys:String x:Key="MultiScreen_ResetAll">Сбросить все</sys:String>
+  <sys:String x:Key="MultiScreen_AspectDefault">По умолчанию</sys:String>
+  <sys:String x:Key="MultiScreen_AspectStretch">Растянуть</sys:String>
+  <sys:String x:Key="MultiScreen_AspectFill">Заполнить</sys:String>
+  <sys:String x:Key="MultiScreen_AspectCrop">Обрезать</sys:String>
 </ResourceDictionary>

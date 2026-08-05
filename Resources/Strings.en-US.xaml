@@ -587,4 +587,30 @@
   <sys:String x:Key="Menu_Video">Video</sys:String>
   <sys:String x:Key="Menu_VolumeDown">Volume-</sys:String>
   <sys:String x:Key="Menu_VolumeUp">Volume+</sys:String>
+
+  <!-- MultiScreen -->
+  <sys:String x:Key="MultiScreen_Title">Multi-Screen</sys:String>
+  <sys:String x:Key="MultiScreen_4Screen">4-Screen</sys:String>
+  <sys:String x:Key="MultiScreen_6Screen">6-Screen</sys:String>
+  <sys:String x:Key="MultiScreen_9Screen">9-Screen</sys:String>
+  <sys:String x:Key="MultiScreen_ExitFullscreen">Exit Fullscreen</sys:String>
+  <sys:String x:Key="MultiScreen_ExitMultiScreen">Exit Multi-Screen</sys:String>
+  <sys:String x:Key="MultiScreen_PlayControl">Playback Control</sys:String>
+  <sys:String x:Key="MultiScreen_PlayPause">Play/Pause</sys:String>
+  <sys:String x:Key="MultiScreen_Stop">Stop</sys:String>
+  <sys:String x:Key="MultiScreen_Mute">Mute</sys:String>
+  <sys:String x:Key="MultiScreen_VolumeUp">Volume +</sys:String>
+  <sys:String x:Key="MultiScreen_VolumeDown">Volume -</sys:String>
+  <sys:String x:Key="MultiScreen_CurrentVolume">Current Volume: {0}%</sys:String>
+  <sys:String x:Key="MultiScreen_SwitchChannel">Switch Channel</sys:String>
+  <sys:String x:Key="MultiScreen_ChannelNav">Channel Navigation</sys:String>
+  <sys:String x:Key="MultiScreen_PrevChannel">Previous Channel</sys:String>
+  <sys:String x:Key="MultiScreen_NextChannel">Next Channel</sys:String>
+  <sys:String x:Key="MultiScreen_AspectRatio">Aspect Ratio</sys:String>
+  <sys:String x:Key="MultiScreen_CloseThisScreen">Close This Screen</sys:String>
+  <sys:String x:Key="MultiScreen_ResetAll">Reset All</sys:String>
+  <sys:String x:Key="MultiScreen_AspectDefault">Default</sys:String>
+  <sys:String x:Key="MultiScreen_AspectStretch">Stretch</sys:String>
+  <sys:String x:Key="MultiScreen_AspectFill">Fill</sys:String>
+  <sys:String x:Key="MultiScreen_AspectCrop">Crop</sys:String>
 </ResourceDictionary>

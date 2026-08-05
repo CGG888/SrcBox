@@ -403,7 +403,7 @@
                 </StackPanel>
 
                 <!-- Right: Window Buttons -->
-                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center">
+                <StackPanel Grid.Column="2" Orientation="Horizontal" VerticalAlignment="Center" Margin="0,0,10,0">
                     <!-- 1. Topmost (Pin) -->
                     <ToggleButton x:Name="BtnPin" Style="{StaticResource TopBtnStyle}" Click="BtnPin_Click" ToolTip="{DynamicResource Tooltip_PinTop}">
                         <Path Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"

@@ -584,4 +584,30 @@
   <sys:String x:Key="Menu_Video">视频</sys:String>
   <sys:String x:Key="Menu_VolumeDown">音量-</sys:String>
   <sys:String x:Key="Menu_VolumeUp">音量+</sys:String>
+
+  <!-- MultiScreen -->
+  <sys:String x:Key="MultiScreen_Title">多屏播放</sys:String>
+  <sys:String x:Key="MultiScreen_4Screen">4屏</sys:String>
+  <sys:String x:Key="MultiScreen_6Screen">6屏</sys:String>
+  <sys:String x:Key="MultiScreen_9Screen">9屏</sys:String>
+  <sys:String x:Key="MultiScreen_ExitFullscreen">退出全屏</sys:String>
+  <sys:String x:Key="MultiScreen_ExitMultiScreen">退出多屏</sys:String>
+  <sys:String x:Key="MultiScreen_PlayControl">播放控制</sys:String>
+  <sys:String x:Key="MultiScreen_PlayPause">播放/暂停</sys:String>
+  <sys:String x:Key="MultiScreen_Stop">停止</sys:String>
+  <sys:String x:Key="MultiScreen_Mute">静音</sys:String>
+  <sys:String x:Key="MultiScreen_VolumeUp">音量 +</sys:String>
+  <sys:String x:Key="MultiScreen_VolumeDown">音量 -</sys:String>
+  <sys:String x:Key="MultiScreen_CurrentVolume">当前音量: {0}%</sys:String>
+  <sys:String x:Key="MultiScreen_SwitchChannel">切换频道</sys:String>
+  <sys:String x:Key="MultiScreen_ChannelNav">频道切换</sys:String>
+  <sys:String x:Key="MultiScreen_PrevChannel">上一频道</sys:String>
+  <sys:String x:Key="MultiScreen_NextChannel">下一频道</sys:String>
+  <sys:String x:Key="MultiScreen_AspectRatio">画面比例</sys:String>
+  <sys:String x:Key="MultiScreen_CloseThisScreen">关闭此屏幕</sys:String>
+  <sys:String x:Key="MultiScreen_ResetAll">全部重置</sys:String>
+  <sys:String x:Key="MultiScreen_AspectDefault">默认</sys:String>
+  <sys:String x:Key="MultiScreen_AspectStretch">拉伸</sys:String>
+  <sys:String x:Key="MultiScreen_AspectFill">填充</sys:String>
+  <sys:String x:Key="MultiScreen_AspectCrop">裁剪</sys:String>
 </ResourceDictionary>

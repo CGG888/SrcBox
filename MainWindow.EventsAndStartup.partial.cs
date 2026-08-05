@@ -521,6 +521,7 @@ namespace LibmpvIptvClient
             _shell.ShortcutActions.RequestShowAbout += () => _shell.MenuActions.ShowAbout();
             _shell.ShortcutActions.RequestShowShortcuts += () => ShowShortcuts();
             _shell.ShortcutActions.RequestStartRecording += () => { try { _recordingManager?.ToggleRecordNow(); } catch { } };
+            _shell.ShortcutActions.RequestOpenMultiScreen += (count) => OpenMultiScreen(count);
 
             _timer.Interval = TimeSpan.FromMilliseconds(500);
             _timer.Tick += OnTick;

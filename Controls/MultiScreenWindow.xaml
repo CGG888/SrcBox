@@ -1,0 +1,106 @@
+<Window x:Class="LibmpvIptvClient.Controls.MultiScreenWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:wfi="clr-namespace:System.Windows.Forms.Integration;assembly=WindowsFormsIntegration"
+        xmlns:wf="clr-namespace:System.Windows.Forms;assembly=System.Windows.Forms"
+        WindowStyle="None" ResizeMode="CanResize" 
+        Background="Black" Foreground="{DynamicResource TextPrimaryBrush}"
+        ShowInTaskbar="True" WindowStartupLocation="CenterScreen"
+        Title="{DynamicResource MultiScreen_Title}"
+        Width="1280" Height="720"
+        Focusable="True"
+        KeyDown="Window_KeyDown"
+        MouseDoubleClick="Window_MouseDoubleClick">
+  <WindowChrome.WindowChrome>
+    <WindowChrome CaptionHeight="28" GlassFrameThickness="0" CornerRadius="0" ResizeBorderThickness="4" UseAeroCaptionButtons="False"/>
+  </WindowChrome.WindowChrome>
+  <Window.Resources>
+    <Style x:Key="TopBtnStyle" TargetType="ButtonBase">
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Width" Value="24"/>
+      <Setter Property="Height" Value="24"/>
+      <Setter Property="VerticalAlignment" Value="Center"/>
+      <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="ButtonBase">
+            <Border x:Name="bd" Background="{TemplateBinding Background}">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="bd" Property="Background" Value="{DynamicResource ButtonHoverBackgroundBrush}"/>
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="bd" Property="Background" Value="{DynamicResource ButtonPressedBackgroundBrush}"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+    <Style x:Key="CloseBtnStyle" TargetType="ButtonBase" BasedOn="{StaticResource TopBtnStyle}">
+      <Style.Triggers>
+        <Trigger Property="IsMouseOver" Value="True">
+          <Setter Property="Background" Value="{DynamicResource DangerButtonBackgroundBrush}"/>
+          <Setter Property="Foreground" Value="White"/>
+        </Trigger>
+      </Style.Triggers>
+    </Style>
+  </Window.Resources>
+
+  <Grid>
+    <Grid.RowDefinitions>
+      <RowDefinition Height="28"/>
+      <RowDefinition Height="*"/>
+    </Grid.RowDefinitions>
+
+    <!-- Top Bar -->
+    <Border x:Name="TopBarBorder" Grid.Row="0" Background="{DynamicResource TitleBarBrush}">
+      <Grid>
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+
+        <!-- Title -->
+        <TextBlock Grid.Column="0" Text="{DynamicResource MultiScreen_Title}" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="8,0,0,0" FontSize="12" FontWeight="Bold"/>
+
+        <!-- Window Control Buttons -->
+        <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,0,4,0">
+          <!-- Minimize -->
+          <Button x:Name="BtnMin" Style="{StaticResource TopBtnStyle}" Click="BtnMin_Click" ToolTip="{DynamicResource Common_Minimize}">
+            <Path Data="M4,12 H12" Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+          </Button>
+
+          <!-- Maximize/Restore -->
+          <Button x:Name="BtnMax" Style="{StaticResource TopBtnStyle}" Click="BtnMax_Click" ToolTip="{DynamicResource Common_Maximize}">
+            <Path Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center">
+              <Path.Style>
+                <Style TargetType="Path">
+                  <Setter Property="Data" Value="M4.5,4.5 H11.5 V11.5 H4.5 Z"/>
+                </Style>
+              </Path.Style>
+            </Path>
+          </Button>
+
+          <!-- Fullscreen -->
+          <Button x:Name="BtnFullscreen" Style="{StaticResource TopBtnStyle}" Click="BtnFullscreen_Click" ToolTip="全屏">
+            <Path Data="M3.5,6.5 V3.5 H6.5 M9.5,3.5 H12.5 V6.5 M12.5,9.5 V12.5 H9.5 M6.5,12.5 H3.5 V9.5" 
+                  Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+          </Button>
+
+          <!-- Close -->
+          <Button x:Name="BtnClose" Style="{StaticResource CloseBtnStyle}" Click="BtnClose_Click" ToolTip="关闭">
+            <Path Data="M4.5,4.5 L11.5,11.5 M11.5,4.5 L4.5,11.5" Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="1" Stretch="None" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+          </Button>
+        </StackPanel>
+      </Grid>
+    </Border>
+
+    <!-- Video Grid -->
+    <Grid x:Name="MainGrid" Grid.Row="1" Background="Black"/>
+  </Grid>
+</Window>

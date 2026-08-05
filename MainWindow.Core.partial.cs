@@ -5,6 +5,7 @@ using System.Windows;
 using System.Windows.Input;
 using LibmpvIptvClient.Architecture.Platform.Player;
 using LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow;
+using LibmpvIptvClient.Models;
 using LibmpvIptvClient.Services;
 
 namespace LibmpvIptvClient
@@ -227,6 +228,46 @@ private void InitializeSourceRatioIcons()
                     : System.Windows.Media.Geometry.Parse(VolumeData);
             }
             catch { }
+        }
+
+        public void OpenMultiScreen(int screenCount)
+        {
+            try
+            {
+                var groups = GetChannelGroupData();
+                var win = new LibmpvIptvClient.Controls.MultiScreenWindow(screenCount, () => _shell.FilteredChannels, groups);
+                win.Show();
+            }
+            catch (Exception ex)
+            {
+                Diagnostics.Logger.Error($"[MultiScreen] Failed to open: {ex.Message}");
+            }
+        }
+
+        private List<ChannelGroupData> GetChannelGroupData()
+        {
+            var result = new List<ChannelGroupData>();
+            try
+            {
+                var channels = _shell.FilteredChannels;
+                var groupMap = new Dictionary<string, List<Channel>>(System.StringComparer.OrdinalIgnoreCase);
+                foreach (var ch in channels)
+                {
+                    if (string.IsNullOrWhiteSpace(ch.Group)) continue;
+                    if (!groupMap.TryGetValue(ch.Group, out var list))
+                    {
+                        list = new List<Channel>();
+                        groupMap[ch.Group] = list;
+                    }
+                    list.Add(ch);
+                }
+                foreach (var kv in groupMap)
+                {
+                    result.Add(new ChannelGroupData { Name = kv.Key, Channels = kv.Value });
+                }
+            }
+            catch { }
+            return result;
         }
     }
 }

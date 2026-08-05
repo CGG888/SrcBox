@@ -34,7 +34,10 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow;
     OpenSettings,
     ShowAbout,
     ShowShortcuts,
-    StartRecording
+    StartRecording,
+    OpenMultiScreen4,
+    OpenMultiScreen6,
+    OpenMultiScreen9
 }
 
 public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
@@ -57,6 +60,7 @@ public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
     public event System.Action? RequestShowAbout;
     public event System.Action? RequestShowShortcuts;
     public event System.Action? RequestStartRecording;
+    public event System.Action<int>? RequestOpenMultiScreen;
 
     public MainWindowShortcutActionsViewModel(MainShellViewModel shell)
     {
@@ -104,6 +108,9 @@ public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
             Key.I => isCtrlPressed ? MainWindowShortcutAction.ShowAbout : MainWindowShortcutAction.None,
             Key.OemQuestion => isCtrlPressed ? MainWindowShortcutAction.ShowShortcuts : MainWindowShortcutAction.None,
             Key.R => !isCtrlPressed ? MainWindowShortcutAction.StartRecording : MainWindowShortcutAction.None,
+            Key.D4 => isCtrlPressed ? MainWindowShortcutAction.OpenMultiScreen4 : MainWindowShortcutAction.None,
+            Key.D6 => isCtrlPressed ? MainWindowShortcutAction.OpenMultiScreen6 : MainWindowShortcutAction.None,
+            Key.D9 => isCtrlPressed ? MainWindowShortcutAction.OpenMultiScreen9 : MainWindowShortcutAction.None,
             _ => MainWindowShortcutAction.None
         };
     }
@@ -220,6 +227,15 @@ public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
                 break;
             case MainWindowShortcutAction.StartRecording:
                 RequestStartRecording?.Invoke();
+                break;
+            case MainWindowShortcutAction.OpenMultiScreen4:
+                RequestOpenMultiScreen?.Invoke(4);
+                break;
+            case MainWindowShortcutAction.OpenMultiScreen6:
+                RequestOpenMultiScreen?.Invoke(6);
+                break;
+            case MainWindowShortcutAction.OpenMultiScreen9:
+                RequestOpenMultiScreen?.Invoke(9);
                 break;
         }
     }

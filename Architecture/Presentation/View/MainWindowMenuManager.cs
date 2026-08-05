@@ -142,7 +142,8 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 openDebug: null,
                 showShortcuts: () => _window.Dispatcher.Invoke(() => _window.ShowShortcuts()),
                 isTopmostChecked: _window.Topmost,
-                clearCloseMode: null
+                clearCloseMode: null,
+                openMultiScreen: (count) => _window.Dispatcher.Invoke(() => _window.OpenMultiScreen(count))
             );
         }
 

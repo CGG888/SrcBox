@@ -41,7 +41,8 @@ namespace LibmpvIptvClient.Helpers
             Action? showShortcuts = null,
             bool isTopmostChecked = false,
             Action? clearCloseMode = null,
-            Action<string>? decoderChanged = null)
+            Action<string>? decoderChanged = null,
+            Action<int>? openMultiScreen = null)
         {
             var cm = new ContextMenu();
 
@@ -169,6 +170,21 @@ namespace LibmpvIptvClient.Helpers
             miControl.Items.Add(miSwitchSource);
 
             miPlay.Items.Add(miControl);
+
+            if (openMultiScreen != null)
+            {
+                var miMultiScreen = new MenuItem { Header = Localizer.S("Menu_MultiScreen", "多屏播放") };
+                var mi4Screen = new MenuItem { Header = Localizer.S("Menu_4Screen", "4 屏 (2×2)"), InputGestureText = "Ctrl+4" };
+                mi4Screen.Click += (s, args) => openMultiScreen(4);
+                miMultiScreen.Items.Add(mi4Screen);
+                var mi6Screen = new MenuItem { Header = Localizer.S("Menu_6Screen", "6 屏 (2×3)"), InputGestureText = "Ctrl+6" };
+                mi6Screen.Click += (s, args) => openMultiScreen(6);
+                miMultiScreen.Items.Add(mi6Screen);
+                var mi9Screen = new MenuItem { Header = Localizer.S("Menu_9Screen", "9 屏 (3×3)"), InputGestureText = "Ctrl+9" };
+                mi9Screen.Click += (s, args) => openMultiScreen(9);
+                miMultiScreen.Items.Add(mi9Screen);
+                miPlay.Items.Add(miMultiScreen);
+            }
 
             var miSpeed = new MenuItem { Header = Localizer.S("Menu_Speed", "播放速度") };
             var speeds = new[] { 0.5, 0.75, 1.0, 1.25, 1.5, 1.75, 2.0, 3.0, 5.0 };
