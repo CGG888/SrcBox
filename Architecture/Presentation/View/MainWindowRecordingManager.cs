@@ -57,10 +57,24 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
         {
             try { StartRecordingsWatcher(); } catch { }
             try { _ = LoadRecordingsLocalGrouped(); } catch { }
+            try { ScheduledRecordingManager.Instance.StopFrontRecordingRequested += OnStopFrontRecordingRequested; } catch { }
+        }
+
+        private void OnStopFrontRecordingRequested(object? sender, string recordingId)
+        {
+            try
+            {
+                if (_recordingNow && !_recordViaHttp)
+                {
+                    _ = StopRecording();
+                }
+            }
+            catch { }
         }
 
         public void Close()
         {
+            try { ScheduledRecordingManager.Instance.StopFrontRecordingRequested -= OnStopFrontRecordingRequested; } catch { }
             try { _recordingsWatcher?.Dispose(); } catch { }
             try { _recordingsRefreshTimer?.Stop(); } catch { }
             try { _recordCts?.Cancel(); } catch { }
