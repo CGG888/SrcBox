@@ -19,8 +19,8 @@ dotnet test .\Tests\LibmpvIptvClient.Tests.csproj
 
 - 分部类模式: `MainWindow.xaml` + `MainWindow.Core.partial.cs`, `MainWindow.EventsAndStartup.partial.cs` 等
 - MenuBuilder 回调模式: `refreshChannels: null` 表示未绑定; 通过 `MainWindowMenuManager.CreateAppMenu()` 绑定
-- M3U 缓存 TTL 由 `AppSettings.Current.M3uCacheTtlHours` 控制
-- 国际化: `Resources/Strings.{locale}.xaml` - 需编辑全部 4 个语言文件
+- M3U 缓存 TTL 由 `AppSettings.Current.M3uCacheTtlHours` 控制，默认 12 小时
+- 国际化: `Resources/Strings.{locale}.xaml` - 需编辑全部 4 个语言文件（中/英/繁/俄）
 
 ## 重要模式
 
@@ -37,3 +37,19 @@ dotnet test .\Tests\LibmpvIptvClient.Tests.csproj
 **添加快捷键**: 添加到 `MainWindowShortcutAction` 枚举 + `ResolveAction()` + `ExecuteAction()`
 
 **添加设置**: 添加到 `PlaybackSettings.cs`，在 SettingsWindow 或对应的 Settings*ViewModel 中绑定
+
+## 禁止事项
+
+- **不说提交的时候，不得主动提交 git**
+- **提交 git 每次都是到 main 分支**
+- **commit 使用英文**
+
+## 沟通与代码规范
+
+- **沟通语言**: 使用中文，包括分析过程
+- **代码注解**: 使用英文
+
+## 国际化
+
+- 每次修改完功能后，需要同步处理国际化
+- 需编辑全部 4 个语言文件: `Strings.zh-CN.xaml`, `Strings.en-US.xaml`, `Strings.zh-TW.xaml`, `Strings.ru-RU.xaml`
