@@ -40,8 +40,9 @@ namespace LibmpvIptvClient
             try
             {
                 var manager = Services.ScheduledRecordingManager.Instance;
-                var recordings = manager.GetAll();
+                var recordings = manager.GetAll().ToList();
 
+                Grid.ItemsSource = null;
                 Grid.ItemsSource = recordings;
 
                 var frontCount = manager.ActiveFrontRecordingCount;

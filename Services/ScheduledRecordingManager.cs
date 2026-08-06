@@ -82,7 +82,7 @@ namespace LibmpvIptvClient.Services
 
         public void Add(ScheduledRecordingInfo info)
         {
-            info.StatusLabel = GetStatusLabel(info.Status);
+            info.StatusLabel = GetStatusLabelCore(info.Status);
             _recordings[info.Id] = info;
         }
 
@@ -96,7 +96,7 @@ namespace LibmpvIptvClient.Services
             if (_recordings.TryGetValue(id, out var info))
             {
                 info.Status = status;
-                info.StatusLabel = GetStatusLabel(status);
+                info.StatusLabel = GetStatusLabelCore(status);
                 if (errorMessage != null)
                     info.ErrorMessage = errorMessage;
                 RecordingUpdated?.Invoke(this, info);
@@ -108,7 +108,7 @@ namespace LibmpvIptvClient.Services
             if (_recordings.TryGetValue(id, out var info))
             {
                 info.SizeBytes = sizeBytes;
-                info.SizeLabel = FormatSize(sizeBytes);
+                info.SizeLabel = FormatSizeCore(sizeBytes);
                 RecordingUpdated?.Invoke(this, info);
             }
         }
@@ -121,8 +121,8 @@ namespace LibmpvIptvClient.Services
             info.Type = RecordingType.Front;
             info.Status = ScheduledRecordingStatus.Recording;
             info.ActualStartTime = DateTime.Now;
-            info.StatusLabel = GetStatusLabel(info.Status);
-            info.SizeLabel = FormatSize(0);
+            info.StatusLabel = GetStatusLabelCore(info.Status);
+            info.SizeLabel = FormatSizeCore(0);
 
             _recordings[info.Id] = info;
             onRecordingStarted?.Invoke(info.Id);
@@ -137,8 +137,8 @@ namespace LibmpvIptvClient.Services
             info.Type = RecordingType.Back;
             info.Status = ScheduledRecordingStatus.Recording;
             info.ActualStartTime = DateTime.Now;
-            info.StatusLabel = GetStatusLabel(info.Status);
-            info.SizeLabel = FormatSize(0);
+            info.StatusLabel = GetStatusLabelCore(info.Status);
+            info.SizeLabel = FormatSizeCore(0);
 
             _recordings[info.Id] = info;
 
@@ -153,9 +153,9 @@ namespace LibmpvIptvClient.Services
             instance.Completed += (_, e) =>
             {
                 info.Status = e.Success ? ScheduledRecordingStatus.Completed : ScheduledRecordingStatus.Failed;
-                info.StatusLabel = GetStatusLabel(info.Status);
+                info.StatusLabel = GetStatusLabelCore(info.Status);
                 info.SizeBytes = e.SizeBytes;
-                info.SizeLabel = FormatSize(e.SizeBytes);
+                info.SizeLabel = FormatSizeCore(e.SizeBytes);
                 info.ActualEndTime = DateTime.Now;
                 if (e.Success && info.ActualStartTime.HasValue)
                     info.ActualDurationMin = (int)(info.ActualEndTime.Value - info.ActualStartTime.Value).TotalMinutes;
@@ -171,7 +171,7 @@ namespace LibmpvIptvClient.Services
             instance.Failed += (_, error) =>
             {
                 info.Status = ScheduledRecordingStatus.Failed;
-                info.StatusLabel = GetStatusLabel(info.Status);
+                info.StatusLabel = GetStatusLabelCore(info.Status);
                 info.ErrorMessage = error;
 
                 _activeInstances.TryRemove(info.Id, out var _removed2);
@@ -194,7 +194,7 @@ namespace LibmpvIptvClient.Services
                 if (info.Type == RecordingType.Front)
                 {
                     info.Status = ScheduledRecordingStatus.Cancelled;
-                    info.StatusLabel = GetStatusLabel(info.Status);
+                    info.StatusLabel = GetStatusLabelCore(info.Status);
                     info.ActualEndTime = DateTime.Now;
                     if (info.ActualStartTime.HasValue)
                         info.ActualDurationMin = (int)(info.ActualEndTime.Value - info.ActualStartTime.Value).TotalMinutes;
@@ -209,6 +209,26 @@ namespace LibmpvIptvClient.Services
             }
         }
 
+        public void CompleteFrontRecording(string id, long sizeBytes)
+        {
+            if (_recordings.TryGetValue(id, out var info))
+            {
+                if (info.Type == RecordingType.Front && info.Status == ScheduledRecordingStatus.Recording)
+                {
+                    info.Status = ScheduledRecordingStatus.Completed;
+                    info.StatusLabel = GetStatusLabelCore(info.Status);
+                    info.ActualEndTime = DateTime.Now;
+                    if (info.ActualStartTime.HasValue)
+                        info.ActualDurationMin = (int)(info.ActualEndTime.Value - info.ActualStartTime.Value).TotalMinutes;
+                    info.SizeBytes = sizeBytes;
+                    info.SizeLabel = FormatSizeCore(sizeBytes);
+                    RecordingCompleted?.Invoke(this, (id, true, null));
+                    RecordingStopped?.Invoke(this, info);
+                    RecordingUpdated?.Invoke(this, info);
+                }
+            }
+        }
+
         public void CancelScheduled(string id)
         {
             if (_recordings.TryGetValue(id, out var info))
@@ -216,7 +236,7 @@ namespace LibmpvIptvClient.Services
                 if (info.Status == ScheduledRecordingStatus.Waiting)
                 {
                     info.Status = ScheduledRecordingStatus.Cancelled;
-                    info.StatusLabel = GetStatusLabel(info.Status);
+                    info.StatusLabel = GetStatusLabelCore(info.Status);
                     RecordingStopped?.Invoke(this, info);
                     RecordingUpdated?.Invoke(this, info);
                 }
@@ -228,7 +248,7 @@ namespace LibmpvIptvClient.Services
             Remove(id);
         }
 
-        private static string GetStatusLabel(ScheduledRecordingStatus status)
+        public static string GetStatusLabelCore(ScheduledRecordingStatus status)
         {
             return status switch
             {
@@ -241,7 +261,7 @@ namespace LibmpvIptvClient.Services
             };
         }
 
-        private static string FormatSize(long bytes)
+        public static string FormatSizeCore(long bytes)
         {
             if (bytes < 1024) return $"{bytes} B";
             if (bytes < 1024 * 1024) return $"{bytes / 1024.0:F1} KB";

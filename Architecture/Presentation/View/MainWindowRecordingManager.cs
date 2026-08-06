@@ -33,6 +33,9 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
         private CancellationTokenSource? _recordCts;
         private Task? _recordTask;
         
+        // Scheduled Recording Tracking
+        private string? _scheduledFrontRecordingId = null;
+        
         // Watcher & Refresh
         private FileSystemWatcher? _recordingsWatcher;
         private DispatcherTimer? _recordingsRefreshTimer;
@@ -317,8 +320,8 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 _recordingNow = true;
 
                 ScheduledRecordingManager.Instance.StartFrontRecording(info,
-                    onRecordingStarted: id => { },
-                    onRecordingStopped: id => { });
+                    onRecordingStarted: id => { _scheduledFrontRecordingId = id; },
+                    onRecordingStopped: id => { _scheduledFrontRecordingId = null; });
 
                 try { LibmpvIptvClient.Diagnostics.Logger.Info($"[ScheduledRecord] front recording started: {info.ProgramTitle}"); } catch { }
 
@@ -473,6 +476,24 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 catch { }
             } 
             catch { }
+
+            // Update scheduled front recording status to Completed if applicable
+            if (!string.IsNullOrEmpty(_scheduledFrontRecordingId))
+            {
+                try
+                {
+                    var sid = _scheduledFrontRecordingId;
+                    long sizeBytes = 0;
+                    if (!string.IsNullOrEmpty(_recordFilePath) && File.Exists(_recordFilePath))
+                        sizeBytes = new FileInfo(_recordFilePath).Length;
+                    ScheduledRecordingManager.Instance.CompleteFrontRecording(sid, sizeBytes);
+                }
+                catch (Exception ex)
+                {
+                    try { LibmpvIptvClient.Diagnostics.Logger.Error($"[StopRecording] failed to update scheduled recording status: {ex.Message}"); } catch { }
+                }
+                _scheduledFrontRecordingId = null;
+            }
 
             // Reset stream if needed (e.g. if recording caused issues)
             // This was ResetAfterRecordingStopAsync() in MainWindow. 
