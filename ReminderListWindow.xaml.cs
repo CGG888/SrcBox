@@ -64,6 +64,8 @@ namespace LibmpvIptvClient
                         r.PreAlertSeconds = dlg.PreAlertSeconds;
                         r.Action = dlg.Action;
                         try { r.PlayMode = dlg.PlayMode; } catch { }
+                        try { r.RecordMode = dlg.RecordMode; } catch { }
+                        try { r.RecordDurationMin = dlg.RecordDurationMin; } catch { }
                         AppSettings.Current.Save();
                         LibmpvIptvClient.Services.ReminderService.Instance.Start();
                         LoadData();

@@ -434,7 +434,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 var dlg = new ReminderDialog(_shell.CurrentChannel.Name, ctx.Title, ctx.Start) { Owner = ownerWin, WindowStartupLocation = WindowStartupLocation.CenterOwner, Topmost = _shell.WindowStateActions.IsFullscreen };
                 if (dlg.ShowDialog() == true)
                 {
-                    var r = _shell.EpgReminderActions.BuildReminder(_shell.CurrentChannel, ctx, dlg.PreAlertSeconds, dlg.Action, null);
+                    var r = _shell.EpgReminderActions.BuildReminder(_shell.CurrentChannel, ctx, dlg.PreAlertSeconds, dlg.Action, null, dlg.RecordMode, dlg.RecordDurationMin);
                     _shell.EpgReminderActions.SaveReminder(r);
                     _shell.EpgReminderActions.NotifyReminder(r, _shell.CurrentChannel?.Logo);
                 }
@@ -457,7 +457,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                     var dlg = new ReminderDialog(_shell.CurrentChannel.Name, ctx.Title, ctx.Start) { Owner = ownerWin, WindowStartupLocation = WindowStartupLocation.CenterOwner, Topmost = _shell.WindowStateActions.IsFullscreen };
                     if (dlg.ShowDialog() == true)
                     {
-                        var r = _shell.EpgReminderActions.BuildReminder(_shell.CurrentChannel, ctx, dlg.PreAlertSeconds, dlg.Action, dlg.PlayMode);
+                        var r = _shell.EpgReminderActions.BuildReminder(_shell.CurrentChannel, ctx, dlg.PreAlertSeconds, dlg.Action, dlg.PlayMode, dlg.RecordMode, dlg.RecordDurationMin);
                         _shell.EpgReminderActions.SaveReminder(r);
                         _shell.EpgReminderActions.NotifyReminder(r, _shell.CurrentChannel?.Logo);
                     }

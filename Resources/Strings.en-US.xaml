@@ -339,6 +339,8 @@
   <sys:String x:Key="ReminderList_Column_Action">Type</sys:String>
   <sys:String x:Key="Reminder_Action_Notify">Notify</sys:String>
   <sys:String x:Key="Reminder_Action_Play">Play</sys:String>
+  <sys:String x:Key="Reminder_Action_RecordFront">Front Recording</sys:String>
+  <sys:String x:Key="Reminder_Action_RecordBack">Back Recording</sys:String>
   <sys:String x:Key="EPG_Status_Booked">Booked</sys:String>
   <sys:String x:Key="Tray_OpenMain">Open Main Window</sys:String>
   <sys:String x:Key="CloseConfirm_Title">Close Confirmation</sys:String>

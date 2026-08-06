@@ -422,6 +422,8 @@
   <sys:String x:Key="ReminderList_Column_Action">Тип</sys:String>
   <sys:String x:Key="Reminder_Action_Notify">Уведомление</sys:String>
   <sys:String x:Key="Reminder_Action_Play">Воспроизведение</sys:String>
+  <sys:String x:Key="Reminder_Action_RecordFront">Запись (передний план)</sys:String>
+  <sys:String x:Key="Reminder_Action_RecordBack">Запись (фоновый)</sys:String>
 
   <!-- HTTP/RTSP Header Settings -->
   <sys:String x:Key="UI_HttpHeader_Section">Настройки HTTP/RTSP Header</sys:String>

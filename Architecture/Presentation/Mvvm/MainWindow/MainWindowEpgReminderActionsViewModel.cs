@@ -14,7 +14,7 @@ public sealed class MainWindowEpgReminderActionsViewModel : ViewModelBase
         return program.Start > now;
     }
 
-    public ScheduledReminder BuildReminder(Channel channel, EpgProgram program, int preAlertSeconds, string action, string? playMode)
+    public ScheduledReminder BuildReminder(Channel channel, EpgProgram program, int preAlertSeconds, string action, string? playMode, string? recordMode, int? recordDurationMin)
     {
         return new ScheduledReminder
         {
@@ -26,6 +26,8 @@ public sealed class MainWindowEpgReminderActionsViewModel : ViewModelBase
             PreAlertSeconds = preAlertSeconds,
             Action = action,
             PlayMode = playMode,
+            RecordMode = recordMode,
+            RecordDurationMin = recordDurationMin,
             Enabled = true,
             Note = program.Title ?? ""
         };

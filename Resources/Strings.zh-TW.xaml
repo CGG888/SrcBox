@@ -322,6 +322,8 @@
   <sys:String x:Key="ReminderList_Column_Action">類型</sys:String>
   <sys:String x:Key="Reminder_Action_Notify">通知</sys:String>
   <sys:String x:Key="Reminder_Action_Play">播放</sys:String>
+  <sys:String x:Key="Reminder_Action_RecordFront">前台錄製</sys:String>
+  <sys:String x:Key="Reminder_Action_RecordBack">後台錄製</sys:String>
   <sys:String x:Key="Reminder_Added">已新增預約</sys:String>
   <sys:String x:Key="EPG_Status_Booked">已預約</sys:String>
   <sys:String x:Key="Tray_OpenMain">打開主畫面</sys:String>
