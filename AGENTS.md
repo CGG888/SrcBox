@@ -1,39 +1,39 @@
-# SrcBox - Agent Instructions
+# SrcBox - Agent 指令
 
-## Build & Test
+## 构建与测试
 
 ```powershell
 dotnet build
 dotnet test .\Tests\LibmpvIptvClient.Tests.csproj
 ```
 
-## Architecture
+## 架构
 
-- **Player core**: `MpvPlayer.cs` + `MpvPlayerEngineAdapter.cs` wrap libmpv-2.dll
-- **Main ViewModel**: `Architecture/Presentation/Mvvm/MainWindow/MainShellViewModel.cs` - central state management
-- **Menu building**: `Helpers/MenuBuilder.cs` - top-level menus; `MainWindowMenuManager.cs` - right-click menus
-- **M3U/EPG services**: `Services/M3UCacheService.cs`, `Services/M3UParser.cs`, `Services/EpgService.cs`
-- **Partial classes**: MainWindow logic split across `MainWindow.*.partial.cs` files
+- **播放器核心**: `MpvPlayer.cs` + `MpvPlayerEngineAdapter.cs` 封装 libmpv-2.dll
+- **主 ViewModel**: `Architecture/Presentation/Mvvm/MainWindow/MainShellViewModel.cs` - 中央状态管理
+- **菜单构建**: `Helpers/MenuBuilder.cs` - 顶部菜单; `MainWindowMenuManager.cs` - 右键菜单
+- **M3U/EPG 服务**: `Services/M3UCacheService.cs`, `Services/M3UParser.cs`, `Services/EpgService.cs`
+- **分部类模式**: MainWindow 逻辑拆分在 `MainWindow.*.partial.cs` 文件中
 
-## Key Conventions
+## 关键约定
 
-- Partial class pattern: `MainWindow.xaml` + `MainWindow.Core.partial.cs`, `MainWindow.EventsAndStartup.partial.cs`, etc.
-- MenuBuilder callback pattern: `refreshChannels: null` means not bound; bind via `MainWindowMenuManager.CreateAppMenu()`
-- M3U cache TTL controlled by `AppSettings.Current.M3uCacheTtlHours`
-- Internationalization: `Resources/Strings.{locale}.xaml` - edit all 4 locale files
+- 分部类模式: `MainWindow.xaml` + `MainWindow.Core.partial.cs`, `MainWindow.EventsAndStartup.partial.cs` 等
+- MenuBuilder 回调模式: `refreshChannels: null` 表示未绑定; 通过 `MainWindowMenuManager.CreateAppMenu()` 绑定
+- M3U 缓存 TTL 由 `AppSettings.Current.M3uCacheTtlHours` 控制
+- 国际化: `Resources/Strings.{locale}.xaml` - 需编辑全部 4 个语言文件
 
-## Important Patterns
+## 重要模式
 
-- `M3UCacheService.Instance.RemoveCache(url)` clears cache before forced refresh
-- `MainShellViewModel.ForceRefreshChannels(url)` = clear cache + reload
-- `LoadChannels(string url)` respects cache TTL; does NOT force download
-- Volume settings (gain/max) applied in `MpvPlayer.Initialize()` - not dynamically changed
-- mpv properties set via `SetString("property-name", value)` / `SetDouble()` / `SetFlag()`
+- `M3UCacheService.Instance.RemoveCache(url)` 在强制刷新前清除缓存
+- `MainShellViewModel.ForceRefreshChannels(url)` = 清除缓存 + 重新加载
+- `LoadChannels(string url)` 遵循缓存 TTL; 不会强制下载
+- 音量设置 (gain/max) 在 `MpvPlayer.Initialize()` 中应用 - 不会动态更改
+- mpv 属性通过 `SetString("property-name", value)` / `SetDouble()` / `SetFlag()` 设置
 
-## Common Tasks
+## 常见任务
 
-**Add menu item**: Define callback in MenuBuilder.cs, bind in MainWindowMenuManager.cs
+**添加菜单项**: 在 MenuBuilder.cs 中定义回调，在 MainWindowMenuManager.cs 中绑定
 
-**Add shortcut**: Add to `MainWindowShortcutAction` enum + `ResolveAction()` + `ExecuteAction()`
+**添加快捷键**: 添加到 `MainWindowShortcutAction` 枚举 + `ResolveAction()` + `ExecuteAction()`
 
-**Add settings**: Add to `PlaybackSettings.cs`, bind in SettingsWindow or corresponding Settings*ViewModel
+**添加设置**: 添加到 `PlaybackSettings.cs`，在 SettingsWindow 或对应的 Settings*ViewModel 中绑定
