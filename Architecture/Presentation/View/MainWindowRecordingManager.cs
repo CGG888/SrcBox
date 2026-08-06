@@ -67,7 +67,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
         {
             try
             {
-                if (_recordingNow && !_recordViaHttp)
+                if (!_recordViaHttp)
                 {
                     _ = StopRecording();
                 }
