@@ -31,7 +31,7 @@
 .DS_Store
 Thumbs.db
 desktop.ini
-AGENTS.md
+/AGENTS.md
 
 *.nupkg
 *.snupkg
