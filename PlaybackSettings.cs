@@ -200,6 +200,7 @@ namespace LibmpvIptvClient
         public bool RealtimeFinalizeEnabled { get; set; } = false;
         public int RealtimeFinalizeDelaySec { get; set; } = 10;
         public int RealtimeFinalizeMaxKBps { get; set; } = 0;
+        public int MaxBackgroundRecordings { get; set; } = 3;
     }
     
     public class WebDavConfig
@@ -269,6 +270,8 @@ namespace LibmpvIptvClient
         public bool Enabled { get; set; } = true;
         public bool Completed { get; set; } = false;
         public string Note { get; set; } = "";
+        public string? RecordMode { get; set; }
+        public int? RecordDurationMin { get; set; }
         [System.Text.Json.Serialization.JsonIgnore]
         public bool Selected { get; set; } = false;
     }

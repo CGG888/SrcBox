@@ -306,6 +306,7 @@
   <sys:String x:Key="Menu_ReminderNotify">通知</sys:String>
   <sys:String x:Key="Menu_ReminderAutoplay">播放</sys:String>
   <sys:String x:Key="Menu_ReminderRecord">錄播</sys:String>
+  <sys:String x:Key="Menu_ScheduledRecording">正在錄製</sys:String>
   <sys:String x:Key="ReminderList_Title">預約管理</sys:String>
   <sys:String x:Key="ReminderList_Edit">編輯</sys:String>
   <sys:String x:Key="ReminderList_Delete">刪除</sys:String>

@@ -49,6 +49,20 @@ namespace LibmpvIptvClient.Services
                 win.Show();
             });
         }
+        public static void ShowRecordingAppointment(string channelId, string channelName, string program, DateTime startLocal, string? logoPath, string recordType, string? playMode = null, int? countdownSec = null)
+        {
+            System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+            {
+                var owner = System.Windows.Application.Current?.Windows.OfType<FullscreenWindow>().FirstOrDefault(w => w.IsVisible)
+                            as System.Windows.Window
+                            ?? System.Windows.Application.Current?.Windows.OfType<MainWindow>().FirstOrDefault();
+                var win = new ReminderToastWindow(channelId, channelName, program, startLocal, logoPath, true, null, null, true, playMode ?? "default", countdownSec);
+                try { if (owner != null) { win.Owner = owner; win.Topmost = true; } } catch { }
+                ApplyKind(win, ToastKind.RecordStart, null);
+                try { win.EnableAutoPlayManualClose(); } catch { }
+                win.Show();
+            });
+        }
         public static void ShowSimple(ToastKind kind, string title, string? subtitle = null, string? logoPath = null, int? autoHideMs = null)
         {
             System.Windows.Application.Current?.Dispatcher?.Invoke(() =>

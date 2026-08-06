@@ -5,6 +5,7 @@ using System.Windows;
 using LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow;
 using LibmpvIptvClient.Diagnostics;
 using LibmpvIptvClient.Helpers;
+using LibmpvIptvClient.Models;
 using LibmpvIptvClient.Services;
 
 namespace LibmpvIptvClient.Architecture.Presentation.View
@@ -37,6 +38,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             }
             catch { }
             try { ReminderService.Instance.Start(); } catch { }
+            try { ReminderService.Instance.RecordingTriggered += OnRecordingTriggered; } catch { }
             try
             {
                 var oldDefault = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SrcBox", "logo-cache");
@@ -69,6 +71,18 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                     _shell.MenuActions.LoadM3u(lastSelected);
                 }
             }
+        }
+
+        private void OnRecordingTriggered(object? sender, ScheduledRecordingTriggerArgs e)
+        {
+            try
+            {
+                _window.Dispatcher.Invoke(() =>
+                {
+                    try { _window.HandleScheduledRecordingTrigger(e); } catch { }
+                });
+            }
+            catch { }
         }
     }
 }

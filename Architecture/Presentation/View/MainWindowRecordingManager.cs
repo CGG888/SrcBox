@@ -254,7 +254,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             try
             {
                 if (_shell.PlayerEngine == null || _shell.CurrentChannel == null) return;
-                
+
                 if (!_recordingNow)
                 {
                     await StartRecording();
@@ -265,6 +265,63 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 }
             }
             catch { }
+        }
+
+        public async void StartScheduledFrontRecording(Models.ScheduledRecordingInfo info, Models.Channel channel)
+        {
+            try
+            {
+                if (_shell.PlayerEngine == null) return;
+
+                var recEnabled = _shell.RecordingActions.ResolveRecordingEnabled(AppSettings.Current?.Recording?.Enabled);
+                if (!recEnabled)
+                {
+                    ScheduledRecordingManager.Instance.UpdateStatus(info.Id, Models.ScheduledRecordingStatus.Failed, "Recording is disabled");
+                    return;
+                }
+
+                if (string.IsNullOrWhiteSpace(info.FilePath))
+                {
+                    var safeChannel = (channel.Name ?? "unknown").Replace(":", "_").Replace("/", "_").Replace("\\", "_");
+                    var dir = ResolveRecordingDir(safeChannel);
+                    var verify = AppSettings.Current?.Recording?.VerifyDirReady ?? true;
+                    var dirReady = verify ? await EnsureRecordingDirReady(dir) : true;
+                    if (!dirReady) return;
+                    var startStr = info.ScheduledStart.ToString("yyyyMMdd_HHmmss");
+                    var safeTitle = (info.ProgramTitle ?? "rec").Replace(":", "_").Replace("/", "_").Replace("\\", "_").Trim();
+                    info.FilePath = Path.Combine(dir, $"{startStr}_{safeTitle}.ts").Replace("\\", "/");
+                }
+
+                _recordFilePath = info.FilePath;
+                _recordStartUtc = DateTime.UtcNow;
+                _recordFirstWriteUtc = null;
+                _recordProgramLocalTime = info.ScheduledStart;
+                _recordProgramTitle = info.ProgramTitle ?? "";
+                try { WriteRecordingMeta(_recordFilePath, _recordStartUtc, null, false); } catch { }
+
+                TryStartStreamRecord(_recordFilePath);
+                _recordingNow = true;
+
+                ScheduledRecordingManager.Instance.StartFrontRecording(info,
+                    onRecordingStarted: id => { },
+                    onRecordingStopped: id => { });
+
+                try { LibmpvIptvClient.Diagnostics.Logger.Info($"[ScheduledRecord] front recording started: {info.ProgramTitle}"); } catch { }
+
+                UpdateRecordButtonState(true);
+
+                try
+                {
+                    var k = ResolveChannelKey() ?? "";
+                    ScheduleRecordingsRefresh(k, true);
+                }
+                catch { }
+            }
+            catch (Exception ex)
+            {
+                try { LibmpvIptvClient.Diagnostics.Logger.Error($"[ScheduledRecord] front recording error: {ex.Message}"); } catch { }
+                ScheduledRecordingManager.Instance.UpdateStatus(info.Id, Models.ScheduledRecordingStatus.Failed, ex.Message);
+            }
         }
 
         private async Task StartRecording()

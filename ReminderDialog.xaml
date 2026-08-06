@@ -19,7 +19,7 @@
     <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Right">
       <Button x:Name="BtnNotify" Content="{DynamicResource Reminder_Notify}" Width="96" Margin="0,0,8,0" Click="BtnNotify_Click" Style="{StaticResource AccentButtonStyle}"/>
       <Button x:Name="BtnAutoplay" Content="{DynamicResource Reminder_Autoplay}" Width="96" Margin="0,0,8,0" Click="BtnAutoplay_Click"/>
-      <Button x:Name="BtnRecord" Content="{DynamicResource Reminder_Record}" Width="96" IsEnabled="False"/>
+      <Button x:Name="BtnRecord" Content="{DynamicResource Reminder_Record}" Width="96" Click="BtnRecord_Click"/>
     </StackPanel>
   </Grid>
 </Window>

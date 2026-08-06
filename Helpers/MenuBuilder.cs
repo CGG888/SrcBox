@@ -327,6 +327,18 @@ namespace LibmpvIptvClient.Helpers
             };
             miRecord.Items.Add(miRecNow);
 
+            var miScheduledRec = new MenuItem { Header = Localizer.S("Menu_ScheduledRecording", "正在录制") };
+            miScheduledRec.Click += (s, args) =>
+            {
+                try
+                {
+                    var win = new LibmpvIptvClient.ScheduledRecordingListWindow();
+                    win.Show();
+                }
+                catch { }
+            };
+            miRecord.Items.Add(miScheduledRec);
+
             var miRecList = new MenuItem { Header = Localizer.S("Menu_RecordingsList", "录制列表") };
             miRecList.Click += (s, args) =>
             {
@@ -347,8 +359,7 @@ namespace LibmpvIptvClient.Helpers
 
             // 8. 预约
             var miReminder = new MenuItem { Header = Localizer.S("Menu_Reminders", "预约") };
-            var miNotify = new MenuItem { Header = Localizer.S("Menu_ReminderNotify", "通知") };
-            miNotify.Click += (s, a) =>
+            miReminder.Click += (s, a) =>
             {
                 try
                 {
@@ -356,22 +367,6 @@ namespace LibmpvIptvClient.Helpers
                 }
                 catch { }
             };
-            miReminder.Items.Add(miNotify);
-
-            var miAutoplay = new MenuItem { Header = Localizer.S("Menu_ReminderAutoplay", "播放") };
-            miAutoplay.Click += (s, a) =>
-            {
-                try
-                {
-                    LibmpvIptvClient.Helpers.ReminderWindowManager.OpenOrActivate();
-                }
-                catch { }
-            };
-            miReminder.Items.Add(miAutoplay);
-
-            var miRecReminder = new MenuItem { Header = Localizer.S("Menu_ReminderRecord", "录播"), IsEnabled = false };
-            miReminder.Items.Add(miRecReminder);
-
             cm.Items.Add(miReminder);
 
             // [分隔线] 预约 ↔ 应用

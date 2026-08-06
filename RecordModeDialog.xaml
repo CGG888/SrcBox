@@ -1,0 +1,35 @@
+<Window x:Class="LibmpvIptvClient.RecordModeDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="{DynamicResource Reminder_RecordMode_Title}" Width="380" Height="280" WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize" Background="{DynamicResource AppBackgroundBrush}">
+  <Grid Margin="16">
+    <Grid.RowDefinitions>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="Auto"/>
+      <RowDefinition Height="*"/>
+      <RowDefinition Height="Auto"/>
+    </Grid.RowDefinitions>
+
+    <TextBlock x:Name="TxtTitle" Grid.Row="0" FontSize="16" FontWeight="SemiBold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+    <TextBlock x:Name="TxtTime" Grid.Row="1" Margin="0,6,0,12" Foreground="{DynamicResource TextSecondaryBrush}"/>
+
+    <StackPanel Grid.Row="2" Margin="0,0,0,12">
+      <RadioButton x:Name="RbFront" Content="{DynamicResource Reminder_RecordFront}" Foreground="{DynamicResource TextPrimaryBrush}" IsChecked="True" Margin="0,4"/>
+      <RadioButton x:Name="RbBack" Content="{DynamicResource Reminder_RecordBack}" Foreground="{DynamicResource TextPrimaryBrush}" Margin="0,4"/>
+    </StackPanel>
+
+    <StackPanel Grid.Row="3" Orientation="Horizontal" Margin="0,0,0,12">
+      <CheckBox x:Name="CbCustomDuration" Content="{DynamicResource Reminder_CustomDuration}" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
+      <TextBox x:Name="TbDuration" Width="80" Height="28" Margin="8,0,0,0" IsEnabled="{Binding IsChecked, ElementName=CbCustomDuration}" Text="60"/>
+      <TextBlock Text="{DynamicResource Recording_Min}" VerticalAlignment="Center" Margin="6,0,0,0" Foreground="{DynamicResource TextSecondaryBrush}"/>
+    </StackPanel>
+
+    <StackPanel Grid.Row="5" Orientation="Horizontal" HorizontalAlignment="Right">
+      <Button x:Name="BtnOk" Content="{DynamicResource Common_OK}" Width="96" Margin="0,0,8,0" Click="BtnOk_Click" Style="{StaticResource AccentButtonStyle}"/>
+      <Button x:Name="BtnCancel" Content="{DynamicResource Common_Cancel}" Width="96" Click="BtnCancel_Click"/>
+    </StackPanel>
+  </Grid>
+</Window>

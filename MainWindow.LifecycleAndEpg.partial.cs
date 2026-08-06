@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
@@ -646,6 +648,96 @@ namespace LibmpvIptvClient
         void OpenSourceMenuAtOverlay()
         {
             _menuManager?.OpenSourceMenuAtOverlay();
+        }
+
+        public void HandleScheduledRecordingTrigger(Services.ScheduledRecordingTriggerArgs e)
+        {
+            try
+            {
+                var channel = _shell.Channels.FirstOrDefault(c =>
+                    string.Equals(c.Id, e.ChannelId, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(c.Name, e.ChannelName, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(c.TvgId, e.ChannelId, StringComparison.OrdinalIgnoreCase));
+
+                if (channel == null)
+                {
+                    try { LibmpvIptvClient.Diagnostics.Logger.Warn($"[ScheduledRecord] channel not found: {e.ChannelName}"); } catch { }
+                    return;
+                }
+
+                var info = new Models.ScheduledRecordingInfo
+                {
+                    ReminderId = e.ReminderId,
+                    ChannelId = channel.Id,
+                    ChannelName = channel.Name,
+                    ChannelLogo = channel.Logo ?? "",
+                    ProgramTitle = e.ProgramTitle,
+                    ScheduledStart = e.ScheduledStart,
+                    ScheduledEnd = e.ScheduledEnd,
+                    ScheduledDurationMin = (int)(e.ScheduledEnd - e.ScheduledStart).TotalMinutes
+                };
+
+                if (e.Action == "record_front")
+                {
+                    if (!ScheduledRecordingManager.Instance.CanStartFrontRecording())
+                    {
+                        try { LibmpvIptvClient.Diagnostics.Logger.Warn($"[ScheduledRecord] front recording conflict"); } catch { }
+                        return;
+                    }
+                    ScheduledRecordingManager.Instance.Add(info);
+                    JumpToChannelByIdOrName(channel.Id, channel.Name);
+                    _recordingManager?.StartScheduledFrontRecording(info, channel);
+                }
+                else if (e.Action == "record_back")
+                {
+                    if (!ScheduledRecordingManager.Instance.CanStartBackRecording())
+                    {
+                        try { LibmpvIptvClient.Diagnostics.Logger.Warn($"[ScheduledRecord] back recording limit reached"); } catch { }
+                        return;
+                    }
+                    var source = SelectBestSource(channel.Sources);
+                    if (source == null)
+                    {
+                        try { LibmpvIptvClient.Diagnostics.Logger.Warn($"[ScheduledRecord] no source available for {channel.Name}"); } catch { }
+                        return;
+                    }
+                    info.FilePath = ResolveScheduledRecordingPath(channel, info);
+                    ScheduledRecordingManager.Instance.Add(info);
+                    ScheduledRecordingManager.Instance.StartBackRecording(info, (id, url, duration) =>
+                    {
+                        return new Services.BackgroundRecordingInstance(id, url, info.FilePath!, duration);
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                try { LibmpvIptvClient.Diagnostics.Logger.Error($"[ScheduledRecord] trigger error: {ex.Message}"); } catch { }
+            }
+        }
+
+        private string ResolveScheduledRecordingPath(Models.Channel channel, Models.ScheduledRecordingInfo info)
+        {
+            try
+            {
+                var baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                var safeChannel = (channel.Name ?? "unknown").Replace(":", "_").Replace("/", "_").Replace("\\", "_");
+                var dir = Path.Combine(baseDir, "recordings", safeChannel);
+                if (!Directory.Exists(dir)) Directory.CreateDirectory(dir);
+                var startStr = info.ScheduledStart.ToString("yyyyMMdd_HHmmss");
+                var endStr = info.ScheduledEnd.ToString("yyyyMMdd_HHmmss");
+                var safeTitle = (info.ProgramTitle ?? "rec").Replace(":", "_").Replace("/", "_").Replace("\\", "_").Trim();
+                var name = $"{startStr}_{endStr}_{safeTitle}.ts";
+                return Path.Combine(dir, name).Replace("\\", "/");
+            }
+            catch { return ""; }
+        }
+
+        private Source? SelectBestSource(System.Collections.Generic.List<Source> sources)
+        {
+            if (sources == null || sources.Count == 0) return null;
+            return sources.OrderByDescending(s => s.Priority)
+                          .ThenByDescending(s => (s.Quality?.Height ?? 0) * 100 + (s.Quality?.Bitrate ?? 0))
+                          .FirstOrDefault();
         }
     }
 }
