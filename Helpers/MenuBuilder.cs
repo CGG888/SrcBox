@@ -333,6 +333,7 @@ namespace LibmpvIptvClient.Helpers
                 try
                 {
                     var win = new LibmpvIptvClient.ScheduledRecordingListWindow();
+                    win.Owner = System.Windows.Application.Current.MainWindow;
                     win.Show();
                 }
                 catch { }
