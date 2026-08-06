@@ -298,6 +298,11 @@
   <sys:String x:Key="Reminder_Notify">Только уведомление</sys:String>
   <sys:String x:Key="Reminder_Autoplay">Автовоспроизведение</sys:String>
   <sys:String x:Key="Reminder_Record">Запись</sys:String>
+  <sys:String x:Key="Reminder_RecordMode_Title">Выбор режима записи</sys:String>
+  <sys:String x:Key="Reminder_RecordFront">Запись (передний план)</sys:String>
+  <sys:String x:Key="Reminder_RecordBack">Запись (фоновый)</sys:String>
+  <sys:String x:Key="Reminder_CustomDuration">Продолжительность</sys:String>
+  <sys:String x:Key="Recording_Min">мин</sys:String>
   <sys:String x:Key="Reminder_PlayNow">Воспроизвести</sys:String>
   <sys:String x:Key="Reminder_Dismiss">Понятно</sys:String>
   <sys:String x:Key="Reminder_RemainFmt">Осталось {0} с</sys:String>

@@ -314,6 +314,11 @@
   <sys:String x:Key="Reminder_Notify">Notify Only</sys:String>
   <sys:String x:Key="Reminder_Autoplay">Auto Play</sys:String>
   <sys:String x:Key="Reminder_Record">Record</sys:String>
+  <sys:String x:Key="Reminder_RecordMode_Title">Select Recording Mode</sys:String>
+  <sys:String x:Key="Reminder_RecordFront">Front Recording</sys:String>
+  <sys:String x:Key="Reminder_RecordBack">Back Recording</sys:String>
+  <sys:String x:Key="Reminder_CustomDuration">Custom Duration</sys:String>
+  <sys:String x:Key="Recording_Min">min</sys:String>
   <sys:String x:Key="Reminder_Added">Reminder added</sys:String>
   <sys:String x:Key="Reminder_PlayNow">Play now</sys:String>
   <sys:String x:Key="Reminder_Dismiss">Got it</sys:String>

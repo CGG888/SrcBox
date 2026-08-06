@@ -153,6 +153,11 @@
   <sys:String x:Key="Reminder_Notify">仅通知</sys:String>
   <sys:String x:Key="Reminder_Autoplay">自动播放</sys:String>
   <sys:String x:Key="Reminder_Record">录播</sys:String>
+  <sys:String x:Key="Reminder_RecordMode_Title">选择录制模式</sys:String>
+  <sys:String x:Key="Reminder_RecordFront">前台录制</sys:String>
+  <sys:String x:Key="Reminder_RecordBack">后台录制</sys:String>
+  <sys:String x:Key="Reminder_CustomDuration">自定义时长</sys:String>
+  <sys:String x:Key="Recording_Min">分钟</sys:String>
   <sys:String x:Key="Reminder_Added">已添加预约</sys:String>
   <sys:String x:Key="Reminder_PlayNow">立即播放</sys:String>
   <sys:String x:Key="Reminder_Dismiss">知道了</sys:String>
