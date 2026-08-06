@@ -609,4 +609,20 @@
   <sys:String x:Key="MultiScreen_AspectStretch">拉伸</sys:String>
   <sys:String x:Key="MultiScreen_AspectFill">填滿</sys:String>
   <sys:String x:Key="MultiScreen_AspectCrop">裁切</sys:String>
+
+  <!-- ScheduledRecordingList -->
+  <sys:String x:Key="ScheduledRecordingList_Title">正在錄製</sys:String>
+  <sys:String x:Key="ScheduledRecordingList_Refresh">重新整理</sys:String>
+  <sys:String x:Key="ScheduledRecordingList_Stop">停止</sys:String>
+  <sys:String x:Key="Recording_Cancel">取消</sys:String>
+  <sys:String x:Key="Recording_OpenFile">打開檔案</sys:String>
+  <sys:String x:Key="Recording_OpenFolder">打開資料夾</sys:String>
+  <sys:String x:Key="ScheduledRecordingList_Column_Channel">頻道</sys:String>
+  <sys:String x:Key="ScheduledRecordingList_Column_Program">節目</sys:String>
+  <sys:String x:Key="ScheduledRecordingList_Column_Type">類型</sys:String>
+  <sys:String x:Key="ScheduledRecordingList_Column_Start">開始時間</sys:String>
+  <sys:String x:Key="ScheduledRecordingList_Column_End">結束時間</sys:String>
+  <sys:String x:Key="ScheduledRecordingList_Column_Duration">時長</sys:String>
+  <sys:String x:Key="ScheduledRecordingList_Column_Status">狀態</sys:String>
+  <sys:String x:Key="ScheduledRecordingList_Column_Size">大小</sys:String>
 </ResourceDictionary>
