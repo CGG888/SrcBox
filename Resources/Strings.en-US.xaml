@@ -521,6 +521,12 @@
   <sys:String x:Key="Shortcuts_Record">Start/Stop Recording</sys:String>
   <sys:String x:Key="Shortcuts_TimeshiftMode">Timeshift Mode (Additional)</sys:String>
   <sys:String x:Key="Shortcuts_PrevNextProgram">Previous/Next Program</sys:String>
+  <sys:String x:Key="Shortcuts_MultiScreen">Multi-Screen</sys:String>
+  <sys:String x:Key="Shortcuts_4Screen">4-Screen Mode</sys:String>
+  <sys:String x:Key="Shortcuts_6Screen">6-Screen Mode</sys:String>
+  <sys:String x:Key="Shortcuts_9Screen">9-Screen Mode</sys:String>
+  <sys:String x:Key="Shortcuts_ExitFullscreen">Exit Fullscreen (Multi-Screen)</sys:String>
+  <sys:String x:Key="Shortcuts_SelectScreen">Select Screen (Multi-Screen)</sys:String>
 
   <!-- Decoder Options -->
   <sys:String x:Key="Decoder_Auto">Auto</sys:String>

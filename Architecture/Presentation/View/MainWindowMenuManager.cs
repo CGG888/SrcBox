@@ -128,7 +128,10 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 isEpgChecked: _window.CbEpg.IsChecked == true,
                 isDrawerChecked: !_shell.IsDrawerCollapsed,
                 isMinimalChecked: _shell.IsMinimalMode,
-                refreshChannels: null,
+                refreshChannels: () => {
+                    var selected = AppSettings.Current.SavedSources?.FirstOrDefault(s => s.IsSelected);
+                    if (selected != null) _ = _shell.ForceRefreshChannels(selected.Url);
+                },
                 togglePlayPause: () => _shell.ShortcutActions.ExecuteAction(MainWindowShortcutAction.TogglePlayPause),
                 stopPlayback: () => _shell.ShortcutActions.ExecuteAction(MainWindowShortcutAction.Stop),
                 seekForward: () => _shell.ShortcutActions.ExecuteAction(MainWindowShortcutAction.SeekForward),

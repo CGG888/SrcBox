@@ -425,7 +425,6 @@ namespace LibmpvIptvClient
             var panelHwnd = VideoPanel.Handle;
             _mpv.SetWid(panelHwnd);
             _mpv.Initialize();
-            _shell.Volume = 60;
             return new MpvPlayerEngineAdapter(_mpv);
         }
 
@@ -445,6 +444,8 @@ namespace LibmpvIptvClient
                 (min, max) => { try { _overlayManager.OverlayWpf?.SetTimeshiftRange(min, max); } catch { } },
                 (cursor, max, seeking) => { try { _overlayManager.OverlayWpf?.SetTimeshiftLabels(cursor, max, seeking); } catch { } }
             );
+
+            _shell.Volume = AppSettings.Current.Volume;
 
             // 初始化 Web 遥控器服务
             try { LibmpvIptvClient.Services.WebRemote.WebRemoteManager.Initialize(_shell); } catch { }

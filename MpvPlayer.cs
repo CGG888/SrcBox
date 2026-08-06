@@ -77,6 +77,9 @@ namespace LibmpvIptvClient
                 // audio-delay: 音频延迟 (秒), -100 ~ 100
                 var delay = Math.Max(-100.0, Math.Min(100.0, _settings.AudioDelay));
                 SetString("audio-delay", delay.ToString(CultureInfo.InvariantCulture));
+                // 初始音量 (0~100): 默认 50
+                var initVolume = Math.Max(0, Math.Min(100, _settings.Volume));
+                SetString("volume", initVolume.ToString(CultureInfo.InvariantCulture));
 
             }
             catch { /* 静默 */ }

@@ -99,11 +99,34 @@ public class M3UCacheService
             if (meta == null) return (null, false, null);
 
             var ttl = AppSettings.Current?.M3uCacheTtlHours ?? meta.CacheTtlHours;
-            if ((DateTime.Now - meta.CachedAt).TotalHours > ttl)
+            bool isCacheExpired = (DateTime.Now - meta.CachedAt).TotalHours > ttl;
+
+            // 缓存未过期：直接使用本地缓存，跳过网络验证
+            if (!isCacheExpired)
             {
-                Logger.Info($"M3U缓存已过期 (TTL={ttl}h)，将刷新");
+                try
+                {
+                    var data = await File.ReadAllBytesAsync(cachePath);
+                    var options = new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    };
+                    var channels = JsonSerializer.Deserialize<List<Channel>>(data, options);
+                    if (channels != null)
+                    {
+                        Logger.Info($"从缓存加载了 {channels.Count} 个频道 (TTL={ttl}h，未过期)");
+                        return (channels, true, meta.TvgUrl);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Logger.Warn($"[M3U Cache] Failed to deserialize cache: {ex.Message}");
+                }
                 return (null, false, null);
             }
+
+            // 缓存已过期：发起 HEAD 验证
+            Logger.Info($"M3U缓存已过期 (TTL={ttl}h)，验证服务器...");
 
             bool needRefresh = false;
 
@@ -127,15 +150,36 @@ public class M3UCacheService
                             var serverEtag = response.Headers.ETag?.Tag;
                             var serverLastModified = response.Content.Headers.LastModified?.ToString();
 
-                            if (!string.IsNullOrEmpty(serverEtag) && !string.Equals(meta.ETag, serverEtag, StringComparison.Ordinal))
+                            // 优先使用 Last-Modified 比较（更可靠），ETag 作为备用
+                            if (!string.IsNullOrEmpty(serverLastModified) && !string.Equals(meta.LastModified, serverLastModified, StringComparison.Ordinal))
+                            {
+                                Logger.Info("M3U缓存已修改，需要刷新");
+                                needRefresh = true;
+                            }
+                            else if (string.IsNullOrEmpty(serverLastModified) && !string.IsNullOrEmpty(serverEtag) && !string.Equals(meta.ETag, serverEtag, StringComparison.Ordinal))
                             {
                                 Logger.Info("M3U缓存ETag已变化，需要刷新");
                                 needRefresh = true;
                             }
-                            else if (!string.IsNullOrEmpty(serverLastModified) && !string.Equals(meta.LastModified, serverLastModified, StringComparison.Ordinal))
+                            else
                             {
-                                Logger.Info("M3U缓存已修改，需要刷新");
-                                needRefresh = true;
+                                // 服务器内容未变，更新缓存时间后继续使用
+                                meta.CachedAt = DateTime.Now;
+                                var metaJson = JsonSerializer.Serialize(meta, new JsonSerializerOptions { WriteIndented = false });
+                                await File.WriteAllTextAsync(metaPath, metaJson);
+                                Logger.Info("M3U缓存验证通过，已延长TTL");
+
+                                var data = await File.ReadAllBytesAsync(cachePath);
+                                var options = new JsonSerializerOptions
+                                {
+                                    PropertyNameCaseInsensitive = true
+                                };
+                                var channels = JsonSerializer.Deserialize<List<Channel>>(data, options);
+                                if (channels != null)
+                                {
+                                    Logger.Info($"从缓存加载了 {channels.Count} 个频道");
+                                    return (channels, true, meta.TvgUrl);
+                                }
                             }
                         }
                     }

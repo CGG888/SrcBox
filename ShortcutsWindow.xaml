@@ -186,7 +186,7 @@
 
                     <!-- 时移模式 -->
                     <TextBlock Text="{DynamicResource Shortcuts_TimeshiftMode}" Foreground="{DynamicResource AccentBrush}" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                    <Grid>
+                    <Grid Margin="0,0,0,16">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="130"/>
                             <ColumnDefinition Width="*"/>
@@ -197,6 +197,37 @@
 
                         <TextBlock Grid.Row="0" Grid.Column="0" Text="Ctrl+&#x2191; / &#x2193;" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
                         <TextBlock Grid.Row="0" Grid.Column="1" Text="{DynamicResource Shortcuts_PrevNextProgram}" Foreground="White" Margin="20,0,0,4"/>
+                    </Grid>
+
+                    <!-- 多屏播放 -->
+                    <TextBlock Text="{DynamicResource Shortcuts_MultiScreen}" Foreground="{DynamicResource AccentBrush}" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="130"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                        </Grid.RowDefinitions>
+
+                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Ctrl+4" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
+                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{DynamicResource Shortcuts_4Screen}" Foreground="White" Margin="20,0,0,4"/>
+
+                        <TextBlock Grid.Row="1" Grid.Column="0" Text="Ctrl+6" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
+                        <TextBlock Grid.Row="1" Grid.Column="1" Text="{DynamicResource Shortcuts_6Screen}" Foreground="White" Margin="20,0,0,4"/>
+
+                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Ctrl+9" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
+                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{DynamicResource Shortcuts_9Screen}" Foreground="White" Margin="20,0,0,4"/>
+
+                        <TextBlock Grid.Row="3" Grid.Column="0" Text="ESC" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
+                        <TextBlock Grid.Row="3" Grid.Column="1" Text="{DynamicResource Shortcuts_ExitFullscreen}" Foreground="White" Margin="20,0,0,4"/>
+
+                        <TextBlock Grid.Row="4" Grid.Column="0" Text="1-9" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
+                        <TextBlock Grid.Row="4" Grid.Column="1" Text="{DynamicResource Shortcuts_SelectScreen}" Foreground="White" Margin="20,0,0,4"/>
                     </Grid>
                 </StackPanel>
             </ScrollViewer>

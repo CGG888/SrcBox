@@ -892,6 +892,13 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             }
         }
 
+        public async System.Threading.Tasks.Task ForceRefreshChannels(string url)
+        {
+            LibmpvIptvClient.Diagnostics.Logger.Info("强制刷新频道列表...");
+            LibmpvIptvClient.Services.M3UCacheService.Instance.RemoveCache(url);
+            await LoadChannels(url);
+        }
+
         public void LoadSingleStream(string url)
         {
             Channels.Clear();

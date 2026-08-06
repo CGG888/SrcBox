@@ -518,6 +518,12 @@
   <sys:String x:Key="Shortcuts_Record">开始/停止录制</sys:String>
   <sys:String x:Key="Shortcuts_TimeshiftMode">时移模式（附加）</sys:String>
   <sys:String x:Key="Shortcuts_PrevNextProgram">上一节目 / 下一节目</sys:String>
+  <sys:String x:Key="Shortcuts_MultiScreen">多屏播放</sys:String>
+  <sys:String x:Key="Shortcuts_4Screen">4屏模式</sys:String>
+  <sys:String x:Key="Shortcuts_6Screen">6屏模式</sys:String>
+  <sys:String x:Key="Shortcuts_9Screen">9屏模式</sys:String>
+  <sys:String x:Key="Shortcuts_ExitFullscreen">退出全屏（多屏播放）</sys:String>
+  <sys:String x:Key="Shortcuts_SelectScreen">选择屏幕（多屏播放）</sys:String>
 
   <!-- Decoder Options -->
   <sys:String x:Key="Decoder_Auto">自动</sys:String>

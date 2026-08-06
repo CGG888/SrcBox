@@ -132,7 +132,7 @@ namespace LibmpvIptvClient
         public List<string> UpdateCdnMirrors { get; set; } = new List<string>();
         // M3U 缓存设置
         public bool EnableM3uCache { get; set; } = true;
-        public double M3uCacheTtlHours { get; set; } = 24;
+        public double M3uCacheTtlHours { get; set; } = 12;
         // 界面语言（例如 zh-CN / en-US；为空表示跟随系统）
         public string Language { get; set; } = "";
         // 主题模式：System/Light/Dark

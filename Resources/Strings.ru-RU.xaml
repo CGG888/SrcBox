@@ -511,6 +511,12 @@
   <sys:String x:Key="Shortcuts_Record">Начать/остановить запись</sys:String>
   <sys:String x:Key="Shortcuts_TimeshiftMode">Режим таймшифта (доп.)</sys:String>
   <sys:String x:Key="Shortcuts_PrevNextProgram">Предыдущая/следующая передача</sys:String>
+  <sys:String x:Key="Shortcuts_MultiScreen">Мультиэкран</sys:String>
+  <sys:String x:Key="Shortcuts_4Screen">Режим 4 экрана</sys:String>
+  <sys:String x:Key="Shortcuts_6Screen">Режим 6 экранов</sys:String>
+  <sys:String x:Key="Shortcuts_9Screen">Режим 9 экранов</sys:String>
+  <sys:String x:Key="Shortcuts_ExitFullscreen">Выйти из полноэкранного (Мультиэкран)</sys:String>
+  <sys:String x:Key="Shortcuts_SelectScreen">Выбрать экран (Мультиэкран)</sys:String>
 
   <!-- Decoder Options -->
   <sys:String x:Key="Decoder_Auto">Автоматически</sys:String>

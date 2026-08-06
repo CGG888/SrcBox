@@ -13,6 +13,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         private readonly MainShellViewModel _shell;
         public ObservableCollection<string> Tags { get; } = new();
 
+        private string _lastHwdecInfo = "";
         private string _infoText = "";
         public string InfoText
         {
@@ -39,8 +40,13 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 var vcodec = engine.GetPropertyString("video-codec");
                 var acodec = engine.GetPropertyString("audio-codec");
                 
-                // Debug logging
-                Logger.Debug($"[MediaInfo] hwdec-current={hw}, hwdec setting={hwdecSetting}, w={w}, h={h}");
+                // Debug logging - only when hwdec info changes
+                var currentHwdecInfo = $"hwdec-current={hw}, hwdec setting={hwdecSetting}, w={w}, h={h}";
+                if (currentHwdecInfo != _lastHwdecInfo)
+                {
+                    _lastHwdecInfo = currentHwdecInfo;
+                    Logger.Debug($"[MediaInfo] {currentHwdecInfo}");
+                }
                 
                 // Bitrate calculation
                 var brKbit = engine.GetPropertyDouble("video-params/bitrate");
