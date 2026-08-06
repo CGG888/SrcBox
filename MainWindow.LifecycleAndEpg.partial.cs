@@ -654,9 +654,11 @@ namespace LibmpvIptvClient
         {
             try
             {
-                var channel = _shell.Channels.FirstOrDefault(c =>
+                var exactMatch = _shell.Channels.FirstOrDefault(c =>
                     string.Equals(c.Id, e.ChannelId, StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(c.Name, e.ChannelName, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(c.Name, e.ChannelName, StringComparison.OrdinalIgnoreCase));
+
+                var channel = exactMatch ?? _shell.Channels.FirstOrDefault(c =>
                     string.Equals(c.TvgId, e.ChannelId, StringComparison.OrdinalIgnoreCase));
 
                 if (channel == null)
@@ -665,11 +667,15 @@ namespace LibmpvIptvClient
                     return;
                 }
 
+                var channelName = (exactMatch != null || !string.IsNullOrEmpty(e.ChannelName))
+                    ? channel.Name
+                    : e.ChannelName;
+
                 var info = new Models.ScheduledRecordingInfo
                 {
                     ReminderId = e.ReminderId,
                     ChannelId = channel.Id,
-                    ChannelName = channel.Name,
+                    ChannelName = channelName,
                     ChannelLogo = channel.Logo ?? "",
                     ProgramTitle = e.ProgramTitle,
                     ScheduledStart = e.ScheduledStart,
