@@ -433,6 +433,12 @@ namespace LibmpvIptvClient
             _epgService = new EpgService();
             _recordingManager = new LibmpvIptvClient.Architecture.Presentation.View.MainWindowRecordingManager(this, _shell, _epgService);
             _epgManager = new LibmpvIptvClient.Architecture.Presentation.View.MainWindowEpgManager(this, _shell, _overlayManager, _epgService);
+
+            Services.ScheduledRecordingManager.Instance.StopFrontRecordingRequested += (sender, id) =>
+            {
+                Dispatcher.BeginInvoke(new Action(() => { try { _recordingManager?.StopScheduledFrontRecording(id); } catch { } }));
+            };
+
             _shell.InitializeServices();
             _shell.SetHttpClient(_http);
 

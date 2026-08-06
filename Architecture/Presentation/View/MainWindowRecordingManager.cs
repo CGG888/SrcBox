@@ -324,6 +324,15 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             }
         }
 
+        public async void StopScheduledFrontRecording(string recordingId)
+        {
+            try
+            {
+                await StopRecording();
+            }
+            catch { }
+        }
+
         private async Task StartRecording()
         {
             var recEnabled = _shell.RecordingActions.ResolveRecordingEnabled(AppSettings.Current?.Recording?.Enabled);

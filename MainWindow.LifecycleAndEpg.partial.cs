@@ -703,9 +703,10 @@ namespace LibmpvIptvClient
                     }
                     info.FilePath = ResolveScheduledRecordingPath(channel, info);
                     ScheduledRecordingManager.Instance.Add(info);
+                    var sourceUrl = source.Url;
                     ScheduledRecordingManager.Instance.StartBackRecording(info, (id, url, duration) =>
                     {
-                        return new Services.BackgroundRecordingInstance(id, url, info.FilePath!, duration);
+                        return new Services.BackgroundRecordingInstance(id, sourceUrl, info.FilePath!, duration);
                     });
                 }
             }
