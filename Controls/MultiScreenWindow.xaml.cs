@@ -409,6 +409,8 @@ namespace LibmpvIptvClient.Controls
                 mpv.SetSettings(AppSettings.Current);
                 mpv.SetWid(_panels[i].Handle);
                 mpv.Initialize();
+                // Prevent mpv from pausing during buffering - same as main window behavior
+                mpv.SetString("cache-pause", "no");
                 mpv.SetVolume(_volume);
                 mpv.Mute(true);
                 _players[i] = mpv;
