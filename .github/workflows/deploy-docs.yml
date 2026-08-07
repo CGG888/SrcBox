@@ -40,10 +40,10 @@ jobs:
         run: npm ci
       - name: Build with VitePress
         run: |
-          # Move release notes to temp to exclude from build
-          mv docs/releases docs/releases.bak
+          # Move release notes outside docs to exclude from build
+          mv docs/releases /tmp/releases_backup
           npm run docs:build
-          mv docs/releases.bak docs/releases
+          mv /tmp/releases_backup docs/releases
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
