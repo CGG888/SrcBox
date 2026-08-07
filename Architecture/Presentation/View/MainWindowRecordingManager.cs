@@ -39,6 +39,10 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
         // Recording Size Update Timer
         private DispatcherTimer? _recordingSizeTimer;
 
+        // Front Recording Duration Timer (for custom duration)
+        private DispatcherTimer? _frontRecordingTimer;
+        private DateTime? _frontRecordingEndTime;
+
         // Watcher & Refresh
         private FileSystemWatcher? _recordingsWatcher;
         private DispatcherTimer? _recordingsRefreshTimer;
@@ -68,6 +72,32 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             // Initialize recording size update timer
             _recordingSizeTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
             _recordingSizeTimer.Tick += OnRecordingSizeTimerTick;
+
+            // Initialize front recording duration timer
+            _frontRecordingTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(1) };
+            _frontRecordingTimer.Tick += OnFrontRecordingTimerTick;
+        }
+
+        private void OnFrontRecordingTimerTick(object? sender, EventArgs e)
+        {
+            try
+            {
+                if (!_recordingNow || !_frontRecordingEndTime.HasValue)
+                {
+                    _frontRecordingTimer?.Stop();
+                    return;
+                }
+
+                // Check if we've reached the scheduled end time
+                if (DateTime.Now >= _frontRecordingEndTime.Value)
+                {
+                    LibmpvIptvClient.Diagnostics.Logger.Info($"[ScheduledRecord] custom duration reached, stopping recording");
+                    _ = StopRecording();
+                    _frontRecordingTimer?.Stop();
+                    _frontRecordingEndTime = null;
+                }
+            }
+            catch { }
         }
 
         private void OnRecordingSizeTimerTick(object? sender, EventArgs e)
@@ -349,6 +379,15 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 _scheduledFrontRecordingId = info.Id;
                 _recordingSizeTimer?.Start();
 
+                // Set up front recording duration timer for custom duration
+                var durationSeconds = (info.ScheduledEnd - info.ScheduledStart).TotalSeconds;
+                if (durationSeconds > 60) // Only use timer if duration > 1 minute
+                {
+                    _frontRecordingEndTime = info.ScheduledEnd;
+                    _frontRecordingTimer?.Start();
+                    LibmpvIptvClient.Diagnostics.Logger.Info($"[ScheduledRecord] custom duration: {durationSeconds / 60} min, will stop at {info.ScheduledEnd}");
+                }
+
                 // Call StartFrontRecording for compatibility (updates status, triggers events)
                 // but it will likely return early since we already added the item
                 ScheduledRecordingManager.Instance.StartFrontRecording(info,
@@ -360,6 +399,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                     {
                         _scheduledFrontRecordingId = null;
                         _recordingSizeTimer?.Stop();
+                        _frontRecordingTimer?.Stop();
                     });
 
                 try { LibmpvIptvClient.Diagnostics.Logger.Info($"[ScheduledRecord] front recording started: {info.ProgramTitle}"); } catch { }
@@ -471,9 +511,11 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             
             try { _recordCts?.Cancel(); } catch { }
             try { await Task.Delay(150); } catch { }
-            
+
             _recordingNow = false;
             _recordViaHttp = false;
+            _frontRecordingEndTime = null;
+            _frontRecordingTimer?.Stop();
             
             UpdateRecordButtonState(false);
             
