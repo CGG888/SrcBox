@@ -396,7 +396,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 // Set up front recording duration timer for custom duration
                 var durationSeconds = (info.ScheduledEnd - info.ScheduledStart).TotalSeconds;
                 var nowSetup = DateTime.Now;
-                if (durationSeconds > 60) // Only use timer if duration > 1 minute
+                if (durationSeconds >= 60) // Only use timer if duration >= 1 minute
                 {
                     _frontRecordingEndTime = info.ScheduledEnd;
                     _frontRecordingTimer?.Start();
