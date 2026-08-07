@@ -610,7 +610,22 @@ namespace LibmpvIptvClient.Controls
                     NextSource(_focusedIndex);
                     e.Handled = true;
                     break;
+                case Key.D1: SelectScreen(0); e.Handled = true; break;
+                case Key.D2: SelectScreen(1); e.Handled = true; break;
+                case Key.D3: SelectScreen(2); e.Handled = true; break;
+                case Key.D4: SelectScreen(3); e.Handled = true; break;
+                case Key.D5: SelectScreen(4); e.Handled = true; break;
+                case Key.D6: SelectScreen(5); e.Handled = true; break;
+                case Key.D7: SelectScreen(6); e.Handled = true; break;
+                case Key.D8: SelectScreen(7); e.Handled = true; break;
+                case Key.D9: SelectScreen(8); e.Handled = true; break;
             }
+        }
+
+        private void SelectScreen(int screenIndex)
+        {
+            if (screenIndex < 0 || screenIndex >= _screenCount) return;
+            SetFocus(screenIndex);
         }
 
         private void Window_MouseDoubleClick(object sender, MouseButtonEventArgs e)

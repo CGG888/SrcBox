@@ -228,6 +228,12 @@
 
                         <TextBlock Grid.Row="4" Grid.Column="0" Text="1-9" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
                         <TextBlock Grid.Row="4" Grid.Column="1" Text="{DynamicResource Shortcuts_SelectScreen}" Foreground="White" Margin="20,0,0,4"/>
+
+                        <TextBlock Grid.Row="5" Grid.Column="0" Text="&#x2191; / &#x2193;" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
+                        <TextBlock Grid.Row="5" Grid.Column="1" Text="{DynamicResource Shortcuts_PrevNextChannel}" Foreground="White" Margin="20,0,0,4"/>
+
+                        <TextBlock Grid.Row="6" Grid.Column="0" Text="&#x2190; / &#x2192;" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
+                        <TextBlock Grid.Row="6" Grid.Column="1" Text="{DynamicResource Shortcuts_SwitchSource}" Foreground="White" Margin="20,0,0,4"/>
                     </Grid>
                 </StackPanel>
             </ScrollViewer>

@@ -532,6 +532,7 @@
   <sys:String x:Key="Shortcuts_9Screen">Режим 9 экранов</sys:String>
   <sys:String x:Key="Shortcuts_ExitFullscreen">Выйти из полноэкранного (Мультиэкран)</sys:String>
   <sys:String x:Key="Shortcuts_SelectScreen">Выбрать экран (Мультиэкран)</sys:String>
+  <sys:String x:Key="Shortcuts_SwitchSource">Пред/След источник (Мультиэкран)</sys:String>
 
   <!-- Decoder Options -->
   <sys:String x:Key="Decoder_Auto">Автоматически</sys:String>

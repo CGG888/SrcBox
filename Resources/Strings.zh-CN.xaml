@@ -539,6 +539,7 @@
   <sys:String x:Key="Shortcuts_9Screen">9屏模式</sys:String>
   <sys:String x:Key="Shortcuts_ExitFullscreen">退出全屏（多屏播放）</sys:String>
   <sys:String x:Key="Shortcuts_SelectScreen">选择屏幕（多屏播放）</sys:String>
+  <sys:String x:Key="Shortcuts_SwitchSource">上/下一个源（多屏播放）</sys:String>
 
   <!-- Decoder Options -->
   <sys:String x:Key="Decoder_Auto">自动</sys:String>

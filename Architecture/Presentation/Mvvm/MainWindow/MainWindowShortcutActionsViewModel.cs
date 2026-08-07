@@ -107,6 +107,7 @@ public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
             Key.L => isCtrlPressed && isShiftPressed ? MainWindowShortcutAction.ToggleMinimalMode : (!isCtrlPressed ? MainWindowShortcutAction.ToggleDrawer : MainWindowShortcutAction.None),
             Key.I => isCtrlPressed ? MainWindowShortcutAction.ShowAbout : MainWindowShortcutAction.None,
             Key.OemQuestion => isCtrlPressed ? MainWindowShortcutAction.ShowShortcuts : MainWindowShortcutAction.None,
+            Key.OemComma => isCtrlPressed ? MainWindowShortcutAction.OpenSettings : MainWindowShortcutAction.None,
             Key.R => !isCtrlPressed ? MainWindowShortcutAction.StartRecording : MainWindowShortcutAction.None,
             Key.D4 => isCtrlPressed ? MainWindowShortcutAction.OpenMultiScreen4 : MainWindowShortcutAction.None,
             Key.D6 => isCtrlPressed ? MainWindowShortcutAction.OpenMultiScreen6 : MainWindowShortcutAction.None,
