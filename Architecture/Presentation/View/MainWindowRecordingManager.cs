@@ -303,6 +303,11 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 _recordProgramTitle = info.ProgramTitle ?? "";
                 try { WriteRecordingMeta(_recordFilePath, _recordStartUtc, null, false); } catch { }
 
+                // Update status BEFORE starting stream record to ensure UI shows "录制中"
+                info.Status = Models.ScheduledRecordingStatus.Recording;
+                info.StatusLabel = Services.ScheduledRecordingManager.GetStatusLabelCore(info.Status);
+                info.ActualStartTime = DateTime.Now;
+
                 TryStartStreamRecord(_recordFilePath);
                 _recordingNow = true;
 
