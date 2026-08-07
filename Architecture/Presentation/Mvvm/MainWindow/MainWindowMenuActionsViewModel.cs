@@ -23,6 +23,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         public event Action<bool>? RequestEpgToggle;
         public event Action<bool>? RequestMinimalToggle;
         public event Action<bool>? RequestDeinterlaceUpdate;
+        public event Action? RequestRefreshM3uList;
 
         public MainWindowMenuActionsViewModel(MainShellViewModel shell)
         {
@@ -208,7 +209,8 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                     lastSrc = src;
                 }
                 AppSettings.Current.Save();
-                
+                RequestRefreshM3uList?.Invoke();
+
                 if (lastSrc != null) LoadM3u(lastSrc);
             }
         }
@@ -222,6 +224,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             if (AppSettings.Current.SavedSources == null) AppSettings.Current.SavedSources = new List<M3uSource>();
             AppSettings.Current.SavedSources.Add(src);
             AppSettings.Current.Save();
+            RequestRefreshM3uList?.Invoke();
             LoadM3u(src);
         }
 

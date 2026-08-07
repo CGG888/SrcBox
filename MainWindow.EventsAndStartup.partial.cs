@@ -500,6 +500,7 @@ namespace LibmpvIptvClient
             _shell.MenuActions.RequestDeinterlaceUpdate += (on) => { try { /* 立即生效已在 ToggleDeinterlace 完成 */ } catch { } };
             _shell.MenuActions.RequestEpgToggle += (on) => { try { CbEpg.IsChecked = on; CbEpg_Click(CbEpg, new RoutedEventArgs()); } catch { } };
             _shell.MenuActions.RequestMinimalToggle += (on) => { try { _shell.IsMinimalMode = on; } catch { } };
+            _shell.MenuActions.RequestRefreshM3uList += () => { try { Dispatcher.Invoke(() => { CbM3uList.ItemsSource = null; CbM3uList.ItemsSource = AppSettings.Current.SavedSources; }); } catch { } };
             _shell.ShortcutActions.RequestDebugWindow += () => BtnDebug_Click(this, new RoutedEventArgs());
             _shell.ShortcutActions.RequestToggleFullscreen += (on) => ToggleFullscreen(on);
             _shell.ShortcutActions.RequestToggleDrawer += () =>
