@@ -127,6 +127,7 @@ namespace LibmpvIptvClient.Services
             _recordings[info.Id] = info;
             onRecordingStarted?.Invoke(info.Id);
             RecordingStarted?.Invoke(this, info);
+            RecordingUpdated?.Invoke(this, info); // Fire to update UI
         }
 
         public string? StartBackRecording(ScheduledRecordingInfo info, Func<string, string, int, BackgroundRecordingInstance> createInstance)

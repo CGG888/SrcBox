@@ -1,4 +1,5 @@
 using System;
+using System.ComponentModel;
 
 namespace LibmpvIptvClient.Models
 {
@@ -18,9 +19,16 @@ namespace LibmpvIptvClient.Models
         Cancelled
     }
 
-    public class ScheduledRecordingInfo
+    public class ScheduledRecordingInfo : INotifyPropertyChanged
     {
-        public string Id { get; set; } = Guid.NewGuid().ToString("N");
+        public event PropertyChangedEventHandler? PropertyChanged;
+
+        private string _id = Guid.NewGuid().ToString("N");
+        public string Id
+        {
+            get => _id;
+            set { _id = value; OnPropertyChanged(nameof(Id)); }
+        }
         public string ReminderId { get; set; } = "";
         public string ChannelId { get; set; } = "";
         public string ChannelName { get; set; } = "";
@@ -33,12 +41,27 @@ namespace LibmpvIptvClient.Models
         public DateTime? ActualStartTime { get; set; }
         public DateTime? ActualEndTime { get; set; }
         public int? ActualDurationMin { get; set; }
-        public string? FilePath { get; set; }
-        public long SizeBytes { get; set; }
+        public string? FilePath { get; set; } = "";
+        private long _sizeBytes;
+        public long SizeBytes
+        {
+            get => _sizeBytes;
+            set { _sizeBytes = value; OnPropertyChanged(nameof(SizeBytes)); OnPropertyChanged(nameof(SizeLabel)); }
+        }
         public string SizeLabel { get; set; } = "";
-        public ScheduledRecordingStatus Status { get; set; } = ScheduledRecordingStatus.Waiting;
+        private ScheduledRecordingStatus _status = ScheduledRecordingStatus.Waiting;
+        public ScheduledRecordingStatus Status
+        {
+            get => _status;
+            set { _status = value; OnPropertyChanged(nameof(Status)); OnPropertyChanged(nameof(StatusLabel)); }
+        }
         public string StatusLabel { get; set; } = "";
         public string? ErrorMessage { get; set; }
+
+        protected void OnPropertyChanged(string propertyName)
+        {
+            PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+        }
 
         public string TypeLabel => Type switch
         {
