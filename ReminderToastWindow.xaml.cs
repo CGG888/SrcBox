@@ -24,6 +24,9 @@ namespace LibmpvIptvClient
             private bool _autoPlayed = false;
             private string? _playMode = "default";
             private bool _isRecordBack = false;
+            private bool _isCompletionMode = false;
+            private string? _completionFilePath;
+            private string? _completionSizeLabel;
         public ReminderToastWindow(string channelId, string channelName, string program, DateTime startLocal, string? logoPath, bool isDue = false, Func<System.Windows.Rect>? anchorProvider = null, string? statusOverride = null, bool showCountdown = true, string? playMode = null, int? countdownSec = null, bool isRecordBack = false)
         {
             InitializeComponent();
@@ -138,6 +141,23 @@ namespace LibmpvIptvClient
             };
         }
         public void SetSound(string key) { _soundKey = key; }
+
+        public void SetCompletionMode(string statusText, string? filePath, string? sizeLabel, bool showPlayButton)
+        {
+            _isCompletionMode = true;
+            _completionFilePath = filePath;
+            _completionSizeLabel = sizeLabel;
+
+            TxtStatus.Text = statusText;
+            TxtCountdown.Visibility = Visibility.Collapsed;
+            TxtTime.Text = sizeLabel ?? "";
+
+            BtnPlay.Visibility = showPlayButton ? Visibility.Visible : Visibility.Collapsed;
+            BtnDismiss.Content = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Close", "关闭");
+
+            _autoClose.Stop();
+            _reposition.Stop();
+        }
         public void SetAutoHide(int milliseconds)
         {
             _autoHideMs = Math.Max(0, milliseconds);
@@ -216,17 +236,35 @@ namespace LibmpvIptvClient
         {
             try
             {
-                var mw = System.Windows.Application.Current?.Windows.OfType<MainWindow>().FirstOrDefault();
-                try
+                if (_isCompletionMode && !string.IsNullOrEmpty(_completionFilePath) && System.IO.File.Exists(_completionFilePath))
                 {
-                    if (mw != null)
+                    // Play the recorded file
+                    try
                     {
-                        BringToFront(mw);
-                        ApplyPlayMode(mw, _playMode ?? "default");
-                        mw.JumpToChannelByIdOrName(_channelId, _channelName);
+                        var psi = new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = _completionFilePath,
+                            UseShellExecute = true
+                        };
+                        System.Diagnostics.Process.Start(psi);
                     }
+                    catch { }
                 }
-                catch { }
+                else
+                {
+                    // Start recording - jump to channel
+                    var mw = System.Windows.Application.Current?.Windows.OfType<MainWindow>().FirstOrDefault();
+                    try
+                    {
+                        if (mw != null)
+                        {
+                            BringToFront(mw);
+                            ApplyPlayMode(mw, _playMode ?? "default");
+                            mw.JumpToChannelByIdOrName(_channelId, _channelName);
+                        }
+                    }
+                    catch { }
+                }
             }
             catch { }
             Close();

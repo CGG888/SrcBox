@@ -624,6 +624,9 @@
   <sys:String x:Key="ScheduledRecordingList_Stop">Остановить</sys:String>
   <sys:String x:Key="Recording_Cancel">Отмена</sys:String>
   <sys:String x:Key="Recording_Stopped">Остановлено</sys:String>
+  <sys:String x:Key="Recording_FrontStopped">Фронтальная запись остановлена</sys:String>
+  <sys:String x:Key="Recording_BackStopped">Фоновая запись остановлена</sys:String>
+  <sys:String x:Key="Recording_PlayRecording">Воспроизвести запись</sys:String>
   <sys:String x:Key="Recording_OpenFile">Открыть файл</sys:String>
   <sys:String x:Key="Recording_OpenFolder">Открыть папку</sys:String>
   <sys:String x:Key="ScheduledRecordingList_Column_Channel">Канал</sys:String>

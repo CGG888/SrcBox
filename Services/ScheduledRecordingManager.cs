@@ -164,6 +164,17 @@ namespace LibmpvIptvClient.Services
                 if (!string.IsNullOrEmpty(e.ErrorMessage))
                     info.ErrorMessage = e.ErrorMessage;
 
+                // Show completion toast
+                try
+                {
+                    var sizeLabel = FormatSizeCore(e.SizeBytes);
+                    var recordType = "back";
+                    LibmpvIptvClient.Services.ToastService.ShowRecordingCompletion(
+                        info.ChannelId, info.ChannelName, info.ProgramTitle, info.ChannelLogo,
+                        recordType, e.Success ? info.FilePath : null, sizeLabel);
+                }
+                catch { }
+
                 _activeInstances.TryRemove(info.Id, out var _removed1);
                 RecordingCompleted?.Invoke(this, (info.Id, e.Success, e.ErrorMessage));
                 RecordingStopped?.Invoke(this, info);
@@ -175,6 +186,15 @@ namespace LibmpvIptvClient.Services
                 info.Status = ScheduledRecordingStatus.Failed;
                 info.StatusLabel = GetStatusLabelCore(info.Status);
                 info.ErrorMessage = error;
+
+                // Show failure toast
+                try
+                {
+                    LibmpvIptvClient.Services.ToastService.ShowRecordingCompletion(
+                        info.ChannelId, info.ChannelName, info.ProgramTitle, info.ChannelLogo,
+                        "back", null, error);
+                }
+                catch { }
 
                 _activeInstances.TryRemove(info.Id, out var _removed2);
                 RecordingCompleted?.Invoke(this, (info.Id, false, error));
@@ -233,6 +253,17 @@ namespace LibmpvIptvClient.Services
                         info.ActualDurationMin = (int)(info.ActualEndTime.Value - info.ActualStartTime.Value).TotalMinutes;
                     info.SizeBytes = sizeBytes;
                     info.SizeLabel = FormatSizeCore(sizeBytes);
+
+                    // Show completion toast
+                    try
+                    {
+                        var sizeLabel = FormatSizeCore(sizeBytes);
+                        LibmpvIptvClient.Services.ToastService.ShowRecordingCompletion(
+                            info.ChannelId, info.ChannelName, info.ProgramTitle, info.ChannelLogo,
+                            "front", info.FilePath, sizeLabel);
+                    }
+                    catch { }
+
                     RecordingCompleted?.Invoke(this, (id, true, null));
                     RecordingStopped?.Invoke(this, info);
                     RecordingUpdated?.Invoke(this, info);

@@ -64,6 +64,24 @@ namespace LibmpvIptvClient.Services
                 win.Show();
             });
         }
+        public static void ShowRecordingCompletion(string channelId, string channelName, string? program, string? logoPath, string recordType, string? filePath, string? sizeLabel)
+        {
+            System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+            {
+                var owner = System.Windows.Application.Current?.Windows.OfType<FullscreenWindow>().FirstOrDefault(w => w.IsVisible)
+                            as System.Windows.Window
+                            ?? System.Windows.Application.Current?.Windows.OfType<MainWindow>().FirstOrDefault();
+                bool isRecordBack = string.Equals(recordType, "back", StringComparison.OrdinalIgnoreCase);
+                var statusText = isRecordBack
+                    ? LibmpvIptvClient.Helpers.ResxLocalizer.Get("Recording_BackStopped", "后台录制已停止")
+                    : LibmpvIptvClient.Helpers.ResxLocalizer.Get("Recording_FrontStopped", "前台录制已停止");
+                var win = new ReminderToastWindow(channelId, channelName, program ?? "", DateTime.Now, logoPath, false, null, statusText, false);
+                try { if (owner != null) { win.Owner = owner; win.Topmost = true; } } catch { }
+                ApplyKind(win, ToastKind.RecordStop, null);
+                win.SetCompletionMode(statusText, filePath, sizeLabel, !string.IsNullOrEmpty(filePath));
+                win.Show();
+            });
+        }
         public static void ShowSimple(ToastKind kind, string title, string? subtitle = null, string? logoPath = null, int? autoHideMs = null)
         {
             System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
