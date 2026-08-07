@@ -29,7 +29,6 @@ namespace LibmpvIptvClient
         {
             try
             {
-                LibmpvIptvClient.Diagnostics.Logger.Debug($"[RecordingList] OnRecordingUpdated: {e.ChannelName} status={e.Status}");
                 Dispatcher.Invoke(LoadData);
             }
             catch { }
@@ -39,7 +38,6 @@ namespace LibmpvIptvClient
         {
             try
             {
-                LibmpvIptvClient.Diagnostics.Logger.Debug($"[RecordingList] OnRecordingStarted: {e.ChannelName} status={e.Status}");
                 Dispatcher.Invoke(LoadData);
             }
             catch { }
@@ -57,12 +55,9 @@ namespace LibmpvIptvClient
             {
                 var manager = Services.ScheduledRecordingManager.Instance;
                 // Only show items that are currently recording
-                var allRecordings = manager.GetAll();
-                var recordings = allRecordings
+                var recordings = manager.GetAll()
                     .Where(r => r.Status == Models.ScheduledRecordingStatus.Recording)
                     .ToList();
-
-                LibmpvIptvClient.Diagnostics.Logger.Debug($"[RecordingList] LoadData: total={allRecordings.Count}, recording={recordings.Count}");
 
                 Grid.ItemsSource = null;
                 Grid.ItemsSource = recordings;

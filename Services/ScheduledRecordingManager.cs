@@ -116,12 +116,8 @@ namespace LibmpvIptvClient.Services
 
         public void StartFrontRecording(ScheduledRecordingInfo info, Action<string> onRecordingStarted, Action<string> onRecordingStopped)
         {
-            LibmpvIptvClient.Diagnostics.Logger.Debug($"[ScheduledRecordManager] StartFrontRecording called for {info.ChannelName}");
             if (!CanStartFrontRecording())
-            {
-                LibmpvIptvClient.Diagnostics.Logger.Debug($"[ScheduledRecordManager] StartFrontRecording early return - CanStartFrontRecording=false");
                 return;
-            }
 
             info.Type = RecordingType.Front;
             info.Status = ScheduledRecordingStatus.Recording;
@@ -131,9 +127,7 @@ namespace LibmpvIptvClient.Services
 
             _recordings[info.Id] = info;
             onRecordingStarted?.Invoke(info.Id);
-            LibmpvIptvClient.Diagnostics.Logger.Debug($"[ScheduledRecordManager] RecordingStarted subscribers: {(RecordingStarted?.GetInvocationList().Length ?? 0)}");
             RecordingStarted?.Invoke(this, info);
-            LibmpvIptvClient.Diagnostics.Logger.Debug($"[ScheduledRecordManager] RecordingUpdated subscribers: {(RecordingUpdated?.GetInvocationList().Length ?? 0)}");
             RecordingUpdated?.Invoke(this, info); // Fire to update UI
         }
 

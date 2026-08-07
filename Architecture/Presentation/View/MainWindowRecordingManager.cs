@@ -80,28 +80,16 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                     return;
                 }
 
-                if (!File.Exists(_recordFilePath))
-                {
-                    LibmpvIptvClient.Diagnostics.Logger.Debug($"[RecordSize] file not exists: {_recordFilePath}");
-                    return;
-                }
+                if (!File.Exists(_recordFilePath)) return;
 
                 var info = Services.ScheduledRecordingManager.Instance.Get(_scheduledFrontRecordingId);
-                if (info == null)
-                {
-                    LibmpvIptvClient.Diagnostics.Logger.Debug($"[RecordSize] info not found: {_scheduledFrontRecordingId}");
-                    return;
-                }
+                if (info == null) return;
 
                 var fileInfo = new FileInfo(_recordFilePath);
                 info.SizeBytes = fileInfo.Length;
                 info.SizeLabel = Services.ScheduledRecordingManager.FormatSizeCore(info.SizeBytes);
-                LibmpvIptvClient.Diagnostics.Logger.Debug($"[RecordSize] updated size: {info.SizeLabel} ({info.SizeBytes} bytes)");
             }
-            catch (Exception ex)
-            {
-                LibmpvIptvClient.Diagnostics.Logger.Error($"[RecordSize] error: {ex.Message}");
-            }
+            catch { }
         }
 
         public void Close()
