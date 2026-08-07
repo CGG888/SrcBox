@@ -19,9 +19,8 @@ namespace LibmpvIptvClient.Services
         private Action? _openMain;
         private Action? _openSettings;
         private Action? _exitApp;
-        private Action? _openReminderNotify;
-        private Action? _openReminderAutoplay;
-        private Action? _openReminderRecord;
+        private Action? _openReminder;
+        private Action? _openRecordingList;
         private Action? _openM3uManage;
 
         private NotificationService()
@@ -74,17 +73,14 @@ namespace LibmpvIptvClient.Services
             _menu = new ContextMenuStrip();
             var miOpen = new ToolStripMenuItem(LibmpvIptvClient.Helpers.Localizer.S("Tray_OpenMain", "打开主界面"));
             miOpen.Click += (s, e) => { try { _openMain?.Invoke(); } catch { } };
-            var miReminder = new ToolStripMenuItem(LibmpvIptvClient.Helpers.Localizer.S("Menu_Reminders", "预约"));
-            var miReminderNotify = new ToolStripMenuItem(LibmpvIptvClient.Helpers.Localizer.S("Menu_ReminderNotify", "通知"));
-            miReminderNotify.Click += (s, e) => { try { _openReminderNotify?.Invoke(); } catch { } };
-            var miReminderAutoplay = new ToolStripMenuItem(LibmpvIptvClient.Helpers.Localizer.S("Menu_ReminderAutoplay", "播放")) { Enabled = true };
-            miReminderAutoplay.Click += (s, e) => { try { _openReminderAutoplay?.Invoke(); } catch { } };
-            var miReminderRecord = new ToolStripMenuItem(LibmpvIptvClient.Helpers.Localizer.S("Menu_ReminderRecord", "录播")) { Enabled = false };
-            miReminderRecord.Click += (s, e) => { try { _openReminderRecord?.Invoke(); } catch { } };
-            miReminder.DropDownItems.Add(miReminderNotify);
-            miReminder.DropDownItems.Add(miReminderAutoplay);
-            miReminder.DropDownItems.Add(miReminderRecord);
-            var miM3uManage = new ToolStripMenuItem(LibmpvIptvClient.Helpers.Localizer.S("Menu_ManageM3u", "管理 M3U 列表"));
+
+            var miReminder = new ToolStripMenuItem(LibmpvIptvClient.Helpers.Localizer.S("Tray_OpenReminder", "预约管理"));
+            miReminder.Click += (s, e) => { try { _openReminder?.Invoke(); } catch { } };
+
+            var miRecordingList = new ToolStripMenuItem(LibmpvIptvClient.Helpers.Localizer.S("Tray_OpenRecordingList", "正在录制"));
+            miRecordingList.Click += (s, e) => { try { _openRecordingList?.Invoke(); } catch { } };
+
+            var miM3uManage = new ToolStripMenuItem(LibmpvIptvClient.Helpers.Localizer.S("Tray_ChannelData", "频道数据"));
             miM3uManage.Click += (s, e) => { try { _openM3uManage?.Invoke(); } catch { } };
             var miSettings = new ToolStripMenuItem(LibmpvIptvClient.Helpers.Localizer.S("Menu_Settings", "设置"));
             miSettings.Click += (s, e) => { try { _openSettings?.Invoke(); } catch { } };
@@ -92,6 +88,8 @@ namespace LibmpvIptvClient.Services
             miExit.Click += (s, e) => { try { _exitApp?.Invoke(); } catch { } };
             _menu.Items.Add(miOpen);
             _menu.Items.Add(miReminder);
+            _menu.Items.Add(miRecordingList);
+            _menu.Items.Add(new ToolStripSeparator());
             _menu.Items.Add(miM3uManage);
             _menu.Items.Add(miSettings);
             _menu.Items.Add(new ToolStripSeparator());
@@ -99,15 +97,14 @@ namespace LibmpvIptvClient.Services
             _icon.ContextMenuStrip = _menu;
         }
         public void SetMenuCallbacks(Action openMain, Action openSettings, Action exitApp,
-                                     Action? openReminderNotify = null, Action? openReminderAutoplay = null, Action? openReminderRecord = null,
+                                     Action? openReminder = null, Action? openRecordingList = null,
                                      Action? openM3uManage = null)
         {
             _openMain = openMain;
             _openSettings = openSettings;
             _exitApp = exitApp;
-            _openReminderNotify = openReminderNotify;
-            _openReminderAutoplay = openReminderAutoplay;
-            _openReminderRecord = openReminderRecord;
+            _openReminder = openReminder;
+            _openRecordingList = openRecordingList;
             _openM3uManage = openM3uManage;
         }
         public void ShowWithLogo(string channel, string program, DateTime startLocal, string? logoPath, int timeoutMs = 8000)

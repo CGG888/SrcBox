@@ -30,8 +30,8 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                     openMain: () => { try { _window.Dispatcher.Invoke(() => { _window.Show(); _window.WindowState = WindowState.Normal; _window.Activate(); }); } catch { } },
                     openSettings: () => { try { _window.Dispatcher.Invoke(_window.OpenSettings); } catch { } },
                     exitApp: () => { try { System.Windows.Application.Current.Shutdown(); } catch { } },
-                    openReminderNotify: () => { try { _window.Dispatcher.Invoke(ReminderWindowManager.OpenOrActivate); } catch { } },
-                    openReminderAutoplay: () => { try { _window.Dispatcher.Invoke(ReminderWindowManager.OpenOrActivate); } catch { } },
+                    openReminder: () => { try { _window.Dispatcher.Invoke(ReminderWindowManager.OpenOrActivate); } catch { } },
+                    openRecordingList: () => { try { _window.Dispatcher.Invoke(() => { var w = new ScheduledRecordingListWindow(); w.Show(); }); } catch { } },
                     openM3uManage: () => { try { _window.Dispatcher.Invoke(M3uWindowManager.OpenOrActivate); } catch { } }
                 );
                 NotificationService.Instance.SetTrayTooltip("SrcBox");
