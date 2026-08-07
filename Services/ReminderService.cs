@@ -135,9 +135,13 @@ namespace LibmpvIptvClient.Services
             }
             catch { }
             r.Completed = true;
+            // Use custom duration if set, otherwise use EPG program end time
+            var scheduledEnd = r.RecordDurationMin.HasValue
+                ? r.StartAtUtc.ToLocalTime().AddMinutes(r.RecordDurationMin.Value)
+                : r.EndTimeUtc.ToLocalTime();
             RecordingTriggered?.Invoke(this, new ScheduledRecordingTriggerArgs(
                 r.Id, action, r.ChannelId ?? "", r.ChannelName ?? "", logoLocal,
-                r.Note ?? "", r.StartAtUtc.ToLocalTime(), r.StartAtUtc.ToLocalTime().AddMinutes(r.RecordDurationMin ?? 60),
+                r.Note ?? "", r.StartAtUtc.ToLocalTime(), scheduledEnd,
                 null, r.RecordMode, r.RecordDurationMin));
             try { LibmpvIptvClient.Diagnostics.Logger.Debug($"[Reminder] fired recording id={r.Id} ch={r.ChannelName} action={action}"); } catch { }
         }

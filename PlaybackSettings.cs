@@ -264,6 +264,7 @@ namespace LibmpvIptvClient
         public string ChannelName { get; set; } = "";
         public string ChannelLogo { get; set; } = "";
         public DateTime StartAtUtc { get; set; } = DateTime.UtcNow;
+        public DateTime EndTimeUtc { get; set; } = DateTime.UtcNow.AddHours(1);
         public int PreAlertSeconds { get; set; } = 0;
         public string Action { get; set; } = "notify";
         public string? PlayMode { get; set; } = "default";

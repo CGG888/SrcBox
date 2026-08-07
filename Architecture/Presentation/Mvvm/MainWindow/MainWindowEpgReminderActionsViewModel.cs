@@ -23,6 +23,7 @@ public sealed class MainWindowEpgReminderActionsViewModel : ViewModelBase
             ChannelName = channel.Name ?? "",
             ChannelLogo = channel.Logo ?? "",
             StartAtUtc = program.Start.ToUniversalTime(),
+            EndTimeUtc = program.End.ToUniversalTime(),
             PreAlertSeconds = preAlertSeconds,
             Action = action,
             PlayMode = playMode,
