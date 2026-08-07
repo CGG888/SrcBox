@@ -126,7 +126,9 @@ namespace LibmpvIptvClient.Services
 
             _recordings[info.Id] = info;
             onRecordingStarted?.Invoke(info.Id);
+            LibmpvIptvClient.Diagnostics.Logger.Debug($"[ScheduledRecordManager] RecordingStarted subscribers: {(RecordingStarted?.GetInvocationList().Length ?? 0)}");
             RecordingStarted?.Invoke(this, info);
+            LibmpvIptvClient.Diagnostics.Logger.Debug($"[ScheduledRecordManager] RecordingUpdated subscribers: {(RecordingUpdated?.GetInvocationList().Length ?? 0)}");
             RecordingUpdated?.Invoke(this, info); // Fire to update UI
         }
 
