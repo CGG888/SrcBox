@@ -84,6 +84,7 @@ namespace LibmpvIptvClient.Services
         {
             info.StatusLabel = GetStatusLabelCore(info.Status);
             _recordings[info.Id] = info;
+            RecordingUpdated?.Invoke(this, info);
         }
 
         public void Remove(string id)

@@ -352,10 +352,17 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 TryStartStreamRecord(_recordFilePath);
                 _recordingNow = true;
 
-                // Set _scheduledFrontRecordingId BEFORE calling StartFrontRecording
+                // Add to manager first to trigger RecordingUpdated event for UI refresh
+                // Note: StartFrontRecording may return early due to CanStartFrontRecording check
+                // because IsFrontRecordingActive sees this very item, so we call Add first
+                ScheduledRecordingManager.Instance.Add(info);
+
+                // Set _scheduledFrontRecordingId
                 _scheduledFrontRecordingId = info.Id;
                 _recordingSizeTimer?.Start();
 
+                // Call StartFrontRecording for compatibility (updates status, triggers events)
+                // but it will likely return early since we already added the item
                 ScheduledRecordingManager.Instance.StartFrontRecording(info,
                     onRecordingStarted: id =>
                     {
