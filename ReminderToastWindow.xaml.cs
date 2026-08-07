@@ -156,11 +156,9 @@ namespace LibmpvIptvClient
             TxtCountdown.Visibility = Visibility.Collapsed;
             TxtTime.Text = sizeLabel ?? "";
 
-            // Set button text based on mode - completion mode shows "播放录像"
-            var lblPlayRecording = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Recording_PlayRecording", "播放录像");
-            BtnPlay.Content = lblPlayRecording;
-            BtnPlay.Visibility = showPlayButton ? Visibility.Visible : Visibility.Collapsed;
-            BtnDismiss.Content = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Close", "关闭");
+            // Hide all buttons - just show status and auto-hide
+            BtnPlay.Visibility = Visibility.Collapsed;
+            BtnDismiss.Visibility = Visibility.Collapsed;
 
             // Auto hide after 5 seconds for completion mode
             _autoHideMs = 5000;
@@ -210,9 +208,10 @@ namespace LibmpvIptvClient
             public void EnableAutoPlayManualClose()
             {
                 _autoPlayOnCountdown = true;
-                _autoHideMs = -1;
-                try { BtnPlay.Visibility = Visibility.Visible; } catch { }
-                try { TxtCountdown.Visibility = Visibility.Visible; } catch { }
+                _autoHideMs = 5000; // Auto hide after 5 seconds
+                try { BtnPlay.Visibility = Visibility.Collapsed; } catch { }
+                try { BtnDismiss.Visibility = Visibility.Collapsed; } catch { }
+                try { TxtCountdown.Visibility = Visibility.Collapsed; } catch { }
             }
         void BeginFadeAndClose()
         {
