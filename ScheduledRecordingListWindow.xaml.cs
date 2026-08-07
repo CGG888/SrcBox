@@ -8,6 +8,8 @@ namespace LibmpvIptvClient
 {
     public partial class ScheduledRecordingListWindow : Window
     {
+        private string _currentStatusFilter = ""; // "" means all statuses
+
         public ScheduledRecordingListWindow()
         {
             InitializeComponent();
@@ -54,10 +56,12 @@ namespace LibmpvIptvClient
             try
             {
                 var manager = Services.ScheduledRecordingManager.Instance;
-                // Only show items that are currently recording
-                var recordings = manager.GetAll()
-                    .Where(r => r.Status == Models.ScheduledRecordingStatus.Recording)
-                    .ToList();
+                var allRecordings = manager.GetAll();
+
+                // Apply status filter if set
+                var recordings = string.IsNullOrEmpty(_currentStatusFilter)
+                    ? allRecordings
+                    : allRecordings.Where(r => r.Status.ToString() == _currentStatusFilter).ToList();
 
                 // Save selected item to restore after refresh
                 var selectedItem = Grid.SelectedItem as Models.ScheduledRecordingInfo;
@@ -82,6 +86,15 @@ namespace LibmpvIptvClient
                 TxtBackCount.Text = string.Format(Helpers.ResxLocalizer.Get("ScheduledRecordingList_BackCount", "后台: {0}/{1}"), backCount, maxBack);
             }
             catch { }
+        }
+
+        void CmbStatusFilter_SelectionChanged(object sender, System.Windows.Controls.SelectionChangedEventArgs e)
+        {
+            if (CmbStatusFilter.SelectedItem is System.Windows.Controls.ComboBoxItem item)
+            {
+                _currentStatusFilter = item.Tag?.ToString() ?? "";
+                LoadData();
+            }
         }
 
         void BtnRefresh_Click(object sender, RoutedEventArgs e)

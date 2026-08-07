@@ -7,6 +7,15 @@
     <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0,0,0,8">
       <TextBlock x:Name="TxtFrontCount" VerticalAlignment="Center" Margin="0,0,16,0" Foreground="{DynamicResource TextPrimaryBrush}"/>
       <TextBlock x:Name="TxtBackCount" VerticalAlignment="Center" Margin="0,0,16,0" Foreground="{DynamicResource TextPrimaryBrush}"/>
+      <ComboBox x:Name="CmbStatusFilter" Width="100" Margin="0,0,8,0" SelectionChanged="CmbStatusFilter_SelectionChanged">
+        <ComboBoxItem Content="全部" Tag="" IsSelected="True"/>
+        <ComboBoxItem Content="录制中" Tag="Recording"/>
+        <ComboBoxItem Content="等待中" Tag="Waiting"/>
+        <ComboBoxItem Content="已停止" Tag="Stopped"/>
+        <ComboBoxItem Content="已完成" Tag="Completed"/>
+        <ComboBoxItem Content="已取消" Tag="Cancelled"/>
+        <ComboBoxItem Content="失败" Tag="Failed"/>
+      </ComboBox>
       <Button Content="{DynamicResource ScheduledRecordingList_Refresh}" Width="80" Margin="0,0,8,0" Click="BtnRefresh_Click" Style="{StaticResource ChipButton}"/>
       <Button Content="{DynamicResource ScheduledRecordingList_Stop}" Width="64" Margin="8,0,4,0" Click="BtnStop_Click" Style="{StaticResource ChipButton}"/>
       <Button Content="{DynamicResource Recording_Cancel}" Width="64" Margin="4,0,8,0" Click="BtnCancel_Click" Style="{StaticResource ChipButton}"/>
