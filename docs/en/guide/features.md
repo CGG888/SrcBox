@@ -104,6 +104,98 @@ Supports custom HTTP/HTTPS stream headers and RTSP transport settings.
 - **Real-time Recording**: Support for live recording mode
 - **Upload Queue**: Upload task queue management
 
+## Multi-Screen (v1.1.9 NEW)
+
+Support for 4/6/9 screen simultaneous playback, ideal for monitoring or watching multiple channels.
+
+### Features
+- **Multi-Screen Modes**: 4-screen, 6-screen, 9-screen simultaneous playback
+- **Quick Selection**: 1-9 number keys to directly select corresponding screen
+- **Channel Switching**: ↑↓ keys to switch previous/next channel
+- **Source Switching**: ←→ keys to switch previous/next source
+- **Tray Entry**: Add multi-screen submenu to tray context menu
+
+### Shortcuts
+| Shortcut | Function |
+|----------|----------|
+| `Ctrl+4` | Open 4-screen mode |
+| `Ctrl+6` | Open 6-screen mode |
+| `Ctrl+9` | Open 9-screen mode |
+| `1-9` | Select corresponding screen |
+| `↑/↓` | Switch channel |
+| `←/→` | Switch source |
+
+## Scheduled Recording (v1.1.9 NEW)
+
+Support for front and back scheduled recording modes.
+
+### Front Recording
+- The screen jumps to the recording channel during recording
+- Support for custom duration auto-stop
+- Recording timer displayed
+
+### Back Recording
+- Keeps current playback channel without jumping
+- Support for duration-based auto-stop
+- Recording completion toast notification
+
+### Recording Completion Toast
+- Toast notification when recording completes
+- Auto-hides after 5 seconds
+- Differentiates front/back recording completion
+
+## Decoder Selection (v1.1.9 NEW)
+
+Support for multiple hardware and software decoders, switchable during playback.
+
+### Decoder Options
+- **Auto**: Automatically select the best decoder
+- **D3D11VA**: Windows Video Acceleration (default)
+- **DXVA2**: DirectX Video Acceleration
+- **NVDEC**: NVIDIA GPU decoding
+- **Software**: CPU software decoding
+
+## v1.1.9 New Features
+
+### Multi-Screen
+- 4/6/9 screen simultaneous playback
+- Multi-screen submenu in tray context menu
+- Source switching submenu in multi-screen
+- 1-9 number keys for quick screen selection
+- ↑↓ switch channels, ←→ switch sources
+
+### Scheduled Recording
+- Front/back scheduled recording modes
+- Recording completion toast notification
+- Front recording with custom duration auto-stop
+- Status filter dropdown in reminder list
+- Refresh button in reminder list
+
+### Decoder Selection
+- Auto/D3D11VA/DXVA2/NVDEC/Software decoders
+- Switchable during playback
+- Decoder selection menu
+
+### Shortcuts Help Window
+- New ShortcutsWindow for keyboard shortcuts reference
+- Complete keyboard shortcuts categorized display
+
+### Interface Refactoring
+- Menu system: classified by function domain, TXT format support
+- Settings window: 12 tabs consolidated to 7, optimized dark/light theme
+- Top menu i18n: fixed missing menu i18n keys
+
+### Timeshift Improvements
+- Seek limited within program boundaries
+- Continuous playback: URL end time changed to far future
+- Auto-jump to next program when current ends
+
+### Other Improvements
+- M3U dropdown refresh: auto-refresh after adding new source
+- mpv cache optimization: dynamic cache control based on recording state
+- EPG matching: extended CCTV/Education channel type suffix support
+- Close mode memory: remember user choice (exit or minimize to tray)
+
 ## v1.1.6 New Features
 
 ### Web Remote Control

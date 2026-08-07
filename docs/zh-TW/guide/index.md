@@ -6,8 +6,11 @@
 
 - [專案介紹](./introduction)
 - [功能特性](./features)
+- [多屏播放](./multiscreen)
+- [預約功能](./reminder)
 - [Web 遠程控制](./web-remote)
 - [EPG 節目單](./epg)
 - [回看與時移](./catchup-timeshift)
+- [快捷鍵](./keyboard-shortcuts)
 - [配置說明](./configuration)
 - [常見問題](./faq)

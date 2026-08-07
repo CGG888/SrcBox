@@ -6,6 +6,7 @@
 
 - [项目介绍](./introduction)
 - [功能特性](./features)
+- [预约功能](./reminder)
 - [Web 远程控制](./web-remote)
 - [EPG 节目单](./epg)
 - [回看与时移](./catchup-timeshift)
