@@ -48,14 +48,24 @@ namespace LibmpvIptvClient.Models
             get => _sizeBytes;
             set { _sizeBytes = value; OnPropertyChanged(nameof(SizeBytes)); OnPropertyChanged(nameof(SizeLabel)); }
         }
-        public string SizeLabel { get; set; } = "";
+        private string _sizeLabel = "";
+        public string SizeLabel
+        {
+            get => _sizeLabel;
+            set { _sizeLabel = value; OnPropertyChanged(nameof(SizeLabel)); }
+        }
         private ScheduledRecordingStatus _status = ScheduledRecordingStatus.Waiting;
         public ScheduledRecordingStatus Status
         {
             get => _status;
             set { _status = value; OnPropertyChanged(nameof(Status)); OnPropertyChanged(nameof(StatusLabel)); }
         }
-        public string StatusLabel { get; set; } = "";
+        private string _statusLabel = "";
+        public string StatusLabel
+        {
+            get => _statusLabel;
+            set { _statusLabel = value; OnPropertyChanged(nameof(StatusLabel)); }
+        }
         public string? ErrorMessage { get; set; }
 
         protected void OnPropertyChanged(string propertyName)
