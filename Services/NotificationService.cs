@@ -194,11 +194,12 @@ namespace LibmpvIptvClient.Services
             {
                 var format = new StringFormat
                 {
+                    Alignment = StringAlignment.Near,
                     LineAlignment = StringAlignment.Center,
                     FormatFlags = StringFormatFlags.NoWrap
                 };
-                e.Graphics.DrawString(e.Item.Text, e.Item.Font ?? SystemFonts.MenuFont, brush,
-                    new Rectangle(2, 0, e.Item.Bounds.Width - 4, e.Item.Bounds.Height), format);
+                var textRect = new Rectangle(e.Item.ContentRectangle.X + 2, 0, e.Item.Bounds.Width - 4, e.Item.Bounds.Height);
+                e.Graphics.DrawString(e.Item.Text, e.Item.Font ?? SystemFonts.MenuFont, brush, textRect, format);
             }
         }
     }
