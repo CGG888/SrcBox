@@ -44,11 +44,15 @@ namespace LibmpvIptvClient
             {
                 var lblRemain = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Reminder_RemainFmt", "剩余 {0} 秒");
                 TxtCountdown.Text = string.Format(lblRemain, _remainSec.ToString("00"));
-                var lblStart = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Reminder_Status_Start", "节目开播");
+                // Use different status text for front/back recording
+                var lblStart = _isRecordBack
+                    ? LibmpvIptvClient.Helpers.ResxLocalizer.Get("Recording_StartBack", "开始后台录制")
+                    : LibmpvIptvClient.Helpers.ResxLocalizer.Get("Recording_StartFront", "开始前台录制");
                 var lblBooked = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Reminder_Status_Booked", "预约成功");
                 TxtStatus.Text = statusOverride ?? (isDue ? lblStart : lblBooked);
-                var lblPlayNow = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Reminder_PlayNow", "立即播放");
-                var lblDismiss = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Reminder_Dismiss", "知道了");
+                // Use "开始录制" instead of "立即播放"
+                var lblPlayNow = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Recording_Start", "开始录制");
+                var lblDismiss = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Close", "关闭");
                 try { BtnPlay.Content = lblPlayNow; } catch { }
                 try { BtnDismiss.Content = lblDismiss; } catch { }
                 if (!showCountdown) { try { TxtCountdown.Visibility = Visibility.Collapsed; } catch { } }
@@ -56,7 +60,7 @@ namespace LibmpvIptvClient
             catch
             {
                 TxtCountdown.Text = $"剩余 {_remainSec:00} 秒";
-                TxtStatus.Text = statusOverride ?? (isDue ? "节目开播" : "预约成功");
+                TxtStatus.Text = statusOverride ?? (_isRecordBack ? "开始后台录制" : "开始前台录制");
             }
             try { BtnPlay.Visibility = isDue ? Visibility.Visible : Visibility.Collapsed; } catch { }
             try

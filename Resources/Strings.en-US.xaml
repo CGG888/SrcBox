@@ -634,6 +634,9 @@
   <sys:String x:Key="ScheduledRecordingList_Stop">Stop</sys:String>
   <sys:String x:Key="Recording_Cancel">Cancel</sys:String>
   <sys:String x:Key="Recording_Stopped">Stopped</sys:String>
+  <sys:String x:Key="Recording_StartFront">Start Front Recording</sys:String>
+  <sys:String x:Key="Recording_StartBack">Start Back Recording</sys:String>
+  <sys:String x:Key="Recording_Start">Start Recording</sys:String>
   <sys:String x:Key="Recording_FrontStopped">Front Recording Stopped</sys:String>
   <sys:String x:Key="Recording_BackStopped">Back Recording Stopped</sys:String>
   <sys:String x:Key="Recording_PlayRecording">Play Recording</sys:String>

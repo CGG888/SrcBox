@@ -631,6 +631,9 @@
   <sys:String x:Key="ScheduledRecordingList_Stop">停止</sys:String>
   <sys:String x:Key="Recording_Cancel">取消</sys:String>
   <sys:String x:Key="Recording_Stopped">已停止</sys:String>
+  <sys:String x:Key="Recording_StartFront">开始前台录制</sys:String>
+  <sys:String x:Key="Recording_StartBack">开始后台录制</sys:String>
+  <sys:String x:Key="Recording_Start">开始录制</sys:String>
   <sys:String x:Key="Recording_FrontStopped">前台录制已停止</sys:String>
   <sys:String x:Key="Recording_BackStopped">后台录制已停止</sys:String>
   <sys:String x:Key="Recording_PlayRecording">播放录像</sys:String>
