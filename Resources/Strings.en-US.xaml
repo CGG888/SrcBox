@@ -351,6 +351,10 @@
   <sys:String x:Key="Tray_OpenReminder">Reminder Management</sys:String>
   <sys:String x:Key="Tray_OpenRecordingList">Active Recordings</sys:String>
   <sys:String x:Key="Tray_ChannelData">Channel Data</sys:String>
+  <sys:String x:Key="Tray_MultiScreen">Multi-Screen</sys:String>
+  <sys:String x:Key="Tray_4Screen">4-Screen</sys:String>
+  <sys:String x:Key="Tray_6Screen">6-Screen</sys:String>
+  <sys:String x:Key="Tray_9Screen">9-Screen</sys:String>
   <sys:String x:Key="CloseConfirm_Title">Close Confirmation</sys:String>
   <sys:String x:Key="CloseConfirm_Message">Choose an action:\n\nYes: Exit app\nNo: Minimize to system tray</sys:String>
   <sys:String x:Key="CloseConfirm_Label">Choose an action:</sys:String>

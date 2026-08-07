@@ -335,6 +335,10 @@
   <sys:String x:Key="Tray_OpenReminder">預約管理</sys:String>
   <sys:String x:Key="Tray_OpenRecordingList">正在錄製</sys:String>
   <sys:String x:Key="Tray_ChannelData">頻道數據</sys:String>
+  <sys:String x:Key="Tray_MultiScreen">多屏播放</sys:String>
+  <sys:String x:Key="Tray_4Screen">4 屏</sys:String>
+  <sys:String x:Key="Tray_6Screen">6 屏</sys:String>
+  <sys:String x:Key="Tray_9Screen">9 屏</sys:String>
   <sys:String x:Key="CloseConfirm_Title">關閉確認</sys:String>
   <sys:String x:Key="CloseConfirm_Message">選擇操作：&#x0a;&#x0a;是：退出軟體&#x0a;否：最小化到系統托盤</sys:String>
   <sys:String x:Key="CloseConfirm_Label">選擇操作：</sys:String>

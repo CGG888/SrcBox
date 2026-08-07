@@ -22,6 +22,7 @@ namespace LibmpvIptvClient.Services
         private Action? _openReminder;
         private Action? _openRecordingList;
         private Action? _openM3uManage;
+        private Action<int>? _openMultiScreen;
 
         private NotificationService()
         {
@@ -111,6 +112,22 @@ namespace LibmpvIptvClient.Services
             if (dark) miRecordingList.ForeColor = Color.White;
             miRecordingList.Click += (s, e) => { try { _openRecordingList?.Invoke(); } catch { } };
 
+            // Multi-screen submenu
+            var miMultiScreen = new ToolStripMenuItem(LibmpvIptvClient.Helpers.Localizer.S("Tray_MultiScreen", "多屏播放"));
+            if (dark) miMultiScreen.ForeColor = Color.White;
+            var mi4Screen = new ToolStripMenuItem(LibmpvIptvClient.Helpers.Localizer.S("Tray_4Screen", "4 屏"));
+            if (dark) mi4Screen.ForeColor = Color.White;
+            mi4Screen.Click += (s, e) => { try { _openMultiScreen?.Invoke(4); } catch { } };
+            var mi6Screen = new ToolStripMenuItem(LibmpvIptvClient.Helpers.Localizer.S("Tray_6Screen", "6 屏"));
+            if (dark) mi6Screen.ForeColor = Color.White;
+            mi6Screen.Click += (s, e) => { try { _openMultiScreen?.Invoke(6); } catch { } };
+            var mi9Screen = new ToolStripMenuItem(LibmpvIptvClient.Helpers.Localizer.S("Tray_9Screen", "9 屏"));
+            if (dark) mi9Screen.ForeColor = Color.White;
+            mi9Screen.Click += (s, e) => { try { _openMultiScreen?.Invoke(9); } catch { } };
+            miMultiScreen.DropDownItems.Add(mi4Screen);
+            miMultiScreen.DropDownItems.Add(mi6Screen);
+            miMultiScreen.DropDownItems.Add(mi9Screen);
+
             var miM3uManage = new ToolStripMenuItem(LibmpvIptvClient.Helpers.Localizer.S("Tray_ChannelData", "频道数据"));
             if (dark) miM3uManage.ForeColor = Color.White;
             miM3uManage.Click += (s, e) => { try { _openM3uManage?.Invoke(); } catch { } };
@@ -123,6 +140,7 @@ namespace LibmpvIptvClient.Services
             _menu.Items.Add(miOpen);
             _menu.Items.Add(miReminder);
             _menu.Items.Add(miRecordingList);
+            _menu.Items.Add(miMultiScreen);
             _menu.Items.Add(new ToolStripSeparator());
             _menu.Items.Add(miM3uManage);
             _menu.Items.Add(miSettings);
@@ -140,7 +158,7 @@ namespace LibmpvIptvClient.Services
         }
         public void SetMenuCallbacks(Action openMain, Action openSettings, Action exitApp,
                                      Action? openReminder = null, Action? openRecordingList = null,
-                                     Action? openM3uManage = null)
+                                     Action? openM3uManage = null, Action<int>? openMultiScreen = null)
         {
             _openMain = openMain;
             _openSettings = openSettings;
@@ -148,6 +166,7 @@ namespace LibmpvIptvClient.Services
             _openReminder = openReminder;
             _openRecordingList = openRecordingList;
             _openM3uManage = openM3uManage;
+            _openMultiScreen = openMultiScreen;
         }
         public void ShowWithLogo(string channel, string program, DateTime startLocal, string? logoPath, int timeoutMs = 8000)
         {

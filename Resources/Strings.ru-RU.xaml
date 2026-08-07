@@ -318,6 +318,10 @@
   <sys:String x:Key="Tray_OpenReminder">Управление напоминаниями</sys:String>
   <sys:String x:Key="Tray_OpenRecordingList">Активные записи</sys:String>
   <sys:String x:Key="Tray_ChannelData">Данные каналов</sys:String>
+  <sys:String x:Key="Tray_MultiScreen">Мультиэкран</sys:String>
+  <sys:String x:Key="Tray_4Screen">4 экрана</sys:String>
+  <sys:String x:Key="Tray_6Screen">6 экранов</sys:String>
+  <sys:String x:Key="Tray_9Screen">9 экранов</sys:String>
   <sys:String x:Key="CloseConfirm_Title">Подтверждение закрытия</sys:String>
   <sys:String x:Key="CloseConfirm_Message">Выберите действие:\n\nДа: выйти из приложения\nНет: свернуть в трей</sys:String>
   <sys:String x:Key="CloseConfirm_Label">Выберите действие:</sys:String>
