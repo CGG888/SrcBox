@@ -32,6 +32,7 @@ namespace LibmpvIptvClient.Controls
         private bool _isFullscreen = false;
         private System.Windows.Threading.DispatcherTimer? _topBarTimer;
         private System.Windows.Threading.DispatcherTimer? _mousePollTimer;
+        private int[] _sourceIndexes;
 
         public MultiScreenWindow(int screenCount, Func<IReadOnlyList<Channel>>? getChannelsCallback, List<ChannelGroupData>? channelGroups = null)
         {
@@ -45,6 +46,7 @@ namespace LibmpvIptvClient.Controls
             _panels = new WF.Panel[screenCount];
             _screenNumbers = new System.Windows.Controls.TextBlock[screenCount];
             _numberLabels = new WF.Label[screenCount];
+            _sourceIndexes = new int[screenCount];
 
             SetupGrid();
             Loaded += OnLoaded;
@@ -329,6 +331,27 @@ namespace LibmpvIptvClient.Controls
             channelNav.DropDownItems.Add(new ToolStripMenuItem(System.Windows.Application.Current.FindResource("MultiScreen_NextChannel")?.ToString() ?? "下一频道", null, (s, e) => NextChannel(screenIndex)));
             menu.Items.Add(channelNav);
 
+            // Source switching submenu
+            var sourceMenu = new ToolStripMenuItem(System.Windows.Application.Current.FindResource("MultiScreen_SwitchSource")?.ToString() ?? "切换源");
+            var currentChannel = _channels[screenIndex];
+            if (currentChannel != null && currentChannel.Sources.Count > 0)
+            {
+                for (int i = 0; i < currentChannel.Sources.Count; i++)
+                {
+                    var src = currentChannel.Sources[i];
+                    var srcLabel = string.IsNullOrEmpty(src.Name) ? $"源 {i + 1}" : src.Name;
+                    var item = new ToolStripMenuItem(srcLabel, null, (s, e) => PlaySource(screenIndex, currentChannel, i));
+                    if (i == _sourceIndexes[screenIndex])
+                        item.Checked = true;
+                    sourceMenu.DropDownItems.Add(item);
+                }
+            }
+            else
+            {
+                sourceMenu.Enabled = false;
+            }
+            menu.Items.Add(sourceMenu);
+
             var ratioMenu = new ToolStripMenuItem(System.Windows.Application.Current.FindResource("MultiScreen_AspectRatio")?.ToString() ?? "画面比例");
             var ratios = new (string label, string value)[] { 
                 (System.Windows.Application.Current.FindResource("MultiScreen_AspectDefault")?.ToString() ?? "默认", "default"), 
@@ -394,19 +417,20 @@ namespace LibmpvIptvClient.Controls
         private void PlayChannel(int screenIndex, Channel channel)
         {
             if (screenIndex < 0 || screenIndex >= _screenCount) return;
-            
+
             _channels[screenIndex] = channel;
+            _sourceIndexes[screenIndex] = 0;
             var url = channel.Sources.Count > 0 ? channel.Sources[0].Url : "";
             if (!string.IsNullOrEmpty(url))
             {
                 _players[screenIndex]?.LoadFile(url);
             }
-            
+
             if (_numberLabels[screenIndex] != null)
             {
                 _numberLabels[screenIndex].Visible = false;
             }
-            
+
             if (_focusedIndex == -1)
             {
                 SetFocus(screenIndex);
@@ -464,10 +488,45 @@ namespace LibmpvIptvClient.Controls
             var current = _channels[screenIndex];
             var all = GetChannelList().ToList();
             if (all.Count == 0) return;
-            
+
             int idx = current != null ? all.IndexOf(current) : -1;
             int nextIdx = idx >= all.Count - 1 ? 0 : idx + 1;
             PlayChannel(screenIndex, all[nextIdx]);
+        }
+
+        private void PrevSource(int screenIndex)
+        {
+            if (screenIndex < 0 || screenIndex >= _screenCount) return;
+            var channel = _channels[screenIndex];
+            if (channel == null || channel.Sources.Count <= 1) return;
+
+            int currentIdx = _sourceIndexes[screenIndex];
+            int prevIdx = currentIdx <= 0 ? channel.Sources.Count - 1 : currentIdx - 1;
+            PlaySource(screenIndex, channel, prevIdx);
+        }
+
+        private void NextSource(int screenIndex)
+        {
+            if (screenIndex < 0 || screenIndex >= _screenCount) return;
+            var channel = _channels[screenIndex];
+            if (channel == null || channel.Sources.Count <= 1) return;
+
+            int currentIdx = _sourceIndexes[screenIndex];
+            int nextIdx = currentIdx >= channel.Sources.Count - 1 ? 0 : currentIdx + 1;
+            PlaySource(screenIndex, channel, nextIdx);
+        }
+
+        private void PlaySource(int screenIndex, Channel channel, int sourceIndex)
+        {
+            if (screenIndex < 0 || screenIndex >= _screenCount) return;
+            if (sourceIndex < 0 || sourceIndex >= channel.Sources.Count) return;
+
+            _sourceIndexes[screenIndex] = sourceIndex;
+            var source = channel.Sources[sourceIndex];
+            if (!string.IsNullOrEmpty(source.Url))
+            {
+                _players[screenIndex]?.LoadFile(source.Url);
+            }
         }
 
         private void CloseScreen(int screenIndex)
@@ -527,6 +586,30 @@ namespace LibmpvIptvClient.Controls
             if (e.Key == Key.Escape && WindowStyle == WindowStyle.None)
             {
                 ExitFullscreen();
+                e.Handled = true;
+                return;
+            }
+
+            if (_focusedIndex < 0) return;
+
+            switch (e.Key)
+            {
+                case Key.Up:
+                    PrevChannel(_focusedIndex);
+                    e.Handled = true;
+                    break;
+                case Key.Down:
+                    NextChannel(_focusedIndex);
+                    e.Handled = true;
+                    break;
+                case Key.Left:
+                    PrevSource(_focusedIndex);
+                    e.Handled = true;
+                    break;
+                case Key.Right:
+                    NextSource(_focusedIndex);
+                    e.Handled = true;
+                    break;
             }
         }
 

@@ -627,6 +627,7 @@
   <sys:String x:Key="MultiScreen_ChannelNav">Channel Navigation</sys:String>
   <sys:String x:Key="MultiScreen_PrevChannel">Previous Channel</sys:String>
   <sys:String x:Key="MultiScreen_NextChannel">Next Channel</sys:String>
+  <sys:String x:Key="MultiScreen_SwitchSource">Switch Source</sys:String>
   <sys:String x:Key="MultiScreen_AspectRatio">Aspect Ratio</sys:String>
   <sys:String x:Key="MultiScreen_CloseThisScreen">Close This Screen</sys:String>
   <sys:String x:Key="MultiScreen_ResetAll">Reset All</sys:String>

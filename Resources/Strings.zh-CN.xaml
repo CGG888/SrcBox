@@ -624,6 +624,7 @@
   <sys:String x:Key="MultiScreen_ChannelNav">频道切换</sys:String>
   <sys:String x:Key="MultiScreen_PrevChannel">上一频道</sys:String>
   <sys:String x:Key="MultiScreen_NextChannel">下一频道</sys:String>
+  <sys:String x:Key="MultiScreen_SwitchSource">切换源</sys:String>
   <sys:String x:Key="MultiScreen_AspectRatio">画面比例</sys:String>
   <sys:String x:Key="MultiScreen_CloseThisScreen">关闭此屏幕</sys:String>
   <sys:String x:Key="MultiScreen_ResetAll">全部重置</sys:String>

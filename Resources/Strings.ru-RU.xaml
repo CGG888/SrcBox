@@ -617,6 +617,7 @@
   <sys:String x:Key="MultiScreen_ChannelNav">Переключение каналов</sys:String>
   <sys:String x:Key="MultiScreen_PrevChannel">Предыдущий канал</sys:String>
   <sys:String x:Key="MultiScreen_NextChannel">Следующий канал</sys:String>
+  <sys:String x:Key="MultiScreen_SwitchSource">Переключить источник</sys:String>
   <sys:String x:Key="MultiScreen_AspectRatio">Соотношение сторон</sys:String>
   <sys:String x:Key="MultiScreen_CloseThisScreen">Закрыть этот экран</sys:String>
   <sys:String x:Key="MultiScreen_ResetAll">Сбросить все</sys:String>
