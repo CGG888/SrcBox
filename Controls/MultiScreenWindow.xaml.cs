@@ -341,7 +341,8 @@ namespace LibmpvIptvClient.Controls
                 {
                     var src = currentChannel.Sources[i];
                     var srcLabel = string.IsNullOrEmpty(src.Name) ? $"源 {i + 1}" : src.Name;
-                    var item = new ToolStripMenuItem(srcLabel, null, (s, e) => PlaySource(screenIndex, currentChannel, i));
+                    int sourceIdx = i; // Capture value, not reference
+                    var item = new ToolStripMenuItem(srcLabel, null, (s, e) => PlaySource(screenIndex, currentChannel, sourceIdx));
                     if (i == _sourceIndexes[screenIndex])
                         item.Checked = true;
                     sourceMenu.DropDownItems.Add(item);
