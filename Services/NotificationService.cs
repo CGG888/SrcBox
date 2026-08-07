@@ -186,5 +186,20 @@ namespace LibmpvIptvClient.Services
     internal class DarkMenuRenderer : ToolStripProfessionalRenderer
     {
         public DarkMenuRenderer() : base(new DarkMenuColorTable()) { }
+
+        protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
+        {
+            var textColor = e.Item.Enabled ? Color.White : Color.FromArgb(160, 160, 160);
+            using (var brush = new SolidBrush(textColor))
+            {
+                var format = new StringFormat
+                {
+                    LineAlignment = StringAlignment.Center,
+                    FormatFlags = StringFormatFlags.NoWrap
+                };
+                e.Graphics.DrawString(e.Item.Text, e.Item.Font ?? SystemFonts.MenuFont, brush,
+                    new Rectangle(2, 0, e.Item.Bounds.Width - 4, e.Item.Bounds.Height), format);
+            }
+        }
     }
 }
