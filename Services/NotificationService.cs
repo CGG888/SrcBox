@@ -45,6 +45,7 @@ namespace LibmpvIptvClient.Services
             _icon.DoubleClick += (s, e) => { try { _openMain?.Invoke(); } catch { } };
             BuildContextMenu();
             App.LanguageChanged += OnLanguageChanged;
+            App.ThemeChanged += OnThemeChanged;
         }
 
         public void Show(string title, string message, int timeoutMs = 8000)
@@ -69,9 +70,32 @@ namespace LibmpvIptvClient.Services
             }
             catch { }
         }
+        bool IsDarkMode()
+        {
+            try
+            {
+                var mode = AppSettings.Current?.ThemeMode ?? "System";
+                if (string.Equals(mode, "Dark", StringComparison.OrdinalIgnoreCase)) return true;
+                if (string.Equals(mode, "Light", StringComparison.OrdinalIgnoreCase)) return false;
+                // System default - check registry
+                var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Themes\Personalize");
+                if (key != null)
+                {
+                    var v = key.GetValue("AppsUseLightTheme");
+                    if (v is int i) return i == 0; // 0 = dark, 1 = light
+                }
+            }
+            catch { }
+            return false;
+        }
         void BuildContextMenu()
         {
             _menu = new ContextMenuStrip();
+            var dark = IsDarkMode();
+            if (dark)
+                _menu.Renderer = new DarkMenuRenderer();
+            else
+                _menu.Renderer = new ToolStripProfessionalRenderer();
             var miOpen = new ToolStripMenuItem(LibmpvIptvClient.Helpers.Localizer.S("Tray_OpenMain", "打开主界面"));
             miOpen.Click += (s, e) => { try { _openMain?.Invoke(); } catch { } };
 
@@ -98,6 +122,10 @@ namespace LibmpvIptvClient.Services
             _icon.ContextMenuStrip = _menu;
         }
         void OnLanguageChanged()
+        {
+            try { BuildContextMenu(); } catch { }
+        }
+        void OnThemeChanged()
         {
             try { BuildContextMenu(); } catch { }
         }
@@ -146,5 +174,25 @@ namespace LibmpvIptvClient.Services
         {
             try { _icon.Visible = false; _icon.Dispose(); } catch { }
         }
+    }
+
+    internal class DarkMenuRenderer : ToolStripProfessionalRenderer
+    {
+        public DarkMenuRenderer() : base(new DarkMenuColorTable()) { }
+    }
+
+    internal class DarkMenuColorTable : ProfessionalColorTable
+    {
+        public override Color MenuItemSelected => Color.FromArgb(60, 60, 60);
+        public override Color MenuItemSelectedGradientBegin => Color.FromArgb(50, 50, 50);
+        public override Color MenuItemSelectedGradientEnd => Color.FromArgb(60, 60, 60);
+        public override Color MenuItemPressedGradientBegin => Color.FromArgb(35, 35, 35);
+        public override Color MenuItemPressedGradientEnd => Color.FromArgb(45, 45, 45);
+        public override Color MenuBorder => Color.FromArgb(80, 80, 80);
+        public override Color ToolStripDropDownBackground => Color.FromArgb(30, 30, 30);
+        public override Color ImageMarginGradientBegin => Color.FromArgb(30, 30, 30);
+        public override Color ImageMarginGradientEnd => Color.FromArgb(30, 30, 30);
+        public override Color CheckBackground => Color.FromArgb(60, 60, 60);
+        public override Color CheckSelectedBackground => Color.FromArgb(70, 70, 70);
     }
 }
