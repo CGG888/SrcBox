@@ -45,7 +45,10 @@ namespace LibmpvIptvClient
             try
             {
                 var manager = Services.ScheduledRecordingManager.Instance;
-                var recordings = manager.GetAll().ToList();
+                // Only show items that are currently recording
+                var recordings = manager.GetAll()
+                    .Where(r => r.Status == Models.ScheduledRecordingStatus.Recording)
+                    .ToList();
 
                 Grid.ItemsSource = null;
                 Grid.ItemsSource = recordings;
