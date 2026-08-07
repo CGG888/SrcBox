@@ -21,9 +21,15 @@ namespace LibmpvIptvClient
         void OnLoaded(object sender, EventArgs e)
         {
             try { LibmpvIptvClient.Helpers.ThemeHelper.ApplyTitleBarByTheme(this); } catch { }
+            RemindersChanged += OnRemindersChanged;
         }
         void OnClosed(object? sender, EventArgs e)
         {
+            RemindersChanged -= OnRemindersChanged;
+        }
+        void OnRemindersChanged()
+        {
+            try { Dispatcher.Invoke(LoadData); } catch { }
         }
         void BtnRefresh_Click(object sender, RoutedEventArgs e)
         {
@@ -105,7 +111,7 @@ namespace LibmpvIptvClient
                     AppSettings.Current.Save();
                     LibmpvIptvClient.Services.ReminderService.Instance.Start();
                     LoadData();
-                    try { RemindersChanged?.Invoke(); } catch { }
+                    try { NotifyRemindersChanged(); } catch { }
                 }
                 else if (Grid.SelectedItems != null && Grid.SelectedItems.Count > 0)
                 {
@@ -118,7 +124,7 @@ namespace LibmpvIptvClient
                     AppSettings.Current.Save();
                     LibmpvIptvClient.Services.ReminderService.Instance.Start();
                     LoadData();
-                    try { RemindersChanged?.Invoke(); } catch { }
+                    try { NotifyRemindersChanged(); } catch { }
                 }
             }
             catch { }
