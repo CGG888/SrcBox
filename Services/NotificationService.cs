@@ -94,7 +94,7 @@ namespace LibmpvIptvClient.Services
             var dark = IsDarkMode();
             if (dark)
             {
-                _menu.Renderer = new DarkMenuRenderer();
+                _menu.Renderer = new ToolStripProfessionalRenderer(new DarkMenuColorTable());
                 _menu.ForeColor = Color.White;
             }
             else
@@ -185,25 +185,10 @@ namespace LibmpvIptvClient.Services
         }
     }
 
-    internal class DarkMenuRenderer : ToolStripProfessionalRenderer
+    internal class DarkMenuColorTable : ProfessionalColorTable
     {
-        private readonly Color _darkBg = Color.FromArgb(20, 20, 20);
-
-        public DarkMenuRenderer() : base() { }
-
-        protected override void OnRenderToolStripBackground(ToolStripRenderEventArgs e)
-        {
-            using (var brush = new SolidBrush(_darkBg))
-                e.Graphics.FillRectangle(brush, e.ToolStrip.ClientRectangle);
-        }
-
-        protected override void OnRenderMenuItemBackground(ToolStripItemRenderEventArgs e)
-        {
-            // Only custom draw for dropdown items, let system draw top-level menu
-            if (!e.Item.IsOnDropDown) return;
-
-            using (var brush = new SolidBrush(_darkBg))
-                e.Graphics.FillRectangle(brush, e.Item.Bounds);
-        }
+        public override Color ToolStripDropDownBackground => Color.FromArgb(20, 20, 20);
+        public override Color ImageMarginGradientBegin => Color.FromArgb(20, 20, 20);
+        public override Color ImageMarginGradientEnd => Color.FromArgb(20, 20, 20);
     }
 }
