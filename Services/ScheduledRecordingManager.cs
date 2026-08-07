@@ -205,6 +205,15 @@ namespace LibmpvIptvClient.Services
                 else if (info.Type == RecordingType.Back && _activeInstances.TryGetValue(id, out var instance))
                 {
                     instance.Stop();
+                    // Update status to Cancelled immediately for better UX
+                    info.Status = ScheduledRecordingStatus.Cancelled;
+                    info.StatusLabel = GetStatusLabelCore(info.Status);
+                    info.ActualEndTime = DateTime.Now;
+                    if (info.ActualStartTime.HasValue)
+                        info.ActualDurationMin = (int)(info.ActualEndTime.Value - info.ActualStartTime.Value).TotalMinutes;
+                    _activeInstances.TryRemove(id, out var _removed);
+                    RecordingStopped?.Invoke(this, info);
+                    RecordingUpdated?.Invoke(this, info);
                 }
             }
         }

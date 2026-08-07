@@ -671,6 +671,10 @@ namespace LibmpvIptvClient
                     ? channel.Name
                     : e.ChannelName;
 
+                // Use custom duration if set, otherwise use EPG scheduled end time
+                var scheduledEnd = e.RecordDurationMin.HasValue
+                    ? e.ScheduledStart.AddMinutes(e.RecordDurationMin.Value)
+                    : e.ScheduledEnd;
                 var info = new Models.ScheduledRecordingInfo
                 {
                     ReminderId = e.ReminderId,
@@ -679,8 +683,8 @@ namespace LibmpvIptvClient
                     ChannelLogo = channel.Logo ?? "",
                     ProgramTitle = e.ProgramTitle,
                     ScheduledStart = e.ScheduledStart,
-                    ScheduledEnd = e.ScheduledEnd,
-                    ScheduledDurationMin = (int)(e.ScheduledEnd - e.ScheduledStart).TotalMinutes
+                    ScheduledEnd = scheduledEnd,
+                    ScheduledDurationMin = e.RecordDurationMin ?? (int)(e.ScheduledEnd - e.ScheduledStart).TotalMinutes
                 };
 
                 if (e.Action == "record_front")
