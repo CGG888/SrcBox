@@ -17,11 +17,11 @@ namespace LibmpvIptvClient
                 LoadData();
             };
             try { Services.ScheduledRecordingManager.Instance.RecordingUpdated += OnRecordingUpdated; } catch { }
-            try { Services.ScheduledRecordingManager.Instance.RecordingStarted += OnRecordingUpdated; } catch { }
+            try { Services.ScheduledRecordingManager.Instance.RecordingStarted += OnRecordingStarted; } catch { }
             Closed += (s, e) =>
             {
                 try { Services.ScheduledRecordingManager.Instance.RecordingUpdated -= OnRecordingUpdated; } catch { }
-                try { Services.ScheduledRecordingManager.Instance.RecordingStarted -= OnRecordingUpdated; } catch { }
+                try { Services.ScheduledRecordingManager.Instance.RecordingStarted -= OnRecordingStarted; } catch { }
             };
         }
 
@@ -29,6 +29,17 @@ namespace LibmpvIptvClient
         {
             try
             {
+                LibmpvIptvClient.Diagnostics.Logger.Debug($"[RecordingList] OnRecordingUpdated: {e.ChannelName} status={e.Status}");
+                Dispatcher.Invoke(LoadData);
+            }
+            catch { }
+        }
+
+        private void OnRecordingStarted(object? sender, Models.ScheduledRecordingInfo e)
+        {
+            try
+            {
+                LibmpvIptvClient.Diagnostics.Logger.Debug($"[RecordingList] OnRecordingStarted: {e.ChannelName} status={e.Status}");
                 Dispatcher.Invoke(LoadData);
             }
             catch { }
