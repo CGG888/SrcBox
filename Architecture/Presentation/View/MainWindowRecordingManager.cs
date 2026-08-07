@@ -344,13 +344,6 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 _recordProgramTitle = info.ProgramTitle ?? "";
                 try { WriteRecordingMeta(_recordFilePath, _recordStartUtc, null, false); } catch { }
 
-                // Check if we can start front recording first
-                if (!ScheduledRecordingManager.Instance.CanStartFrontRecording())
-                {
-                    try { LibmpvIptvClient.Diagnostics.Logger.Warn($"[ScheduledRecord] cannot start front recording - already active"); } catch { }
-                    return;
-                }
-
                 // Update status BEFORE starting stream record to ensure UI shows "录制中"
                 info.Status = Models.ScheduledRecordingStatus.Recording;
                 info.StatusLabel = Services.ScheduledRecordingManager.GetStatusLabelCore(info.Status);
@@ -366,7 +359,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 ScheduledRecordingManager.Instance.StartFrontRecording(info,
                     onRecordingStarted: id =>
                     {
-                        // This is still called for compatibility, but _scheduledFrontRecordingId is already set
+                        // _scheduledFrontRecordingId is already set above
                     },
                     onRecordingStopped: id =>
                     {
