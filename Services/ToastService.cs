@@ -56,7 +56,8 @@ namespace LibmpvIptvClient.Services
                 var owner = System.Windows.Application.Current?.Windows.OfType<FullscreenWindow>().FirstOrDefault(w => w.IsVisible)
                             as System.Windows.Window
                             ?? System.Windows.Application.Current?.Windows.OfType<MainWindow>().FirstOrDefault();
-                var win = new ReminderToastWindow(channelId, channelName, program, startLocal, logoPath, true, null, null, true, playMode ?? "default", countdownSec);
+                bool isRecordBack = string.Equals(recordType, "back", StringComparison.OrdinalIgnoreCase);
+                var win = new ReminderToastWindow(channelId, channelName, program, startLocal, logoPath, true, null, null, true, playMode ?? "default", countdownSec, isRecordBack);
                 try { if (owner != null) { win.Owner = owner; win.Topmost = true; } } catch { }
                 ApplyKind(win, ToastKind.RecordStart, null);
                 try { win.EnableAutoPlayManualClose(); } catch { }

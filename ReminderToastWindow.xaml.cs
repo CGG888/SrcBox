@@ -23,7 +23,8 @@ namespace LibmpvIptvClient
             private bool _autoPlayOnCountdown = false;
             private bool _autoPlayed = false;
             private string? _playMode = "default";
-        public ReminderToastWindow(string channelId, string channelName, string program, DateTime startLocal, string? logoPath, bool isDue = false, Func<System.Windows.Rect>? anchorProvider = null, string? statusOverride = null, bool showCountdown = true, string? playMode = null, int? countdownSec = null)
+            private bool _isRecordBack = false;
+        public ReminderToastWindow(string channelId, string channelName, string program, DateTime startLocal, string? logoPath, bool isDue = false, Func<System.Windows.Rect>? anchorProvider = null, string? statusOverride = null, bool showCountdown = true, string? playMode = null, int? countdownSec = null, bool isRecordBack = false)
         {
             InitializeComponent();
             _channelId = channelId ?? "";
@@ -31,6 +32,7 @@ namespace LibmpvIptvClient
             _isDue = isDue;
             _anchorProvider = anchorProvider;
             _playMode = string.IsNullOrWhiteSpace(playMode) ? "default" : playMode;
+            _isRecordBack = isRecordBack;
             if (countdownSec.HasValue && countdownSec.Value > 0) _remainSec = countdownSec.Value;
             TxtChannel.Text = channelName ?? "";
             TxtProgram.Text = program ?? "";
@@ -99,7 +101,7 @@ namespace LibmpvIptvClient
                             }
                                 if (_remainSec <= 0 && _autoHideMs < 0)
                                 {
-                                    if (_autoPlayOnCountdown && !_autoPlayed)
+                                    if (_autoPlayOnCountdown && !_autoPlayed && !_isRecordBack)
                                     {
                                         _autoPlayed = true;
                                         try
