@@ -633,6 +633,7 @@
   <sys:String x:Key="ScheduledRecordingList_Refresh">Refresh</sys:String>
   <sys:String x:Key="ScheduledRecordingList_Stop">Stop</sys:String>
   <sys:String x:Key="Recording_Cancel">Cancel</sys:String>
+  <sys:String x:Key="Recording_Stopped">Stopped</sys:String>
   <sys:String x:Key="Recording_OpenFile">Open File</sys:String>
   <sys:String x:Key="Recording_OpenFolder">Open Folder</sys:String>
   <sys:String x:Key="ScheduledRecordingList_Column_Channel">Channel</sys:String>

@@ -622,6 +622,7 @@
   <sys:String x:Key="ScheduledRecordingList_Refresh">重新整理</sys:String>
   <sys:String x:Key="ScheduledRecordingList_Stop">停止</sys:String>
   <sys:String x:Key="Recording_Cancel">取消</sys:String>
+  <sys:String x:Key="Recording_Stopped">已停止</sys:String>
   <sys:String x:Key="Recording_OpenFile">打開檔案</sys:String>
   <sys:String x:Key="Recording_OpenFolder">打開資料夾</sys:String>
   <sys:String x:Key="ScheduledRecordingList_Column_Channel">頻道</sys:String>

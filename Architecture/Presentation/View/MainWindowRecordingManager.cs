@@ -35,7 +35,10 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
         
         // Scheduled Recording Tracking
         private string? _scheduledFrontRecordingId = null;
-        
+
+        // Recording Size Update Timer
+        private DispatcherTimer? _recordingSizeTimer;
+
         // Watcher & Refresh
         private FileSystemWatcher? _recordingsWatcher;
         private DispatcherTimer? _recordingsRefreshTimer;
@@ -61,6 +64,33 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             try { StartRecordingsWatcher(); } catch { }
             try { _ = LoadRecordingsLocalGrouped(); } catch { }
             // Note: StopFrontRecordingRequested is handled in MainWindow.EventsAndStartup.partial.cs
+
+            // Initialize recording size update timer
+            _recordingSizeTimer = new DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+            _recordingSizeTimer.Tick += OnRecordingSizeTimerTick;
+        }
+
+        private void OnRecordingSizeTimerTick(object? sender, EventArgs e)
+        {
+            try
+            {
+                if (!_recordingNow || string.IsNullOrEmpty(_recordFilePath) || string.IsNullOrEmpty(_scheduledFrontRecordingId))
+                {
+                    _recordingSizeTimer?.Stop();
+                    return;
+                }
+
+                if (!File.Exists(_recordFilePath)) return;
+
+                var info = Services.ScheduledRecordingManager.Instance.Get(_scheduledFrontRecordingId);
+                if (info == null) return;
+
+                var fileInfo = new FileInfo(_recordFilePath);
+                info.SizeBytes = fileInfo.Length;
+                info.SizeLabel = Services.ScheduledRecordingManager.FormatSizeCore(info.SizeBytes);
+                info.StatusLabel = Services.ScheduledRecordingManager.GetStatusLabelCore(info.Status);
+            }
+            catch { }
         }
 
         public void Close()
@@ -312,8 +342,16 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 _recordingNow = true;
 
                 ScheduledRecordingManager.Instance.StartFrontRecording(info,
-                    onRecordingStarted: id => { _scheduledFrontRecordingId = id; },
-                    onRecordingStopped: id => { _scheduledFrontRecordingId = null; });
+                    onRecordingStarted: id =>
+                    {
+                        _scheduledFrontRecordingId = id;
+                        _recordingSizeTimer?.Start();
+                    },
+                    onRecordingStopped: id =>
+                    {
+                        _scheduledFrontRecordingId = null;
+                        _recordingSizeTimer?.Stop();
+                    });
 
                 try { LibmpvIptvClient.Diagnostics.Logger.Info($"[ScheduledRecord] front recording started: {info.ProgramTitle}"); } catch { }
 

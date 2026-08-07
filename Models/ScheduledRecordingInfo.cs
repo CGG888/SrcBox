@@ -16,7 +16,8 @@ namespace LibmpvIptvClient.Models
         Recording,
         Completed,
         Failed,
-        Cancelled
+        Cancelled,   // 取消（录制前取消）
+        Stopped      // 停止（录制中停止）
     }
 
     public class ScheduledRecordingInfo : INotifyPropertyChanged

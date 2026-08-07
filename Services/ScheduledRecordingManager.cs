@@ -194,7 +194,7 @@ namespace LibmpvIptvClient.Services
             {
                 if (info.Type == RecordingType.Front)
                 {
-                    info.Status = ScheduledRecordingStatus.Cancelled;
+                    info.Status = ScheduledRecordingStatus.Stopped;
                     info.StatusLabel = GetStatusLabelCore(info.Status);
                     info.ActualEndTime = DateTime.Now;
                     if (info.ActualStartTime.HasValue)
@@ -206,8 +206,8 @@ namespace LibmpvIptvClient.Services
                 else if (info.Type == RecordingType.Back && _activeInstances.TryGetValue(id, out var instance))
                 {
                     instance.Stop();
-                    // Update status to Cancelled immediately for better UX
-                    info.Status = ScheduledRecordingStatus.Cancelled;
+                    // Update status to Stopped immediately for better UX
+                    info.Status = ScheduledRecordingStatus.Stopped;
                     info.StatusLabel = GetStatusLabelCore(info.Status);
                     info.ActualEndTime = DateTime.Now;
                     if (info.ActualStartTime.HasValue)
@@ -267,6 +267,7 @@ namespace LibmpvIptvClient.Services
                 ScheduledRecordingStatus.Completed => Helpers.ResxLocalizer.Get("Recording_Completed", "已完成"),
                 ScheduledRecordingStatus.Failed => Helpers.ResxLocalizer.Get("Recording_Failed", "失败"),
                 ScheduledRecordingStatus.Cancelled => Helpers.ResxLocalizer.Get("Recording_Cancelled", "已取消"),
+                ScheduledRecordingStatus.Stopped => Helpers.ResxLocalizer.Get("Recording_Stopped", "已停止"),
                 _ => ""
             };
         }

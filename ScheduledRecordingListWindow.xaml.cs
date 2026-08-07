@@ -17,7 +17,12 @@ namespace LibmpvIptvClient
                 LoadData();
             };
             try { Services.ScheduledRecordingManager.Instance.RecordingUpdated += OnRecordingUpdated; } catch { }
-            Closed += (s, e) => { try { Services.ScheduledRecordingManager.Instance.RecordingUpdated -= OnRecordingUpdated; } catch { } };
+            try { Services.ScheduledRecordingManager.Instance.RecordingStarted += OnRecordingUpdated; } catch { }
+            Closed += (s, e) =>
+            {
+                try { Services.ScheduledRecordingManager.Instance.RecordingUpdated -= OnRecordingUpdated; } catch { }
+                try { Services.ScheduledRecordingManager.Instance.RecordingStarted -= OnRecordingUpdated; } catch { }
+            };
         }
 
         private void OnRecordingUpdated(object? sender, Models.ScheduledRecordingInfo e)
