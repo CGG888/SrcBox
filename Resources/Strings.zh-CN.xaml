@@ -186,6 +186,9 @@
   <sys:String x:Key="Reminder_Action_RecordFront">前台录制</sys:String>
   <sys:String x:Key="Reminder_Action_RecordBack">后台录制</sys:String>
   <sys:String x:Key="Tray_OpenMain">打开主界面</sys:String>
+  <sys:String x:Key="Tray_OpenReminder">预约管理</sys:String>
+  <sys:String x:Key="Tray_OpenRecordingList">正在录制</sys:String>
+  <sys:String x:Key="Tray_ChannelData">频道数据</sys:String>
   <sys:String x:Key="CloseConfirm_Title">关闭确认</sys:String>
   <sys:String x:Key="CloseConfirm_Message">选择操作：&#x0a;&#x0a;是：退出软件&#x0a;否：最小化到系统托盘</sys:String>
   <sys:String x:Key="CloseConfirm_Label">选择操作：</sys:String>

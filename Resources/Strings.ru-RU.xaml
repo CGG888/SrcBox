@@ -315,6 +315,9 @@
   <sys:String x:Key="Reminder_Added">Напоминание добавлено</sys:String>
   <sys:String x:Key="EPG_Status_Booked">Запланировано</sys:String>
   <sys:String x:Key="Tray_OpenMain">Открыть главное окно</sys:String>
+  <sys:String x:Key="Tray_OpenReminder">Управление напоминаниями</sys:String>
+  <sys:String x:Key="Tray_OpenRecordingList">Активные записи</sys:String>
+  <sys:String x:Key="Tray_ChannelData">Данные каналов</sys:String>
   <sys:String x:Key="CloseConfirm_Title">Подтверждение закрытия</sys:String>
   <sys:String x:Key="CloseConfirm_Message">Выберите действие:\n\nДа: выйти из приложения\nНет: свернуть в трей</sys:String>
   <sys:String x:Key="CloseConfirm_Label">Выберите действие:</sys:String>

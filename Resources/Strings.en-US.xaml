@@ -348,6 +348,9 @@
   <sys:String x:Key="Reminder_Action_RecordBack">Back Recording</sys:String>
   <sys:String x:Key="EPG_Status_Booked">Booked</sys:String>
   <sys:String x:Key="Tray_OpenMain">Open Main Window</sys:String>
+  <sys:String x:Key="Tray_OpenReminder">Reminder Management</sys:String>
+  <sys:String x:Key="Tray_OpenRecordingList">Active Recordings</sys:String>
+  <sys:String x:Key="Tray_ChannelData">Channel Data</sys:String>
   <sys:String x:Key="CloseConfirm_Title">Close Confirmation</sys:String>
   <sys:String x:Key="CloseConfirm_Message">Choose an action:\n\nYes: Exit app\nNo: Minimize to system tray</sys:String>
   <sys:String x:Key="CloseConfirm_Label">Choose an action:</sys:String>
