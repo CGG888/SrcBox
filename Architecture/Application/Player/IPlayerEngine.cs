@@ -22,6 +22,7 @@ namespace LibmpvIptvClient.Architecture.Application.Player
         bool IsEofReached();
         void LoadWithPrefetch(string url, System.Collections.Generic.IEnumerable<string> nextUrls);
         void SetPropertyString(string name, string value);
+        void SetRecordingMode(bool recording);
         string? GetPropertyString(string name);
         double? GetPropertyDouble(string name);
         long? GetPropertyLong(string name);

@@ -146,6 +146,11 @@ namespace LibmpvIptvClient.Architecture.Platform.Player
             _mpv.SetString(name, value);
         }
 
+        public void SetRecordingMode(bool recording)
+        {
+            _mpv.SetRecordingMode(recording);
+        }
+
         public string? GetPropertyString(string name)
         {
             return _mpv.GetString(name);

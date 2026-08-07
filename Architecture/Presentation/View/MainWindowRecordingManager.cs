@@ -381,6 +381,8 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 info.StatusLabel = Services.ScheduledRecordingManager.GetStatusLabelCore(info.Status);
                 info.ActualStartTime = DateTime.Now;
 
+                // Enable recording mode for larger cache
+                _shell.PlayerEngine?.SetRecordingMode(true);
                 TryStartStreamRecord(_recordFilePath);
                 _recordingNow = true;
 
@@ -480,7 +482,9 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             try { WriteRecordingMeta(_recordFilePath, _recordStartUtc, null, false); } catch { }
             
             try { LibmpvIptvClient.Diagnostics.Logger.Info("开始录制: " + Path.GetFileName(_recordFilePath)); } catch { }
-            
+
+            // Enable recording mode for larger cache
+            _shell.PlayerEngine?.SetRecordingMode(true);
             TryStartStreamRecord(_recordFilePath);
             _recordingNow = true;
             
@@ -535,7 +539,10 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             _recordViaHttp = false;
             _frontRecordingEndTime = null;
             _frontRecordingTimer?.Stop();
-            
+
+            // Disable recording mode to restore small cache
+            _shell.PlayerEngine?.SetRecordingMode(false);
+
             UpdateRecordButtonState(false);
             
             try { LibmpvIptvClient.Diagnostics.Logger.Info("停止录制"); } catch { }
