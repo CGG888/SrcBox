@@ -1,3 +1,3 @@
 # Release Notes
 
-All release notes are available on [GitHub Releases](https://github.com/CGG888/SrcBox/releases).
+- [v1.1.9](./v1.1.9.md) - 2026-08-08
