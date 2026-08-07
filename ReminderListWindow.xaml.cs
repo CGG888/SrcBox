@@ -9,6 +9,7 @@ namespace LibmpvIptvClient
     public partial class ReminderListWindow : Window
     {
         public static event Action? RemindersChanged;
+        public static void NotifyRemindersChanged() { try { RemindersChanged?.Invoke(); } catch { } }
         private ObservableCollection<ScheduledReminder> _items = new ObservableCollection<ScheduledReminder>();
         public ReminderListWindow()
         {
@@ -82,7 +83,7 @@ namespace LibmpvIptvClient
                         AppSettings.Current.Save();
                         LibmpvIptvClient.Services.ReminderService.Instance.Start();
                         LoadData();
-                        try { RemindersChanged?.Invoke(); } catch { }
+                        try { NotifyRemindersChanged(); } catch { }
                     }
                 }
             }

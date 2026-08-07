@@ -43,6 +43,7 @@ public sealed class MainWindowEpgReminderActionsViewModel : ViewModelBase
         AppSettings.Current.ScheduledReminders = list;
         AppSettings.Current.Save();
         try { ReminderService.Instance.Start(); } catch { }
+        try { ReminderListWindow.NotifyRemindersChanged(); } catch { }
     }
 
     public void NotifyReminder(ScheduledReminder reminder, string? fallbackLogo)
