@@ -44,6 +44,7 @@ namespace LibmpvIptvClient.Services
             _icon.Text = "SrcBox";
             _icon.DoubleClick += (s, e) => { try { _openMain?.Invoke(); } catch { } };
             BuildContextMenu();
+            App.LanguageChanged += OnLanguageChanged;
         }
 
         public void Show(string title, string message, int timeoutMs = 8000)
@@ -95,6 +96,10 @@ namespace LibmpvIptvClient.Services
             _menu.Items.Add(new ToolStripSeparator());
             _menu.Items.Add(miExit);
             _icon.ContextMenuStrip = _menu;
+        }
+        void OnLanguageChanged()
+        {
+            try { BuildContextMenu(); } catch { }
         }
         public void SetMenuCallbacks(Action openMain, Action openSettings, Action exitApp,
                                      Action? openReminder = null, Action? openRecordingList = null,
