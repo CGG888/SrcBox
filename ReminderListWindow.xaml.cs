@@ -2,6 +2,7 @@ using System;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Windows;
+using LibmpvIptvClient.Services;
 
 namespace LibmpvIptvClient
 {
@@ -12,7 +13,19 @@ namespace LibmpvIptvClient
         public ReminderListWindow()
         {
             InitializeComponent();
-            Loaded += (s, e) => { try { LibmpvIptvClient.Helpers.ThemeHelper.ApplyTitleBarByTheme(this); } catch { } };
+            Loaded += OnLoaded;
+            Closed += OnClosed;
+            LoadData();
+        }
+        void OnLoaded(object sender, EventArgs e)
+        {
+            try { LibmpvIptvClient.Helpers.ThemeHelper.ApplyTitleBarByTheme(this); } catch { }
+        }
+        void OnClosed(object? sender, EventArgs e)
+        {
+        }
+        void BtnRefresh_Click(object sender, RoutedEventArgs e)
+        {
             LoadData();
         }
         protected override void OnSourceInitialized(EventArgs e)

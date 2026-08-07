@@ -10,6 +10,7 @@
   </Window.Resources>
   <DockPanel Margin="12">
     <StackPanel Orientation="Horizontal" DockPanel.Dock="Top" Margin="0,0,0,8">
+      <Button Content="{DynamicResource UI_Refresh}" Width="64" Margin="0,0,8,0" Click="BtnRefresh_Click" Style="{StaticResource ChipButton}"/>
       <Button Content="{DynamicResource ReminderList_Edit}" Width="80" Margin="0,0,8,0" Click="BtnEdit_Click" Style="{StaticResource ChipButton}"/>
       <Button Content="{DynamicResource ReminderList_Delete}" Width="80" Margin="0,0,8,0" Click="BtnDelete_Click" Style="{StaticResource ChipButton}"/>
       <Button Content="{DynamicResource ReminderList_SelectAll}" Width="72" Margin="12,0,4,0" Click="BtnSelectAll_Click" Style="{StaticResource ChipButton}"/>
