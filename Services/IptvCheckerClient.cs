@@ -83,11 +83,17 @@ namespace LibmpvIptvClient.Services
                 {
                     foreach (var s in sarr)
                     {
-                        if (s is not JsonObject so) continue;
-                        var url = so.TryGetPropertyValue("url", out var u) ? u?.ToString() ?? "" : "";
+                        string url = "";
+                        if (s is JsonObject so)
+                        {
+                            url = so.TryGetPropertyValue("url", out var u) ? u?.ToString() ?? "" : "";
+                        }
+                        else if (s is JsonValue sv)
+                        {
+                            url = sv.ToString();
+                        }
                         if (string.IsNullOrWhiteSpace(url)) continue;
-                        var protoStr = so.TryGetPropertyValue("protocol", out var p) ? p?.ToString() ?? "" : "";
-                        var proto = GuessProtocolFromString(protoStr, url);
+                        var proto = GuessProtocolFromString("", url);
                         var src = new Source
                         {
                             Id = Convert.ToHexString(System.Text.Encoding.UTF8.GetBytes(ch.Id + "|" + url)),
