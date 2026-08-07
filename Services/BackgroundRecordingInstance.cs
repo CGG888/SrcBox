@@ -98,6 +98,17 @@ namespace LibmpvIptvClient.Services
 
                     while (!_cts.Token.IsCancellationRequested)
                     {
+                        // Check if duration has elapsed
+                        if (_durationSeconds > 0)
+                        {
+                            var elapsed = (DateTime.Now - StartTime.Value).TotalSeconds;
+                            if (elapsed >= _durationSeconds)
+                            {
+                                LibmpvIptvClient.Diagnostics.Logger.Info($"[BackRecord] duration {_durationSeconds}s reached (elapsed={elapsed:F0}s), stopping");
+                                break;
+                            }
+                        }
+
                         var bytesRead = await inputStream.ReadAsync(buffer, _cts.Token);
                         if (bytesRead == 0)
                             break;
@@ -105,12 +116,12 @@ namespace LibmpvIptvClient.Services
                         await outputStream.WriteAsync(buffer.AsMemory(0, bytesRead), _cts.Token);
                         totalBytesRead += bytesRead;
 
-                        var elapsed = DateTime.Now - StartTime.Value;
-                        var progress = _durationSeconds > 0 ? Math.Min(1.0, elapsed.TotalSeconds / _durationSeconds) : 0;
+                        var elapsedTime = DateTime.Now - StartTime.Value;
+                        var progress = _durationSeconds > 0 ? Math.Min(1.0, elapsedTime.TotalSeconds / _durationSeconds) : 0;
 
                         if ((DateTime.Now - lastProgressReport).TotalMilliseconds >= 1000)
                         {
-                            Progress?.Invoke(this, new RecordingProgressEventArgs(_id, totalBytesRead, elapsed, progress));
+                            Progress?.Invoke(this, new RecordingProgressEventArgs(_id, totalBytesRead, elapsedTime, progress));
                             lastProgressReport = DateTime.Now;
                         }
                     }
