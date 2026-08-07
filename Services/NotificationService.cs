@@ -93,23 +93,32 @@ namespace LibmpvIptvClient.Services
             _menu = new ContextMenuStrip();
             var dark = IsDarkMode();
             if (dark)
+            {
                 _menu.Renderer = new DarkMenuRenderer();
+                _menu.ForeColor = Color.White;
+            }
             else
                 _menu.Renderer = new ToolStripProfessionalRenderer();
             var miOpen = new ToolStripMenuItem(LibmpvIptvClient.Helpers.Localizer.S("Tray_OpenMain", "打开主界面"));
+            if (dark) miOpen.ForeColor = Color.White;
             miOpen.Click += (s, e) => { try { _openMain?.Invoke(); } catch { } };
 
             var miReminder = new ToolStripMenuItem(LibmpvIptvClient.Helpers.Localizer.S("Tray_OpenReminder", "预约管理"));
+            if (dark) miReminder.ForeColor = Color.White;
             miReminder.Click += (s, e) => { try { _openReminder?.Invoke(); } catch { } };
 
             var miRecordingList = new ToolStripMenuItem(LibmpvIptvClient.Helpers.Localizer.S("Tray_OpenRecordingList", "正在录制"));
+            if (dark) miRecordingList.ForeColor = Color.White;
             miRecordingList.Click += (s, e) => { try { _openRecordingList?.Invoke(); } catch { } };
 
             var miM3uManage = new ToolStripMenuItem(LibmpvIptvClient.Helpers.Localizer.S("Tray_ChannelData", "频道数据"));
+            if (dark) miM3uManage.ForeColor = Color.White;
             miM3uManage.Click += (s, e) => { try { _openM3uManage?.Invoke(); } catch { } };
             var miSettings = new ToolStripMenuItem(LibmpvIptvClient.Helpers.Localizer.S("Menu_Settings", "设置"));
+            if (dark) miSettings.ForeColor = Color.White;
             miSettings.Click += (s, e) => { try { _openSettings?.Invoke(); } catch { } };
             var miExit = new ToolStripMenuItem(LibmpvIptvClient.Helpers.Localizer.S("Menu_Exit", "退出"));
+            if (dark) miExit.ForeColor = Color.White;
             miExit.Click += (s, e) => { try { _exitApp?.Invoke(); } catch { } };
             _menu.Items.Add(miOpen);
             _menu.Items.Add(miReminder);
@@ -176,31 +185,25 @@ namespace LibmpvIptvClient.Services
         }
     }
 
-    internal class DarkMenuColorTable : ProfessionalColorTable
-    {
-        public override Color ToolStripDropDownBackground => Color.FromArgb(20, 20, 20);
-        public override Color ImageMarginGradientBegin => Color.FromArgb(20, 20, 20);
-        public override Color ImageMarginGradientEnd => Color.FromArgb(20, 20, 20);
-    }
-
     internal class DarkMenuRenderer : ToolStripProfessionalRenderer
     {
-        public DarkMenuRenderer() : base(new DarkMenuColorTable()) { }
+        private readonly Color _darkBg = Color.FromArgb(20, 20, 20);
 
-        protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
+        public DarkMenuRenderer() : base() { }
+
+        protected override void OnRenderToolStripBackground(ToolStripRenderEventArgs e)
         {
-            var textColor = e.Item.Enabled ? Color.White : Color.FromArgb(160, 160, 160);
-            using (var brush = new SolidBrush(textColor))
-            {
-                var format = new StringFormat
-                {
-                    Alignment = StringAlignment.Near,
-                    LineAlignment = StringAlignment.Center,
-                    FormatFlags = StringFormatFlags.NoWrap
-                };
-                var textRect = new Rectangle(e.Item.ContentRectangle.X + 2, 0, e.Item.Bounds.Width - 4, e.Item.Bounds.Height);
-                e.Graphics.DrawString(e.Item.Text, e.Item.Font ?? SystemFonts.MenuFont, brush, textRect, format);
-            }
+            using (var brush = new SolidBrush(_darkBg))
+                e.Graphics.FillRectangle(brush, e.ToolStrip.ClientRectangle);
+        }
+
+        protected override void OnRenderMenuItemBackground(ToolStripItemRenderEventArgs e)
+        {
+            // Only custom draw for dropdown items, let system draw top-level menu
+            if (!e.Item.IsOnDropDown) return;
+
+            using (var brush = new SolidBrush(_darkBg))
+                e.Graphics.FillRectangle(brush, e.Item.Bounds);
         }
     }
 }
