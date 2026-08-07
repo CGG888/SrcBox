@@ -201,12 +201,14 @@
 
                     <!-- 多屏播放 -->
                     <TextBlock Text="{DynamicResource Shortcuts_MultiScreen}" Foreground="{DynamicResource AccentBrush}" FontSize="14" FontWeight="SemiBold" Margin="0,0,0,8"/>
-                    <Grid>
+                    <Grid Margin="0,0,0,16">
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="130"/>
                             <ColumnDefinition Width="*"/>
                         </Grid.ColumnDefinitions>
                         <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
