@@ -346,7 +346,7 @@ jobs:
               });
               console.log(`Deleted existing tag: ${tagName}`);
             } catch (e) {
-              if (e.status !== 404) throw e;
+              if (e.status !== 404 && e.status !== 422) throw e;
               console.log(`No existing tag found: ${tagName}`);
             }
 
