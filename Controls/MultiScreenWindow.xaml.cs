@@ -120,6 +120,7 @@ namespace LibmpvIptvClient.Controls
         private void OnLoaded(object? sender, RoutedEventArgs e)
         {
             CreatePlayers();
+            SetFocus(0);  // Auto-select first screen so keyboard shortcuts work immediately
             Focus();
         }
 
