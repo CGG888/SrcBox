@@ -176,92 +176,15 @@ namespace LibmpvIptvClient.Services
         }
     }
 
+    internal class DarkMenuColorTable : ProfessionalColorTable
+    {
+        public override Color ToolStripDropDownBackground => Color.FromArgb(20, 20, 20);
+        public override Color ImageMarginGradientBegin => Color.FromArgb(20, 20, 20);
+        public override Color ImageMarginGradientEnd => Color.FromArgb(20, 20, 20);
+    }
+
     internal class DarkMenuRenderer : ToolStripProfessionalRenderer
     {
-        private readonly Color _textColor = Color.FromArgb(230, 230, 230);
-        private readonly Color _disabledTextColor = Color.FromArgb(130, 130, 130);
-        private readonly Color _bgColor = Color.FromArgb(30, 30, 30);
-        private readonly Color _selectedBgColor = Color.FromArgb(50, 50, 50);
-        private readonly Color _pressedBgColor = Color.FromArgb(40, 40, 40);
-        private readonly Color _borderColor = Color.FromArgb(70, 70, 70);
-        private readonly Color _separatorColor = Color.FromArgb(70, 70, 70);
-
-        public DarkMenuRenderer() : base() { }
-
-        protected override void OnRenderMenuItemBackground(ToolStripItemRenderEventArgs e)
-        {
-            var g = e.Graphics;
-            var item = e.Item;
-            var rect = new Rectangle(0, 0, item.Bounds.Width, item.Bounds.Height);
-
-            if (item.Selected)
-            {
-                using (var brush = new SolidBrush(_selectedBgColor))
-                    g.FillRectangle(brush, rect);
-            }
-            else if (item.OwnerItem == null && item.IsOnDropDown)
-            {
-                // Top-level menu item not selected
-                using (var brush = new SolidBrush(_bgColor))
-                    g.FillRectangle(brush, rect);
-            }
-            else if (item.IsOnDropDown)
-            {
-                using (var brush = new SolidBrush(_bgColor))
-                    g.FillRectangle(brush, rect);
-            }
-            else
-            {
-                using (var brush = new SolidBrush(_bgColor))
-                    g.FillRectangle(brush, rect);
-            }
-        }
-
-        protected override void OnRenderItemText(ToolStripItemTextRenderEventArgs e)
-        {
-            var item = e.TextColor;
-            var g = e.Graphics;
-            var textColor = e.Item.Enabled ? _textColor : _disabledTextColor;
-            var rect = new Rectangle(2, 0, e.Item.Bounds.Width - 4, e.Item.Bounds.Height);
-            using (var brush = new SolidBrush(textColor))
-            {
-                var format = new StringFormat
-                {
-                    LineAlignment = StringAlignment.Center,
-                    FormatFlags = StringFormatFlags.NoWrap
-                };
-                g.DrawString(e.Item.Text, e.Item.Font ?? SystemFonts.MenuFont, brush, rect, format);
-            }
-        }
-
-        protected override void OnRenderSeparator(ToolStripSeparatorRenderEventArgs e)
-        {
-            var g = e.Graphics;
-            var rect = new Rectangle(0, 0, e.Item.Bounds.Width, e.Item.Bounds.Height);
-            using (var brush = new SolidBrush(_bgColor))
-                g.FillRectangle(brush, rect);
-            using (var pen = new Pen(_separatorColor, 1))
-            {
-                var y = e.Item.Bounds.Height / 2;
-                g.DrawLine(pen, 8, y, e.Item.Bounds.Width - 8, y);
-            }
-        }
-
-        protected override void OnRenderImageMargin(ToolStripRenderEventArgs e)
-        {
-            using (var brush = new SolidBrush(_bgColor))
-                e.Graphics.FillRectangle(brush, e.ConnectedArea);
-        }
-
-        protected override void OnRenderToolStripBorder(ToolStripRenderEventArgs e)
-        {
-            using (var pen = new Pen(_borderColor, 1))
-                e.Graphics.DrawRectangle(pen, 0, 0, e.ToolStrip.Width - 1, e.ToolStrip.Height - 1);
-        }
-
-        protected override void OnRenderItemCheck(ToolStripItemImageRenderEventArgs e)
-        {
-            // Draw nothing, let system handle checkmark or skip custom drawing
-        }
+        public DarkMenuRenderer() : base(new DarkMenuColorTable()) { }
     }
 }
