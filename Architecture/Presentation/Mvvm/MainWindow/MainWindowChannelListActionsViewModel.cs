@@ -121,6 +121,18 @@ public sealed class MainWindowChannelListActionsViewModel : ViewModelBase
                 var scoreNew = ScoreChannel(c);
                 if (scoreNew > scoreExist) map[c.Name] = c;
                 if (string.IsNullOrWhiteSpace(map[c.Name].Logo) && !string.IsNullOrWhiteSpace(c.Logo)) map[c.Name].Logo = c.Logo;
+                // Merge sources from duplicate channel
+                if (c.Sources != null)
+                {
+                    foreach (var src in c.Sources)
+                    {
+                        if (src == null || string.IsNullOrWhiteSpace(src.Url)) continue;
+                        if (!map[c.Name].Sources.Any(s => string.Equals(s.Url, src.Url, StringComparison.OrdinalIgnoreCase)))
+                        {
+                            map[c.Name].Sources.Add(src);
+                        }
+                    }
+                }
             }
         }
         return new List<Channel>(map.Values);
