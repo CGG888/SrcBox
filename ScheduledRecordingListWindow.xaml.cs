@@ -59,8 +59,20 @@ namespace LibmpvIptvClient
                     .Where(r => r.Status == Models.ScheduledRecordingStatus.Recording)
                     .ToList();
 
-                Grid.ItemsSource = null;
+                // Save selected item to restore after refresh
+                var selectedItem = Grid.SelectedItem as Models.ScheduledRecordingInfo;
+
                 Grid.ItemsSource = recordings;
+
+                // Restore selection if the item still exists in the list
+                if (selectedItem != null)
+                {
+                    var restoredItem = recordings.FirstOrDefault(r => r.Id == selectedItem.Id);
+                    if (restoredItem != null)
+                    {
+                        Grid.SelectedItem = restoredItem;
+                    }
+                }
 
                 var frontCount = manager.ActiveFrontRecordingCount;
                 var backCount = manager.ActiveBackRecordingCount;
