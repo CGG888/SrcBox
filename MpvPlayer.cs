@@ -10,6 +10,8 @@ namespace LibmpvIptvClient
     {
         IntPtr _handle = IntPtr.Zero;
         PlaybackSettings _settings = AppSettings.Current;
+        private bool _recordingMode = false;
+        public void SetRecordingMode(bool recording) { _recordingMode = recording; }
         public void Create()
         {
             _handle = mpv_create();
@@ -201,18 +203,26 @@ namespace LibmpvIptvClient
             {
                 // 清空强制格式，恢复自动探测
                 SetString("demuxer-lavf-format", "");
-                
-                // 强制开启激进缓存以支持录制
-                SetString("cache", "yes");
-                SetString("demuxer-max-bytes", "512MiB");
-                SetString("demuxer-max-back-bytes", "256MiB");
-                SetString("force-seekable", "yes"); // 关键：强制视为可回溯
-                
-                // 强制 demuxer 预读并保持数据，这对于 stream-record 至关重要
-                SetString("demuxer-readahead-secs", "60"); 
-                SetString("demuxer-cache-wait", "no"); // 不要等待缓存填满才播放，但要持续缓存
-                
 
+                if (_recordingMode)
+                {
+                    // 录制模式：使用大缓存以支持 stream-record
+                    SetString("cache", "yes");
+                    SetString("demuxer-max-bytes", "512MiB");
+                    SetString("demuxer-max-back-bytes", "256MiB");
+                    SetString("force-seekable", "yes");
+                    SetString("demuxer-readahead-secs", "60");
+                    SetString("demuxer-cache-wait", "no");
+                }
+                else
+                {
+                    // 纯播放模式：使用小缓存，避免内存增长
+                    SetString("cache", _settings.CacheSecs > 0 ? "yes" : "no");
+                    if (_settings.CacheSecs > 0)
+                        SetString("cache-secs", _settings.CacheSecs.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                    SetString("demuxer-max-bytes", $"{_settings.DemuxerMaxBytesMiB}MiB");
+                    SetString("demuxer-max-back-bytes", $"{_settings.DemuxerMaxBackBytesMiB}MiB");
+                }
             }
 
             // 4. HTTP/HTTPS 自定义 Header（适用于所有 HTTP 流）
