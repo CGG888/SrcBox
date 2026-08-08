@@ -108,7 +108,7 @@ const architecture = [
 <style scoped>
 .tech-stack-section {
   padding: 80px 20px;
-  max-width: 900px;
+  max-width: 1100px;
   margin: 0 auto;
 }
 
@@ -127,19 +127,23 @@ const architecture = [
 }
 
 .tech-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: center;
   gap: 16px;
   margin-bottom: 48px;
+  padding: 0;
 }
 
 .tech-card {
   background: var(--vp-c-bg-soft);
   border: 1px solid var(--vp-c-border);
   border-radius: 8px;
-  padding: 16px;
+  padding: 12px 16px;
   text-align: center;
   transition: all 0.2s ease;
+  flex: 0 0 auto;
+  width: 160px;
 }
 
 .tech-card:hover {
@@ -213,8 +217,14 @@ const architecture = [
   }
 
   .tech-grid {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 0;
+  }
+
+  .tech-card {
+    width: 130px;
+    padding: 10px 12px;
   }
 
   .arch-layer {

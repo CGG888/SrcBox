@@ -48,7 +48,7 @@ features:
 </ClientOnly>
 
 <ClientOnly>
-  <ScreenshotGallery />
+  <ScreenshotGallery locale="zh-TW" />
 </ClientOnly>
 
 <ClientOnly>

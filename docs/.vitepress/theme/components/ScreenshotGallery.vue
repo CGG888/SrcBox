@@ -1,7 +1,7 @@
 <template>
   <section class="screenshot-gallery-section">
-    <h2 class="section-title">界面预览</h2>
-    <p class="section-subtitle">现代化的用户界面设计</p>
+    <h2 class="section-title">{{ t('title') }}</h2>
+    <p class="section-subtitle">{{ t('subtitle') }}</p>
 
     <div class="gallery-grid">
       <div class="screenshot-item" v-for="(screenshot, index) in screenshots" :key="index">
@@ -29,26 +29,60 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
-defineProps<{
+const props = defineProps<{
   locale?: 'zh' | 'zh-TW' | 'en' | 'ru'
 }>()
 
-const screenshots = [
+const i18n = {
+  'zh': {
+    title: '界面预览',
+    subtitle: '现代化的用户界面设计',
+    main: '主界面',
+    fullscreen: '全屏悬浮控制',
+    settings: '设置窗口'
+  },
+  'zh-TW': {
+    title: '介面預覽',
+    subtitle: '現代化的使用者介面設計',
+    main: '主介面',
+    fullscreen: '全螢幕懸浮控制',
+    settings: '設定視窗'
+  },
+  'en': {
+    title: 'Interface Preview',
+    subtitle: 'Modern user interface design',
+    main: 'Main Interface',
+    fullscreen: 'Fullscreen Overlay',
+    settings: 'Settings Window'
+  },
+  'ru': {
+    title: 'Превью интерфейса',
+    subtitle: 'Современный дизайн пользовательского интерфейса',
+    main: 'Главный интерфейс',
+    fullscreen: 'Полноэкранный оверлей',
+    settings: 'Окно настроек'
+  }
+}
+
+const locale = computed(() => props.locale || 'zh')
+const t = (key: string) => i18n[locale.value as keyof typeof i18n]?.[key as keyof typeof i18n['zh']] || i18n['zh'][key as keyof typeof i18n['zh']]
+
+const screenshots = computed(() => [
   {
     src: '/screenshots/main.png',
-    alt: '主界面'
+    alt: t('main')
   },
   {
     src: '/screenshots/fullscreen-overlay.png',
-    alt: '全屏悬浮控制'
+    alt: t('fullscreen')
   },
   {
     src: '/screenshots/settings.png',
-    alt: '设置窗口'
+    alt: t('settings')
   }
-]
+])
 
 const lightboxVisible = ref(false)
 const currentImage = ref({ src: '', alt: '' })
