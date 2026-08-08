@@ -44,7 +44,7 @@ features:
 ---
 
 <ClientOnly>
-  <VideoShowcase />
+  <VideoShowcase locale="ru" />
 </ClientOnly>
 
 <ClientOnly>
@@ -52,11 +52,11 @@ features:
 </ClientOnly>
 
 <ClientOnly>
-  <TechStack />
+  <TechStack locale="ru" />
 </ClientOnly>
 
 <ClientOnly>
-  <HelpSection />
+  <HelpSection locale="ru" />
 </ClientOnly>
 
 <div class="disclaimer">

@@ -1,7 +1,7 @@
 <template>
   <section class="tech-stack-section">
-    <h2 class="section-title">技术栈</h2>
-    <p class="section-subtitle">现代化的技术选型</p>
+    <h2 class="section-title">{{ t('title') }}</h2>
+    <p class="section-subtitle">{{ t('subtitle') }}</p>
 
     <div class="tech-grid">
       <div class="tech-card" v-for="tech in techs" :key="tech.name">
@@ -24,18 +24,66 @@
 </template>
 
 <script setup lang="ts">
-defineProps<{
+import { computed } from 'vue'
+
+const props = defineProps<{
   locale?: 'zh' | 'zh-TW' | 'en' | 'ru'
 }>()
 
-const techs = [
-  { name: 'libmpv', desc: '播放内核' },
-  { name: 'WPF + ModernWpf', desc: 'UI 框架' },
-  { name: 'C# (.NET 8)', desc: '开发语言' },
-  { name: 'WebDAV', desc: '录播同步' },
-  { name: 'WebSocket + HTTP', desc: '远程控制' },
-  { name: 'VitePress', desc: '文档站点' }
-]
+const i18n = {
+  'zh': {
+    title: '技术栈',
+    subtitle: '现代化的技术选型',
+    libmpv: '播放内核',
+    wpf: 'UI 框架',
+    dotnet: '开发语言',
+    webdav: '录播同步',
+    websocket: '远程控制',
+    vitepress: '文档站点'
+  },
+  'zh-TW': {
+    title: '技術棧',
+    subtitle: '現代化的技術選型',
+    libmpv: '播放內核',
+    wpf: 'UI 框架',
+    dotnet: '開發語言',
+    webdav: '錄播同步',
+    websocket: '遠程控制',
+    vitepress: '文檔站點'
+  },
+  'en': {
+    title: 'Tech Stack',
+    subtitle: 'Modern technology choices',
+    libmpv: 'Playback Engine',
+    wpf: 'UI Framework',
+    dotnet: 'Language',
+    webdav: 'Recording Sync',
+    websocket: 'Remote Control',
+    vitepress: 'Documentation'
+  },
+  'ru': {
+    title: 'Технологии',
+    subtitle: 'Современный стек технологий',
+    libmpv: 'Движок воспроизведения',
+    wpf: 'UI фреймворк',
+    dotnet: 'Язык',
+    webdav: 'Синхронизация записи',
+    websocket: 'Дистанционное управление',
+    vitepress: 'Документация'
+  }
+}
+
+const locale = computed(() => props.locale || 'zh')
+const t = (key: string) => i18n[locale.value as keyof typeof i18n]?.[key as keyof typeof i18n['zh']] || i18n['zh'][key as keyof typeof i18n['zh']]
+
+const techs = computed(() => [
+  { name: 'libmpv', desc: t('libmpv') },
+  { name: 'WPF + ModernWpf', desc: t('wpf') },
+  { name: 'C# (.NET 8)', desc: t('dotnet') },
+  { name: 'WebDAV', desc: t('webdav') },
+  { name: 'WebSocket + HTTP', desc: t('websocket') },
+  { name: 'VitePress', desc: t('vitepress') }
+])
 
 const architecture = [
   {

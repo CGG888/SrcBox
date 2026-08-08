@@ -11,7 +11,7 @@ hero:
   actions:
     - theme: brand
       text: Get Started
-      link: /guide/
+      link: /en/guide/
     - theme: alt
       text: GitHub
       link: https://github.com/CGG888/SrcBox
@@ -44,7 +44,7 @@ features:
 ---
 
 <ClientOnly>
-  <VideoShowcase />
+  <VideoShowcase locale="en" />
 </ClientOnly>
 
 <ClientOnly>
@@ -52,11 +52,11 @@ features:
 </ClientOnly>
 
 <ClientOnly>
-  <TechStack />
+  <TechStack locale="en" />
 </ClientOnly>
 
 <ClientOnly>
-  <HelpSection />
+  <HelpSection locale="en" />
 </ClientOnly>
 
 <div class="disclaimer">

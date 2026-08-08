@@ -1,55 +1,139 @@
 <template>
   <section class="help-section">
-    <h2 class="section-title">获取帮助</h2>
-    <p class="section-subtitle">开始使用 SrcBox</p>
+    <h2 class="section-title">{{ t('title') }}</h2>
+    <p class="section-subtitle">{{ t('subtitle') }}</p>
 
     <div class="help-links">
-      <a href="/guide/" class="help-link">
+      <a :href="guideLink" class="help-link">
         <span class="link-icon">📖</span>
         <div class="link-content">
-          <span class="link-text">使用指南</span>
-          <span class="link-desc">详细的功能介绍和配置说明</span>
+          <span class="link-text">{{ t('guide') }}</span>
+          <span class="link-desc">{{ t('guideDesc') }}</span>
         </div>
       </a>
 
-      <a href="/guide/keyboard-shortcuts" class="help-link">
+      <a :href="shortcutsLink" class="help-link">
         <span class="link-icon">⌨️</span>
         <div class="link-content">
-          <span class="link-text">键盘快捷键</span>
-          <span class="link-desc">快速上手操作指南</span>
+          <span class="link-text">{{ t('shortcuts') }}</span>
+          <span class="link-desc">{{ t('shortcutsDesc') }}</span>
         </div>
       </a>
 
       <a href="https://github.com/CGG888/SrcBox/issues" class="help-link" target="_blank">
         <span class="link-icon">🐛</span>
         <div class="link-content">
-          <span class="link-text">问题反馈</span>
-          <span class="link-desc">报告 Bug 或提出建议</span>
+          <span class="link-text">{{ t('issues') }}</span>
+          <span class="link-desc">{{ t('issuesDesc') }}</span>
         </div>
       </a>
 
       <a href="https://github.com/CGG888/SrcBox/releases" class="help-link" target="_blank">
         <span class="link-icon">📦</span>
         <div class="link-content">
-          <span class="link-text">下载安装</span>
-          <span class="link-desc">获取最新版本</span>
+          <span class="link-text">{{ t('download') }}</span>
+          <span class="link-desc">{{ t('downloadDesc') }}</span>
         </div>
       </a>
     </div>
 
     <div class="cta-section">
-      <p class="cta-text">准备好开始使用了吗？</p>
-      <a href="/guide/" class="cta-button">
-        访问文档 →
+      <p class="cta-text">{{ t('cta') }}</p>
+      <a :href="guideLink" class="cta-button">
+        {{ t('ctaButton') }} →
       </a>
     </div>
   </section>
 </template>
 
 <script setup lang="ts">
-defineProps<{
+import { computed } from 'vue'
+
+const props = defineProps<{
   locale?: 'zh' | 'zh-TW' | 'en' | 'ru'
 }>()
+
+const i18n = {
+  'zh': {
+    title: '获取帮助',
+    subtitle: '开始使用 SrcBox',
+    guide: '使用指南',
+    guideDesc: '详细的功能介绍和配置说明',
+    shortcuts: '键盘快捷键',
+    shortcutsDesc: '快速上手操作指南',
+    issues: '问题反馈',
+    issuesDesc: '报告 Bug 或提出建议',
+    download: '下载安装',
+    downloadDesc: '获取最新版本',
+    cta: '准备好开始使用了吗？',
+    ctaButton: '访问文档'
+  },
+  'zh-TW': {
+    title: '獲取幫助',
+    subtitle: '開始使用 SrcBox',
+    guide: '使用指南',
+    guideDesc: '詳細的功能介紹和配置說明',
+    shortcuts: '鍵盤快捷鍵',
+    shortcutsDesc: '快速上手操作指南',
+    issues: '問題反饋',
+    issuesDesc: '報告 Bug 或提出建議',
+    download: '下載安裝',
+    downloadDesc: '獲取最新版本',
+    cta: '準備好開始使用了嗎？',
+    ctaButton: '訪問文檔'
+  },
+  'en': {
+    title: 'Get Help',
+    subtitle: 'Get started with SrcBox',
+    guide: 'User Guide',
+    guideDesc: 'Detailed feature guides and configuration',
+    shortcuts: 'Keyboard Shortcuts',
+    shortcutsDesc: 'Quick start guide',
+    issues: 'Report Issues',
+    issuesDesc: 'Report bugs or suggest features',
+    download: 'Downloads',
+    downloadDesc: 'Get the latest version',
+    cta: 'Ready to get started?',
+    ctaButton: 'View Documentation'
+  },
+  'ru': {
+    title: 'Получить помощь',
+    subtitle: 'Начните использовать SrcBox',
+    guide: 'Руководство',
+    guideDesc: 'Подробное описание функций и настройка',
+    shortcuts: 'Горячие клавиши',
+    shortcutsDesc: 'Краткое руководство',
+    issues: 'Сообщить о проблемах',
+    issuesDesc: 'Сообщить об ошибках или предложить функции',
+    download: 'Скачать',
+    downloadDesc: 'Получить последнюю версию',
+    cta: 'Готовы начать?',
+    ctaButton: 'Открыть документацию'
+  }
+}
+
+const locale = computed(() => props.locale || 'zh')
+const t = (key: string) => i18n[locale.value as keyof typeof i18n]?.[key as keyof typeof i18n['zh']] || i18n['zh'][key as keyof typeof i18n['zh']]
+
+const guideLink = computed(() => {
+  const links = {
+    'zh': '/guide/',
+    'zh-TW': '/zh-TW/guide/',
+    'en': '/en/guide/',
+    'ru': '/ru/guide/'
+  }
+  return links[locale.value as keyof typeof links] || '/guide/'
+})
+
+const shortcutsLink = computed(() => {
+  const links = {
+    'zh': '/guide/keyboard-shortcuts',
+    'zh-TW': '/zh-TW/guide/keyboard-shortcuts',
+    'en': '/en/guide/keyboard-shortcuts',
+    'ru': '/ru/guide/keyboard-shortcuts'
+  }
+  return links[locale.value as keyof typeof links] || '/guide/keyboard-shortcuts'
+})
 </script>
 
 <style scoped>

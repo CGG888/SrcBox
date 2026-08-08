@@ -1,7 +1,7 @@
 <template>
   <section class="video-showcase">
-    <h2 class="section-title">功能演示</h2>
-    <p class="section-subtitle">探索 SrcBox 的核心功能</p>
+    <h2 class="section-title">{{ t('title') }}</h2>
+    <p class="section-subtitle">{{ t('subtitle') }}</p>
 
     <div class="video-grid">
       <div class="video-item" v-for="video in videos" :key="video.id">
@@ -13,7 +13,7 @@
             playsinline
           >
             <source :src="video.src" type="video/mp4" />
-            Your browser does not support the video tag.
+            {{ t('notSupported') }}
           </video>
           <div class="play-overlay">
             <span class="play-icon">▶</span>
@@ -31,7 +31,7 @@
           <button class="lightbox-close" @click="closeLightbox">×</button>
           <video ref="lightboxVideo" controls autoplay muted>
             <source :src="currentVideo.src" type="video/mp4" />
-            Your browser does not support the video tag.
+            {{ t('notSupported') }}
           </video>
           <p class="lightbox-caption">{{ currentVideo.title }}</p>
         </div>
@@ -41,32 +41,82 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 
-defineProps<{
+const props = defineProps<{
   locale?: 'zh' | 'zh-TW' | 'en' | 'ru'
 }>()
 
-const videos = [
+const i18n = {
+  'zh': {
+    title: '功能演示',
+    subtitle: '探索 SrcBox 的核心功能',
+    notSupported: '您的浏览器不支持 video 标签',
+    fccTitle: '毫秒级切台 (FCC)',
+    fccDesc: '极致优化的快速换台体验，告别缓冲等待',
+    catchupTitle: 'Catchup / 节目回放',
+    catchupDesc: '基于模板自动生成回看地址，不错过精彩节目',
+    timeshiftTitle: 'Timeshift / 直播时移',
+    timeshiftDesc: '实时拖动进度条，随时回看直播历史'
+  },
+  'zh-TW': {
+    title: '功能演示',
+    subtitle: '探索 SrcBox 的核心功能',
+    notSupported: '您的瀏覽器不支援 video 標籤',
+    fccTitle: '毫秒級切台 (FCC)',
+    fccDesc: '極致優化的快速換台體驗，告別緩衝等待',
+    catchupTitle: 'Catchup / 節目回放',
+    catchupDesc: '基於模板自動生成回看位址，不錯過精彩節目',
+    timeshiftTitle: 'Timeshift / 直播時移',
+    timeshiftDesc: '即時拖動進度條，隨時回看直播歷史'
+  },
+  'en': {
+    title: 'Feature Demo',
+    subtitle: 'Explore the core features of SrcBox',
+    notSupported: 'Your browser does not support the video tag',
+    fccTitle: 'FCC Fast Channel Switching',
+    fccDesc: 'Millisecond-level channel switching, no more waiting',
+    catchupTitle: 'Catchup / Program Replay',
+    catchupDesc: 'Template-based catchup URL generation, never miss programs',
+    timeshiftTitle: 'Timeshift / Live Rewind',
+    timeshiftDesc: 'Real-time seeking through live stream history'
+  },
+  'ru': {
+    title: 'Демонстрация функций',
+    subtitle: 'Исследуйте основные функции SrcBox',
+    notSupported: 'Ваш браузер не поддерживает тег video',
+    fccTitle: 'FCC Мгновенное переключение',
+    fccDesc: 'Миллисекундное переключение каналов, без долгого ожидания',
+    catchupTitle: 'Catchup / Архив программ',
+    catchupDesc: 'Автогенерация ссылок на архив по шаблону, не пропустите программы',
+    timeshiftTitle: 'Timeshift / Перемотка эфира',
+    timeshiftDesc: 'Просмотр истории прямого эфира в реальном времени'
+  }
+}
+
+const locale = computed(() => props.locale || 'zh')
+const t = (key: string) => i18n[locale.value as keyof typeof i18n]?.[key as keyof typeof i18n['zh']] || i18n['zh'][key as keyof typeof i18n['zh']]
+
+const videos = computed(() => [
   {
     id: 'fcc',
-    title: '毫秒级切台 (FCC)',
-    description: '极致优化的快速换台体验，告别缓冲等待',
+    title: t('fccTitle'),
+    description: t('fccDesc'),
     src: '/screenshots/fast-zapping.mp4'
   },
   {
     id: 'catchup',
-    title: 'Catchup / 节目回放',
-    description: '基于模板自动生成回看地址，不错过精彩节目',
+    title: t('catchupTitle'),
+    description: t('catchupDesc'),
     src: '/screenshots/catchup.mp4'
   },
   {
     id: 'timeshift',
-    title: 'Timeshift / 直播时移',
-    description: '实时拖动进度条，随时回看直播历史',
+    title: t('timeshiftTitle'),
+    description: t('timeshiftDesc'),
     src: '/screenshots/timeshift.mp4'
   }
-]
+])
 
 const lightboxVisible = ref(false)
 const currentVideo = ref({ src: '', title: '' })

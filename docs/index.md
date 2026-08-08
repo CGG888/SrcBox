@@ -44,7 +44,7 @@ features:
 ---
 
 <ClientOnly>
-  <VideoShowcase />
+  <VideoShowcase locale="zh" />
 </ClientOnly>
 
 <ClientOnly>
@@ -52,11 +52,11 @@ features:
 </ClientOnly>
 
 <ClientOnly>
-  <TechStack />
+  <TechStack locale="zh" />
 </ClientOnly>
 
 <ClientOnly>
-  <HelpSection />
+  <HelpSection locale="zh" />
 </ClientOnly>
 
 <div class="disclaimer">
