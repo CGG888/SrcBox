@@ -167,7 +167,8 @@ namespace LibmpvIptvClient.Controls
             if (_reconnectAttempts[screenIndex] > 5) return; // Max attempts reached
 
             _reconnecting[screenIndex] = true;
-            var delay = Math.Min(1000 * (1 << _reconnectAttempts[screenIndex]), 30000); // Exponential backoff, max 30s
+            // Use longer delay to avoid加重服务器负担 when it's under pressure
+            var delay = Math.Min(2000 * (1 << _reconnectAttempts[screenIndex]), 60000); // 2s, 4s, 8s... max 60s
             _reconnectAttempts[screenIndex]++;
 
             var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(delay) };
@@ -175,11 +176,32 @@ namespace LibmpvIptvClient.Controls
                 timer.Stop();
                 if (_channels[screenIndex] != null)
                 {
-                    PlayChannel(screenIndex, _channels[screenIndex]);
+                    // Reconnect using the SAME source index that was selected before disconnect
+                    var savedSourceIndex = _sourceIndexes[screenIndex];
+                    ReconnectChannel(screenIndex, _channels[screenIndex], savedSourceIndex);
                 }
                 _reconnecting[screenIndex] = false;
             };
             timer.Start();
+        }
+
+        private void ReconnectChannel(int screenIndex, Channel channel, int sourceIndex)
+        {
+            if (screenIndex < 0 || screenIndex >= _screenCount) return;
+            if (sourceIndex < 0 || sourceIndex >= channel.Sources.Count) return;
+
+            _channels[screenIndex] = channel;
+            _sourceIndexes[screenIndex] = sourceIndex;
+            var url = channel.Sources[sourceIndex].Url;
+            if (!string.IsNullOrEmpty(url))
+            {
+                _players[screenIndex]?.LoadFile(url);
+            }
+
+            if (_numberLabels[screenIndex] != null)
+            {
+                _numberLabels[screenIndex].Visible = false;
+            }
         }
 
         private void SetupGrid()
