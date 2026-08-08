@@ -54,6 +54,9 @@ namespace LibmpvIptvClient.Controls
             _reconnectAttempts = new int[screenCount];
             _reconnecting = new bool[screenCount];
 
+            // Set dynamic title based on screen count
+            Title = $"多屏播放-{screenCount}屏";
+
             SetupGrid();
             Loaded += OnLoaded;
             Activated += OnActivated;
