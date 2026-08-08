@@ -1,246 +1,131 @@
 # Features
 
-## Core Playback
-- **Playback Control**: Play/Pause, Stop, Seek, Fast Forward/Rewind.
-- **Volume Control**: Slider adjustment, mute support (0-100).
-- **Volume Gain**: Adjustable from -200dB to +60dB.
-- **Volume Max**: Configurable maximum volume from 100% to 1000%.
-- **Audio Delay**: Adjustable from -100s to +100s for audio sync.
-- **Status Indicators**: Live/Replay/Timeshift status displayed in overlay.
+## Playback Control
 
-## IPTV Specifics
+- **Playback Control**: Play/Pause, Stop, Fast Forward/Rewind, Seek
+- **Volume Control**: Slider adjustment + Mute (0-100)
+- **Audio Settings**: Volume Gain (-200dB~+60dB), Max Volume (100%~1000%), Audio Delay (-100s~+100s)
+- **Status Indicators**: Live/Replay/Timeshift status displayed in overlay
+- **Speed Control**: Timeshift/Replay mode supports 0.5×~5.0× speed with pitch correction
+
+## Fast Channel Change (FCC)
+
+IPTV-optimized fast channel switching technology, millisecond-level channel changes, goodbye to long waits.
+
+<video controls width="100%">
+  <source src="/screenshots/fast-zapping.mp4" type="video/mp4">
+</video>
+
+## Program Guide & Replay
 
 ### M3U Parsing
-Supports local/remote M3U playlists, compatible with UTF-8/GB18030 encoding. Supports `#EXTINF` extended attributes.
+Supports local/remote M3U playlists, compatible with UTF-8/GB18030 encoding, supports `#EXTINF` extended attributes.
 
-### EPG Support
-XMLTV (gz) format support with automatic day switching and `tvg-id` matching.
-[Usage and configuration guide](./epg)
+### EPG Electronic Program Guide
+Supports XMLTV (gz) format, automatic day switching, smart `tvg-id` matching.
+[View configuration guide](./epg)
 
-### Catchup (Replay)
-Template-based catchup URL generation (e.g., `{utc:yyyyMMddHHmmss}`).
-[Usage and customization guide](./catchup-timeshift)
+### Catchup
+Template-based catchup URL generation (e.g., `{utc:yyyyMMddHHmmss}`), never miss精彩的节目.
+[View usage guide](./catchup-timeshift)
 
-<video controls width="100%" poster="/logo.svg">
+<video controls width="100%">
   <source src="/screenshots/catchup.mp4" type="video/mp4">
-  Your browser does not support the video tag.
 </video>
 
 ### Timeshift
-Seek back in live stream history (depends on `catchup-source`).
-[Usage and customization guide](./catchup-timeshift)
+Real-time seeking through live stream history, fast forward/rewind limited within program boundaries.
+[View usage guide](./catchup-timeshift)
 
-<video controls width="100%" poster="/logo.svg">
+<video controls width="100%">
   <source src="/screenshots/timeshift.mp4" type="video/mp4">
-  Your browser does not support the video tag.
 </video>
 
-### Playback Speed
-- Supported for Timeshift and Replay only; Live does not support speed
-- Available speeds: 0.5×, 0.75×, 1.0×, 1.25×, 1.5×, 1.75×, 2.0×, 3.0×, 5.0×
-- Audio pitch correction is enabled automatically to keep voices natural
-- Consistent UI in fullscreen and window; adapts to dark/light themes
+## Multi-Screen Playback
 
-### Deinterlace
-- Optimized for 1080i/720i interlaced video streams
-- Three modes: Auto, Force On, Off
-- Two algorithms: yadif (default), bwdif (better quality)
-- Field parity settings: Auto, TFF, BFF
-- Real-time preview when changing settings
+Supports 4/6/9 screen simultaneous playback, ideal for monitoring or multitasking scenarios.
 
-### Channel Management
-Grouping, Search, Favorites, and History (persisted locally).
-
-### Channel List Badges (R/T)
-- R: Catchup available; T: Timeshift available
-- Hover tooltips localized (ZH/EN/ZH-TW/RU)
-- Consistent style and layout in fullscreen and window
-
-### Scheduled Reminder & Auto Play
-- Future programs provide scheduling entry with separate "remind-only" and "auto-play-at-time" policies
-- Reminder list supports single-instance management, checkbox batch deletion, Select All / Invert
-- Unified entries from tray/dropdown/right-click; windows stay above the player in window/fullscreen states
-- Due and success notifications do not steal focus, with consistent placement policies
-
-### Minimal Mode
-- Compact player window mode with top interactions and core playback controls
-- Dedicated resize hit-testing, edge cursor hints, and drag/resize sync
-- Synchronized state across minimal/window/fullscreen for badges, EPG, and channel list
-
-### Optimization (FCC)
-Fast Channel Change and UDP multicast optimization.
-
-<video controls width="100%" poster="/logo.svg">
-  <source src="/screenshots/fast-zapping.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
-
-## Web Remote Control
-
-Remotely control SrcBox through a browser.
-
-[Detailed usage guide](./web-remote)
-
-### Features
-- **Playback Control**: Play, Pause, Stop, Seek Forward/Backward
-- **Volume Control**: Volume slider, Mute toggle
-- **Channel Switching**: Previous/Next channel, Channel list
-- **Status View**: Current playback status, Program info
-- **Password Protection**: Optional access password
-
-### HTTP/RTSP Header Settings
-Supports custom HTTP/HTTPS stream headers and RTSP transport settings.
-[Detailed configuration guide](./http-headers)
-
-## Fullscreen & Overlay
-- **Double-click Fullscreen**: Toggle fullscreen by double-clicking the video area.
-- **Overlay Bar**: Auto-shows at bottom on mouse move; supports controls & EPG toggle.
-- **Side Drawer**: Auto-shows channel list (right) or EPG (left) on mouse hover near edges.
-
-## Recording
-
-- **Local Recording**: Record directly to local disk
-- **WebDAV Upload**: Auto-upload recordings to WebDAV server
-- **Real-time Recording**: Support for live recording mode
-- **Upload Queue**: Upload task queue management
-
-## Multi-Screen (v1.1.9 NEW)
-
-Support for 4/6/9 screen simultaneous playback, ideal for monitoring or watching multiple channels.
-
-### Features
-- **Multi-Screen Modes**: 4-screen, 6-screen, 9-screen simultaneous playback
-- **Quick Selection**: 1-9 number keys to directly select corresponding screen
-- **Channel Switching**: ↑↓ keys to switch previous/next channel
-- **Source Switching**: ←→ keys to switch previous/next source
-- **Tray Entry**: Add multi-screen submenu to tray context menu
-
-### Shortcuts
 | Shortcut | Function |
 |----------|----------|
-| `Ctrl+4` | Open 4-screen mode |
-| `Ctrl+6` | Open 6-screen mode |
-| `Ctrl+9` | Open 9-screen mode |
+| `Ctrl+4/6/9` | Open corresponding multi-screen mode |
 | `1-9` | Select corresponding screen |
 | `↑/↓` | Switch channel |
 | `←/→` | Switch source |
 
-## Scheduled Recording (v1.1.9 NEW)
+## Scheduled Recording
 
-Support for front and back scheduled recording modes.
+Supports front/back scheduled recording modes with automatic Toast notification on completion.
 
-### Front Recording
-- The screen jumps to the recording channel during recording
-- Support for custom duration auto-stop
-- Recording timer displayed
+- **Front Recording**: Screen jumps to recording channel, supports custom duration auto-stop
+- **Back Recording**: Keeps current playback channel, supports scheduled stop
+- **WebDAV Sync**: Auto-upload recordings to WebDAV server after completion
 
-### Back Recording
-- Keeps current playback channel without jumping
-- Support for duration-based auto-stop
-- Recording completion toast notification
+## Web Remote Control
 
-### Recording Completion Toast
-- Toast notification when recording completes
-- Auto-hides after 5 seconds
-- Differentiates front/back recording completion
+Remotely control the player through a browser, control your TV from anywhere.
 
-## Decoder Selection (v1.1.9 NEW)
-
-Support for multiple hardware and software decoders, switchable during playback.
-
-### Decoder Options
-- **Auto**: Automatically select the best decoder
-- **D3D11VA**: Windows Video Acceleration (default)
-- **DXVA2**: DirectX Video Acceleration
-- **NVDEC**: NVIDIA GPU decoding
-- **Software**: CPU software decoding
-
-## v1.1.9 New Features
-
-### Multi-Screen
-- 4/6/9 screen simultaneous playback
-- Multi-screen submenu in tray context menu
-- Source switching submenu in multi-screen
-- 1-9 number keys for quick screen selection
-- ↑↓ switch channels, ←→ switch sources
-
-### Scheduled Recording
-- Front/back scheduled recording modes
-- Recording completion toast notification
-- Front recording with custom duration auto-stop
-- Status filter dropdown in reminder list
-- Refresh button in reminder list
-
-### Decoder Selection
-- Auto/D3D11VA/DXVA2/NVDEC/Software decoders
-- Switchable during playback
-- Decoder selection menu
-
-### Shortcuts Help Window
-- New ShortcutsWindow for keyboard shortcuts reference
-- Complete keyboard shortcuts categorized display
-
-### Interface Refactoring
-- Menu system: classified by function domain, TXT format support
-- Settings window: 12 tabs consolidated to 7, optimized dark/light theme
-- Top menu i18n: fixed missing menu i18n keys
-
-### Timeshift Improvements
-- Seek limited within program boundaries
-- Continuous playback: URL end time changed to far future
-- Auto-jump to next program when current ends
-
-### Other Improvements
-- M3U dropdown refresh: auto-refresh after adding new source
-- mpv cache optimization: dynamic cache control based on recording state
-- EPG matching: extended CCTV/Education channel type suffix support
-- Close mode memory: remember user choice (exit or minimize to tray)
-
-## v1.1.6 New Features
-
-### Web Remote Control
-- WebRemoteManager and WebRemoteServer implementation
-- Control player through browser
-- Real-time status updates, channel list, and EPG display
-- Multi-language support (Chinese, English, Russian, etc.)
+- Playback control, volume adjustment, channel switching
+- Real-time status view, program info display
 - Optional password protection
 
-### Audio Settings
-- Volume Gain: -200dB to +60dB
-- Volume Max: 100% to 1000%
-- Audio Delay: -100s to +100s
-- Settings apply immediately
+[View detailed guide](./web-remote)
+
+## Channel Management
+
+- **Groups**: Channel group management with sorting
+- **Search**: Quick channel search
+- **Favorites**: Bookmark favorite channels
+- **History**: Playback history, persisted locally
+- **R/T Badges**: Quickly identify channels supporting Catchup(R) or Timeshift(T)
+
+## Decoder Selection
+
+Supports multiple hardware/software decoders, dynamically switchable during playback:
+
+| Decoder | Description |
+|---------|------------|
+| Auto | Automatically select best decoder |
+| D3D11VA | Windows Video Acceleration (default) |
+| DXVA2 | DirectX Video Acceleration |
+| NVDEC | NVIDIA GPU decoding |
+| Software | CPU software decoding |
+
+## Video Optimization
 
 ### Deinterlace
-- Support for 1080i/720i interlaced video processing
-- Three modes: Auto/Force On/Off
-- Two algorithms: yadif/bwdif
-- Real-time preview
+Optimized for 1080i/720i interlaced video streams:
+- Three modes: Auto / Force On / Off
+- Two algorithms: yadif (default) / bwdif (better quality)
+- Field settings: Auto / Top Field First (TFF) / Bottom Field First (BFF)
 
-### UI Improvements
-- Optimized channel list refresh
-- New mute function and volume slider style
-- Resizable settings window
+## Fullscreen Interaction
 
-## Updates since v1.1.2
+- **Double-click fullscreen** or press `Enter` to enter fullscreen
+- **Floating control bar**: Auto-shows on mouse move to bottom
+- **Side drawer**: Mouse near edge shows channel list (right) or EPG (left)
+- **ESC** to exit fullscreen
 
-- **EPG Status Chips**: Chip-style badges on the right side of each program row
-  - Live = red-filled chip; Replay = green-filled chip (auto adapts to dark/light themes)
-  - Clicking the Live chip plays the current channel immediately
-  - The current playing row is highlighted; when replaying, a green left stripe is shown for better visibility (especially in dark mode)
-- **Reminders & Notifications**
-  - Single-instance reminder list; centers to the player on first open; user-dragged position is respected afterward
-  - Supports both "remind-only" and "auto-play" scheduling policies
-  - Checkbox + Select All/Invert for batch deletion
-  - Accessible from Tray / Dropdown / Right-click with consistent behavior
-  - Due/success toasts don't steal focus (bottom-right vs. centered strategies are clearly separated)
-- **M3U Management**
-  - New "Manage M3U List" window (same style as reminders) with checkbox batch deletion and single edit
-  - Tray entry; consistent entries from dropdown/right-click; visible in fullscreen above the player
-- **System Tray**
-  - Always-on icon; double-click to restore; menu includes Open/Reminders/Manage M3U/Settings/Exit
-- **Close Confirmation**
-  - Close "×/ESC" only dismisses dialog; "Yes" exits, "No" minimizes to tray (leave fullscreen first)
-  - Three-line i18n text synchronized (ZH/EN/ZH-TW/RU)
-- **Theme Sync**
-  - Title bars for Reminders, M3U Manager, Reminder Dialog, and Exit Dialog apply theme at OnSourceInitialized for instant dark/light consistency
+## UI Features
+
+- **Dark/Light Theme**: Perfect adaptation for Windows 10/11
+- **Minimal Mode**: Compact window form, suitable for small screen viewing
+- **Multi-language**: Supports Simplified Chinese, Traditional Chinese, English, Russian
+
+## Keyboard Shortcuts
+
+| Shortcut | Function |
+|----------|----------|
+| `Space` | Play/Pause |
+| `S` | Stop |
+| `↑/↓` | Previous/Next channel |
+| `←/→` | Previous/Next source (Live) / Rewind/Fast Forward (Timeshift) |
+| `M` | Mute |
+| `Enter` | Toggle fullscreen |
+| `L` | Channel list |
+| `E` | EPG Program Guide |
+| `R` | Start/Stop recording |
+| `T` | Timeshift mode |
+| `Ctrl+,` | Settings |
+| `Ctrl+/` | Shortcuts help |
+
+[View complete shortcuts guide](./keyboard-shortcuts)

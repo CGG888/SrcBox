@@ -42,21 +42,41 @@ export default defineConfig({
         ],
         sidebar: [
           {
-            text: '指南',
+            text: '📖 快速开始',
             items: [
               { text: '项目介绍', link: '/guide/introduction' },
-              { text: '功能特性', link: '/guide/features' },
+              { text: '功能特性', link: '/guide/features' }
+            ]
+          },
+          {
+            text: '🎮 播放功能',
+            items: [
               { text: '多屏播放', link: '/guide/multiscreen' },
               { text: '预约功能', link: '/guide/reminder' },
-              { text: 'Web 远程控制', link: '/guide/web-remote' },
               { text: 'EPG 节目单', link: '/guide/epg' },
               { text: 'HTTP/RTSP Header', link: '/guide/http-headers' },
               { text: '回看与时移', link: '/guide/catchup-timeshift' },
-              { text: '键盘快捷键', link: '/guide/keyboard-shortcuts' },
+              { text: 'Web 远程控制', link: '/guide/web-remote' }
+            ]
+          },
+          {
+            text: '⌨️ 快捷操作',
+            items: [
+              { text: '键盘快捷键', link: '/guide/keyboard-shortcuts' }
+            ]
+          },
+          {
+            text: '🔧 开发参考',
+            items: [
               { text: '技术架构', link: '/guide/architecture' },
               { text: '开发指南', link: '/guide/development' },
               { text: '配置说明', link: '/guide/configuration' },
-              { text: '国际化', link: '/i18n' },
+              { text: '国际化', link: '/guide/i18n' }
+            ]
+          },
+          {
+            text: '📌 其他',
+            items: [
               { text: '路线图', link: '/guide/roadmap' },
               { text: '常见问题', link: '/guide/faq' }
             ]
@@ -93,21 +113,41 @@ export default defineConfig({
         ],
         sidebar: [
           {
-            text: '指南',
+            text: '📖 快速開始',
             items: [
               { text: '專案介紹', link: '/zh-TW/guide/introduction' },
-              { text: '功能特性', link: '/zh-TW/guide/features' },
+              { text: '功能特性', link: '/zh-TW/guide/features' }
+            ]
+          },
+          {
+            text: '🎮 播放功能',
+            items: [
               { text: '多屏播放', link: '/zh-TW/guide/multiscreen' },
               { text: '預約功能', link: '/zh-TW/guide/reminder' },
-              { text: 'Web 遠程控制', link: '/zh-TW/guide/web-remote' },
               { text: 'EPG 節目單', link: '/zh-TW/guide/epg' },
               { text: 'HTTP/RTSP Header', link: '/zh-TW/guide/http-headers' },
               { text: '回看與時移', link: '/zh-TW/guide/catchup-timeshift' },
-              { text: '鍵盤快捷鍵', link: '/zh-TW/guide/keyboard-shortcuts' },
+              { text: 'Web 遠程控制', link: '/zh-TW/guide/web-remote' }
+            ]
+          },
+          {
+            text: '⌨️ 快捷操作',
+            items: [
+              { text: '鍵盤快捷鍵', link: '/zh-TW/guide/keyboard-shortcuts' }
+            ]
+          },
+          {
+            text: '🔧 開發參考',
+            items: [
               { text: '技術架構', link: '/zh-TW/guide/architecture' },
               { text: '開發指南', link: '/zh-TW/guide/development' },
               { text: '配置說明', link: '/zh-TW/guide/configuration' },
-              { text: '國際化', link: '/zh-TW/i18n' },
+              { text: '國際化', link: '/zh-TW/guide/i18n' }
+            ]
+          },
+          {
+            text: '📌 其他',
+            items: [
               { text: '路線圖', link: '/zh-TW/guide/roadmap' },
               { text: '常見問題', link: '/zh-TW/guide/faq' }
             ]
@@ -158,21 +198,41 @@ export default defineConfig({
         ],
         sidebar: [
           {
-            text: 'Guide',
+            text: '📖 Getting Started',
             items: [
               { text: 'Introduction', link: '/en/guide/introduction' },
-              { text: 'Features', link: '/en/guide/features' },
+              { text: 'Features', link: '/en/guide/features' }
+            ]
+          },
+          {
+            text: '🎮 Playback',
+            items: [
               { text: 'Multi-Screen', link: '/en/guide/multiscreen' },
               { text: 'Reminder', link: '/en/guide/reminder' },
-              { text: 'Web Remote', link: '/en/guide/web-remote' },
               { text: 'EPG', link: '/en/guide/epg' },
               { text: 'HTTP/RTSP Header', link: '/en/guide/http-headers' },
               { text: 'Catchup & Timeshift', link: '/en/guide/catchup-timeshift' },
-              { text: 'Keyboard Shortcuts', link: '/en/guide/keyboard-shortcuts' },
+              { text: 'Web Remote', link: '/en/guide/web-remote' }
+            ]
+          },
+          {
+            text: '⌨️ Shortcuts',
+            items: [
+              { text: 'Keyboard Shortcuts', link: '/en/guide/keyboard-shortcuts' }
+            ]
+          },
+          {
+            text: '🔧 Development',
+            items: [
               { text: 'Architecture', link: '/en/guide/architecture' },
               { text: 'Development', link: '/en/guide/development' },
               { text: 'Configuration', link: '/en/guide/configuration' },
-              { text: 'Internationalization', link: '/en/i18n' },
+              { text: 'Internationalization', link: '/en/guide/i18n' }
+            ]
+          },
+          {
+            text: '📌 More',
+            items: [
               { text: 'Roadmap', link: '/en/guide/roadmap' },
               { text: 'FAQ', link: '/en/guide/faq' }
             ]
@@ -199,21 +259,41 @@ export default defineConfig({
         ],
         sidebar: [
           {
-            text: 'Руководство',
+            text: '📖 Быстрый старт',
             items: [
               { text: 'Обзор', link: '/ru/guide/introduction' },
-              { text: 'Возможности', link: '/ru/guide/features' },
+              { text: 'Возможности', link: '/ru/guide/features' }
+            ]
+          },
+          {
+            text: '🎮 Воспроизведение',
+            items: [
               { text: 'Мультиэкран', link: '/ru/guide/multiscreen' },
               { text: 'Напоминания', link: '/ru/guide/reminder' },
-              { text: 'Веб-пульт', link: '/ru/guide/web-remote' },
               { text: 'EPG', link: '/ru/guide/epg' },
               { text: 'HTTP/RTSP Header', link: '/ru/guide/http-headers' },
               { text: 'Архив и Timeshift', link: '/ru/guide/catchup-timeshift' },
-              { text: 'Горячие клавиши', link: '/ru/guide/keyboard-shortcuts' },
+              { text: 'Веб-пульт', link: '/ru/guide/web-remote' }
+            ]
+          },
+          {
+            text: '⌨️ Горячие клавиши',
+            items: [
+              { text: 'Клавиши', link: '/ru/guide/keyboard-shortcuts' }
+            ]
+          },
+          {
+            text: '🔧 Разработка',
+            items: [
               { text: 'Архитектура', link: '/ru/guide/architecture' },
               { text: 'Разработка', link: '/ru/guide/development' },
               { text: 'Настройка', link: '/ru/guide/configuration' },
-              { text: 'Интернационализация', link: '/ru/i18n' },
+              { text: 'Интернационализация', link: '/ru/guide/i18n' }
+            ]
+          },
+          {
+            text: '📌 Другое',
+            items: [
               { text: 'Дорожная карта', link: '/ru/guide/roadmap' },
               { text: 'FAQ', link: '/ru/guide/faq' }
             ]

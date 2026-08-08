@@ -1,6 +1,636 @@
-/* Custom styles */
+/* ==========================================================================
+   SrcBox Custom Theme - Enhanced for both Dark and Light modes
+   ========================================================================== */
+
+/* ===== CSS Custom Properties - Light Mode ===== */
 :root {
-  --vp-c-brand: #646cff;
-  --vp-c-brand-light: #747bff;
-  --vp-c-brand-dark: #535bf2;
+  /* Light mode base - warm white */
+  --vp-c-bg: #ffffff;
+  --vp-c-bg-soft: #f6f8fa;
+  --vp-c-bg-mute: #eef1f5;
+  --vp-c-bg-elv: #ffffff;
+
+  /* Brand colors - Blue primary */
+  --vp-c-brand-1: #0969da;
+  --vp-c-brand-2: #0784def5;
+  --vp-c-brand-3: #0550ae;
+  --vp-c-brand-soft: rgba(9, 105, 218, 0.12);
+
+  /* Accent - Violet */
+  --vp-c-accent: #8250df;
+  --vp-c-accent-soft: rgba(130, 80, 223, 0.12);
+
+  /* Text hierarchy */
+  --vp-c-text-1: #1f2328;
+  --vp-c-text-2: #656d76;
+  --vp-c-text-3: #8b949e;
+
+  /* Borders */
+  --vp-c-border: #d0d7de;
+  --vp-c-divider: #d8dee4;
+
+  /* Shadows */
+  --vp-shadow-1: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.05);
+  --glow-brand: 0 0 20px rgba(9, 105, 218, 0.25);
+  --glow-accent: 0 0 20px rgba(130, 80, 223, 0.25);
+
+  /* Spacing */
+  --section-spacing: 80px;
+  --card-padding: 24px;
+  --border-radius: 12px;
+
+  /* Override VitePress brand */
+  --vp-c-brand: #0969da;
+  --vp-c-brand-light: #218bff;
+  --vp-c-brand-dark: #0550ae;
+}
+
+/* ===== Hero Image Styling ===== */
+.VPHero .image-container {
+  padding: 8px;
+}
+
+.VPHero .image-container img {
+  max-width: 120px !important;
+  max-height: 120px !important;
+  object-fit: contain;
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15));
+  transition: transform 0.3s ease, filter 0.3s ease;
+}
+
+.VPHero .image-container img:hover {
+  transform: scale(1.05);
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.2));
+}
+
+.dark .VPHero .image-container img {
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4)) drop-shadow(0 0 20px rgba(56, 139, 253, 0.2));
+}
+
+.dark .VPHero .image-container img:hover {
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 30px rgba(56, 139, 253, 0.3));
+}
+
+/* ===== CSS Custom Properties - Dark Mode ===== */
+.dark {
+  /* Dark mode base - GitHub dark */
+  --vp-c-bg: #0d1117;
+  --vp-c-bg-soft: #161b22;
+  --vp-c-bg-mute: #21262d;
+  --vp-c-bg-elv: #1c2128;
+
+  /* Brand colors - Blue/Violet for dark */
+  --vp-c-brand-1: #58a6ff;
+  --vp-c-brand-2: #388bfd;
+  --vp-c-brand-3: #1f6feb;
+  --vp-c-brand-soft: rgba(56, 139, 253, 0.15);
+
+  /* Accent - Violet */
+  --vp-c-accent: #a371f7;
+  --vp-c-accent-soft: rgba(163, 113, 247, 0.15);
+
+  /* Text hierarchy */
+  --vp-c-text-1: #e6edf3;
+  --vp-c-text-2: #8b949e;
+  --vp-c-text-3: #6e7681;
+
+  /* Borders */
+  --vp-c-border: #30363d;
+  --vp-c-divider: #21262d;
+
+  /* Shadows - stronger in dark mode */
+  --vp-shadow-1: 0 1px 3px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.4);
+  --glow-brand: 0 0 30px rgba(56, 139, 253, 0.4);
+  --glow-accent: 0 0 30px rgba(163, 113, 247, 0.4);
+}
+
+/* Dark mode hero image with glow */
+.dark .VPHero .image-container img {
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4)) drop-shadow(0 0 20px rgba(56, 139, 253, 0.3));
+}
+
+.dark .VPHero .image-container img:hover {
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 35px rgba(56, 139, 253, 0.4));
+}
+
+/* ==========================================================================
+   Hero Section Enhancement - Dramatic difference between modes
+   ========================================================================== */
+
+.VPHero {
+  position: relative;
+  overflow: hidden;
+}
+
+/* Light mode - subtle gradient */
+.VPHero::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(9, 105, 218, 0.08) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 80%, rgba(130, 80, 223, 0.06) 0%, transparent 50%);
+  animation: gradientShift 15s ease-in-out infinite alternate;
+  pointer-events: none;
+  z-index: -1;
+}
+
+/* Dark mode - more intense gradient */
+.dark .VPHero::before {
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(56, 139, 253, 0.2) 0%, transparent 50%),
+    radial-gradient(ellipse at 70% 80%, rgba(163, 113, 247, 0.15) 0%, transparent 50%);
+}
+
+@keyframes gradientShift {
+  0% { transform: translate(0, 0) rotate(0deg); }
+  100% { transform: translate(-5%, -5%) rotate(3deg); }
+}
+
+/* Hero typography - gradient text */
+.VPHero .name {
+  font-size: 3.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--vp-c-brand-1), var(--vp-c-accent));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.VPHero .text {
+  font-size: 1.5rem;
+  color: var(--vp-c-text-1);
+  font-weight: 600;
+}
+
+.VPHero .tagline {
+  color: var(--vp-c-text-2);
+  font-size: 1.1rem;
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+/* ==========================================================================
+   Feature Cards - Dramatic hover effects
+   ========================================================================== */
+
+.VPFeature {
+  background: var(--vp-c-bg-soft) !important;
+  border: 1px solid var(--vp-c-border) !important;
+  border-radius: var(--border-radius) !important;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+/* Light mode hover - blue tint */
+.VPFeature:hover {
+  transform: translateY(-6px);
+  border-color: var(--vp-c-brand-1) !important;
+  box-shadow: var(--glow-brand), var(--vp-shadow-1) !important;
+  background: var(--vp-c-brand-soft) !important;
+}
+
+/* Dark mode hover - more dramatic glow */
+.dark .VPFeature:hover {
+  transform: translateY(-6px);
+  border-color: var(--vp-c-brand-1) !important;
+  box-shadow: var(--glow-brand), var(--vp-shadow-1) !important;
+  background: var(--vp-c-bg-elv) !important;
+}
+
+.VPFeature .icon {
+  font-size: 2rem;
+  transition: transform 0.3s ease;
+}
+
+.VPFeature:hover .icon {
+  transform: scale(1.1);
+}
+
+.VPFeature .title {
+  color: var(--vp-c-text-1);
+  font-weight: 600;
+}
+
+.VPFeature .details {
+  color: var(--vp-c-text-2);
+}
+
+/* ==========================================================================
+   Video Sections - Glowing container
+   ========================================================================== */
+
+.video-container {
+  position: relative;
+  border-radius: var(--border-radius);
+  overflow: hidden;
+  background: var(--vp-c-bg-mute);
+  border: 1px solid var(--vp-c-border);
+  transition: all 0.3s ease;
+}
+
+.video-container::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: var(--border-radius);
+  padding: 2px;
+  background: linear-gradient(135deg, var(--vp-c-brand-1), var(--vp-c-accent), var(--vp-c-brand-1));
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+}
+
+.video-container:hover::before {
+  opacity: 1;
+}
+
+.video-container video {
+  display: block;
+  width: 100%;
+}
+
+/* ==========================================================================
+   Screenshot Gallery - Hover zoom effect
+   ========================================================================== */
+
+.screenshot-gallery {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+}
+
+.screenshot-gallery img {
+  width: 100%;
+  height: auto;
+  border-radius: var(--border-radius);
+  border: 2px solid var(--vp-c-border);
+  transition: all 0.3s ease;
+}
+
+.screenshot-gallery img:hover {
+  transform: scale(1.03);
+  box-shadow: var(--glow-brand);
+  border-color: var(--vp-c-brand-1);
+}
+
+/* ==========================================================================
+   CTA Buttons - Prominent gradients
+   ========================================================================== */
+
+.VPButton.brand {
+  background: linear-gradient(135deg, var(--vp-c-brand-1), var(--vp-c-brand-3)) !important;
+  border: none !important;
+  color: #ffffff !important;
+  transition: all 0.2s ease !important;
+}
+
+.VPButton.brand:hover {
+  background: linear-gradient(135deg, var(--vp-c-brand-light), var(--vp-c-brand-1)) !important;
+  box-shadow: var(--glow-brand) !important;
+  transform: translateY(-2px) !important;
+}
+
+.VPButton.alt {
+  border: 2px solid var(--vp-c-border) !important;
+  color: var(--vp-c-text-1) !important;
+  transition: all 0.2s ease !important;
+}
+
+.VPButton.alt:hover {
+  border-color: var(--vp-c-brand-1) !important;
+  color: var(--vp-c-brand-1) !important;
+  background: var(--vp-c-brand-soft) !important;
+}
+
+/* ==========================================================================
+   Tech Stack Cards
+   ========================================================================== */
+
+.tech-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 16px;
+  margin: 24px 0;
+}
+
+.tech-card {
+  background: var(--vp-c-bg-soft);
+  border: 1px solid var(--vp-c-border);
+  border-radius: 8px;
+  padding: 16px;
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.tech-card:hover {
+  border-color: var(--vp-c-brand-1);
+  box-shadow: var(--glow-brand);
+  transform: translateY(-2px);
+}
+
+.tech-card strong {
+  color: var(--vp-c-brand-1);
+  display: block;
+  margin-bottom: 4px;
+}
+
+.tech-card span {
+  color: var(--vp-c-text-2);
+  font-size: 0.9rem;
+}
+
+/* ==========================================================================
+   Content Sections
+   ========================================================================== */
+
+.content-section {
+  padding: var(--section-spacing) 0;
+}
+
+.content-section h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--vp-c-text-1);
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.section-subtitle {
+  color: var(--vp-c-text-2);
+  text-align: center;
+  margin-bottom: 40px;
+}
+
+/* ==========================================================================
+   Help Section Links
+   ========================================================================== */
+
+.help-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  background: var(--vp-c-bg-soft);
+  border: 2px solid var(--vp-c-border);
+  border-radius: 12px;
+  color: var(--vp-c-text-1);
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.help-link:hover {
+  border-color: var(--vp-c-brand-1);
+  background: var(--vp-c-brand-soft);
+  box-shadow: var(--glow-brand);
+  transform: translateY(-2px);
+}
+
+/* ==========================================================================
+   Entrance Animations
+   ========================================================================== */
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.VPHero {
+  animation: fadeInUp 0.6s ease-out forwards;
+}
+
+.VPFeature {
+  animation: fadeInUp 0.5s ease-out forwards;
+  opacity: 0;
+}
+
+.VPFeature:nth-child(1) { animation-delay: 0.05s; }
+.VPFeature:nth-child(2) { animation-delay: 0.1s; }
+.VPFeature:nth-child(3) { animation-delay: 0.15s; }
+.VPFeature:nth-child(4) { animation-delay: 0.2s; }
+.VPFeature:nth-child(5) { animation-delay: 0.25s; }
+.VPFeature:nth-child(6) { animation-delay: 0.3s; }
+.VPFeature:nth-child(7) { animation-delay: 0.35s; }
+.VPFeature:nth-child(8) { animation-delay: 0.4s; }
+.VPFeature:nth-child(9) { animation-delay: 0.45s; }
+.VPFeature:nth-child(10) { animation-delay: 0.5s; }
+.VPFeature:nth-child(11) { animation-delay: 0.55s; }
+.VPFeature:nth-child(12) { animation-delay: 0.6s; }
+
+.video-container {
+  animation: fadeInUp 0.5s ease-out forwards;
+  opacity: 0;
+}
+
+/* ==========================================================================
+   Sidebar Navigation - Enhanced with Dividers
+   ========================================================================== */
+
+/* Sidebar container */
+.VPSidebar {
+  padding: 16px 0;
+}
+
+/* Sidebar group styling */
+.VPSidebar .sidebar-group {
+  margin-bottom: 8px;
+  position: relative;
+}
+
+/* Add divider between sidebar groups */
+.VPSidebar .sidebar-group:not(:first-child)::before {
+  content: '';
+  position: absolute;
+  top: -8px;
+  left: 24px;
+  right: 24px;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--vp-c-divider) 20%,
+    var(--vp-c-divider) 80%,
+    transparent
+  );
+}
+
+.VPSidebar .sidebar-group-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--vp-c-text-2) !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 16px 24px 8px 24px;
+  margin: 0;
+}
+
+/* Sidebar items */
+.VPSidebar .sidebar-item {
+  padding: 8px 24px;
+  font-size: 0.95rem;
+  color: var(--vp-c-text-1);
+  border-left: 3px solid transparent;
+  transition: all 0.2s ease;
+  margin: 2px 0;
+}
+
+.VPSidebar .sidebar-item:hover {
+  color: var(--vp-c-brand-1);
+  background: var(--vp-c-brand-soft);
+  border-left-color: var(--vp-c-brand-1);
+}
+
+/* Active sidebar item */
+.VPSidebar .sidebar-item.active {
+  color: var(--vp-c-brand-1);
+  font-weight: 600;
+  background: var(--vp-c-brand-soft);
+  border-left-color: var(--vp-c-brand-1);
+}
+
+/* Sidebar section dividers */
+.VPSidebar .sidebar-divider {
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--vp-c-divider) 20%,
+    var(--vp-c-divider) 80%,
+    transparent
+  );
+  margin: 16px 24px;
+}
+
+/* Sidebar section with icon */
+.VPSidebar .sidebar-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 24px 6px 24px;
+  margin-top: 8px;
+}
+
+.VPSidebar .sidebar-section-header:first-child {
+  margin-top: 0;
+}
+
+.VPSidebar .sidebar-section-icon {
+  font-size: 1rem;
+  opacity: 0.8;
+}
+
+.VPSidebar .sidebar-section-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--vp-c-text-2);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* Nested items */
+.VPSidebar .sidebar-items {
+  border-left: 1px solid var(--vp-c-divider);
+  margin-left: 12px;
+  padding-left: 12px;
+}
+
+.VPSidebar .sidebar-items .sidebar-item {
+  padding: 6px 16px;
+  font-size: 0.9rem;
+}
+
+/* Sidebar hover card effect */
+.VPSidebar .link {
+  display: block;
+  padding: 8px 24px;
+  color: var(--vp-c-text-1);
+  text-decoration: none;
+  border-left: 3px solid transparent;
+  transition: all 0.2s ease;
+}
+
+.VPSidebar .link:hover {
+  color: var(--vp-c-brand-1);
+  background: var(--vp-c-brand-soft);
+  border-left-color: var(--vp-c-brand-1);
+}
+
+.VPSidebar .link.active {
+  color: var(--vp-c-brand-1);
+  font-weight: 600;
+  background: var(--vp-c-brand-soft);
+  border-left-color: var(--vp-c-brand-1);
+}
+
+/* Collapsible sidebar groups */
+.VPSidebar .sidebar-group.is-collapsed .sidebar-group-title {
+  color: var(--vp-c-text-2);
+}
+
+.VPSidebar .sidebar-group .toggle {
+  top: 50%;
+  transform: translateY(-50%);
+  right: 16px;
+}
+
+/* Sidebar bottom padding */
+.VPSidebar > .sidebar-content {
+  padding-bottom: 24px;
+}
+
+/* ==========================================================================
+   Footer Styling
+   ========================================================================== */
+
+.VPFooter {
+  background: var(--vp-c-bg-soft);
+  border-top: 1px solid var(--vp-c-border);
+}
+
+/* ==========================================================================
+   Mobile Responsive
+   ========================================================================== */
+
+@media (max-width: 768px) {
+  .VPHero .name {
+    font-size: 2.5rem;
+  }
+
+  .VPHero .text {
+    font-size: 1.25rem;
+  }
+
+  .screenshot-gallery {
+    grid-template-columns: 1fr;
+  }
+
+  :root, .dark {
+    --section-spacing: 48px;
+    --card-padding: 16px;
+    --border-radius: 8px;
+  }
+
+  .tech-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+/* ==========================================================================
+   Mode Transition
+   ========================================================================== */
+
+* {
+  transition: background-color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
 }

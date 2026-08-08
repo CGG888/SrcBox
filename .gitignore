@@ -10,6 +10,7 @@
 /Output/
 /backup/
 /tasks/
+/docs/node_modules/
 
 *.suo
 *.user

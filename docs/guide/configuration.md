@@ -1,16 +1,61 @@
 # 配置说明
 
-## `user_settings.json`
+SrcBox 提供两类配置方式：**图形界面配置** 和 **JSON 文件配置**。
 
-位于程序运行目录，存储用户偏好设置。
+## 图形界面配置
+
+通过设置窗口（`Ctrl+,`）可以配置大部分选项：
+
+### 播放设置
+
+| 选项 | 说明 | 默认值 |
+|------|------|--------|
+| **硬件解码** | 启用 D3D11VA 硬件加速 | 开启 |
+| **FCC 快速切台** | 启用 FCC 预取优化 | 开启 |
+| **FCC 预取数量** | 预取并行数量 | 2 |
+| **UDP 组播优化** | 优化 UDP 组播播放 | 关闭 |
+| **换源超时** | 超时时间（秒） | 3 |
+| **时移缓冲** | 时移回看最大时长（小时） | 2 |
+
+### 音频设置
+
+| 选项 | 说明 | 范围 |
+|------|------|------|
+| **音量增益** | 音频增益 | -200dB ~ +60dB |
+| **最大音量** | 音量上限 | 100% ~ 1000% |
+| **音频延迟** | 音视频同步调整 | -100s ~ +100s |
+
+### 录制设置
+
+| 选项 | 说明 |
+|------|------|
+| **本地目录** | 录制保存路径，支持 `{channel}` 占位符 |
+| **保存模式** | 本地优先 / 上传优先 |
+| **WebDAV** | 配置服务器地址、用户名、密码 |
+
+### 界面设置
+
+| 选项 | 说明 |
+|------|------|
+| **主题模式** | 深色 / 浅色 / 跟随系统 |
+| **语言** | 简体中文 / 繁体中文 / English / Русский |
+| **关闭确认** | 退出时弹出确认框 |
+
+---
+
+## JSON 文件配置
+
+`user_settings.json` 位于程序运行目录，存储高级用户配置。
+
+### 完整配置示例
 
 ```json
 {
-  "Hwdec": true,              // 硬件解码开关
-  "FccPrefetchCount": 2,      // FCC 预取数量
+  "Hwdec": true,
+  "FccPrefetchCount": 2,
   "EnableUdpOptimization": false,
-  "SourceTimeoutSec": 3,      // 换源超时时间（秒）
-  "TimeshiftHours": 2,        // 时移回看时长（小时）
+  "SourceTimeoutSec": 3,
+  "TimeshiftHours": 2,
   "RecordingLocalDir": "recordings/{channel}",
   "Recording": {
     "Enabled": true,
@@ -18,28 +63,57 @@
     "UploadMaxConcurrency": 1
   },
   "ScheduledReminders": [],
-  "Language": "zh-CN",        // 界面语言
-  "ThemeMode": "System",      // 主题模式 (Dark/Light/System)
+  "Language": "zh-CN",
+  "ThemeMode": "System",
   "ConfirmOnClose": true
 }
 ```
 
-## 参数说明
+### 参数说明
 
-- **Hwdec**: 开启硬件加速（默认使用 `d3d11va`）。
-- **FccPrefetchCount**: FCC 预取并行数量，影响切台速度与资源占用平衡。
-- **EnableUdpOptimization**: UDP 组播优化开关。
-- **SourceTimeoutSec**: 换源超时时间（秒），若源无效则尝试下一个。
-- **TimeshiftHours**: 时移回看的最大时长（小时）。
-- **RecordingLocalDir**: 录播默认目录模板（支持 `{channel}`）。
-- **Recording.SaveMode**: 录制保存模式（本地/上传优先策略）。
-- **ScheduledReminders**: 预约列表持久化数据，含“仅提醒/自动播放”策略。
-- **Language**: 界面语言代码（如 `zh-CN`, `en-US`）。
-- **ThemeMode**: 应用程序主题模式（深色/浅色/跟随系统）。
-- **ConfirmOnClose**: 关闭窗口时是否弹出确认框（可最小化到托盘）。
+| 参数 | 类型 | 说明 |
+|------|------|------|
+| `Hwdec` | bool | 开启硬件加速（默认 `d3d11va`） |
+| `FccPrefetchCount` | int | FCC 预取数量，影响切台速度 |
+| `EnableUdpOptimization` | bool | UDP 组播优化开关 |
+| `SourceTimeoutSec` | int | 换源超时时间（秒） |
+| `TimeshiftHours` | int | 时移最大时长（小时） |
+| `RecordingLocalDir` | string | 录制目录模板 |
+| `Recording.Enabled` | bool | 启用录制功能 |
+| `Recording.SaveMode` | string | `local_only` / `local_then_upload` |
+| `Recording.UploadMaxConcurrency` | int | 上传并发数 |
+| `Language` | string | 语言代码 |
+| `ThemeMode` | string | `Dark` / `Light` / `System` |
+| `ConfirmOnClose` | bool | 关闭确认 |
 
-## 预约与录播建议
+---
 
-- 预约播放场景建议保持 `ConfirmOnClose=true`，避免误关导致错过提醒。
-- 录播上传场景建议按网络能力调整 `Recording.UploadMaxConcurrency`。
-- 使用远端存储时建议同时配置 WebDAV（见设置页“录播”分组）。
+## 配置优先级
+
+```
+图形界面设置 > JSON 文件设置 > 程序默认值
+```
+
+修改 JSON 文件后需要重启播放器生效。
+
+---
+
+## 配置文件位置
+
+| 位置 | 说明 |
+|------|------|
+| `user_settings.json` | 用户设置（程序运行目录） |
+| `app.log` | 运行日志（程序运行目录） |
+
+---
+
+## 常见问题
+
+**Q: 修改 JSON 后需要重启吗？**
+A: 是的，JSON 配置在启动时读取，修改后需要重启播放器。
+
+**Q: 如何恢复默认设置？**
+A: 删除 `user_settings.json`，播放器将使用默认配置重新创建。
+
+**Q: 设置不保存？**
+A: 确保程序目录有写入权限，或尝试以管理员身份运行。

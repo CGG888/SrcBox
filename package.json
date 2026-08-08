@@ -13,9 +13,9 @@
   "author": "",
   "license": "MIT",
   "devDependencies": {
-    "@vue/reactivity": "^3.5.29",
-    "@vue/runtime-core": "^3.5.29",
-    "@vue/runtime-dom": "^3.5.29",
-    "vitepress": "^1.0.0"
+    "@vue/reactivity": "^3.5.41",
+    "@vue/runtime-core": "^3.5.41",
+    "@vue/runtime-dom": "^3.5.41",
+    "vitepress": "^1.6.4"
   }
 }
