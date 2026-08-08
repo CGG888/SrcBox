@@ -56,7 +56,9 @@ namespace LibmpvIptvClient.Controls
 
             // Set dynamic title based on screen count using localized format string
             var titleFormat = System.Windows.Application.Current.FindResource("MultiScreen_TitleFormat")?.ToString() ?? "多屏播放-{0}屏";
-            Title = string.Format(titleFormat, screenCount);
+            var dynamicTitle = string.Format(titleFormat, screenCount);
+            Title = dynamicTitle;
+            TitleTextBlock.Text = dynamicTitle;
 
             SetupGrid();
             Loaded += OnLoaded;

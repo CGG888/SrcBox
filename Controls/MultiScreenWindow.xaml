@@ -6,7 +6,7 @@
         WindowStyle="None" ResizeMode="CanResize" 
         Background="Black" Foreground="{DynamicResource TextPrimaryBrush}"
         ShowInTaskbar="True" WindowStartupLocation="CenterScreen"
-        Title="{DynamicResource MultiScreen_Title}"
+        Title="多屏播放"
         Width="1280" Height="720"
         Focusable="True"
         KeyDown="Window_KeyDown"
@@ -66,7 +66,7 @@
         </Grid.ColumnDefinitions>
 
         <!-- Title -->
-        <TextBlock Grid.Column="0" Text="{DynamicResource MultiScreen_Title}" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="8,0,0,0" FontSize="12" FontWeight="Bold"/>
+        <TextBlock x:Name="TitleTextBlock" Grid.Column="0" Text="多屏播放" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center" Margin="8,0,0,0" FontSize="12" FontWeight="Bold"/>
 
         <!-- Window Control Buttons -->
         <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="0,0,4,0">
