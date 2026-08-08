@@ -582,6 +582,9 @@
   <sys:String x:Key="Menu_PlayPause">播放/暫停</sys:String>
   <sys:String x:Key="Menu_Playback">播放</sys:String>
   <sys:String x:Key="Menu_MultiScreen">多螢幕播放</sys:String>
+  <sys:String x:Key="Menu_4Screen">4 螢幕 (2×2)</sys:String>
+  <sys:String x:Key="Menu_6Screen">6 螢幕 (2×3)</sys:String>
+  <sys:String x:Key="Menu_9Screen">9 螢幕 (3×3)</sys:String>
   <sys:String x:Key="Menu_PrevChannel">上一頻道</sys:String>
   <sys:String x:Key="Menu_Record">錄製</sys:String>
   <sys:String x:Key="Menu_RecordNow">即時錄製</sys:String>
