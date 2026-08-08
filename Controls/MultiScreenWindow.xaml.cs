@@ -410,8 +410,11 @@ namespace LibmpvIptvClient.Controls
                 mpv.SetSettings(AppSettings.Current);
                 mpv.SetWid(_panels[i].Handle);
                 mpv.Initialize();
-                // Prevent mpv from pausing during buffering - same as main window behavior
-                mpv.SetString("cache-pause", "no");
+                // Multi-screen uses larger cache for stability when network is stressed
+                mpv.SetString("cache", "yes");
+                mpv.SetString("cache-secs", "10");
+                mpv.SetString("demuxer-max-bytes", "512MiB");
+                mpv.SetString("demuxer-max-back-bytes", "256MiB");
                 mpv.SetVolume(_volume);
                 mpv.Mute(true);
                 _players[i] = mpv;

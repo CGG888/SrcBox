@@ -22,6 +22,9 @@ namespace LibmpvIptvClient
             mpv_initialize(_handle);
             SetFlag("keep-open", true);
             SetFlag("idle", true);
+            // Prevent playback from pausing during buffering (both initial and ongoing)
+            SetString("cache-pause", "no");
+            SetString("cache-pause-initial", "no");
             SetString("ytdl", "no");
             SetString("hwdec", _settings.Decoder ?? "auto");
             SetString("gpu-api", "d3d11");
