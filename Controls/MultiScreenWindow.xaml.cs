@@ -33,6 +33,10 @@ namespace LibmpvIptvClient.Controls
         private System.Windows.Threading.DispatcherTimer? _topBarTimer;
         private System.Windows.Threading.DispatcherTimer? _mousePollTimer;
         private int[] _sourceIndexes;
+        // Reconnection support
+        private System.Windows.Threading.DispatcherTimer? _reconnectTimer;
+        private int[] _reconnectAttempts;
+        private bool[] _reconnecting;
 
         public MultiScreenWindow(int screenCount, Func<IReadOnlyList<Channel>>? getChannelsCallback, List<ChannelGroupData>? channelGroups = null)
         {
@@ -47,6 +51,8 @@ namespace LibmpvIptvClient.Controls
             _screenNumbers = new System.Windows.Controls.TextBlock[screenCount];
             _numberLabels = new WF.Label[screenCount];
             _sourceIndexes = new int[screenCount];
+            _reconnectAttempts = new int[screenCount];
+            _reconnecting = new bool[screenCount];
 
             SetupGrid();
             Loaded += OnLoaded;
@@ -122,6 +128,58 @@ namespace LibmpvIptvClient.Controls
             CreatePlayers();
             SetFocus(0);  // Auto-select first screen so keyboard shortcuts work immediately
             Focus();
+            StartReconnectTimer();
+        }
+
+        private void StartReconnectTimer()
+        {
+            _reconnectTimer?.Stop();
+            _reconnectTimer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(5) };
+            _reconnectTimer.Tick += (s, e) => CheckPlayerHealth();
+            _reconnectTimer.Start();
+        }
+
+        private void CheckPlayerHealth()
+        {
+            for (int i = 0; i < _screenCount; i++)
+            {
+                if (_reconnecting[i] || _channels[i] == null) continue;
+
+                // Check if player is still playing by verifying it has a channel
+                // If the player needs reconnection, mpv will report idle or error state
+                var player = _players[i];
+                if (player != null)
+                {
+                    var idle = player.GetString("idle");
+                    // If player reports idle (not playing) but we have a channel assigned, try to reconnect
+                    if (string.Equals(idle, "yes", StringComparison.OrdinalIgnoreCase))
+                    {
+                        ScheduleReconnect(i);
+                    }
+                }
+            }
+        }
+
+        private void ScheduleReconnect(int screenIndex)
+        {
+            if (screenIndex < 0 || screenIndex >= _screenCount) return;
+            if (_reconnecting[screenIndex]) return; // Already reconnecting
+            if (_reconnectAttempts[screenIndex] > 5) return; // Max attempts reached
+
+            _reconnecting[screenIndex] = true;
+            var delay = Math.Min(1000 * (1 << _reconnectAttempts[screenIndex]), 30000); // Exponential backoff, max 30s
+            _reconnectAttempts[screenIndex]++;
+
+            var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromMilliseconds(delay) };
+            timer.Tick += (s, e) => {
+                timer.Stop();
+                if (_channels[screenIndex] != null)
+                {
+                    PlayChannel(screenIndex, _channels[screenIndex]);
+                }
+                _reconnecting[screenIndex] = false;
+            };
+            timer.Start();
         }
 
         private void SetupGrid()
@@ -342,7 +400,8 @@ namespace LibmpvIptvClient.Controls
                     var src = currentChannel.Sources[i];
                     var srcLabel = string.IsNullOrEmpty(src.Name) ? $"源 {i + 1}" : src.Name;
                     int sourceIdx = i; // Capture value, not reference
-                    var item = new ToolStripMenuItem(srcLabel, null, (s, e) => PlaySource(screenIndex, currentChannel, sourceIdx));
+                    // Use screenIndex to re-fetch channel at click time (not menu open time)
+                    var item = new ToolStripMenuItem(srcLabel, null, (s, e) => PlaySourceByIndex(screenIndex, sourceIdx));
                     if (i == _sourceIndexes[screenIndex])
                         item.Checked = true;
                     sourceMenu.DropDownItems.Add(item);
@@ -534,6 +593,14 @@ namespace LibmpvIptvClient.Controls
             {
                 _players[screenIndex]?.LoadFile(source.Url);
             }
+        }
+
+        // Helper that re-fetches channel at click time (not menu open time)
+        private void PlaySourceByIndex(int screenIndex, int sourceIndex)
+        {
+            var channel = _channels[screenIndex];
+            if (channel != null)
+                PlaySource(screenIndex, channel, sourceIndex);
         }
 
         private void CloseScreen(int screenIndex)
