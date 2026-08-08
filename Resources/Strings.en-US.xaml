@@ -612,6 +612,7 @@
 
   <!-- MultiScreen -->
   <sys:String x:Key="MultiScreen_Title">Multi-Screen</sys:String>
+  <sys:String x:Key="MultiScreen_TitleFormat">Multi-Screen {0}-Screen</sys:String>
   <sys:String x:Key="MultiScreen_4Screen">4-Screen</sys:String>
   <sys:String x:Key="MultiScreen_6Screen">6-Screen</sys:String>
   <sys:String x:Key="MultiScreen_9Screen">9-Screen</sys:String>

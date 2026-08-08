@@ -609,6 +609,7 @@
 
   <!-- MultiScreen -->
   <sys:String x:Key="MultiScreen_Title">多屏播放</sys:String>
+  <sys:String x:Key="MultiScreen_TitleFormat">多屏播放-{0}屏</sys:String>
   <sys:String x:Key="MultiScreen_4Screen">4屏</sys:String>
   <sys:String x:Key="MultiScreen_6Screen">6屏</sys:String>
   <sys:String x:Key="MultiScreen_9Screen">9屏</sys:String>

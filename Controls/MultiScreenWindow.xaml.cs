@@ -54,8 +54,9 @@ namespace LibmpvIptvClient.Controls
             _reconnectAttempts = new int[screenCount];
             _reconnecting = new bool[screenCount];
 
-            // Set dynamic title based on screen count
-            Title = $"多屏播放-{screenCount}屏";
+            // Set dynamic title based on screen count using localized format string
+            var titleFormat = System.Windows.Application.Current.FindResource("MultiScreen_TitleFormat")?.ToString() ?? "多屏播放-{0}屏";
+            Title = string.Format(titleFormat, screenCount);
 
             SetupGrid();
             Loaded += OnLoaded;

@@ -602,6 +602,7 @@
 
   <!-- MultiScreen -->
   <sys:String x:Key="MultiScreen_Title">Мультиэкран</sys:String>
+  <sys:String x:Key="MultiScreen_TitleFormat">Мультиэкран-{0} экранов</sys:String>
   <sys:String x:Key="MultiScreen_4Screen">4 экрана</sys:String>
   <sys:String x:Key="MultiScreen_6Screen">6 экранов</sys:String>
   <sys:String x:Key="MultiScreen_9Screen">9 экранов</sys:String>
