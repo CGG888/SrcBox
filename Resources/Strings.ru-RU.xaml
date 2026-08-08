@@ -582,6 +582,7 @@
   <sys:String x:Key="Menu_NextChannel">Следующий канал</sys:String>
   <sys:String x:Key="Menu_PlayPause">Воспроизведение/Пауза</sys:String>
   <sys:String x:Key="Menu_Playback">Воспроизведение</sys:String>
+  <sys:String x:Key="Menu_MultiScreen">Мультиэкран</sys:String>
   <sys:String x:Key="Menu_PrevChannel">Предыдущий канал</sys:String>
   <sys:String x:Key="Menu_Record">Запись</sys:String>
   <sys:String x:Key="Menu_RecordNow">Запись сейчас</sys:String>

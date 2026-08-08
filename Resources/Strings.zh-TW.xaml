@@ -581,6 +581,7 @@
   <sys:String x:Key="Menu_NextChannel">下一頻道</sys:String>
   <sys:String x:Key="Menu_PlayPause">播放/暫停</sys:String>
   <sys:String x:Key="Menu_Playback">播放</sys:String>
+  <sys:String x:Key="Menu_MultiScreen">多螢幕播放</sys:String>
   <sys:String x:Key="Menu_PrevChannel">上一頻道</sys:String>
   <sys:String x:Key="Menu_Record">錄製</sys:String>
   <sys:String x:Key="Menu_RecordNow">即時錄製</sys:String>

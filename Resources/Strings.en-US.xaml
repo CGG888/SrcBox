@@ -592,6 +592,7 @@
   <sys:String x:Key="Menu_NextChannel">Next Channel</sys:String>
   <sys:String x:Key="Menu_PlayPause">Play/Pause</sys:String>
   <sys:String x:Key="Menu_Playback">Playback</sys:String>
+  <sys:String x:Key="Menu_MultiScreen">Multi-Screen</sys:String>
   <sys:String x:Key="Menu_PrevChannel">Previous Channel</sys:String>
   <sys:String x:Key="Menu_Record">Record</sys:String>
   <sys:String x:Key="Menu_RecordNow">Record Now</sys:String>
