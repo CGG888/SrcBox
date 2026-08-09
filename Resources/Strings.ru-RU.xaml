@@ -9,6 +9,9 @@
   <sys:String x:Key="UI_TabChannel">Каналы</sys:String>
   <sys:String x:Key="UI_ChannelPreview">Предпросмотр канала</sys:String>
   <sys:String x:Key="UI_ChannelPreviewHint">Требуется rtp2httpd с включённым X-Request-Snapshot. Показывает предпросмотр при наведении мыши.</sys:String>
+  <sys:String x:Key="UI_ChannelPreview_Width">Ширина</sys:String>
+  <sys:String x:Key="UI_ChannelPreview_Height">Высота</sys:String>
+  <sys:String x:Key="UI_ChannelPreview_SizeHint">Рекомендуется соотношение 16:9, например 214x120 / 320x180</sys:String>
   <sys:String x:Key="UI_TabRecording">Запись</sys:String>
   <sys:String x:Key="UI_TabAbout">О программе</sys:String>
   <sys:String x:Key="UI_TabEpgLogo">Программа и логотипы</sys:String>

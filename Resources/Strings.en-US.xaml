@@ -9,6 +9,9 @@
   <sys:String x:Key="UI_TabChannel">Channel</sys:String>
   <sys:String x:Key="UI_ChannelPreview">Channel Preview</sys:String>
   <sys:String x:Key="UI_ChannelPreviewHint">Requires rtp2httpd with X-Request-Snapshot enabled. Shows preview on mouse hover.</sys:String>
+  <sys:String x:Key="UI_ChannelPreview_Width">Width</sys:String>
+  <sys:String x:Key="UI_ChannelPreview_Height">Height</sys:String>
+  <sys:String x:Key="UI_ChannelPreview_SizeHint">Recommended 16:9 ratio, e.g. 214x120 / 320x180</sys:String>
   <sys:String x:Key="UI_TabRecording">Recording</sys:String>
   <sys:String x:Key="UI_TabAbout">About</sys:String>
   <sys:String x:Key="UI_TabEpgLogo">EPG &amp; Logos</sys:String>

@@ -246,6 +246,8 @@ namespace LibmpvIptvClient
                 try
                 {
                     if (CbChannelPreview != null) CbChannelPreview.IsChecked = current.EnableChannelPreview;
+                    if (TbChannelPreviewWidth != null) TbChannelPreviewWidth.Text = current.ChannelPreviewWidth.ToString();
+                    if (TbChannelPreviewHeight != null) TbChannelPreviewHeight.Text = current.ChannelPreviewHeight.ToString();
                 }
                 catch { }
             }
@@ -532,6 +534,8 @@ namespace LibmpvIptvClient
             try
             {
                 s.EnableChannelPreview = CbChannelPreview?.IsChecked == true;
+                s.ChannelPreviewWidth = int.TryParse(TbChannelPreviewWidth?.Text, out var w) ? Math.Max(80, w) : 214;
+                s.ChannelPreviewHeight = int.TryParse(TbChannelPreviewHeight?.Text, out var h) ? Math.Max(60, h) : 120;
             }
             catch { }
 

@@ -152,8 +152,8 @@ namespace LibmpvIptvClient.Behaviors
                 BorderBrush = new SolidColorBrush(System.Windows.Media.Color.FromRgb(200, 200, 200)),
                 BorderThickness = new Thickness(1),
                 CornerRadius = new CornerRadius(4),
-                Width = PreviewWidth,
-                Height = PreviewHeight,
+                Width = AppSettings.Current.ChannelPreviewWidth,
+                Height = AppSettings.Current.ChannelPreviewHeight,
                 Effect = new System.Windows.Media.Effects.DropShadowEffect
                 {
                     BlurRadius = 8,
@@ -188,8 +188,8 @@ namespace LibmpvIptvClient.Behaviors
                 {
                     Source = preview,
                     Stretch = Stretch.UniformToFill,
-                    Width = PreviewWidth,
-                    Height = PreviewHeight
+                    Width = AppSettings.Current.ChannelPreviewWidth,
+                    Height = AppSettings.Current.ChannelPreviewHeight
                 };
             }
             else

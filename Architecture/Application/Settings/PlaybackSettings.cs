@@ -141,6 +141,9 @@ namespace LibmpvIptvClient
         public bool AutoLoadLastSource { get; set; } = true;
         // 频道快照预览（需要 rtp2httpd 开启 X-Request-Snapshot）
         public bool EnableChannelPreview { get; set; } = false;
+        // 频道快照尺寸（默认 214x120，16:9）
+        public int ChannelPreviewWidth { get; set; } = 214;
+        public int ChannelPreviewHeight { get; set; } = 120;
         public List<ScheduledReminder> ScheduledReminders { get; set; } = new List<ScheduledReminder>();
         public bool ConfirmOnClose { get; set; } = true;
         public string CloseMode { get; set; } = "";

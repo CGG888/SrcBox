@@ -98,6 +98,8 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             AppSettings.Current.Volume = settings.Volume;
             AppSettings.Current.AudioDelay = settings.AudioDelay;
             AppSettings.Current.EnableChannelPreview = settings.EnableChannelPreview;
+            AppSettings.Current.ChannelPreviewWidth = settings.ChannelPreviewWidth;
+            AppSettings.Current.ChannelPreviewHeight = settings.ChannelPreviewHeight;
             AppSettings.Current.Deinterlace = settings.Deinterlace;
             AppSettings.Current.DeinterlaceFieldParity = settings.DeinterlaceFieldParity;
             AppSettings.Current.DeinterlaceAlgorithm = settings.DeinterlaceAlgorithm;

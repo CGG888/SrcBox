@@ -520,6 +520,15 @@
                   <StackPanel>
                     <CheckBox x:Name="CbChannelPreview" Content="{DynamicResource UI_ChannelPreview}"/>
                     <TextBlock Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" Margin="24,2,0,0" TextWrapping="Wrap" Text="{DynamicResource UI_ChannelPreviewHint}"/>
+                    <StackPanel Orientation="Horizontal" Margin="24,8,0,0">
+                      <TextBlock Text="{DynamicResource UI_ChannelPreview_Width}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                      <TextBox x:Name="TbChannelPreviewWidth" Width="60" Height="24"/>
+                      <TextBlock Text="px" VerticalAlignment="Center" Margin="4,0,16,0"/>
+                      <TextBlock Text="{DynamicResource UI_ChannelPreview_Height}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                      <TextBox x:Name="TbChannelPreviewHeight" Width="60" Height="24"/>
+                      <TextBlock Text="px" VerticalAlignment="Center" Margin="4,0,0,0"/>
+                    </StackPanel>
+                    <TextBlock Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" Margin="24,4,0,0" TextWrapping="Wrap" Text="{DynamicResource UI_ChannelPreview_SizeHint}"/>
                   </StackPanel>
                 </Border>
                 <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16">
