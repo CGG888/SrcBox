@@ -3,345 +3,97 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE.txt)
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4)](https://dotnet.microsoft.com/)
 [![Platform](https://img.shields.io/badge/Platform-Windows-0078D6)](https://www.microsoft.com/windows)
+[![Version](https://img.shields.io/badge/Version-1.1.9-58a6ff.svg)](https://github.com/CGG888/SrcBox/releases)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
 [English](./README_EN.md) | [中文](./README.md)
 
-**SrcBox** is a high-performance, modern IPTV player designed for the Windows platform.
+**SrcBox** is a high-performance, modern IPTV player for Windows. Built on **libmpv**, combined with **WPF** UI, supporting M3U playlists, EPG, timeshift, scheduled recording, multi-screen playback, web remote control, and more.
 
-Built on the powerful **libmpv** playback core and combined with a modern **WPF** interface, it delivers a smooth and stable live viewing experience. It supports core features like M3U playlists, EPG (Electronic Program Guide), and Catchup (Replay), while offering deep optimizations for IPTV scenarios (such as FCC fast channel switching and UDP multicast optimization), making it the ideal choice for watching live TV on your PC.
+[⬇️ Download Latest](https://github.com/CGG888/SrcBox/releases) | [📖 Documentation](https://srcbox.top/en) | [🐛 Report Issues](https://github.com/CGG888/SrcBox/issues)
+
+[English](./README_EN.md) | [中文](./README.md)
 
 ---
 
 > **Disclaimer**:
->
-> 1. All videos, screenshots, and demonstrations shown on this page are for **functional demonstration purposes only** and are not actual playable or available media resources.
-> 2. This project **does not provide any m3u playlist files or the channel data contained therein**, nor is it responsible for third-party data sources.
-> 3. SrcBox is merely an open-source player tool; users must find legal playback sources themselves. Please comply with local laws and regulations.
+> All videos, screenshots, and demos on this page are for **functional demonstration only** and are not actual playable or available media resources. **This project does not provide any m3u playlist files or channel data**, and is not responsible for third-party data sources. Please use legal playback sources and comply with local laws.
 
-## Table of Contents
+## Features
 
-- [Overview](#overview)
-- [Features & Changelog](#features--changelog)
-  - [Core Playback](#core-playback)
-  - [IPTV Specifics](#iptv-specifics)
-  - [Fullscreen & Overlay](#fullscreen--overlay)
-- [Roadmap](#roadmap)
-- [Internationalization](#internationalization)
-- [Interface & Interaction](#interface--interaction)
-- [Configuration & Parameters](#configuration--parameters)
-- [libmpv Engine](#libmpv-engine)
-- [Development Guide](#development-guide)
-  - [Prerequisites](#prerequisites)
-  - [Build & Run](#build--run)
-  - [Troubleshooting](#troubleshooting)
-  - [Testing & Contribution](#testing--contribution)
-- [Screenshots](#screenshots)
+| Feature | Description |
+|:---:|------|
+| ⚡ **FCC Fast Zapping** | Millisecond-level channel switching |
+| 📺 **M3U + EPG** | Local/remote M3U playlists, full XMLTV support |
+| ⏪ **Timeshift & Catchup** | Real-time seeking in live streams |
+| 🎬 **Scheduled Recording** | Foreground/background modes, WebDAV sync |
+| 🖥️ **Multi-Screen** | 4/6/9 screen simultaneous viewing |
+| 📱 **Web Remote** | Control player from browser, anywhere |
+| 🔧 **Hardware Decoding** | D3D11VA/DXVA2/NVDEC/Software auto-switch |
+| 📋 **Channel Management** | Groups, search, favorites, history |
 
----
+## System Requirements & Shortcuts
 
-## Overview
+| System Requirements | |
+|:---:|------|
+| **OS** | Windows 10 / 11 (x64) |
+| **Runtime** | .NET 8.0 SDK |
+| **Dependency** | libmpv-2.dll (included in repo) |
 
-**SrcBox** uses `libmpv-2.dll` as its playback core, hosting the video window via `WindowsFormsHost`. It provides IPTV channel list, EPG, catchup, timeshift, recording, and upload queue capabilities.
+| Common Shortcuts | |
+|:---:|------|
+| `Space` | Play/Pause |
+| `Enter` | Toggle Fullscreen |
+| `↑↓` | Switch Channel |
+| `E` | EPG Guide |
+| `L` | Channel List |
+| `R` | Start/Stop Recording |
 
-- Entry Window: [MainWindow.xaml](./MainWindow.xaml)
-- libmpv Wrapper: [MpvPlayer.cs](./MpvPlayer.cs)
-- M3U Parser: [Services/M3UParser.cs](./Services/M3UParser.cs)
-- EPG Service: [Services/EpgService.cs](./Services/EpgService.cs)
-- Main playback state: [Architecture/Presentation/Mvvm/MainWindow/MainShellViewModel.cs](./Architecture/Presentation/Mvvm/MainWindow/MainShellViewModel.cs)
+## Recent Updates (v1.1.9)
 
----
+- 🖥️ **Multi-Screen** - 4/6/9 screen viewing, 1-9 keys quick select
+- 🎬 **Scheduled Recording** - Foreground/background modes, toast notification
+- 🔧 **Decoder Selection** - Auto/D3D11VA/DXVA2/NVDEC/Software
+- ⌨️ **Shortcuts Help** - New ShortcutsWindow for keyboard reference
+- ⚡ **Timeshift Enhancement** - Seek limited within program boundaries
 
-## Technical Architecture
+[View All Updates →](https://github.com/CGG888/SrcBox/releases)
 
-This project is developed using **C# / WPF**. The core architecture is as follows:
+## Architecture
 
-- **UI Layer**: Built with WPF (ModernWpf), providing a smooth and modern user experience.
-- **Architecture Layer**: `Architecture/` is split into Application / Platform / Presentation, with modular playback and settings flows.
-- **Interop Layer**: Encapsulates libmpv calls via `MpvPlayer.cs` and `MpvPlayerEngineAdapter`.
-- **Rendering Layer**: Uses `WindowsFormsHost` to host a Win32 window handle, embedding mpv's rendering output into the WPF interface to bypass WPF's native media element limitations.
-- **Service Layer**:
-  - `M3UParser`: High-performance regex-based parser supporting complex M3U extended tags.
-  - `EpgService`: Asynchronous EPG loading and in-memory caching based on `XmlSerializer`.
+| Layer | Description |
+|------|-------------|
+| **UI Layer** | WPF (ModernWpf) modern interaction |
+| **Architecture** | `Architecture/` (Application/Platform/Presentation) |
+| **Interop** | `MpvPlayer.cs` + `MpvPlayerEngineAdapter` wrapping libmpv |
+| **Services** | `M3UParser`, `EpgService`, `WebDAV`, etc. |
 
-### Project Structure
-
-```text
-📂 SrcBox
-├── 📂 Architecture    # Layered modules (Application/Platform/Presentation)
-├── 📂 Services        # Core services (M3U/EPG/Recording/WebDAV/Notifications)
-├── 📂 Controls        # Drawers and dialogs (EPG/Recording/Timeshift/Upload Queue)
-├── 📂 Resources       # Localization and theme resources
-├── 📂 Tests           # MSTest automation project
-├── 📄 MainWindow.*.cs # Split main window logic
-└── 📄 MpvPlayer.cs    # libmpv wrapper
-```
-
----
-
-## Features & Changelog
-
-Version note: verifiable Git tags in this repository are `1.0.1` to `1.1.9`; current version is `1.1.9`.
-
-### Core Playback
-
-| Feature | Description | Params/Example | Changelog |
-| :--- | :--- | :--- | :--- |
-| **Playback Control** | Play/Pause, Stop, Seek, Fast Forward/Rewind | Hotkeys: Space/S/Arrow keys | Since 1.0.1 |
-| **Volume Control** | Slider adjustment, mute support | Range 0-100, hotkey M | Since 1.0.7 |
-| **Audio Settings** | Volume gain, max volume limit, audio delay | -200dB～+60dB, hotkey Ctrl+PgUp/PgDn | Since 1.1.6 |
-| **Decoder Selection** | Hardware/software decoder selection | Auto/D3D11VA/DXVA2/NVDEC/Software, switchable during playback | Since 1.1.9 |
-| **Status Indicators** | Live/Replay/Timeshift status in overlay | Auto-detection | Since 1.0.5 |
-| **Scheduled Reminder & Auto Play** | Program reminder and scheduled autoplay policy | Supports “remind-only / auto-play” modes | Since 1.1.2 |
-| **Scheduled Recording** | Front/Back scheduled recording modes | Front recording supports custom duration auto-stop | Since 1.1.9 |
-| **Minimal Mode** | Compact player window mode with dedicated interactions | Synchronized in window/fullscreen, hotkey Ctrl+Shift+L | Since 1.1.2 |
-
-### IPTV Specifics
-
-| Feature | Description | Params/Example | Changelog |
-| :--- | :--- | :--- | :--- |
-| **M3U Parsing** | Local/Remote M3U, UTF-8/GB18030 compatible | Supports `#EXTINF` attributes | Since 1.0.1 |
-| **M3U Binary Cache** | ETag/Last-Modified validated binary cache | Cache hit reduces loading from 3-10s to milliseconds | Since 1.1.8 |
-| **EPG** | XMLTV (gz) support, day switching | Auto-match `tvg-id`, CCTV/Education channel suffixes, hotkey E | Since 1.0.1 |
-| **Catchup (Replay)** | Template-based catchup URL generation | `{utc:yyyyMMddHHmmss}` etc. | Since 1.0.1 |
-| **Timeshift** | Seek back in live stream history, hotkey T | Depends on `catchup-source`, seek limited within program boundaries | Since 1.0.2 |
-| **Channel Mgmt** | Grouping, Search, Favorites, History | Persisted locally, supports group sorting, hotkeys L/F | Group/Search/Favorites: since 1.0.1; History: since 1.0.4 |
-| **FCC/UDP** | Fast Channel Change & Multicast optimization | Toggle in Settings | Since 1.0.1 |
-| **Deinterlace** | Optimized for 1080i/720i interlaced video | Auto-detection, multiple algorithms | Since 1.1.6 |
-| **Web Remote** | Control player through browser | Playback, volume, channel switching | Since 1.1.6 |
-| **Multi-Screen** | 4/6/9 screen simultaneous playback | Hotkeys Ctrl+4/6/9, 1-9 to select screen | Since 1.1.9 |
-| **Recording & Upload** | Local recording, WebDAV upload, upload queue | Local/remote modes, hotkey R | Since 1.1.2 |
-
-### Fullscreen & Overlay
-
-- **Double-click/Enter Fullscreen**: Toggle fullscreen by double-clicking or pressing Enter.
-- **Overlay Bar**: Auto-shows at bottom on mouse move; supports controls & EPG toggle.
-- **Side Drawer**: Auto-shows channel list (right) or EPG (left) on mouse hover near edges.
-- **Escape Key**: Exit fullscreen mode.
-
-### v1.1.9 New Features
-- **Multi-Screen Playback**: Support 4/6/9 screen simultaneous playback, 1-9 keys for quick screen selection
-- **Multi-Screen Source Switching**: Source submenu in multi-screen, ↑↓ switch channels, ←→ switch sources
-- **Tray Multi-Screen Menu**: Add multi-screen submenu to tray context menu (4/6/9)
-- **Scheduled Recording**: Support front/back scheduled recording modes, recording completion toast notification
-- **Front Recording Timer**: Custom duration auto-stop for front recording
-- **Decoder Selection**: Support Auto/D3D11VA/DXVA2/NVDEC/Software, switchable during playback
-- **Shortcuts Help Window**: New ShortcutsWindow for keyboard shortcuts reference
-- **Menu System Refactoring**: Classified by function domain, added TXT format support
-- **Settings Window Refactoring**: 12 tabs consolidated to 7, optimized dark/light theme colors
-- **Timeshift Improvements**: Seek limited within program boundaries, continuous playback, auto-jump to next program
-- **M3U Dropdown Refresh**: Auto-refresh channel list dropdown after adding new source
-- **mpv Cache Optimization**: Dynamic mpv cache control based on recording state, reducing memory usage
-
-### v1.1.6 New Features
-- **Web Remote Control**: Control the player through a browser, with playback control, volume, channel switching and status view
-- **Audio Settings**: Volume gain (-200dB～+60dB), max volume limit (100%～1000%), audio delay (-100s～+100s)
-- **Deinterlace**: Optimized for 1080i/720i interlaced video streams with auto-detection and multiple algorithms (yadif/bwdif)
-- **Keyboard Shortcuts**: Full keyboard shortcut support including playback control, channel switching, volume, fullscreen toggle, etc.
-- **Resizable Settings Window**: Settings window can now be freely resized
-
-### v1.1.2+ Interaction Highlights (Synced from VitePress)
-- **EPG status chips**: Live red chip and Replay green chip; clicking Live chip switches back to live immediately.
-- **Now-playing indicators**: Current row highlight and a green left stripe during replay playback.
-- **Scheduling improvements**: single-instance reminder list, checkbox batch delete, Select All/Invert, and unified tray/right-click/dropdown entries.
-- **Scheduled autoplay policy**: supports both “remind-only” and “auto-play-at-time” modes.
-- **Minimal mode sync**: compact window top interactions, resize behavior, and status badges stay synchronized with window/fullscreen states.
-- **Tray & exit flow**: persistent tray with Open/Reminders/Manage M3U/Settings/Exit and explicit “No => minimize to tray” behavior.
-
----
-
-## Roadmap
-
-We are dedicated to continuously improving the IPTV viewing experience. Here are our future plans and completed features:
-
-### Future Plans
-- [ ] **AI Recommendation**: Personalized content suggestions based on viewing habits.
-- [ ] **Cloud PVR**: Remote recording to connected cloud storage.
-- [ ] **Advanced A/V**: HDR10+ dynamic metadata support, 8K 120fps decoding optimization.
-- [ ] **Interactive Features**: Voice barrage (Speech-to-Text), low-latency cloud gaming entry.
-- [ ] **Copyright Protection**: Blockchain-based copyright verification.
-- [ ] **Test Coverage Expansion**: Add more unit tests for playback state, recording index, and EPG synchronization.
-- [ ] **Recording UX Improvements**: Improve in-progress metadata sync and remote metadata consistency.
-- [ ] **Playback Pipeline Optimization**: Further reduce zap latency and improve weak-network resilience.
-- [ ] **Source Governance**: Improve source health checks, fallback policies, and observability logs.
-
-### Completed Features
-- [x] **Timeshift**: Replay-based timeshifting via `catchup-source` with real-time seeking, seek limited within program boundaries.
-- [x] **EPG**: XMLTV (gz) parsing and display, with CCTV/Education channel type suffix support.
-- [x] **Catchup**: Template-based automatic replay URL generation.
-- [x] **M3U Parsing**: Local/Remote playlist support with `#EXTINF` attributes, TXT format support.
-- [x] **M3U Binary Cache**: ETag/Last-Modified validated binary cache, millisecond-level loading.
-- [x] **Channel Mgmt**: Grouping, search, favorites, and group sorting.
-- [x] **Live Optimization**: FCC fast switching, UDP multicast optimization, auto-source switching.
-- [x] **Hardware Decoding**: Enabled `d3d11va` by default, multiple decoder options (D3D11VA/DXVA2/NVDEC/Software).
-- [x] **Multi-Screen**: 4/6/9 screen simultaneous playback, 1-9 key selection, source switching.
-- [x] **Recording**: Local recording, recording index, upload queue, WebDAV integration, front/back scheduled recording.
-- [x] **Scheduling**: Program reminders, reminder list, scheduled autoplay policy, recording completion toast.
-- [x] **Minimal Mode**: Compact player mode, top-bar interactions, and state synchronization across window/fullscreen.
-- [x] **Web Remote Control**: Browser-based player control with playback, volume, and channel switching.
-- [x] **Audio Settings**: Volume gain, max volume limit, and audio delay adjustment.
-- [x] **Deinterlace**: Smart processing for 1080i/720i interlaced video.
-- [x] **Keyboard Shortcuts**: Full keyboard shortcut support for blind operation, shortcuts help window.
-- [x] **UI/UX**: Fullscreen overlay, side drawer, multi-language support (ZH/EN/ZH-TW/RU), resizable settings window.
-- [x] **Close Mode Memory**: Remember user choice (exit or minimize to tray).
-
----
-
-## Internationalization
-
-This project supports multi-language switching (currently Simplified Chinese, Traditional Chinese, English, Russian).
-
-For detailed internationalization guides and how to contribute translations, please refer to the **[Internationalization Documentation](https://srcbox.top/en/i18n)**.
-
-### Quick Contribution
-
-1.  Locate `Strings.en-US.xaml` in the `Resources/` directory.
-2.  Copy and rename it to the target language code (e.g., `Strings.fr-FR.xaml`).
-3.  Translate the content and submit a Pull Request.
-
----
-
-## Interface & Interaction
-
-### Main Interface
-
-- **Top Bar**: Menu buttons (Open File, Settings, etc.) and window controls.
-- **Center**: Video playback area.
-- **Bottom/Overlay**: Progress bar, volume, toggles (EPG/List).
-
-### Keyboard Shortcuts
-
-| Shortcut | Function | Description |
-|----------|----------|-------------|
-| `Space` | Play/Pause | Toggle playback state |
-| `S` | Stop | Stop current playback |
-| `↑` | Previous Channel | Switch to previous channel |
-| `↓` | Next Channel | Switch to next channel |
-| `←` | Previous Source / Rewind | Live mode: switch source; Timeshift/Replay mode: rewind |
-| `→` | Next Source / Fast Forward | Live mode: switch source; Timeshift/Replay mode: fast forward |
-| `M` | Mute | Toggle mute state |
-| `=` / `+` | Volume Up | Increase volume |
-| `-` / `Num-` | Volume Down | Decrease volume |
-| `Enter` | Toggle Fullscreen | Enter/exit fullscreen mode |
-| `L` | Channel List | Show/hide channel list sidebar |
-| `Ctrl+Shift+L` | Minimal Mode | Toggle compact player window |
-| `E` | EPG | Show/hide EPG program guide |
-| `R` | Start/Stop Recording | Control recording start or stop |
-| `Escape` | Exit Fullscreen | Return to window mode from fullscreen |
-| `F1` | Debug Window | Open debug information window |
-| `Ctrl+,` | Settings | Open settings window |
-| `Ctrl+/` | Shortcuts Help | Open keyboard shortcuts help window |
-| `Ctrl+4` | 4-Screen | Open 4-screen multi-screen playback |
-| `Ctrl+6` | 6-Screen | Open 6-screen multi-screen playback |
-| `Ctrl+9` | 9-Screen | Open 9-screen multi-screen playback |
-
-For detailed information, please refer to the **[Keyboard Shortcuts Documentation](https://srcbox.top/en/guide/keyboard-shortcuts)**.
-
-### Official Documentation
-
->> **[Visit Official Documentation Website](https://srcbox.top/en)** <<
-
-| Language | Documentation Link |
-|----------|-------------------|
-| 简体中文 | [srcbox.top](https://srcbox.top) |
-| 繁體中文 | [srcbox.top/zh-TW](https://srcbox.top/zh-TW) |
-| English | [srcbox.top/en](https://srcbox.top/en) |
-| Русский | [srcbox.top/ru](https://srcbox.top/ru) |
-
----
-
-## Configuration & Parameters
-
-### `user_settings.json`
-
-Located in the application run directory, stores user preferences.
-
-```json
-{
-  "Hwdec": true,              // Hardware decoding
-  "SourceTimeoutSec": 3,      // Source switch timeout (seconds)
-  "TimeshiftHours": 2,        // Timeshift duration (hours)
-  "Language": "en-US",        // Interface language
-  "ThemeMode": "Dark"         // Theme mode (Dark/Light/System)
-}
-```
-
----
-
-## libmpv Engine
-
-This project depends on `libmpv-2.dll`.
-
-- **Hardware Decoding**: `d3d11va` is enabled by default.
-- **No Audio**: Some IPTV sources have slow audio probing; `probesize=32` is set to speed up start, which might cause brief silence.
-
----
-
-## Development Guide
-
-### Prerequisites
-
-- **OS**: Windows 10 / 11 (x64)
-- **IDE**: Visual Studio 2022 or JetBrains Rider
-- **SDK**: .NET 8.0 SDK
-- **Dependency**: `libmpv-2.dll` (included in repository root and copied to output on build)
-
-### Build & Run
+## Quick Start
 
 ```powershell
-# Restore dependencies
-dotnet restore
-
-# Build (Debug)
+# Build
 dotnet build
 
 # Run
 dotnet run
 
-# Tests
+# Test
 dotnet test .\Tests\LibmpvIptvClient.Tests.csproj
 ```
 
-**Note**: If `libmpv-2.dll` is missing at runtime, the app will fail to start; by default the repository copy is copied during build.
+## Documentation
 
-### Troubleshooting
-
-| Issue | Possible Cause | Solution |
-| :--- | :--- | :--- |
-| **Crash on startup** | Missing `libmpv-2.dll` | Download x64 dll and place in run dir |
-| **Video but no audio** | Audio probe timeout | Normal optimization; try switching tracks or restarting |
-| **EPG "No Data"** | Network or format issue | Check XMLTV URL accessibility and GZIP format |
-| **Settings not saving** | Permission denied | Ensure write permission to app directory |
-
-### Testing & Contribution
-
-#### Workflow
-
-1. **Fork** the repository.
-2. Create a feature branch: `git checkout -b feature/AmazingFeature`.
-3. Commit changes: `git commit -m 'feat: Add some AmazingFeature'` (Follow [Conventional Commits](https://www.conventionalcommits.org/)).
-4. Push branch: `git push origin feature/AmazingFeature`.
-5. Submit a **Pull Request**.
-
-#### Code Style
-
-- Follow existing C# style (K&R / Allman hybrid, see .editorconfig if available).
-- Ensure UI changes adapt to both Dark and Light themes.
-
-#### Performance Benchmarks
-
-- **CPU Usage**: < 15% @ 1080p (i5-8250U baseline).
-- **Memory**: < 500MB during stable playback.
-- **Startup**: < 2 seconds (cold start).
-
----
+| Language | Link |
+|----------|------|
+| 简体中文 | [srcbox.top](https://srcbox.top) |
+| 繁體中文 | [srcbox.top/zh-TW](https://srcbox.top/zh-TW) |
+| English | [srcbox.top/en](https://srcbox.top/en) |
+| Русский | [srcbox.top/ru](https://srcbox.top/ru) |
 
 ## Privacy & Security
 
-- **Local First**: All playlists, EPG caches, and user configurations (favorites, settings) are stored locally on your device (`user_settings.json`) and are never uploaded to any cloud server.
-- **Network Activity**: The application only initiates network connections when requesting your specified M3U/EPG URLs, checking for updates (GitHub API), or downloading CDN resources.
-
----
+- All configs, playlists, and EPG caches are stored locally on your device
+- Network requests are only made when fetching M3U/EPG URLs or checking for updates
 
 ## Screenshots
 
@@ -353,3 +105,15 @@ dotnet test .\Tests\LibmpvIptvClient.Tests.csproj
 
 - Settings  
   ![settings](docs/screenshots/settings.png)
+
+---
+
+## License
+
+This project is open source under the [MIT License](./LICENSE.txt).
+
+## Acknowledgments
+
+- [libmpv](https://mpv.io/) - Powerful cross-platform media playback engine
+- [ModernWpf](https://github.com/AngelSoyoso/ModernWpf) - Modern WPF UI library
+- [VitePress](https://vitepress.dev/) - Static documentation site generator
