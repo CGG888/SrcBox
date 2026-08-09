@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE.txt)
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4)](https://dotnet.microsoft.com/)
 [![Platform](https://img.shields.io/badge/Platform-Windows-0078D6)](https://www.microsoft.com/windows)
-[![Version](https://img.shields.io/badge/Version-1.1.9-58a6ff.svg)](https://github.com/CGG888/SrcBox/releases)
+[![Version](https://img.shields.io/github/v/release/CGG888/SrcBox?display_name=tag&color=58a6ff)](https://github.com/CGG888/SrcBox/releases/latest)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
 [English](./README_EN.md) | [中文](./README.md)
@@ -11,8 +11,6 @@
 **SrcBox** is a high-performance, modern IPTV player for Windows. Built on **libmpv**, combined with **WPF** UI, supporting M3U playlists, EPG, timeshift, scheduled recording, multi-screen playback, web remote control, and more.
 
 [⬇️ Download Latest](https://github.com/CGG888/SrcBox/releases) | [📖 Documentation](https://srcbox.top/en) | [🐛 Report Issues](https://github.com/CGG888/SrcBox/issues)
-
-[English](./README_EN.md) | [中文](./README.md)
 
 ---
 

@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE.txt)
 [![.NET](https://img.shields.io/badge/.NET-8.0-512BD4)](https://dotnet.microsoft.com/)
 [![Platform](https://img.shields.io/badge/Platform-Windows-0078D6)](https://www.microsoft.com/windows)
-[![Version](https://img.shields.io/badge/Version-1.1.9-58a6ff.svg)](https://github.com/CGG888/SrcBox/releases)
+[![Version](https://img.shields.io/github/v/release/CGG888/SrcBox?display_name=tag&color=58a6ff)](https://github.com/CGG888/SrcBox/releases/latest)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
 
 [English](./README_EN.md) | [中文](./README.md)
@@ -11,8 +11,6 @@
 **源匣（SrcBox）** 是一款专为 Windows 平台打造的高性能、现代化 IPTV 播放器。基于 **libmpv** 播放内核，结合 **WPF** 现代化界面，支持 M3U 播放列表、EPG 电子节目单、时移回看、预约录制、多屏播放、Web 远程控制等丰富功能。
 
 [⬇️ 下载最新版本](https://github.com/CGG888/SrcBox/releases) | [📖 官方文档](https://srcbox.top) | [🐛 问题反馈](https://github.com/CGG888/SrcBox/issues)
-
-[English](./README_EN.md) | [中文](./README.md)
 
 ---
 
