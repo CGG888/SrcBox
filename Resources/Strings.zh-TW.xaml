@@ -7,6 +7,8 @@
   <sys:String x:Key="UI_TabAudio">聲音</sys:String>
   <sys:String x:Key="UI_TabNetwork">網絡</sys:String>
   <sys:String x:Key="UI_TabChannel">頻道</sys:String>
+  <sys:String x:Key="UI_ChannelPreview">頻道快照預覽</sys:String>
+  <sys:String x:Key="UI_ChannelPreviewHint">需要 rtp2httpd 開啟 X-Request-Snapshot 支援，滑鼠懸停頻道時顯示預覽</sys:String>
   <sys:String x:Key="UI_TabRecording">錄製</sys:String>
   <sys:String x:Key="UI_TabAbout">關於</sys:String>
   <sys:String x:Key="UI_TabEpgLogo">EPG 與台標</sys:String>

@@ -46,7 +46,7 @@ namespace LibmpvIptvClient.Behaviors
                 nameof(PreviewWidth),
                 typeof(double),
                 typeof(ChannelPreviewBehavior),
-                new PropertyMetadata(180.0));
+                new PropertyMetadata(214.0));
 
         public double PreviewWidth
         {
@@ -61,7 +61,7 @@ namespace LibmpvIptvClient.Behaviors
                 nameof(PreviewHeight),
                 typeof(double),
                 typeof(ChannelPreviewBehavior),
-                new PropertyMetadata(100.0));
+                new PropertyMetadata(120.0));
 
         public double PreviewHeight
         {
@@ -208,6 +208,7 @@ namespace LibmpvIptvClient.Behaviors
         private void OnMouseEnter(object sender, System.Windows.Input.MouseEventArgs e)
         {
             if (!IsEnabled) return;
+            if (!AppSettings.Current.EnableChannelPreview) return;
             if (_popup == null) return;
 
             var channelUrl = GetStreamUrlFromDataContext(AssociatedObject);

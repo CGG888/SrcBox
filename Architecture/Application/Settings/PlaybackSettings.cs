@@ -139,6 +139,8 @@ namespace LibmpvIptvClient
         public string ThemeMode { get; set; } = "System";
         public string LastLocalM3uPath { get; set; } = "";
         public bool AutoLoadLastSource { get; set; } = true;
+        // 频道快照预览（需要 rtp2httpd 开启 X-Request-Snapshot）
+        public bool EnableChannelPreview { get; set; } = false;
         public List<ScheduledReminder> ScheduledReminders { get; set; } = new List<ScheduledReminder>();
         public bool ConfirmOnClose { get; set; } = true;
         public string CloseMode { get; set; } = "";

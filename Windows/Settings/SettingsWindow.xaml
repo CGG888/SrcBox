@@ -515,6 +515,13 @@
                 <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
                   <controls:EpgDrawer x:Name="EpgSettingsControl"/>
                 </Border>
+                <!-- 频道快照预览 -->
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
+                  <StackPanel>
+                    <CheckBox x:Name="CbChannelPreview" Content="{DynamicResource UI_ChannelPreview}"/>
+                    <TextBlock Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" Margin="24,2,0,0" TextWrapping="Wrap" Text="{DynamicResource UI_ChannelPreviewHint}"/>
+                  </StackPanel>
+                </Border>
                 <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16">
                   <controls:LogoDrawer x:Name="LogoSettingsControl"/>
                 </Border>

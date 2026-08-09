@@ -7,6 +7,8 @@
   <sys:String x:Key="UI_TabAudio">Audio</sys:String>
   <sys:String x:Key="UI_TabNetwork">Network</sys:String>
   <sys:String x:Key="UI_TabChannel">Channel</sys:String>
+  <sys:String x:Key="UI_ChannelPreview">Channel Preview</sys:String>
+  <sys:String x:Key="UI_ChannelPreviewHint">Requires rtp2httpd with X-Request-Snapshot enabled. Shows preview on mouse hover.</sys:String>
   <sys:String x:Key="UI_TabRecording">Recording</sys:String>
   <sys:String x:Key="UI_TabAbout">About</sys:String>
   <sys:String x:Key="UI_TabEpgLogo">EPG &amp; Logos</sys:String>

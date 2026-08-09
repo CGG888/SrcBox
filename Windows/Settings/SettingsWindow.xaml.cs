@@ -241,6 +241,13 @@ namespace LibmpvIptvClient
                     if (CbWebRemoteShowEpg != null) CbWebRemoteShowEpg.IsChecked = wr.ShowEpgList;
                 }
                 catch { }
+
+                // 频道快照预览
+                try
+                {
+                    if (CbChannelPreview != null) CbChannelPreview.IsChecked = current.EnableChannelPreview;
+                }
+                catch { }
             }
             catch { }
 
@@ -518,6 +525,13 @@ namespace LibmpvIptvClient
                     ShowChannelList = CbWebRemoteShowChannels?.IsChecked == true,
                     ShowEpgList = CbWebRemoteShowEpg?.IsChecked == true
                 };
+            }
+            catch { }
+
+            // 频道快照预览
+            try
+            {
+                s.EnableChannelPreview = CbChannelPreview?.IsChecked == true;
             }
             catch { }
 
