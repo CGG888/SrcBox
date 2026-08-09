@@ -98,8 +98,8 @@ dotnet test .\Tests\LibmpvIptvClient.Tests.csproj
 - Main Interface  
   ![main](docs/screenshots/main.png)
 
-- Fullscreen Overlay  
-  ![fullscreen-overlay](docs/screenshots/fullscreen-overlay.png)
+- Multi-Screen  
+  ![multi-screen](docs/screenshots/multiscreen.png)
 
 - Settings  
   ![settings](docs/screenshots/settings.png)

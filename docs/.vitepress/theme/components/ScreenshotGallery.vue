@@ -40,28 +40,28 @@ const i18n = {
     title: '界面预览',
     subtitle: '现代化的用户界面设计',
     main: '主界面',
-    fullscreen: '全屏悬浮控制',
+    multiscreen: '多屏播放',
     settings: '设置窗口'
   },
   'zh-TW': {
     title: '介面預覽',
     subtitle: '現代化的使用者介面設計',
     main: '主介面',
-    fullscreen: '全螢幕懸浮控制',
+    multiscreen: '多屏播放',
     settings: '設定視窗'
   },
   'en': {
     title: 'Interface Preview',
     subtitle: 'Modern user interface design',
     main: 'Main Interface',
-    fullscreen: 'Fullscreen Overlay',
+    multiscreen: 'Multi-Screen',
     settings: 'Settings Window'
   },
   'ru': {
     title: 'Превью интерфейса',
     subtitle: 'Современный дизайн пользовательского интерфейса',
     main: 'Главный интерфейс',
-    fullscreen: 'Полноэкранный оверлей',
+    multiscreen: 'Мультиэкран',
     settings: 'Окно настроек'
   }
 }
@@ -75,8 +75,8 @@ const screenshots = computed(() => [
     alt: t('main')
   },
   {
-    src: '/screenshots/fullscreen-overlay.png',
-    alt: t('fullscreen')
+    src: '/screenshots/multiscreen.png',
+    alt: t('multiscreen')
   },
   {
     src: '/screenshots/settings.png',

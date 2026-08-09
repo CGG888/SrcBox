@@ -98,8 +98,8 @@ dotnet test .\Tests\LibmpvIptvClient.Tests.csproj
 - 主界面  
   ![main](docs/screenshots/main.png)
 
-- 全屏悬浮控制条  
-  ![fullscreen-overlay](docs/screenshots/fullscreen-overlay.png)
+- 多屏播放  
+  ![multi-screen](docs/screenshots/multiscreen.png)
 
 - 设置窗口  
   ![settings](docs/screenshots/settings.png)
