@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
@@ -18,7 +19,7 @@ namespace LibmpvIptvClient.Services
         private Dictionary<string, List<EpgProgram>> _programs = new Dictionary<string, List<EpgProgram>>(StringComparer.OrdinalIgnoreCase);
         private Dictionary<string, string> _channelNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); // Name -> TvgId
         private Dictionary<string, string> _tvgNameMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase); // CleanTvgName -> TvgId (新增)
-        private Dictionary<string, string?> _smartMatchCache = new Dictionary<string, string?>(StringComparer.OrdinalIgnoreCase); // ChannelName -> TvgId (Cache)
+        private ConcurrentDictionary<string, string?> _smartMatchCache = new ConcurrentDictionary<string, string?>(StringComparer.OrdinalIgnoreCase); // ChannelName -> TvgId (Cache)
         private readonly Dictionary<string, Dictionary<DateTime, List<EpgProgram>>> _programsByHour = new Dictionary<string, Dictionary<DateTime, List<EpgProgram>>>(StringComparer.OrdinalIgnoreCase); // tvgId -> hourBucket -> programs in that hour
 
         public EpgService()
@@ -30,7 +31,7 @@ namespace LibmpvIptvClient.Services
             if (string.IsNullOrWhiteSpace(url)) return;
             
             // Clear cache on reload
-            lock (_smartMatchCache) { _smartMatchCache.Clear(); }
+            _smartMatchCache.Clear();
 
             try 
             {
@@ -265,13 +266,9 @@ namespace LibmpvIptvClient.Services
                 string? smartId = null;
                 bool foundInCache = false;
 
-                lock (_smartMatchCache)
-                {
-                    if (_smartMatchCache.TryGetValue(channelName, out smartId))
-                    {
-                        foundInCache = true;
-                    }
-                }
+                // Try get from concurrent cache (lock-free)
+                _smartMatchCache.TryGetValue(channelName, out smartId);
+                foundInCache = smartId != null || _smartMatchCache.ContainsKey(channelName);
 
                 if (foundInCache)
                 {
@@ -286,13 +283,13 @@ namespace LibmpvIptvClient.Services
                     if (matchedName != null && _channelNameMap.TryGetValue(matchedName, out var idFromMatch))
                     {
                         smartId = idFromMatch;
-                        lock (_smartMatchCache) { _smartMatchCache[channelName] = smartId; }
+                        _smartMatchCache[channelName] = smartId; // Thread-safe AddOrUpdate
                         if (_programs.TryGetValue(smartId, out var list3)) return list3;
                     }
                     else
                     {
                         // Cache failed result to avoid re-calculation
-                        lock (_smartMatchCache) { _smartMatchCache[channelName] = null; }
+                        _smartMatchCache[channelName] = null;
                     }
                 }
             }

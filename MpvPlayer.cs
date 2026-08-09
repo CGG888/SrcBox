@@ -34,7 +34,7 @@ namespace LibmpvIptvClient
             SetString("mute", "no");
             SetString("audio", "yes");
             SetString("audio-device", "auto");
-            SetString("ad-lavc-threads", "2");
+            SetString("ad-lavc-threads", threads.ToString(System.Globalization.CultureInfo.InvariantCulture));
             SetString("audio-channels", "stereo");
             SetString("ad-lavc-downmix", "yes");
             SetString("audio-pitch-correction", "yes");

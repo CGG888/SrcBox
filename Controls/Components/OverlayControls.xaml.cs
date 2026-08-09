@@ -292,7 +292,7 @@ namespace LibmpvIptvClient
             MuteChanged?.Invoke(_muted);
         }
         public void SetFcc(bool v) { /* Removed */ }
-        public void SetUdp(bool v) { /* Removed */ }
+        public void SetUdp(bool v) { LibmpvIptvClient.Diagnostics.Logger.Debug($"[Overlay] UDP optimization toggled: {v}"); }
         
         // 重构：统一使用 Visible 逻辑
         // visible = true -> IsChecked = true (高亮)
