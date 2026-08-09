@@ -6,67 +6,61 @@ namespace LibmpvIptvClient.Services
 {
     /// <summary>
     /// Reads proxy settings directly from the Windows Registry to bypass .NET's caching mechanisms.
-    /// This ensures we always get the *real-time* state of the system proxy.
+    /// Uses a short TTL cache to reduce per-connection registry overhead.
     /// </summary>
     public class RegistryProxyProvider : IWebProxy
     {
         public ICredentials? Credentials { get; set; }
 
+        // Cache proxy result for 5 seconds to avoid per-connection registry reads (OPT-1)
+        private static (Uri? proxy, DateTime cachedAt) _cachedProxy = (null, DateTime.MinValue);
+        private const int ProxyCacheTtlMs = 5000;
+
         public Uri? GetProxy(Uri destination)
         {
+            // Check cache first (OPT-1)
+            if ((DateTime.Now - _cachedProxy.cachedAt).TotalMilliseconds < ProxyCacheTtlMs)
+            {
+                return _cachedProxy.proxy;
+            }
+
+            Uri? proxy = null;
             try
             {
                 using (var key = Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\CurrentVersion\Internet Settings"))
                 {
                     if (key != null)
                     {
-                        // 1. Check if Proxy is enabled
                         var proxyEnable = key.GetValue("ProxyEnable") as int?;
                         if (proxyEnable == 1)
                         {
-                            // 2. Get Proxy Server string (e.g., "127.0.0.1:7890" or "http=127.0.0.1:7890;https=...")
                             var proxyServer = key.GetValue("ProxyServer") as string;
                             if (!string.IsNullOrWhiteSpace(proxyServer))
                             {
-                                // Simple parsing: if it contains '=', it's a specific map, otherwise it's global
-                                // For simplicity in this context, we assume a global proxy if no specific protocol is matched,
-                                // or we just take the first valid address.
-                                // Most VPNs sets "127.0.0.1:7890" which applies to all.
-                                
                                 if (proxyServer.Contains("="))
                                 {
-                                    // Complex parsing skipped for brevity, usually not needed for simple VPN toggling
-                                    // If needed, we can implement full parsing.
-                                    // For now, let's fallback to .NET if it's complex, or try to find "http="
-                                    // But actually, just returning the string as a URI often works if formatted right.
-                                    // Let's keep it simple: Use the .NET parser but FORCE it to reload by not using the cached WebProxy instance.
-                                    
-                                    // WAIT. The issue is likely that WebRequest.GetSystemWebProxy() returns a SINGLE INSTANCE that doesn't update.
-                                    // But creating a new WebProxy(host, port) works.
-                                    
-                                    // Let's try parsing the simple "IP:Port" case which is 99% of users.
                                     if (!proxyServer.Contains("=") && !proxyServer.Contains(";"))
                                     {
-                                        return new Uri($"http://{proxyServer}");
+                                        proxy = new Uri($"http://{proxyServer}");
                                     }
                                 }
                                 else
                                 {
-                                    return new Uri($"http://{proxyServer}");
+                                    proxy = new Uri($"http://{proxyServer}");
                                 }
                             }
                         }
                     }
                 }
             }
-            catch 
+            catch
             {
-                // Fallback or ignore
+                // Fallback: ignore
             }
 
-            // If we are here, either Proxy is disabled (0) or registry read failed.
-            // Return NULL to indicate Direct connection.
-            return null; 
+            // Update cache
+            _cachedProxy = (proxy, DateTime.Now);
+            return proxy;
         }
 
         public bool IsBypassed(Uri host)

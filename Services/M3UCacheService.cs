@@ -261,8 +261,6 @@ public class M3UCacheService
                 WriteIndented = false
             };
             var data = JsonSerializer.Serialize(channels, options);
-            await File.WriteAllTextAsync(cachePath, data).ConfigureAwait(false);
-
             var meta = new M3UCacheEntry
             {
                 Url = url,
@@ -273,7 +271,11 @@ public class M3UCacheService
                 TvgUrl = tvgUrl
             };
             var metaJson = JsonSerializer.Serialize(meta, new JsonSerializerOptions { WriteIndented = false });
-            await File.WriteAllTextAsync(metaPath, metaJson);
+            // Parallel write: both files written simultaneously (NEW-15)
+            await Task.WhenAll(
+                File.WriteAllTextAsync(cachePath, data),
+                File.WriteAllTextAsync(metaPath, metaJson)
+            ).ConfigureAwait(false);
 
             Logger.Info($"已保存 {channels.Count} 个频道到缓存");
         }

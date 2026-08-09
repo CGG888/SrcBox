@@ -7,6 +7,14 @@ namespace LibmpvIptvClient.Services
 {
     public static class HttpClientExtensions
     {
+        // Static shared handler for direct (no-proxy) fallback - reused across calls (OPT-7)
+        private static readonly SocketsHttpHandler s_directHandler = new SocketsHttpHandler
+        {
+            UseProxy = false,
+            AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate,
+            PooledConnectionLifetime = TimeSpan.FromSeconds(10)
+        };
+
         public static async Task<HttpResponseMessage> SendAsyncWithRetry(this HttpClient client, HttpRequestMessage request, CancellationToken cancellationToken = default)
         {
             try
@@ -16,33 +24,24 @@ namespace LibmpvIptvClient.Services
             catch (Exception ex) when (ex is HttpRequestException || ex is TaskCanceledException)
             {
                 LibmpvIptvClient.Diagnostics.Logger.Trace($"[HttpClientExtensions] Request via Proxy failed ({ex.Message}). Trying DIRECT connection...");
-                
-                // Fallback Strategy: Create a temporary DIRECT (No Proxy) client
-                // This handles cases where the system proxy is stuck or invalid
-                using (var directHandler = new SocketsHttpHandler
-                {
-                    UseProxy = false, // Force Direct
-                    AutomaticDecompression = System.Net.DecompressionMethods.GZip | System.Net.DecompressionMethods.Deflate,
-                    PooledConnectionLifetime = TimeSpan.FromSeconds(10) // Short life
-                })
-                using (var directClient = new HttpClient(directHandler))
+
+                // Fallback Strategy: Use shared DIRECT (No Proxy) handler (OPT-7)
+                // Reusing the static handler avoids per-fallback allocation
+                using (var directClient = new HttpClient(s_directHandler))
                 {
                     directClient.Timeout = TimeSpan.FromSeconds(10); // Fast fail for fallback
                     // Copy headers
                     foreach (var header in client.DefaultRequestHeaders) directClient.DefaultRequestHeaders.TryAddWithoutValidation(header.Key, header.Value);
-                    
+
                     var newRequest = CloneRequest(request);
-                    try 
+                    try
                     {
                         var response = await directClient.SendAsync(newRequest, cancellationToken);
-                        // If success, it means Proxy was indeed the issue. 
-                        // We should invalidate the main client so it might pick up correct settings next time.
                         HttpClientService.Instance.InvalidateClient();
                         return response;
                     }
                     catch
                     {
-                        // If direct also fails, throw the ORIGINAL proxy exception (it was likely the "correct" network path, just broken)
                         throw ex;
                     }
                 }

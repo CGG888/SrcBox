@@ -63,11 +63,6 @@ namespace LibmpvIptvClient.Services
                 appended.Add(new System.Collections.Generic.KeyValuePair<string, string>(endKey, urlEncode ? Uri.EscapeDataString(endStr) : endStr));
             }
 
-            if (mode == "replace_all")
-            {
-                path = path;
-            }
-
             var rebuilt = BuildQueryOrdered(items, appended);
             if (rebuilt.Length == 0) return path;
             return path + "?" + rebuilt;
@@ -101,9 +96,9 @@ namespace LibmpvIptvClient.Services
 
         static System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<string,string>> ParseQueryOrdered(string query)
         {
-            var list = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<string,string>>();
-            if (string.IsNullOrEmpty(query)) return list;
+            if (string.IsNullOrEmpty(query)) return new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<string,string>>(0);
             var parts = query.Split('&', StringSplitOptions.RemoveEmptyEntries);
+            var list = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<string,string>>(parts.Length);
             foreach (var p in parts)
             {
                 var eq = p.IndexOf('=');
@@ -130,13 +125,8 @@ namespace LibmpvIptvClient.Services
                 "duration", durationKey,
                 "playseek", playseekKey
             };
-            for (int i = items.Count - 1; i >= 0; i--)
-            {
-                if (keys.Contains(items[i].Key))
-                {
-                    items.RemoveAt(i);
-                }
-            }
+            // O(n) instead of O(n*m) - RemoveAll predicate traverses list once
+            items.RemoveAll(kv => keys.Contains(kv.Key));
         }
 
         static string FormatTime(DateTime t, string encoding)
@@ -160,10 +150,12 @@ namespace LibmpvIptvClient.Services
 
         static string BuildQueryOrdered(System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<string,string>> items, System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<string,string>> appended)
         {
-            var total = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<string,string>>();
-            if (items != null && items.Count > 0) total.AddRange(items);
-            if (appended != null && appended.Count > 0) total.AddRange(appended);
-            if (total.Count == 0) return "";
+            int ic = items?.Count ?? 0;
+            int ac = appended?.Count ?? 0;
+            if (ic == 0 && ac == 0) return "";
+            var total = new System.Collections.Generic.List<System.Collections.Generic.KeyValuePair<string,string>>(ic + ac);
+            if (ic > 0) total.AddRange(items);
+            if (ac > 0) total.AddRange(appended);
             var sb = new StringBuilder();
             bool first = true;
             foreach (var e in total)
