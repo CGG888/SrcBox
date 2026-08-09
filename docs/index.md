@@ -20,9 +20,9 @@ features:
   - title: FCC 极速切台
     details: 毫秒级快速切台，告别传统 IPTV 的漫长等待
     icon: ⚡
-  - title: M3U + EPG
-    details: 支持本地/远程 M3U 播放列表，完整 XMLTV 电子节目单
-    icon: 📺
+  - title: 频道快照预览
+    details: 鼠标悬停频道显示实时预览截图，需要 rtp2httpd 支持 X-Request-Snapshot
+    icon: 📸
   - title: 时移与回看
     details: 实时拖动回看直播历史，模板自动生成回放链接
     icon: ⏪
@@ -60,7 +60,7 @@ features:
 </ClientOnly>
 
 <div class="disclaimer">
-  <strong>免责声明：</strong> 本页面展示的所有视频、截图及演示画面仅作功能展示用途，并非实际可播放或可用的媒体资源。<strong>本项目不提供任何 m3u 播放列表文件及其中包含的频道数据，亦不对第三方数据源负责。</strong>
+  <strong>免责声明：</strong> 本页面展示的所有视频、截图及演示画面仅作功能展示用途，并非实际可播放或可用的媒体资源。<strong>本项目不提供任何 m3u 播放列表文件及其中包含的频道数据，亦不对第三方数据源负责。</strong> 本软件基于 MIT 协议开源，使用前请阅读 <a href="https://github.com/CGG888/SrcBox/blob/main/LICENSE.txt">LICENSE.txt</a>。
 </div>
 
 <style>

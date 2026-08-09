@@ -56,6 +56,7 @@ export default defineConfig({
               { text: 'EPG 节目单', link: '/guide/epg' },
               { text: 'HTTP/RTSP Header', link: '/guide/http-headers' },
               { text: '回看与时移', link: '/guide/catchup-timeshift' },
+              { text: '频道快照预览', link: '/guide/channel-preview' },
               { text: 'Web 远程控制', link: '/guide/web-remote' }
             ]
           },
@@ -127,6 +128,7 @@ export default defineConfig({
               { text: 'EPG 節目單', link: '/zh-TW/guide/epg' },
               { text: 'HTTP/RTSP Header', link: '/zh-TW/guide/http-headers' },
               { text: '回看與時移', link: '/zh-TW/guide/catchup-timeshift' },
+              { text: '頻道快照預覽', link: '/zh-TW/guide/channel-preview' },
               { text: 'Web 遠程控制', link: '/zh-TW/guide/web-remote' }
             ]
           },
@@ -212,6 +214,7 @@ export default defineConfig({
               { text: 'EPG', link: '/en/guide/epg' },
               { text: 'HTTP/RTSP Header', link: '/en/guide/http-headers' },
               { text: 'Catchup & Timeshift', link: '/en/guide/catchup-timeshift' },
+              { text: 'Channel Preview', link: '/en/guide/channel-preview' },
               { text: 'Web Remote', link: '/en/guide/web-remote' }
             ]
           },
@@ -273,6 +276,7 @@ export default defineConfig({
               { text: 'EPG', link: '/ru/guide/epg' },
               { text: 'HTTP/RTSP Header', link: '/ru/guide/http-headers' },
               { text: 'Архив и Timeshift', link: '/ru/guide/catchup-timeshift' },
+              { text: 'Предпросмотр канала', link: '/ru/guide/channel-preview' },
               { text: 'Веб-пульт', link: '/ru/guide/web-remote' }
             ]
           },

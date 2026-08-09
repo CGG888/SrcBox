@@ -22,6 +22,7 @@
 | 功能 | 说明 |
 |:---:|------|
 | ⚡ **FCC 极速切台** | 毫秒级快速切台，告别传统 IPTV 的漫长等待 |
+| 📸 **频道快照预览** | 鼠标悬停频道显示实时预览，需要 rtp2httpd 支持 |
 | 📺 **M3U + EPG** | 支持本地/远程 M3U 播放列表，完整 XMLTV 电子节目单 |
 | ⏪ **时移与回看** | 实时拖动回看直播历史，模板自动生成回放链接 |
 | 🎬 **预约录制** | 前台/后台双模式录制，WebDAV 云端同步 |
@@ -108,10 +109,11 @@ dotnet test .\Tests\LibmpvIptvClient.Tests.csproj
 
 ## 开源许可
 
-本项目基于 [MIT License](./LICENSE.txt) 开源。
+本项目基于 [MIT License](./LICENSE.txt) 开源，您可以自由使用、修改和分发，但需保留原始版权声明。
 
 ## 致谢
 
 - [libmpv](https://mpv.io/) - 强大的跨平台媒体播放引擎
 - [ModernWpf](https://github.com/AngelSoyoso/ModernWpf) - WPF 现代化 UI 库
 - [VitePress](https://vitepress.dev/) - 静态文档站点生成器
+- [Downloader](https://github.com/avgp/ngx-downloader) - 分段下载库

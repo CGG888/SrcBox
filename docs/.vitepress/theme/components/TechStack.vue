@@ -39,7 +39,8 @@ const i18n = {
     dotnet: '开发语言',
     webdav: '录播同步',
     websocket: '远程控制',
-    vitepress: '文档站点'
+    vitepress: '文档站点',
+    downloader: '分段下载'
   },
   'zh-TW': {
     title: '技術棧',
@@ -49,7 +50,8 @@ const i18n = {
     dotnet: '開發語言',
     webdav: '錄播同步',
     websocket: '遠程控制',
-    vitepress: '文檔站點'
+    vitepress: '文檔站點',
+    downloader: '分段下載'
   },
   'en': {
     title: 'Tech Stack',
@@ -59,7 +61,8 @@ const i18n = {
     dotnet: 'Language',
     webdav: 'Recording Sync',
     websocket: 'Remote Control',
-    vitepress: 'Documentation'
+    vitepress: 'Documentation',
+    downloader: 'Segment Download'
   },
   'ru': {
     title: 'Технологии',
@@ -69,7 +72,8 @@ const i18n = {
     dotnet: 'Язык',
     webdav: 'Синхронизация записи',
     websocket: 'Дистанционное управление',
-    vitepress: 'Документация'
+    vitepress: 'Документация',
+    downloader: 'Сегментная загрузка'
   }
 }
 
@@ -82,7 +86,8 @@ const techs = computed(() => [
   { name: 'C# (.NET 8)', desc: t('dotnet') },
   { name: 'WebDAV', desc: t('webdav') },
   { name: 'WebSocket + HTTP', desc: t('websocket') },
-  { name: 'VitePress', desc: t('vitepress') }
+  { name: 'VitePress', desc: t('vitepress') },
+  { name: 'Downloader', desc: t('downloader') }
 ])
 
 const architecture = [

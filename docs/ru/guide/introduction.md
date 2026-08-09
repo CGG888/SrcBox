@@ -105,3 +105,5 @@
 
 - [libmpv](https://mpv.io/) — мощный кроссплатформенный плеер
 - [ModernWpf](https://github.com/AngelMunoz/ModernWpf) — современная библиотека控件 для WPF
+- [VitePress](https://vitepress.dev/) — генератор статической документации
+- [Downloader](https://github.com/avgp/ngx-downloader) — библиотека сегментной загрузки

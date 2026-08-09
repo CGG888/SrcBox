@@ -41,28 +41,32 @@ const i18n = {
     subtitle: '现代化的用户界面设计',
     main: '主界面',
     multiscreen: '多屏播放',
-    settings: '设置窗口'
+    settings: '设置窗口',
+    videosnapshot: '频道快照预览'
   },
   'zh-TW': {
     title: '介面預覽',
     subtitle: '現代化的使用者介面設計',
     main: '主介面',
     multiscreen: '多屏播放',
-    settings: '設定視窗'
+    settings: '設定視窗',
+    videosnapshot: '頻道快照預覽'
   },
   'en': {
     title: 'Interface Preview',
     subtitle: 'Modern user interface design',
     main: 'Main Interface',
     multiscreen: 'Multi-Screen',
-    settings: 'Settings Window'
+    settings: 'Settings Window',
+    videosnapshot: 'Channel Preview'
   },
   'ru': {
     title: 'Превью интерфейса',
     subtitle: 'Современный дизайн пользовательского интерфейса',
     main: 'Главный интерфейс',
     multiscreen: 'Мультиэкран',
-    settings: 'Окно настроек'
+    settings: 'Окно настроек',
+    videosnapshot: 'Предпросмотр канала'
   }
 }
 
@@ -81,6 +85,10 @@ const screenshots = computed(() => [
   {
     src: '/screenshots/settings.png',
     alt: t('settings')
+  },
+  {
+    src: '/screenshots/videosnapshot.png',
+    alt: t('videosnapshot')
   }
 ])
 

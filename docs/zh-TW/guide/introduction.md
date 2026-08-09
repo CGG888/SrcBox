@@ -105,3 +105,5 @@
 
 - [libmpv](https://mpv.io/) - 強大的跨平台播放器內核
 - [ModernWpf](https://github.com/AngelMunoz/ModernWpf) - WPF 現代風格控件庫
+- [VitePress](https://vitepress.dev/) - 靜態文檔站點生成器
+- [Downloader](https://github.com/avgp/ngx-downloader) - 分段下載庫

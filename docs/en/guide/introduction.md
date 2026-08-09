@@ -105,3 +105,5 @@ This project is open source under the [MIT License](https://opensource.org/licen
 
 - [libmpv](https://mpv.io/) - Powerful cross-platform player engine
 - [ModernWpf](https://github.com/AngelMunoz/ModernWpf) - Modern WPF control library
+- [VitePress](https://vitepress.dev/) - Static documentation site generator
+- [Downloader](https://github.com/avgp/ngx-downloader) - Segment download library

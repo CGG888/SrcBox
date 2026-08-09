@@ -22,6 +22,7 @@
 | Feature | Description |
 |:---:|------|
 | ⚡ **FCC Fast Zapping** | Millisecond-level channel switching |
+| 📸 **Channel Preview** | Hover to preview channels, requires rtp2httpd |
 | 📺 **M3U + EPG** | Local/remote M3U playlists, full XMLTV support |
 | ⏪ **Timeshift & Catchup** | Real-time seeking in live streams |
 | 🎬 **Scheduled Recording** | Foreground/background modes, WebDAV sync |
@@ -108,10 +109,11 @@ dotnet test .\Tests\LibmpvIptvClient.Tests.csproj
 
 ## License
 
-This project is open source under the [MIT License](./LICENSE.txt).
+This project is open source under the [MIT License](./LICENSE.txt). You are free to use, modify, and distribute it, provided the original copyright notice is retained.
 
 ## Acknowledgments
 
 - [libmpv](https://mpv.io/) - Powerful cross-platform media playback engine
 - [ModernWpf](https://github.com/AngelSoyoso/ModernWpf) - Modern WPF UI library
 - [VitePress](https://vitepress.dev/) - Static documentation site generator
+- [Downloader](https://github.com/avgp/ngx-downloader) - Segment download library

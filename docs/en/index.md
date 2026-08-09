@@ -60,7 +60,7 @@ features:
 </ClientOnly>
 
 <div class="disclaimer">
-  <strong>Disclaimer:</strong> The videos, screenshots, and demos shown are for functional demonstration only and are not actual playable media resources. <strong>This project does not provide any m3u playlist files or channel data.</strong>
+  <strong>Disclaimer:</strong> The videos, screenshots, and demos shown are for functional demonstration only and are not actual playable media resources. <strong>This project does not provide any m3u playlist files or channel data.</strong> This software is open source under the MIT License. See <a href="https://github.com/CGG888/SrcBox/blob/main/LICENSE.txt">LICENSE.txt</a>.
 </div>
 
 <style>

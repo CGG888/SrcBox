@@ -78,6 +78,12 @@ Remotely control the player through a browser, control your TV from anywhere.
 - **History**: Playback history, persisted locally
 - **R/T Badges**: Quickly identify channels supporting Catchup(R) or Timeshift(T)
 
+## Channel Preview
+
+Hover over channels in the list to preview the current画面, requires rtp2httpd with `X-Request-Snapshot`.
+
+[View detailed guide](./channel-preview)
+
 ## Decoder Selection
 
 Supports multiple hardware/software decoders, dynamically switchable during playback:

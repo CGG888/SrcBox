@@ -60,7 +60,7 @@ features:
 </ClientOnly>
 
 <div class="disclaimer">
-  <strong>免責聲明：</strong> 本頁面展示的所有影片、截圖及演示畫面僅作功能展示用途，並非實際可播放或可用的媒體資源。<strong>本專案不提供任何 m3u 播放清單檔案及其中包含的頻道數據，亦不對第三方數據源負責。</strong>
+  <strong>免責聲明：</strong> 本頁面展示的所有影片、截圖及演示畫面僅作功能展示用途，並非實際可播放或可用的媒體資源。<strong>本專案不提供任何 m3u 播放清單檔案及其中包含的頻道數據，亦不對第三方數據源負責。</strong> 本軟體基於 MIT 協議開源，詳見 <a href="https://github.com/CGG888/SrcBox/blob/main/LICENSE.txt">LICENSE.txt</a>。
 </div>
 
 <style>
