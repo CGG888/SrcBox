@@ -9,8 +9,8 @@
         <ui:ThemeResources/>
         <ui:XamlControlsResources/>
         <ResourceDictionary Source="Resources/Colors.Dark.xaml"/>
-        <ResourceDictionary Source="MenuStyles.xaml"/>
-        <ResourceDictionary Source="PlayerStyles.xaml"/>
+        <ResourceDictionary Source="Styles/MenuStyles.xaml"/>
+        <ResourceDictionary Source="Styles/PlayerStyles.xaml"/>
       </ResourceDictionary.MergedDictionaries>
     </ResourceDictionary>
   </Application.Resources>
