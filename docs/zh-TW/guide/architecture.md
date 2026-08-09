@@ -14,7 +14,7 @@
 
 ## 專案結構
 
-詳細專案結構請參閱 [完整架構文檔](/ARCHITECTURE.md)。
+詳細專案結構請參閱 [完整架構文檔](https://github.com/CGG888/SrcBox/blob/main/ARCHITECTURE.md)。
 
 ```text
 📂 SrcBox

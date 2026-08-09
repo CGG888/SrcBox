@@ -1,6 +1,6 @@
 # 開發指南
 
-> 完整的專案架構和技術細節請參閱 [完整架構文檔](/ARCHITECTURE.md)。
+> 完整的專案架構和技術細節請參閱 [完整架構文檔](https://github.com/CGG888/SrcBox/blob/main/ARCHITECTURE.md)。
 
 ## 環境依賴
 

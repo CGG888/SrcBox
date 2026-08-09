@@ -14,7 +14,7 @@ This project is developed using **C# / WPF**. The core architecture is as follow
 
 ## Project Structure
 
-For detailed project structure, please refer to the [Full Architecture Document](/ARCHITECTURE.md).
+For detailed project structure, please refer to the [Full Architecture Document](https://github.com/CGG888/SrcBox/blob/main/ARCHITECTURE.md).
 
 ```text
 📂 SrcBox

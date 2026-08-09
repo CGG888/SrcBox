@@ -1,6 +1,6 @@
 # Development Guide
 
-> For complete project architecture and technical details, please refer to the [Full Architecture Document](/ARCHITECTURE.md).
+> For complete project architecture and technical details, please refer to the [Full Architecture Document](https://github.com/CGG888/SrcBox/blob/main/ARCHITECTURE.md).
 
 ## Prerequisites
 

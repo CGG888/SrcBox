@@ -14,7 +14,7 @@
 
 ## 项目结构
 
-详细项目结构请参阅 [完整架构文档](/ARCHITECTURE.md)。
+详细项目结构请参阅 [完整架构文档](https://github.com/CGG888/SrcBox/blob/main/ARCHITECTURE.md)。
 
 ```text
 📂 SrcBox

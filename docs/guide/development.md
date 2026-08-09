@@ -1,6 +1,6 @@
 # 开发指南
 
-> 完整的项目架构和技术细节请参阅 [完整架构文档](/ARCHITECTURE.md)。
+> 完整的项目架构和技术细节请参阅 [完整架构文档](https://github.com/CGG888/SrcBox/blob/main/ARCHITECTURE.md)。
 
 ## 环境依赖
 
