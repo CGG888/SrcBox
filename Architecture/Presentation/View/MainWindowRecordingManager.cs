@@ -745,8 +745,8 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 { 
                     // 确保缓存已开启
                     _shell.PlayerEngine?.SetPropertyString("cache", "yes");
-                    _shell.PlayerEngine?.SetPropertyString("demuxer-max-bytes", "512MiB"); 
-                    _shell.PlayerEngine?.SetPropertyString("demuxer-max-back-bytes", "256MiB");
+                    _shell.PlayerEngine?.SetPropertyString("demuxer-max-bytes", AppSettings.Current.DemuxerMaxBytesMiB + "MiB");
+                    _shell.PlayerEngine?.SetPropertyString("demuxer-max-back-bytes", AppSettings.Current.DemuxerMaxBackBytesMiB + "MiB");
                     _shell.PlayerEngine?.SetPropertyString("force-seekable", "yes");
 
                     _shell.PlayerEngine?.SetPropertyString("stream-record", path);

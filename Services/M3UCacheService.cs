@@ -88,7 +88,7 @@ public class M3UCacheService
             M3UCacheEntry? meta = null;
             try
             {
-                var metaJson = await File.ReadAllTextAsync(metaPath);
+                var metaJson = await File.ReadAllTextAsync(metaPath).ConfigureAwait(false);
                 meta = JsonSerializer.Deserialize<M3UCacheEntry>(metaJson);
             }
             catch
@@ -106,7 +106,7 @@ public class M3UCacheService
             {
                 try
                 {
-                    var data = await File.ReadAllBytesAsync(cachePath);
+                    var data = await File.ReadAllBytesAsync(cachePath).ConfigureAwait(false);
                     var options = new JsonSerializerOptions
                     {
                         PropertyNameCaseInsensitive = true
@@ -143,7 +143,7 @@ public class M3UCacheService
                     try
                     {
                         using var request = new HttpRequestMessage(HttpMethod.Head, url);
-                        using var response = await _http.SendAsync(request);
+                        using var response = await _http.SendAsync(request).ConfigureAwait(false);
 
                         if (response.IsSuccessStatusCode)
                         {
@@ -166,10 +166,10 @@ public class M3UCacheService
                                 // 服务器内容未变，更新缓存时间后继续使用
                                 meta.CachedAt = DateTime.Now;
                                 var metaJson = JsonSerializer.Serialize(meta, new JsonSerializerOptions { WriteIndented = false });
-                                await File.WriteAllTextAsync(metaPath, metaJson);
+                                await File.WriteAllTextAsync(metaPath, metaJson).ConfigureAwait(false);
                                 Logger.Info("M3U缓存验证通过，已延长TTL");
 
-                                var data = await File.ReadAllBytesAsync(cachePath);
+                                var data = await File.ReadAllBytesAsync(cachePath).ConfigureAwait(false);
                                 var options = new JsonSerializerOptions
                                 {
                                     PropertyNameCaseInsensitive = true
@@ -256,7 +256,7 @@ public class M3UCacheService
                 WriteIndented = false
             };
             var data = JsonSerializer.Serialize(channels, options);
-            await File.WriteAllTextAsync(cachePath, data);
+            await File.WriteAllTextAsync(cachePath, data).ConfigureAwait(false);
 
             var meta = new M3UCacheEntry
             {

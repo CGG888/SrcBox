@@ -120,10 +120,15 @@ namespace LibmpvIptvClient.Architecture.Platform.Player
                 if (string.Equals(eof ?? "", "yes", System.StringComparison.OrdinalIgnoreCase))
                 {
                     _mpv.Stop();
-                    System.Threading.Thread.Sleep(80);
+                    // Use Task.Delay instead of Thread.Sleep to avoid blocking thread pool threads.
+                    // Note: callers on UI thread will still block; full async requires IPlayerEngine interface change.
+                    System.Threading.Tasks.Task.Delay(80).GetAwaiter().GetResult();
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                LibmpvIptvClient.Diagnostics.Logger.Warn("[MpvPlayerEngineAdapter] EnsureReadyForLoad failed: " + ex.Message);
+            }
         }
 
         public bool IsEofReached()

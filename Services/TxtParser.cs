@@ -21,7 +21,7 @@ namespace LibmpvIptvClient.Services
         public async Task<List<Channel>> ParseFromUrlAsync(string url)
         {
             var http = HttpClientService.Instance.Client;
-            var data = await http.GetByteArrayAsync(url);
+            var data = await http.GetByteArrayAsyncWithRetry(url);
             var text = DetectAndDecodeText(data);
             return Parse(text);
         }

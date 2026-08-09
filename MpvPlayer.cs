@@ -68,7 +68,10 @@ namespace LibmpvIptvClient
                 }
 
             }
-            catch { /* 静默 */ }
+            catch (Exception ex)
+            {
+                Logger.Warn($"[mpv] 反交错设置失败: {ex.Message}");
+            }
 
             // 音频设置
             try
@@ -87,7 +90,10 @@ namespace LibmpvIptvClient
                 SetString("volume", initVolume.ToString(CultureInfo.InvariantCulture));
 
             }
-            catch { /* 静默 */ }
+            catch (Exception ex)
+            {
+                Logger.Warn($"[mpv] 音频设置失败: {ex.Message}");
+            }
 
             var initDiMode = string.IsNullOrWhiteSpace(_settings.Deinterlace) ? "no" : _settings.Deinterlace;
             var initGain = Math.Max(-200, Math.Min(60, _settings.VolumeGain));

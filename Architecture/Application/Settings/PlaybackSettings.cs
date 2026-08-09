@@ -71,7 +71,7 @@ namespace LibmpvIptvClient
     public class PlaybackSettings
     {
         public string Decoder { get; set; } = "auto";
-        public double CacheSecs { get; set; } = 1.0;
+        public double CacheSecs { get; set; } = 5.0;
         public int DemuxerMaxBytesMiB { get; set; } = 16;
         public int DemuxerMaxBackBytesMiB { get; set; } = 4;
         public int FccPrefetchCount { get; set; } = 2;

@@ -79,11 +79,11 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 try
                 {
                     _shell.PlayerEngine.SetPropertyString("cache", "yes");
-                    _shell.PlayerEngine.SetPropertyString("demuxer-max-bytes", "512MiB");
-                    _shell.PlayerEngine.SetPropertyString("demuxer-max-back-bytes", "256MiB");
+                    _shell.PlayerEngine.SetPropertyString("demuxer-max-bytes", AppSettings.Current.DemuxerMaxBytesMiB + "MiB");
+                    _shell.PlayerEngine.SetPropertyString("demuxer-max-back-bytes", AppSettings.Current.DemuxerMaxBackBytesMiB + "MiB");
                     _shell.PlayerEngine.SetPropertyString("cache-pause", "no");
                     _shell.PlayerEngine.SetPropertyString("force-seekable", "yes");
-                    LibmpvIptvClient.Diagnostics.Logger.Debug($"[Live] mpv properties set: cache=yes, demuxer-max-bytes=512MiB");
+                    LibmpvIptvClient.Diagnostics.Logger.Debug($"[Live] mpv properties set: cache=yes, demuxer-max-bytes={AppSettings.Current.DemuxerMaxBytesMiB}MiB, demuxer-max-back-bytes={AppSettings.Current.DemuxerMaxBackBytesMiB}MiB");
                 }
                 catch (Exception ex)
                 {
