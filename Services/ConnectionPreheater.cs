@@ -57,18 +57,18 @@ namespace LibmpvIptvClient.Services
                         await throttler.WaitAsync().ConfigureAwait(false);
                         try
                         {
-                            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(3));
+                            using var cts = new CancellationTokenSource(TimeSpan.FromSeconds(10));
                             var uri = new Uri(u);
-                            var target = new UriBuilder(uri.Scheme, uri.Host, uri.Port, "/").Uri;
-                            using var req = new HttpRequestMessage(HttpMethod.Head, target);
+                            // Preheat the actual URL path instead of just root "/" to warm up CDN/middleware for real stream path
+                            using var req = new HttpRequestMessage(HttpMethod.Head, uri);
                             try
                             {
                                 var res = await hc.SendAsync(req, cts.Token).ConfigureAwait(false);
-                                Logger.Debug($"[Preheat] {uri.Host} {(int)res.StatusCode}");
+                                Logger.Debug($"[Preheat] {uri} {(int)res.StatusCode}");
                             }
                             catch (Exception ex)
                             {
-                                Logger.Debug($"[Preheat] {uri.Host} fail: {ex.Message}");
+                                Logger.Debug($"[Preheat] {uri} fail: {ex.Message}");
                             }
                         }
                         catch { }

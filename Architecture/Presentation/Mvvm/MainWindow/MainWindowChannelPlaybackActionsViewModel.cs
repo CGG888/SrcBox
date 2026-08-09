@@ -10,6 +10,19 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 {
     public class MainWindowChannelPlaybackActionsViewModel : ViewModelBase
     {
+        // Pre-compiled regex patterns for rtp2httpd time placeholder expansion (OPT-4)
+        private static readonly System.Text.RegularExpressions.Regex s_rtp2httpdMacroRegex =
+            new System.Text.RegularExpressions.Regex(@"\$\{\((b|e)\)(.*?)\}",
+                System.Text.RegularExpressions.RegexOptions.Compiled);
+
+        private static readonly System.Text.RegularExpressions.Regex s_utcPlaceholderRegex =
+            new System.Text.RegularExpressions.Regex(@"\{utc:(.*?)\}",
+                System.Text.RegularExpressions.RegexOptions.Compiled);
+
+        private static readonly System.Text.RegularExpressions.Regex s_utcendPlaceholderRegex =
+            new System.Text.RegularExpressions.Regex(@"\{utcend:(.*?)\}",
+                System.Text.RegularExpressions.RegexOptions.Compiled);
+
         private readonly MainShellViewModel _shell;
         private readonly DispatcherTimer _sourceTimeoutTimer;
 
@@ -425,12 +438,12 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             url = url.Replace("${duration}", dur.ToString());
             url = url.Replace("{duration}", dur.ToString());
 
-            // 2. {utc:...} and {utcend:...} with Macro Expansion
-            url = ReplaceTimePlaceholder(url, "{utc:", "}", start.ToUniversalTime(), end.ToUniversalTime());
-            url = ReplaceTimePlaceholder(url, "{utcend:", "}", start.ToUniversalTime(), end.ToUniversalTime());
+            // 2. {utc:...} and {utcend:...} with Macro Expansion - use pre-compiled regex
+            url = s_utcPlaceholderRegex.Replace(url, m => FormatUtcPlaceholder(m.Groups[1].Value, start.ToUniversalTime()));
+            url = s_utcendPlaceholderRegex.Replace(url, m => FormatUtcPlaceholder(m.Groups[1].Value, end.ToUniversalTime()));
 
-            // 3. ${...} format with Macro Expansion
-            url = System.Text.RegularExpressions.Regex.Replace(url, @"\$\{\((b|e)\)(.*?)\}", m =>
+            // 3. ${...} format with Macro Expansion - use pre-compiled regex
+            url = s_rtp2httpdMacroRegex.Replace(url, m =>
             {
                 var type = m.Groups[1].Value;
                 var fmt = m.Groups[2].Value;
@@ -476,23 +489,13 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             return url;
         }
 
-        private string ReplaceTimePlaceholder(string input, string prefix, string suffix, DateTime start, DateTime end)
+        private static string FormatUtcPlaceholder(string fmt, DateTime dt)
         {
-            // Simple regex replacement for {utc:format}
-            // Need to find all occurrences
-            var pattern = System.Text.RegularExpressions.Regex.Escape(prefix) + "(.*?)" + System.Text.RegularExpressions.Regex.Escape(suffix);
-            return System.Text.RegularExpressions.Regex.Replace(input, pattern, m =>
-            {
-                var fmt = m.Groups[1].Value;
-                
-                // Expand rtp2httpd Macros
-                if (fmt == "YmdHMS") fmt = "yyyyMMddHHmmss";
-                else if (fmt == "Ymd") fmt = "yyyyMMdd";
-                else if (fmt == "HMS") fmt = "HHmmss";
-
-                if (prefix.Contains("end")) return end.ToString(fmt);
-                return start.ToString(fmt);
-            });
+            // Expand rtp2httpd Macros
+            if (fmt == "YmdHMS") fmt = "yyyyMMddHHmmss";
+            else if (fmt == "Ymd") fmt = "yyyyMMdd";
+            else if (fmt == "HMS") fmt = "HHmmss";
+            try { return dt.ToString(fmt); } catch { return "{utc:" + fmt + "}"; }
         }
 
         public void JumpToChannelByIdOrName(string id, string name)

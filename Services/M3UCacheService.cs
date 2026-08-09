@@ -143,6 +143,11 @@ public class M3UCacheService
                     try
                     {
                         using var request = new HttpRequestMessage(HttpMethod.Head, url);
+                        // Send conditional headers so server returns 304 Not Modified if unchanged
+                        if (!string.IsNullOrEmpty(meta.ETag))
+                            request.Headers.IfNoneMatch.ParseAdd(meta.ETag);
+                        if (!string.IsNullOrEmpty(meta.LastModified) && DateTimeOffset.TryParse(meta.LastModified, out var lmc))
+                            request.Headers.IfModifiedSince = lmc;
                         using var response = await _http.SendAsync(request).ConfigureAwait(false);
 
                         if (response.IsSuccessStatusCode)
