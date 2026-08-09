@@ -14,6 +14,8 @@
 
 ## 專案結構
 
+詳細專案結構請參閱 [完整架構文檔](/ARCHITECTURE.md)。
+
 ```text
 📂 SrcBox
 ├── 📂 Architecture    # 分層架構 (Application/Platform/Presentation)

@@ -14,6 +14,8 @@
 
 ## 项目结构
 
+详细项目结构请参阅 [完整架构文档](/ARCHITECTURE.md)。
+
 ```text
 📂 SrcBox
 ├── 📂 Architecture    # 分层架构 (Application/Platform/Presentation)
@@ -27,7 +29,7 @@
 
 ## 关键业务模块
 
-- **预约模块**：`ReminderService` + `ScheduledReminder`，支持“仅提醒/自动播放”策略。
+- **预约模块**：`ReminderService` + `ScheduledReminder`，支持”仅提醒/自动播放”策略。
 - **录播模块**：`MainWindowRecordingManager` 负责开始/停止录制、元数据写入、列表刷新。
 - **上传模块**：`UploadQueueService` + `WebDavClient` 负责上传排队、失败重试、远端目录组织。
 - **精简模式**：由主窗口状态与 Overlay 协调，保证窗口态/全屏态标识与交互同步。

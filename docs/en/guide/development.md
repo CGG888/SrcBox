@@ -1,5 +1,7 @@
 # Development Guide
 
+> For complete project architecture and technical details, please refer to the [Full Architecture Document](/ARCHITECTURE.md).
+
 ## Prerequisites
 
 - **OS**: Windows 10 / 11 (x64)

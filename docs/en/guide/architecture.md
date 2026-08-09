@@ -14,6 +14,8 @@ This project is developed using **C# / WPF**. The core architecture is as follow
 
 ## Project Structure
 
+For detailed project structure, please refer to the [Full Architecture Document](/ARCHITECTURE.md).
+
 ```text
 📂 SrcBox
 ├── 📂 Architecture    # Layered modules (Application/Platform/Presentation)

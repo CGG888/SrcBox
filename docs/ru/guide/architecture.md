@@ -14,6 +14,8 @@
 
 ## Структура проекта
 
+Подробная структура проекта доступна в [Полной архитектурной документации](/ARCHITECTURE.md).
+
 ```text
 📂 SrcBox
 ├── 📂 Architecture    # Архитектура (Application/Platform/Presentation)
