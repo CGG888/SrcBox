@@ -181,7 +181,40 @@ namespace LibmpvIptvClient
                 return;
             }
 
-            // 2. TS / MPEG-TS / UDP Handling
+            // 2. RTP Direct Address Handling (rtp://@host:port)
+            if (u.StartsWith("rtp://"))
+            {
+                // RTP uses MPEG-TS demuxer via lavf to receive RTP packets over UDP
+                SetString("demuxer", "lavf");
+                SetString("demuxer-lavf-format", "mpegts");
+                SetString("demuxer-lavf-probesize", "32"); // Minimal probe for fast first frame
+                SetString("demuxer-lavf-analyzeduration", "0"); // Disable analysis duration
+                SetString("demuxer-lavf-timeout", ((int)(_settings.SourceTimeoutSec * 1000)).ToString(CultureInfo.InvariantCulture));
+                // RTP-specific: allow packet dropout and misorder within bounds
+                SetString("rtp-max-dropout", "2000"); // Allow up to 2000ms packet dropout
+                SetString("rtp-max-misorder", "1000"); // Allow up to 1000ms packet reordering buffer
+
+                if (_settings.EnableUdpOptimization)
+                {
+                    // Optimization mode: larger cache, longer timeout for stability
+                    SetString("cache", "yes");
+                    SetString("cache-secs", "12");
+                    SetString("demuxer-max-back-bytes", "256MiB");
+                    SetString("demuxer-lavf-buffersize", "256000");
+                }
+                else
+                {
+                    // Low-latency mode
+                    SetString("cache", "yes");
+                    SetString("cache-secs", _settings.CacheSecs > 0 ? _settings.CacheSecs.ToString(CultureInfo.InvariantCulture) : "5");
+                    SetString("demuxer-max-back-bytes", "128MiB");
+                }
+
+                Logger.Debug($"[mpv] RTP direct address, udp-optimization={_settings.EnableUdpOptimization}");
+                return;
+            }
+
+            // 3. TS / MPEG-TS / UDP Handling
             var looksTs = u.Contains("/rtp/") || u.EndsWith(".ts") || u.Contains("proto=http") || u.StartsWith("udp://");
             if (looksTs)
             {
@@ -251,6 +284,7 @@ namespace LibmpvIptvClient
             }
 
             var proto = u.StartsWith("rtsp://") ? "RTSP" :
+                        u.StartsWith("rtp://") ? "RTP" :
                         u.StartsWith("udp://") ? "UDP" :
                         looksTs ? "TS" :
                         u.Contains(".m3u8") ? "HLS" : "HTTP";
