@@ -846,23 +846,33 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 
                 try
                 {
-                    LibmpvIptvClient.Services.DnsPrefetcher.PrefetchForChannels(loadedChannels, maxHosts: 60);
-                    LibmpvIptvClient.Services.ConnectionPreheater.PreheatForChannels(loadedChannels, maxHosts: 30);
+                    // NEW-14: Run DNS prefetch and connection preheat in parallel instead of sequentially
+                    _ = Task.WhenAll(
+                        Task.Run(() => LibmpvIptvClient.Services.DnsPrefetcher.PrefetchForChannels(loadedChannels, maxHosts: 60)),
+                        Task.Run(() => LibmpvIptvClient.Services.ConnectionPreheater.PreheatForChannels(loadedChannels, maxHosts: 30))
+                    );
                 }
                 catch { }
 
                 _ = System.Threading.Tasks.Task.Run(() =>
                 {
-                    var filterResult = ChannelListActions.BuildChannelFilterResult(loadedChannels, SearchText, SelectedGroup);
-                    var groupsResult = ChannelListActions.BuildGroups(loadedChannels);
-                    var favoritesResult = ChannelInteractionActions.BuildFavoriteList(loadedChannels, c => UserDataStore.ComputeKey(c));
-                    System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                    try
                     {
-                        FilteredChannels = filterResult.Channels;
-                        FilterCountText = filterResult.CountText;
-                        ChannelGroups = groupsResult;
-                        Favorites = favoritesResult;
-                    });
+                        var filterResult = ChannelListActions.BuildChannelFilterResult(loadedChannels, SearchText, SelectedGroup);
+                        var groupsResult = ChannelListActions.BuildGroups(loadedChannels);
+                        var favoritesResult = ChannelInteractionActions.BuildFavoriteList(loadedChannels, c => UserDataStore.ComputeKey(c));
+                        System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                        {
+                            FilteredChannels = filterResult.Channels;
+                            FilterCountText = filterResult.CountText;
+                            ChannelGroups = groupsResult;
+                            Favorites = favoritesResult;
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        LibmpvIptvClient.Diagnostics.Logger.Warn($"[ChannelList] Filter/build failed: {ex.Message}");
+                    }
                 });
 
                 if (!string.IsNullOrEmpty(epgUrl) && _epgService != null)

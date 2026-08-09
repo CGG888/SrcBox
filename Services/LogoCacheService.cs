@@ -170,7 +170,7 @@ namespace LibmpvIptvClient.Services
 
                 if (File.Exists(targetPath) && !targetPath.Equals(tmp)) File.Delete(targetPath);
                 if (!tmp.Equals(targetPath)) File.Move(tmp, targetPath);
-                _ = Task.Run(() => TryCleanup());
+                _ = Task.Run(() => TryCleanup()); // NEW-16: TryCleanup has internal try-catch
                 try { Logger.Debug($"[LogoCache] Downloaded: {targetPath}"); } catch { }
                 return targetPath;
             }

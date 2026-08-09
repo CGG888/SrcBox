@@ -76,7 +76,7 @@ namespace LibmpvIptvClient
         public int DemuxerMaxBackBytesMiB { get; set; } = 4;
         public int FccPrefetchCount { get; set; } = 2;
         public bool EnableUdpOptimization { get; set; } = false; // Added
-        public int SourceTimeoutSec { get; set; } = 3;
+        public int SourceTimeoutSec { get; set; } = 5; // NEW-24: 3s was too short for some streams, increased to 5s
 
         // 反交错 (Deinterlace) - 针对 1080i/720i 隔行扫描流
         // 模式: "no"=关闭 / "yes"=强制 / "auto"=自动检测(推荐, 零副作用)

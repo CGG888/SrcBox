@@ -27,7 +27,8 @@ namespace LibmpvIptvClient.Services.WebRemote
         // 密码保护
         private bool _requirePassword;
         private string _password = "";
-        private readonly HashSet<string> _authenticatedTokens = new();
+        // NEW-13: ConcurrentDictionary instead of HashSet + lock, eliminating data race
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> _authenticatedTokens = new();
 
         public Func<WebRemoteStatus>? GetStatusCallback { get; set; }
         public Func<List<WebRemoteChannelGroup>>? GetChannelsCallback { get; set; }
@@ -244,11 +245,7 @@ namespace LibmpvIptvClient.Services.WebRemote
                 if (_requirePassword && action != "auth")
                 {
                     var token = ws.SubProtocol ?? "";
-                    bool isAuth;
-                    lock (_clientsLock)
-                    {
-                        isAuth = _authenticatedTokens.Contains(token);
-                    }
+                    bool isAuth = _authenticatedTokens.ContainsKey(token); // NEW-13: lock-free
                     if (!isAuth)
                     {
                         Logger.Warn($"[WebRemote] Unauthorized access attempt: {action}");
@@ -270,10 +267,7 @@ namespace LibmpvIptvClient.Services.WebRemote
                         bool ok = !string.IsNullOrEmpty(_password) && pwd == _password;
                         if (ok)
                         {
-                            lock (_clientsLock)
-                            {
-                                _authenticatedTokens.Add(ws.SubProtocol ?? "");
-                            }
+                            _authenticatedTokens.TryAdd(ws.SubProtocol ?? "", true); // NEW-13: lock-free
                             Logger.Debug("[WebRemote] Client authenticated successfully");
                         }
                         else

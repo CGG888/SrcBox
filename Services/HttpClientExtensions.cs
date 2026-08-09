@@ -40,9 +40,10 @@ namespace LibmpvIptvClient.Services
                         HttpClientService.Instance.InvalidateClient();
                         return response;
                     }
-                    catch
+                    catch (Exception ex2)
                     {
-                        throw ex;
+                        // NEW-20: Throw AggregateException so caller sees BOTH failures
+                        throw new AggregateException($"Proxy failed ({ex.Message}), then DIRECT also failed ({ex2.Message})", ex, ex2);
                     }
                 }
             }

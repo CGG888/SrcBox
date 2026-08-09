@@ -23,6 +23,9 @@ namespace LibmpvIptvClient.Services
         int _backoffMs = 1000;
         int _maxKBps = 0;
         string QueueFile => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "upload_queue.json");
+        // NEW-11: Fire-and-forget async save to avoid blocking lock with sync I/O
+        volatile bool _dirty = false;
+        readonly SemaphoreSlim _saveLock = new(1, 1);
 
         UploadQueueService() { Load(); }
 
@@ -54,8 +57,9 @@ namespace LibmpvIptvClient.Services
             lock (_lock)
             {
                 _items.Add(item);
-                Save();
+                _dirty = true;
             }
+            _ = TrySaveAsync(); // non-blocking async save
             _ = RunAsync(wd);
         }
         public List<UploadItem> GetSnapshot()
@@ -90,7 +94,7 @@ namespace LibmpvIptvClient.Services
                     needSave = true;
                 }
             }
-            if (needSave) Save();
+            if (needSave) { _dirty = true; _ = TrySaveAsync(); }
         }
         public void Remove(string id)
         {
@@ -100,7 +104,7 @@ namespace LibmpvIptvClient.Services
                 _items.RemoveAll(i => i.Id == id);
                 needSave = true;
             }
-            if (needSave) Save();
+            if (needSave) { _dirty = true; _ = TrySaveAsync(); }
         }
 
         async Task RunAsync(LibmpvIptvClient.WebDavConfig wd)
@@ -176,7 +180,8 @@ namespace LibmpvIptvClient.Services
             it.Status = ok ? "done" : "failed";
             it.CompletedUtc = ok ? DateTime.UtcNow : null;
             it.Error = ok ? null : (ex?.Message ?? "upload failed");
-            Save();
+            _dirty = true;
+            _ = TrySaveAsync();
             // 上传 sidecar（同名 .json）
             if (ok)
             {
@@ -289,6 +294,34 @@ namespace LibmpvIptvClient.Services
                 File.WriteAllText(QueueFile, json);
             }
             catch { }
+        }
+
+        // NEW-11: Async save with lock-free dirty flag and single-flight pattern
+        async Task TrySaveAsync()
+        {
+            if (!_dirty) return;
+            if (!await _saveLock.WaitAsync(0).ConfigureAwait(false)) return; // another save in progress, skip
+            try
+            {
+                // Re-check under lock
+                if (!_dirty) return;
+                List<UploadItem>? snapshot = null;
+                lock (_lock)
+                {
+                    snapshot = _items.ToList();
+                }
+                _dirty = false;
+                await Task.Run(() =>
+                {
+                    var json = JsonSerializer.Serialize(snapshot);
+                    File.WriteAllText(QueueFile, json);
+                }).ConfigureAwait(false);
+            }
+            catch { }
+            finally
+            {
+                _saveLock.Release();
+            }
         }
         void Load()
         {
