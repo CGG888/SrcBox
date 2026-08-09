@@ -492,6 +492,7 @@ namespace LibmpvIptvClient
         void PlayChannel(Channel ch)
         {
             if (_mpv == null || ch == null) return;
+            Behaviors.ChannelPreviewBehavior.CloseActivePopupIfAny();
             _shell.ChannelPlaybackActions.PlayChannel(ch, ListEpg.ItemsSource as IEnumerable<EpgProgram>);
         }
         void UpdateEpgDisplay()

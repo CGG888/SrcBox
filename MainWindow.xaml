@@ -6,6 +6,8 @@
         xmlns:local="clr-namespace:LibmpvIptvClient"
         xmlns:controls="clr-namespace:LibmpvIptvClient.Controls"
         xmlns:helpers="clr-namespace:LibmpvIptvClient.Helpers"
+        xmlns:i="http://schemas.microsoft.com/xaml/behaviors"
+        xmlns:behaviors="clr-namespace:LibmpvIptvClient.Behaviors"
         x:Class="LibmpvIptvClient.MainWindow"
         Title="{DynamicResource App_Name}" Width="1024" Height="768" WindowStartupLocation="CenterScreen"
         WindowStyle="SingleBorderWindow" ResizeMode="CanResize"
@@ -725,7 +727,7 @@
         </Grid>
 
         <!-- 视频区域 -->
-        <Grid Grid.Row="1" Grid.Column="1" Background="Black" PreviewMouseWheel="VideoArea_PreviewMouseWheel" MouseLeftButtonDown="VideoArea_MouseLeftButtonDown" PreviewMouseLeftButtonDown="VideoArea_PreviewMouseLeftButtonDown" MouseMove="VideoArea_MouseMove">
+        <Grid x:Name="VideoArea" Grid.Row="1" Grid.Column="1" Background="Black" PreviewMouseWheel="VideoArea_PreviewMouseWheel" MouseLeftButtonDown="VideoArea_MouseLeftButtonDown" PreviewMouseLeftButtonDown="VideoArea_PreviewMouseLeftButtonDown" MouseMove="VideoArea_MouseMove">
             <wfi:WindowsFormsHost x:Name="VideoHost" Background="Black" PreviewMouseWheel="VideoHost_PreviewMouseWheel" PreviewMouseMove="VideoHost_PreviewMouseMove">
                 <wf:Panel x:Name="VideoPanel" BackColor="Black"/>
             </wfi:WindowsFormsHost>
@@ -862,6 +864,9 @@
                                     <ListBox.ItemTemplate>
                                         <DataTemplate>
                                             <Border x:Name="ItemBorder" Margin="6,4,18,4" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="6" PreviewMouseLeftButtonDown="OnPreviewMouseLeftButtonDown" BorderThickness="1" BorderBrush="{DynamicResource BorderBrushCommon}">
+                                                <i:Interaction.Behaviors>
+                                                    <behaviors:ChannelPreviewBehavior/>
+                                                </i:Interaction.Behaviors>
                                                 <Border.Style>
                                                     <Style TargetType="Border">
                                                         <Style.Triggers>
@@ -970,6 +975,9 @@
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
                                                         <Border Margin="6,4,18,4" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="6" PreviewMouseLeftButtonDown="OnPreviewMouseLeftButtonDown" BorderThickness="1" BorderBrush="{DynamicResource BorderBrushCommon}">
+                                                            <i:Interaction.Behaviors>
+                                                                <behaviors:ChannelPreviewBehavior/>
+                                                            </i:Interaction.Behaviors>
                                                             <Grid Margin="8,8">
                                                                 <Grid.ColumnDefinitions>
                                                                     <ColumnDefinition Width="28"/>
@@ -1287,6 +1295,9 @@
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
                                     <Border Margin="6,4,18,4" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="6" PreviewMouseLeftButtonDown="OnPreviewMouseLeftButtonDown" BorderThickness="1" BorderBrush="{DynamicResource BorderBrushCommon}">
+                                        <i:Interaction.Behaviors>
+                                            <behaviors:ChannelPreviewBehavior/>
+                                        </i:Interaction.Behaviors>
                                         <Grid Margin="8,8">
                                             <Grid.ColumnDefinitions>
                                                 <ColumnDefinition Width="28"/>

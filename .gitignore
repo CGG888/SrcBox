@@ -11,6 +11,7 @@
 /backup/
 /tasks/
 /docs/node_modules/
+/_backup_before_preview/
 
 *.suo
 *.user

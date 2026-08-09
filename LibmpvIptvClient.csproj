@@ -17,6 +17,7 @@
     <DisableWinExeConsoleOutput>true</DisableWinExeConsoleOutput>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.122" />
     <PackageReference Include="Fleck" Version="1.2.0" />
     <PackageReference Include="ModernWpfUI" Version="0.9.6" />
     <PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />
