@@ -187,7 +187,7 @@ namespace LibmpvIptvClient.Behaviors
                 border.Child = new System.Windows.Controls.Image
                 {
                     Source = preview,
-                    Stretch = Stretch.UniformToFill,
+                    Stretch = Stretch.Uniform,
                     Width = AppSettings.Current.ChannelPreviewWidth,
                     Height = AppSettings.Current.ChannelPreviewHeight
                 };
