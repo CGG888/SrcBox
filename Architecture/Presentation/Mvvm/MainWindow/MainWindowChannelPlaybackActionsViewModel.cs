@@ -182,20 +182,49 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             if (t.HasValue && t.Value > 0) return;
 
             var currentUrl = _shell.SourceLoader.SanitizeUrl(_shell.CurrentChannel.Tag is Source src ? src.Url : "");
-            var idx = _shell.CurrentSources.FindIndex(s => _shell.SourceLoader.SanitizeUrl(s.Url) == currentUrl);
 
-            if (idx >= 0 && idx < _shell.CurrentSources.Count - 1)
+            // Log all source health statuses
+            var healthSummary = string.Join(", ", _shell.CurrentSources
+                .Select(s => $"{s.Name ?? ShortenUrl(s.Url)}={s.IsHealthy}({s.LatencyMs}ms)"));
+            LibmpvIptvClient.Diagnostics.Logger.Warn($"[Source] Auto-degrade for {_shell.CurrentChannel.Name}. Health: {healthSummary}");
+
+            // Try to find the first healthy source, preferring the one after the current
+            var sources = _shell.CurrentSources;
+            Source? healthySource = null;
+
+            // First pass: healthy sources after current index
+            for (int i = 1; i < sources.Count; i++)
             {
-                var nextSource = _shell.CurrentSources[idx + 1];
-                LibmpvIptvClient.Diagnostics.Logger.Warn($"[Live] Source timeout ({AppSettings.Current.SourceTimeoutSec}s), auto-switch to next source: {nextSource.Url}");
-                
-                _shell.CurrentChannel.Tag = nextSource;
-                PlayChannel(_shell.CurrentChannel); 
+                var idx = (sources.IndexOf(_shell.CurrentChannel.Tag ?? sources[0]) + i) % sources.Count;
+                if (sources[idx].IsHealthy)
+                {
+                    healthySource = sources[idx];
+                    break;
+                }
+            }
+
+            // Fallback: any healthy source
+            healthySource ??= sources.FirstOrDefault(s => s.IsHealthy);
+
+            if (healthySource != null)
+            {
+                var logMsg = healthySource.Url != currentUrl
+                    ? $"[Source] Health-aware switch: {currentUrl} → {healthySource.Url ?? healthySource.Name}"
+                    : $"[Source] Health check passed, continuing: {currentUrl}";
+                LibmpvIptvClient.Diagnostics.Logger.Warn(logMsg);
+                _shell.CurrentChannel.Tag = healthySource;
+                PlayChannel(_shell.CurrentChannel);
             }
             else
             {
-                LibmpvIptvClient.Diagnostics.Logger.Warn($"[Live] Source timeout, no more sources to switch to.");
+                LibmpvIptvClient.Diagnostics.Logger.Warn($"[Source] All sources unreachable for {_shell.CurrentChannel.Name}, no more to switch to.");
             }
+        }
+
+        private static string ShortenUrl(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url)) return "(空)";
+            try { return new Uri(url).Host; } catch { return url.Length > 30 ? url.Substring(0, 30) + "..." : url; }
         }
 
         public void CheckPlaybackStarted(double timePos)

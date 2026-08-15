@@ -72,6 +72,9 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                     _shell.MenuActions.LoadM3u(lastSelected);
                 }
             }
+
+            // Start background source health monitoring
+            SourceHealthService.Instance.Start(_shell.Channels);
         }
 
         private void OnRecordingTriggered(object? sender, ScheduledRecordingTriggerArgs e)

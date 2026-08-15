@@ -221,6 +221,7 @@ namespace LibmpvIptvClient
             try
             {
                 _overlayManager.Close();
+                SourceHealthService.Instance.Stop();
                 try { _recordingManager?.Close(); } catch { }
                 if (_shell.WindowStateActions.FullscreenWindow != null)
                 {

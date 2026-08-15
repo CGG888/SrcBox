@@ -33,6 +33,7 @@ namespace LibmpvIptvClient
         private LibmpvIptvClient.Architecture.Presentation.View.MainWindowSeekInteractionManager? _seekInteractionManager;
         private LibmpvIptvClient.Architecture.Presentation.View.MainWindowFullscreenInputManager? _fullscreenInputManager;
         private LibmpvIptvClient.Architecture.Presentation.View.MainWindowWindowedInputManager? _windowedInputManager;
+        private MainWindowChannelContextMenuManager? _channelContextMenuManager;
 
         private bool _firstFrameLogged = false;
         private DateTime _lastHistoryUpdate = DateTime.MinValue;
@@ -65,6 +66,7 @@ namespace LibmpvIptvClient
             _seekInteractionManager = new LibmpvIptvClient.Architecture.Presentation.View.MainWindowSeekInteractionManager(this, _shell);
             _fullscreenInputManager = new LibmpvIptvClient.Architecture.Presentation.View.MainWindowFullscreenInputManager(this);
             _windowedInputManager = new LibmpvIptvClient.Architecture.Presentation.View.MainWindowWindowedInputManager(this);
+            _channelContextMenuManager = new MainWindowChannelContextMenuManager(_shell);
             _shell.PropertyChanged += OnShellPropertyChanged;
             _shell.RequestClose += () => Close();
             Loaded += OnLoaded;
@@ -268,6 +270,43 @@ private void InitializeSourceRatioIcons()
             }
             catch { }
             return result;
+        }
+
+        private void ListBoxItem_ContextMenuOpening(object sender, System.Windows.RoutedEventArgs e)
+        {
+            try
+            {
+                // sender is the ListBoxItem itself — set context menu directly on it
+                if (sender is not System.Windows.Controls.ListBoxItem item) return;
+                if (item.DataContext is not Channel ch) return;
+
+                _channelContextMenuManager?.ShowContextMenu(item, ch);
+            }
+            catch { }
+        }
+
+        private void GroupChannelItem_ContextMenu(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            try
+            {
+                if (sender is not System.Windows.FrameworkElement fe) return;
+                if (fe.DataContext is not Channel ch) return;
+                // Use the Border (sender) as anchor directly — it's the visual item
+                _channelContextMenuManager?.ShowContextMenu(fe, ch);
+            }
+            catch { }
+        }
+
+        private void ListChannelItem_ContextMenu(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            try
+            {
+                if (sender is not System.Windows.FrameworkElement fe) return;
+                if (fe.DataContext is not Channel ch) return;
+                _channelContextMenuManager?.ShowContextMenu(fe, ch);
+                e.Handled = true;
+            }
+            catch { }
         }
     }
 }

@@ -209,7 +209,10 @@ namespace LibmpvIptvClient.Behaviors
         {
             if (!IsEnabled) return;
             if (!AppSettings.Current.EnableChannelPreview) return;
-            if (_popup == null) return;
+
+            // Lazy-create popup if it was destroyed by OnUnloaded (TabControl recycling)
+            if (_popup == null)
+                _popup = CreatePopup();
 
             var channelUrl = GetStreamUrlFromDataContext(AssociatedObject);
             if (string.IsNullOrWhiteSpace(channelUrl)) return;

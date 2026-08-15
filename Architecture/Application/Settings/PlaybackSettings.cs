@@ -78,6 +78,14 @@ namespace LibmpvIptvClient
         public bool EnableUdpOptimization { get; set; } = false; // Added
         public int SourceTimeoutSec { get; set; } = 5; // NEW-24: 3s was too short for some streams, increased to 5s
 
+        // 源健康检测设置
+        public int SourceHealthProbeTimeoutSec { get; set; } = 5;    // HTTP HEAD 探测超时（秒）
+        public int SourceHealthScanIntervalSec { get; set; } = 7200; // 后台扫描间隔（秒），默认 120 分钟
+        public int SourceHealthFailureThreshold { get; set; } = 3;   // 连续失败次数阈值，超过则标记为不健康
+        public int SourceHealthBatchSize { get; set; } = 50;        // 每批探测的源数量，避免瞬时并发过高
+        public int SourceHealthBatchDelayMs { get; set; } = 200;    // 批次之间的延迟（毫秒）
+        public int SourceHealthMaxConcurrent { get; set; } = 8;     // 每批最大并发数
+
         // 反交错 (Deinterlace) - 针对 1080i/720i 隔行扫描流
         // 模式: "no"=关闭 / "yes"=强制 / "auto"=自动检测(推荐, 零副作用)
         public string Deinterlace { get; set; } = "auto";

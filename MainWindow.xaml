@@ -33,6 +33,8 @@
             <BooleanToVisibilityConverter x:Key="BoolToVis"/>
             <local:RangeToWidthConverter x:Key="RangeToWidth"/>
             <local:BoolToStarConverter x:Key="BoolToStar"/>
+            <local:SourceHealthToColorConverter x:Key="SourceHealthToColor"/>
+            <local:SourceHealthToColorMultiConverter x:Key="SourceHealthToColorMulti"/>
             
             <!-- 基础按钮样式 -->
             <Style x:Key="BarButtonBase" TargetType="{x:Type ButtonBase}">
@@ -863,7 +865,7 @@
                                     </ListBox.ItemContainerStyle>
                                     <ListBox.ItemTemplate>
                                         <DataTemplate>
-                                            <Border x:Name="ItemBorder" Margin="6,4,18,4" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="6" PreviewMouseLeftButtonDown="OnPreviewMouseLeftButtonDown" BorderThickness="1" BorderBrush="{DynamicResource BorderBrushCommon}">
+                                            <Border x:Name="ItemBorder" Margin="6,4,18,4" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="6" PreviewMouseLeftButtonDown="OnPreviewMouseLeftButtonDown" BorderThickness="1" BorderBrush="{DynamicResource BorderBrushCommon}" PreviewMouseRightButtonUp="ListChannelItem_ContextMenu">
                                                 <i:Interaction.Behaviors>
                                                     <behaviors:ChannelPreviewBehavior/>
                                                 </i:Interaction.Behaviors>
@@ -892,7 +894,7 @@
                                                     </Grid.ColumnDefinitions>
                                                     <TextBlock Grid.Column="0" Text="{Binding GlobalIndex}"
                                                                Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"/>
-                                                    <Ellipse Grid.Column="2" Width="6" Height="6" Fill="#35C759" VerticalAlignment="Center"/>
+                                                    <Ellipse Grid.Column="2" Width="6" Height="6" Fill="{Binding HealthColorBrush}" VerticalAlignment="Center"/>
                                                     <StackPanel Grid.Column="4" VerticalAlignment="Center">
                                                         <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                                             <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="Bold" TextTrimming="CharacterEllipsis">
@@ -974,7 +976,7 @@
                                             <ItemsControl ItemsSource="{Binding Items}" AlternationCount="2">
                                                 <ItemsControl.ItemTemplate>
                                                     <DataTemplate>
-                                                        <Border Margin="6,4,18,4" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="6" PreviewMouseLeftButtonDown="OnPreviewMouseLeftButtonDown" BorderThickness="1" BorderBrush="{DynamicResource BorderBrushCommon}">
+                                                        <Border Margin="6,4,18,4" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="6" PreviewMouseLeftButtonDown="OnPreviewMouseLeftButtonDown" PreviewMouseRightButtonUp="GroupChannelItem_ContextMenu" BorderThickness="1" BorderBrush="{DynamicResource BorderBrushCommon}">
                                                             <i:Interaction.Behaviors>
                                                                 <behaviors:ChannelPreviewBehavior/>
                                                             </i:Interaction.Behaviors>
@@ -990,7 +992,7 @@
                                                                 </Grid.ColumnDefinitions>
                                                                 <TextBlock Grid.Column="0" Text="{Binding DisplayIndex}"
                                                                            Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"/>
-                                                                <Ellipse Grid.Column="2" Width="6" Height="6" Fill="#35C759" VerticalAlignment="Center"/>
+                                                                <Ellipse Grid.Column="2" Width="6" Height="6" Fill="{Binding HealthColorBrush}" VerticalAlignment="Center"/>
                                                                 <StackPanel Grid.Column="4" VerticalAlignment="Center">
                                                                     <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                                             <TextBlock Text="{Binding Name}" FontSize="12" FontWeight="Bold" TextTrimming="CharacterEllipsis">
@@ -1074,7 +1076,7 @@
                                                     <ColumnDefinition Width="80"/>
                                                 </Grid.ColumnDefinitions>
                                                 <TextBlock Grid.Column="0" Text="{Binding (ItemsControl.AlternationIndex), RelativeSource={RelativeSource AncestorType=ListBoxItem}, Converter={StaticResource IntPlusOne}}" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"/>
-                                                <Ellipse Grid.Column="2" Width="6" Height="6" Fill="#0A84FF" VerticalAlignment="Center"/>
+                                                <Ellipse Grid.Column="2" Width="6" Height="6" Fill="{Binding HealthColorBrush}" VerticalAlignment="Center"/>
                                                 <StackPanel Grid.Column="4" VerticalAlignment="Center">
                                                     <StackPanel Orientation="Horizontal">
                                                         <TextBlock Text="{Binding Name}" FontSize="12" TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextPrimaryBrush}"/>
@@ -1294,7 +1296,7 @@
                             </ListBox.ItemContainerStyle>
                             <ListBox.ItemTemplate>
                                 <DataTemplate>
-                                    <Border Margin="6,4,18,4" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="6" PreviewMouseLeftButtonDown="OnPreviewMouseLeftButtonDown" BorderThickness="1" BorderBrush="{DynamicResource BorderBrushCommon}">
+                                    <Border Margin="6,4,18,4" Background="{DynamicResource CardBackgroundBrush}" CornerRadius="6" PreviewMouseLeftButtonDown="OnPreviewMouseLeftButtonDown" BorderThickness="1" BorderBrush="{DynamicResource BorderBrushCommon}" PreviewMouseRightButtonUp="ListChannelItem_ContextMenu">
                                         <i:Interaction.Behaviors>
                                             <behaviors:ChannelPreviewBehavior/>
                                         </i:Interaction.Behaviors>
@@ -1309,7 +1311,7 @@
                                                 <ColumnDefinition Width="80"/>
                                             </Grid.ColumnDefinitions>
                                             <TextBlock Grid.Column="0" Text="{Binding GlobalIndex}" Foreground="{DynamicResource TextSecondaryBrush}" HorizontalAlignment="Right" VerticalAlignment="Center" FontSize="12"/>
-                                            <Ellipse Grid.Column="2" Width="6" Height="6" Fill="#35C759" VerticalAlignment="Center"/>
+                                            <Ellipse Grid.Column="2" Width="6" Height="6" Fill="{Binding HealthColorBrush}" VerticalAlignment="Center"/>
                                             <StackPanel Grid.Column="4" VerticalAlignment="Center">
                                                 <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
                                                     <TextBlock Text="{Binding Name}" FontSize="12" TextTrimming="CharacterEllipsis">
@@ -1325,7 +1327,7 @@
                                                             </Style>
                                                         </TextBlock.Style>
                                                     </TextBlock>
-                                                    <TextBlock Text="R" Foreground="{DynamicResource AccentBrush}" FontSize="10" FontWeight="Bold" 
+                                                    <TextBlock Text="R" Foreground="{DynamicResource AccentBrush}" FontSize="10" FontWeight="Bold"
                                                                VerticalAlignment="Top" Margin="4,2,0,0"
                                                                Visibility="{Binding HasCatchup, Converter={StaticResource BoolToVis}}" ToolTip="Catchup Available"/>
                                                 </StackPanel>
