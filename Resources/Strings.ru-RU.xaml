@@ -103,6 +103,8 @@
   <sys:String x:Key="UI_Next">Следующий</sys:String>
   <sys:String x:Key="UI_CopyAll">Копировать всё</sys:String>
   <sys:String x:Key="Common_Close">Закрыть</sys:String>
+  <sys:String x:Key="Common_PlayNow">Воспроизвести</sys:String>
+  <sys:String x:Key="Common_Dismiss">Понятно</sys:String>
   <sys:String x:Key="Common_Tips">Сведения</sys:String>
   <sys:String x:Key="Common_OK">ОК</sys:String>
   <sys:String x:Key="UI_Pause">Пауза</sys:String>

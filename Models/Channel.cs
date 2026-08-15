@@ -105,7 +105,6 @@ namespace LibmpvIptvClient.Models
         public void NotifySourceHealthChanged()
         {
             checked { _sourceHealthStamp++; }
-            Diagnostics.Logger.Info($"[Channel] NotifySourceHealthChanged for {Name} stamp={_sourceHealthStamp}");
             OnPropertyChanged(nameof(SourceHealthStamp));
             OnPropertyChanged(nameof(HealthColorBrush));
         }

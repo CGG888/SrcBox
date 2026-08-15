@@ -26,8 +26,8 @@
             <TextBlock x:Name="TxtCountdown" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="12" VerticalAlignment="Center"/>
           </StackPanel>
           <StackPanel Orientation="Horizontal" Grid.Column="1" VerticalAlignment="Center">
-            <Button x:Name="BtnPlay" Content="立即播放" Width="88" Height="28" Margin="0,0,8,0" Click="BtnPlay_Click" Style="{DynamicResource AccentButtonStyle}" Visibility="Collapsed" VerticalAlignment="Center"/>
-            <Button x:Name="BtnDismiss" Content="知道了" Width="72" Height="28" Click="BtnDismiss_Click" Style="{DynamicResource ChipButton}" VerticalAlignment="Center"/>
+            <Button x:Name="BtnPlay" Content="{DynamicResource Common_PlayNow}" Width="88" Height="28" Margin="0,0,8,0" Click="BtnPlay_Click" Style="{DynamicResource AccentButtonStyle}" Visibility="Collapsed" VerticalAlignment="Center"/>
+            <Button x:Name="BtnDismiss" Content="{DynamicResource Common_Dismiss}" Width="72" Height="28" Click="BtnDismiss_Click" Style="{DynamicResource ChipButton}" VerticalAlignment="Center"/>
           </StackPanel>
         </Grid>
       </StackPanel>

@@ -26,12 +26,30 @@ namespace LibmpvIptvClient.Services
         private bool _firstScan = true; // true = next scan probes all sources at once (no batching)
         private List<Channel>? _shellChannels;
         private readonly SemaphoreSlim _sem = new SemaphoreSlim(1, 1);
+        // Throttle NotifySourceHealthChanged to at most once per second per channel
+        private readonly Dictionary<string, DateTime> _lastNotifyTime = new();
+        private const int NotifyThrottleMs = 1000;
         // Use Dictionary so concurrent probes for the same URL can wait for the first to finish
         private readonly Dictionary<string, TaskCompletionSource<ProbeResult>> _pendingProbes =
             new Dictionary<string, TaskCompletionSource<ProbeResult>>(StringComparer.OrdinalIgnoreCase);
         private readonly Random _rng = new Random();
 
         private SourceHealthService() { }
+
+        /// <summary>Calls ch.NotifySourceHealthChanged() at most once per NotifyThrottleMs to prevent log flooding.</summary>
+        private void ThrottledNotify(Channel ch)
+        {
+            var id = ch.Id;
+            if (string.IsNullOrEmpty(id)) { try { ch.NotifySourceHealthChanged(); } catch { } return; }
+            var now = DateTime.Now;
+            lock (_lastNotifyTime)
+            {
+                if (_lastNotifyTime.TryGetValue(id, out var last) && (now - last).TotalMilliseconds < NotifyThrottleMs)
+                    return;
+                _lastNotifyTime[id] = now;
+            }
+            try { ch.NotifySourceHealthChanged(); } catch { }
+        }
 
         /// <summary>
         /// Starts periodic background health scanning of all sources in the given channels.
@@ -130,7 +148,6 @@ namespace LibmpvIptvClient.Services
             source.LatencyMs = bestLatency;
             source.LastChecked = DateTime.UtcNow;
             source.FailureCount = anyReachable ? 0 : maxFailCount;
-            Logger.Info($"[Source] ProbeSourceAsync done {source.Url} reachable={anyReachable} latency={bestLatency}ms OnHealthChanged={source.OnHealthChanged != null}");
             try { source.OnHealthChanged?.Invoke(); } catch (Exception ex) { Logger.Warn($"[Source] OnHealthChanged error: {ex.Message}"); }
         }
 
@@ -256,14 +273,14 @@ namespace LibmpvIptvClient.Services
                     foreach (var s in ch.Sources)
                     {
                         // Wire Source → Channel callback so Ellipse binding refreshes
-                        s.OnHealthChanged = () => ch.NotifySourceHealthChanged();
+                        s.OnHealthChanged = () => ThrottledNotify(ch);
                         allSources.Add((ch, s));
                     }
                     // Always include the current Tag source even if its URL differs after sanitization
                     // (e.g. assembled via $$-separator or URL query param order differs)
                     if (ch.Tag != null && !allSources.Any(x => x.src.Id == ch.Tag.Id))
                     {
-                        ch.Tag.OnHealthChanged = () => ch.NotifySourceHealthChanged();
+                        ch.Tag.OnHealthChanged = () => ThrottledNotify(ch);
                         allSources.Add((ch, ch.Tag));
                     }
                 }

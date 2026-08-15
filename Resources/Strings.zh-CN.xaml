@@ -100,6 +100,8 @@
   <sys:String x:Key="UI_Next">下一个</sys:String>
   <sys:String x:Key="UI_CopyAll">复制全部</sys:String>
   <sys:String x:Key="Common_Close">关闭</sys:String>
+  <sys:String x:Key="Common_PlayNow">立即播放</sys:String>
+  <sys:String x:Key="Common_Dismiss">知道了</sys:String>
   <sys:String x:Key="UI_SettingsTitle">设置</sys:String>
   <sys:String x:Key="UI_LangThemeNote">语言与外观修改需点击保存后生效。</sys:String>
 

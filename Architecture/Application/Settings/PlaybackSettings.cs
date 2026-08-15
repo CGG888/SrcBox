@@ -240,7 +240,7 @@ namespace LibmpvIptvClient
         public string Password { get; set; } = "";
         public bool ShowChannelList { get; set; } = true;
         public bool ShowEpgList { get; set; } = true;
-        public int MaxEpgItems { get; set; } = 20;
+        public int MaxEpgItems { get; set; } = 50;
     }
 
     public class TimeOverrideConfig

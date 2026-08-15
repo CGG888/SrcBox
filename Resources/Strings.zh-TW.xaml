@@ -103,6 +103,8 @@
   <sys:String x:Key="UI_Next">下一個</sys:String>
   <sys:String x:Key="UI_CopyAll">複製全部</sys:String>
   <sys:String x:Key="Common_Close">關閉</sys:String>
+  <sys:String x:Key="Common_PlayNow">立即播放</sys:String>
+  <sys:String x:Key="Common_Dismiss">知道了</sys:String>
   <sys:String x:Key="Common_Tips">提示</sys:String>
   <sys:String x:Key="Common_OK">確定</sys:String>
   <sys:String x:Key="UI_Pause">暫停</sys:String>

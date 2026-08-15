@@ -408,29 +408,27 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                             if (prog != null)
                             {
                                 targetProgram = prog;
+                                end = prog.End; // Use actual program end time, not current time
                             }
                         }
                     }
                 }
                 catch { }
-                
+
                 url = ProcessUrlPlaceholders(url, start, end, AppSettings.Current.Timeshift.AppendEpgTime);
                 try { url = LibmpvIptvClient.Services.UrlTimeRewriter.RewriteIfEnabled(AppSettings.Current, url, start, end, _shell.IsTimeshiftActive); } catch { }
                 
-                LibmpvIptvClient.Diagnostics.Logger.Info($"[Timeshift] Start Timeshift - Channel: {ch.Name}, Time: {start:yyyy-MM-dd HH:mm:ss}, URL: {url}");
+                LibmpvIptvClient.Diagnostics.Logger.Info($"[Replay] Start Replay - Channel: {ch.Name}, Time: {start:yyyy-MM-dd HH:mm:ss}, URL: {url}");
                 _shell.PlayerEngine.Play(url);
                 _shell.CurrentUrl = url;
-                LibmpvIptvClient.Diagnostics.Logger.Info($"[Timeshift] After Play - CurrentPlayingProgram={_shell.CurrentPlayingProgram?.Title ?? "null"}");
+                LibmpvIptvClient.Diagnostics.Logger.Info($"[Replay] After Play - CurrentPlayingProgram={_shell.CurrentPlayingProgram?.Title ?? "null"}");
                 _shell.CurrentPlayingProgram = targetProgram;
-                LibmpvIptvClient.Diagnostics.Logger.Info($"[Timeshift] After assignment - CurrentPlayingProgram={_shell.CurrentPlayingProgram?.Title ?? "null"}");
-                var cursorSec = (start - _shell.TimeshiftMin).TotalSeconds;
-                _shell.TimeshiftCursorSec = Math.Max(0, cursorSec);
-                LibmpvIptvClient.Diagnostics.Logger.Info($"[Timeshift] TimeshiftCursorSec updated to {_shell.TimeshiftCursorSec}");
+                LibmpvIptvClient.Diagnostics.Logger.Info($"[Replay] After assignment - CurrentPlayingProgram={_shell.CurrentPlayingProgram?.Title ?? "null"}");
+                _shell.IsTimeshiftActive = false;
                 RequestVideoShow?.Invoke();
 
-                _shell.DispatchPlaybackEvent(new StartTimeshiftPlayback(
+                _shell.DispatchPlaybackEvent(new StartReplayPlayback(
                     ch.TvgId ?? ch.Id ?? ch.Name ?? "",
-                    start,
                     targetProgram,
                     url));
                 
@@ -455,6 +453,9 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 
         private string ProcessUrlPlaceholders(string url, DateTime start, DateTime end, bool appendEpgTime)
         {
+            // 0. Decode URL-encoded placeholders (e.g., $%7B(b)yyyyMMdd%7CUTC%7D -> ${(b)yyyyMMdd|UTC})
+            url = Uri.UnescapeDataString(url);
+
             // 1. Unix Timestamp & Duration (rtp2httpd macros)
             long tsStart = new DateTimeOffset(start).ToUnixTimeSeconds();
             long tsEnd = new DateTimeOffset(end).ToUnixTimeSeconds();

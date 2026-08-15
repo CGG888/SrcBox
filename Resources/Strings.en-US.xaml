@@ -103,6 +103,8 @@
   <sys:String x:Key="UI_Next">Next</sys:String>
   <sys:String x:Key="UI_CopyAll">Copy all</sys:String>
   <sys:String x:Key="Common_Close">Close</sys:String>
+  <sys:String x:Key="Common_PlayNow">Play Now</sys:String>
+  <sys:String x:Key="Common_Dismiss">Got It</sys:String>
   <sys:String x:Key="Common_Tips">Info</sys:String>
   <sys:String x:Key="Err_UnhandledTitle">Error</sys:String>
   <sys:String x:Key="Err_Unknown">Unknown error</sys:String>

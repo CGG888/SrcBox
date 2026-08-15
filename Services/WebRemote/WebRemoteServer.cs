@@ -32,7 +32,7 @@ namespace LibmpvIptvClient.Services.WebRemote
 
         public Func<WebRemoteStatus>? GetStatusCallback { get; set; }
         public Func<List<WebRemoteChannelGroup>>? GetChannelsCallback { get; set; }
-        public Func<string, List<WebRemoteProgram>>? GetEpgCallback { get; set; }
+        public Func<string, DateTime?, List<WebRemoteProgram>>? GetEpgCallback { get; set; }
         public Action? PlayCallback { get; set; }
         public Action? PauseCallback { get; set; }
         public Action? StopCallback { get; set; }
@@ -41,6 +41,20 @@ namespace LibmpvIptvClient.Services.WebRemote
         public Action? ExitCallback { get; set; }
         public Action? FullscreenCallback { get; set; }
         public Action? SwitchSourceCallback { get; set; }
+        public Func<List<WebRemoteSource>>? GetSourcesCallback { get; set; }
+        public Action<string>? SelectSourceCallback { get; set; }
+        public Action<string, string>? AddSourceCallback { get; set; }
+        public Action<string>? RemoveSourceCallback { get; set; }
+        public Action<double>? SeekCallback { get; set; }
+        public Action<double>? SetSpeedCallback { get; set; }
+        public Action<bool>? SetTimeshiftCallback { get; set; }
+        public Action<string, string, string, string>? ReplayProgramCallback { get; set; }
+        public Func<List<WebRemoteReminder>>? GetRemindersCallback { get; set; }
+        public Func<string, string, string, string, string, int, int?, string>? AddReminderCallback { get; set; }
+        public Action<string>? CancelReminderCallback { get; set; }
+        public Func<List<WebRemoteRecording>>? GetRecordingsCallback { get; set; }
+        public Action<string>? StopRecordingCallback { get; set; }
+        public Action<string>? DeleteRecordingCallback { get; set; }
 
         public void Start(int port, bool requirePassword = false, string password = "")
         {
@@ -294,9 +308,16 @@ namespace LibmpvIptvClient.Services.WebRemote
 
                     case "getEpg":
                         var channelId = "";
+                        DateTime? filterDate = null;
                         if (json.TryGetProperty("channelId", out var idElem))
                             channelId = idElem.GetString() ?? "";
-                        result = new { channelId, programs = GetEpgCallback?.Invoke(channelId) ?? new List<WebRemoteProgram>() };
+                        if (json.TryGetProperty("date", out var dateElem) && dateElem.ValueKind == JsonValueKind.String)
+                        {
+                            var dateStr = dateElem.GetString();
+                            if (!string.IsNullOrEmpty(dateStr) && DateTime.TryParse(dateStr, out var parsed))
+                                filterDate = parsed;
+                        }
+                        result = new { channelId, programs = GetEpgCallback?.Invoke(channelId, filterDate) ?? new List<WebRemoteProgram>() };
                         break;
 
                     case "play":
@@ -341,13 +362,147 @@ namespace LibmpvIptvClient.Services.WebRemote
                         ExitCallback?.Invoke();
                         break;
 
+                    case "getSources":
+                        {
+                            var sources = GetSourcesCallback?.Invoke() ?? new List<WebRemoteSource>();
+                            result = new { sources };
+                        }
+                        break;
+
+                    case "selectSource":
+                        {
+                            string? selName = null, selUrl = null;
+                            if (json.TryGetProperty("name", out var sn)) selName = sn.GetString();
+                            if (json.TryGetProperty("url", out var su)) selUrl = su.GetString();
+                            SelectSourceCallback?.Invoke(selName ?? selUrl ?? "");
+                            result = new { success = true };
+                        }
+                        break;
+
+                    case "addSource":
+                        {
+                            string? aName = null, aUrl = null;
+                            if (json.TryGetProperty("name", out var an)) aName = an.GetString();
+                            if (json.TryGetProperty("url", out var au)) aUrl = au.GetString();
+                            if (!string.IsNullOrEmpty(aName) && !string.IsNullOrEmpty(aUrl))
+                                AddSourceCallback?.Invoke(aName, aUrl);
+                            result = new { success = true };
+                        }
+                        break;
+
+                    case "removeSource":
+                        {
+                            string? rKey = null;
+                            if (json.TryGetProperty("name", out var rn)) rKey = rn.GetString();
+                            if (json.TryGetProperty("url", out var ru)) rKey = rKey ?? ru.GetString();
+                            RemoveSourceCallback?.Invoke(rKey ?? "");
+                            result = new { success = true };
+                        }
+                        break;
+
+                    case "prevSource":
+                        SelectSourceCallback?.Invoke("__prev__");
+                        result = new { success = true };
+                        break;
+
+                    case "nextSource":
+                        SelectSourceCallback?.Invoke("__next__");
+                        result = new { success = true };
+                        break;
+
+                    case "seek":
+                        if (json.TryGetProperty("seconds", out var seekSec))
+                            SeekCallback?.Invoke(seekSec.GetDouble());
+                        result = new { success = true };
+                        break;
+
+                    case "setSpeed":
+                        if (json.TryGetProperty("speed", out var speedVal))
+                            SetSpeedCallback?.Invoke(speedVal.GetDouble());
+                        result = new { success = true };
+                        break;
+
+                    case "setTimeshift":
+                        if (json.TryGetProperty("enabled", out var tsEnabled))
+                            SetTimeshiftCallback?.Invoke(tsEnabled.GetBoolean());
+                        result = new { success = true };
+                        break;
+
+                    case "replayProgram":
+                        {
+                            string? rpChannelId = null, rpTitle = null, rpStart = null, rpEnd = null;
+                            if (json.TryGetProperty("channelId", out var rpcid)) rpChannelId = rpcid.GetString();
+                            if (json.TryGetProperty("programTitle", out var rpt)) rpTitle = rpt.GetString();
+                            if (json.TryGetProperty("start", out var rpstart)) rpStart = rpstart.GetString();
+                            if (json.TryGetProperty("end", out var rpend)) rpEnd = rpend.GetString();
+                            ReplayProgramCallback?.Invoke(rpChannelId ?? "", rpTitle ?? "", rpStart ?? "", rpEnd ?? "");
+                            result = new { success = true };
+                        }
+                        break;
+
+                    case "getReminders":
+                        {
+                            var reminders = GetRemindersCallback?.Invoke() ?? new List<WebRemoteReminder>();
+                            result = new { reminders };
+                        }
+                        break;
+
+                    case "addReminder":
+                        {
+                            string remId = "", remChannelId = "", remStartAt = "", remEndTime = "", remAction = "", remTitle = "";
+                            int remPreAlert = 0; int? remDur = null;
+                            if (json.TryGetProperty("channelId", out var rcid)) remChannelId = rcid.GetString() ?? "";
+                            if (json.TryGetProperty("startAt", out var rsa)) remStartAt = rsa.GetString() ?? "";
+                            if (json.TryGetProperty("endTime", out var ret)) remEndTime = ret.GetString() ?? "";
+                            if (json.TryGetProperty("action", out var rac)) remAction = rac.GetString() ?? "play";
+                            if (json.TryGetProperty("programTitle", out var rpt2)) remTitle = rpt2.GetString() ?? "";
+                            if (json.TryGetProperty("preAlertSeconds", out var rpa)) remPreAlert = rpa.GetInt32();
+                            if (json.TryGetProperty("recordDurationMin", out var rdm) && rdm.ValueKind != JsonValueKind.Null) remDur = rdm.GetInt32();
+                            remId = AddReminderCallback?.Invoke(remChannelId, remStartAt, remEndTime, remAction, remTitle, remPreAlert, remDur) ?? "";
+                            result = new { success = !string.IsNullOrEmpty(remId), reminderId = remId };
+                        }
+                        break;
+
+                    case "cancelReminder":
+                        {
+                            string? cancelId = null;
+                            if (json.TryGetProperty("id", out var cid)) cancelId = cid.GetString();
+                            CancelReminderCallback?.Invoke(cancelId ?? "");
+                            result = new { success = true };
+                        }
+                        break;
+
+                    case "getRecordings":
+                        {
+                            var recordings = GetRecordingsCallback?.Invoke() ?? new List<WebRemoteRecording>();
+                            result = new { recordings };
+                        }
+                        break;
+
+                    case "stopRecording":
+                        {
+                            string? stopId = null;
+                            if (json.TryGetProperty("id", out var sid)) stopId = sid.GetString();
+                            StopRecordingCallback?.Invoke(stopId ?? "");
+                            result = new { success = true };
+                        }
+                        break;
+
+                    case "deleteRecording":
+                        {
+                            string? delId = null;
+                            if (json.TryGetProperty("id", out var did)) delId = did.GetString();
+                            DeleteRecordingCallback?.Invoke(delId ?? "");
+                            result = new { success = true };
+                        }
+                        break;
+
                     default:
                         result = new { error = "Unknown action" };
                         break;
                 }
 
                 var response = JsonSerializer.Serialize(result, new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
-                Logger.Debug($"[WebRemote] Sending response for {action}, length: {response.Length}, preview: {response.Substring(0, Math.Min(100, response.Length))}");
                 await ws.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(response)), WebSocketMessageType.Text, true, ct);
             }
             catch (Exception ex)
@@ -398,7 +553,40 @@ namespace LibmpvIptvClient.Services.WebRemote
                 .Replace("__EXIT_CONFIRM__", strings.TryGetValue("exit_confirm", out var t25) ? t25 : "")
                 .Replace("__CONNECTING__", strings.TryGetValue("connecting", out var t26) ? t26 : "")
                 .Replace("__FAV_STAR__", strings.TryGetValue("fav_star", out var t27) ? t27 : "*")
-                .Replace("__FAV_GROUP__", strings.TryGetValue("fav_group", out var t28) ? t28 : "Favorites");
+                .Replace("__FAV_GROUP__", strings.TryGetValue("fav_group", out var t28) ? t28 : "Favorites")
+                .Replace("__SEC_SOURCES__", strings.TryGetValue("sec_sources", out var t29) ? t29 : "")
+                .Replace("__SEC_REMINDERS__", strings.TryGetValue("sec_reminders", out var t30) ? t30 : "")
+                .Replace("__SEC_RECORDINGS__", strings.TryGetValue("sec_recordings", out var t31) ? t31 : "")
+                .Replace("__BTN_ADD_SOURCE__", strings.TryGetValue("btn_add_source", out var t32) ? t32 : "")
+                .Replace("__MODAL_ADD_SOURCE__", strings.TryGetValue("modal_add_source", out var t33) ? t33 : "")
+                .Replace("__LABEL_SOURCE_NAME__", strings.TryGetValue("label_source_name", out var t34) ? t34 : "")
+                .Replace("__LABEL_SOURCE_URL__", strings.TryGetValue("label_source_url", out var t35) ? t35 : "")
+                .Replace("__SOURCE_EMPTY__", strings.TryGetValue("source_empty", out var t36) ? t36 : "")
+                .Replace("__SOURCE_ACTIVE__", strings.TryGetValue("source_active", out var t37) ? t37 : "")
+                .Replace("__SOURCE_SELECT__", strings.TryGetValue("source_select", out var t38) ? t38 : "")
+                .Replace("__SOURCE_REMOVE__", strings.TryGetValue("source_remove", out var t39) ? t39 : "")
+                .Replace("__CONFIRM_REMOVE_SOURCE__", strings.TryGetValue("confirm_remove_source", out var t40) ? t40 : "")
+                .Replace("__RECORDING_EMPTY__", strings.TryGetValue("recording_empty", out var t41) ? t41 : "")
+                .Replace("__RECORDING_STOP__", strings.TryGetValue("recording_stop", out var t42) ? t42 : "")
+                .Replace("__RECORDING_DELETE__", strings.TryGetValue("recording_delete", out var t43) ? t43 : "")
+                .Replace("__REMINDER_EMPTY__", strings.TryGetValue("reminder_empty", out var t44) ? t44 : "")
+                .Replace("__REMINDER_CANCEL__", strings.TryGetValue("reminder_cancel", out var t45) ? t45 : "")
+                .Replace("__MODAL_ADD_REMINDER__", strings.TryGetValue("modal_add_reminder", out var t46) ? t46 : "")
+                .Replace("__LABEL_REMINDER_ACTION__", strings.TryGetValue("label_reminder_action", out var t47) ? t47 : "")
+                .Replace("__ACTION_PLAY__", strings.TryGetValue("action_play", out var t48) ? t48 : "")
+                .Replace("__ACTION_RECORD_FRONT__", strings.TryGetValue("action_record_front", out var t49) ? t49 : "")
+                .Replace("__ACTION_RECORD_BACK__", strings.TryGetValue("action_record_back", out var t50) ? t50 : "")
+                .Replace("__ACTION_NOTIFY__", strings.TryGetValue("action_notify", out var t51) ? t51 : "")
+                .Replace("__LABEL_PRE_ALERT__", strings.TryGetValue("label_pre_alert", out var t52) ? t52 : "")
+                .Replace("__BTN_CANCEL__", strings.TryGetValue("btn_cancel", out var t53) ? t53 : "")
+                .Replace("__BTN_CONFIRM__", strings.TryGetValue("btn_confirm", out var t54) ? t54 : "")
+                .Replace("__BTN_REPLAY__", strings.TryGetValue("btn_replay", out var t55) ? t55 : "")
+                .Replace("__BTN_TIMESHIFT__", strings.TryGetValue("btn_timeshift", out var t56) ? t56 : "")
+                .Replace("__BTN_TIMESHIFT_ON__", strings.TryGetValue("btn_timeshift_on", out var t57) ? t57 : "")
+                .Replace("__BTN_TIMESHIFT_OFF__", strings.TryGetValue("btn_timeshift_off", out var t58) ? t58 : "")
+                .Replace("__BTN_REMIND__", strings.TryGetValue("btn_remind", out var t59) ? t59 : "")
+                .Replace("__BTN_RECORD__", strings.TryGetValue("btn_record", out var t60) ? t60 : "")
+                .Replace("__STATUS_CANCELLED__", strings.TryGetValue("status_cancelled", out var t61) ? t61 : "");
             return tpl;
         }
 
@@ -465,13 +653,19 @@ body.light-theme .epg-current-time { color: #cc3344; font-weight: 600; }
 body.light-theme .epg-item { background: rgba(0,0,0,0.04); }
 body.light-theme .epg-item:hover { background: rgba(0,0,0,0.1); }
 body.light-theme .epg-item.current { background: rgba(46,213,115,0.25); }
+body.light-theme .epg-item-live { border-bottom-color: #ff4757; }
+body.light-theme .epg-item-replay { border-bottom-color: #2ed573; }
+body.light-theme .epg-item-reminder { border-bottom-color: #1a6b3a; }
 body.light-theme .epg-name { color: #222; font-weight: 500; }
 body.light-theme .epg-desc { color: #666; }
 body.light-theme .loading { color: #666; }
 body.light-theme .epg-time { color: #555; }
 body.light-theme .epg-time-end { color: #777; }
-body.light-theme .epg-badge-current { background: #1a6b3a; }
-body.light-theme .epg-badge-next { background: #8b5a00; }
+body.light-theme .epg-badge-live { background: #ff4757; }
+body.light-theme .epg-badge-replay { background: #2ed573; }
+body.light-theme .epg-badge-reminder { background: #1a6b3a; }
+body.light-theme .epg-badge-next { }
+body.light-theme .epg-content { color: #222; }
 .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 8px 12px; background: #000; border-radius: 12px; }
 .header h1 { font-size: 16px; margin: 0; display: flex; align-items: center; gap: 8px; }
 .live-badge { background: #ff4757; color: white; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: bold; animation: pulse 2s infinite; }
@@ -510,9 +704,15 @@ body.light-theme .epg-badge-next { background: #8b5a00; }
 .channel-item .logo { font-size: 22px; margin-bottom: 4px; }
 .channel-item .name { font-size: 10px; color: #ccc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .epg-section { background: #000; border-radius: 12px; padding: 12px; }
-.epg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.epg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
 .epg-header-title { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
 .epg-channel-name { font-size: 14px; color: #7bed9f; font-weight: bold; }
+.epg-date-nav { display: flex; align-items: center; gap: 4px; }
+.epg-nav-btn { background: #333; border: none; color: #fff; padding: 4px 8px; cursor: pointer; border-radius: 4px; font-size: 12px; }
+.epg-nav-btn:hover { background: #444; }
+.epg-date-display { font-size: 13px; color: #7bed9f; cursor: pointer; padding: 0 8px; min-width: 50px; text-align: center; }
+body.light-theme .epg-nav-btn { background: rgba(0,0,0,0.12); color: #000; }
+body.light-theme .epg-date-display { color: #1a6b3a; }
 .epg-timeline { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; font-size: 11px; color: #666; }
 .epg-current-time { color: #ff4757; font-weight: bold; }
 .epg-list { max-height: 250px; overflow-y: auto; }
@@ -520,16 +720,19 @@ body.light-theme .epg-badge-next { background: #8b5a00; }
 .epg-item:hover { background: rgba(255,255,255,0.08); }
 .epg-item.current { background: rgba(46,213,115,0.15); border-left: 3px solid #2ed573; }
 .epg-item.past { opacity: 0.5; }
-.epg-time { padding: 10px 12px; font-size: 11px; color: #888; min-width: 70px; display: flex; flex-direction: column; justify-content: center; }
+.epg-item-live { border-bottom: 3px solid #ff4757; }
+.epg-item-replay { border-bottom: 3px solid #2ed573; }
+.epg-item-reminder { border-bottom: 3px solid #1a6b3a; }
+.epg-time { width: 80px; flex-shrink: 0; padding: 10px; font-size: 11px; color: #888; display: flex; flex-direction: column; justify-content: center; }
 .epg-time-end { color: #666; font-size: 10px; margin-top: 2px; }
-.epg-content { flex: 1; padding: 10px; display: flex; flex-direction: column; justify-content: center; }
-.epg-name { font-size: 13px; color: #eee; margin-bottom: 2px; }
+.epg-content { flex: 1; padding: 10px; font-size: 13px; color: #eee; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.epg-right-col { width: 80px; flex-shrink: 0; display: flex; align-items: center; justify-content: flex-end; gap: 4px; padding: 10px; }
 .epg-desc { font-size: 10px; color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.epg-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 9px; font-weight: bold; margin-left: 6px; }
-.epg-badge-current { background: #2ed573; color: #fff; }
-.epg-badge-next { background: #ffa502; color: #fff; }
-.epg-badge-replay { background: #a855f7; color: #fff; }
-.epg-badge-reminder { background: #ff4757; color: #fff; }
+.epg-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 10px; font-weight: bold; margin-left: 4px; }
+.epg-badge-live { background: #ff4757; color: #fff; }
+.epg-badge-replay { background: #2ed573; color: #fff; }
+.epg-badge-reminder { background: #1a6b3a; color: #fff; }
+.epg-badge-next { }
 .loading { text-align: center; padding: 30px; color: #666; font-size: 12px; }
 .loading::after { content: '...'; animation: dots 1.5s infinite; }
 @keyframes dots { 0%,20% { content: '.'; } 40% { content: '..'; } 60%,100% { content: '...'; } }
@@ -547,6 +750,53 @@ body.light-theme .epg-badge-next { background: #8b5a00; }
 .controls { grid-template-columns: repeat(5, 1fr); gap: 4px; }
 .btn { padding: 10px 4px; font-size: 16px; }
 }
+/* EPG Action Buttons */
+.epg-btn-live { background: #ff4757; border: none; border-radius: 4px; padding: 2px 6px; font-size: 10px; color: #fff; cursor: pointer; font-weight: bold; }
+.epg-btn-replay { background: #2ed573; border: none; border-radius: 4px; padding: 2px 6px; font-size: 10px; color: #fff; cursor: pointer; font-weight: bold; }
+.epg-btn-timeshift { background: #1e90ff; border: none; border-radius: 4px; padding: 2px 6px; font-size: 9px; color: #fff; cursor: pointer; }
+.epg-btn-remind { background: #1a6b3a; border: none; border-radius: 4px; padding: 2px 6px; font-size: 10px; color: #fff; cursor: pointer; font-weight: bold; }
+.epg-btn-rec { background: #ffa502; border: none; border-radius: 4px; padding: 2px 6px; font-size: 9px; color: #fff; cursor: pointer; }
+.epg-item { display: flex; align-items: center; }
+.epg-item .epg-time { min-width: 70px; }
+.epg-item .epg-content { flex: 1; }
+.epg-right-area { display: flex; align-items: center; justify-content: flex-end; }
+.epg-actions-row { display: flex; gap: 4px; align-items: center; margin-right: 4px; }
+.epg-item.past { opacity: 0.6; }
+/* Source Management */
+.source-section { background: #000; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
+.source-item { display: flex; align-items: center; justify-content: space-between; background: #1a1a1a; border-radius: 8px; padding: 8px 12px; margin-bottom: 6px; cursor: pointer; }
+.source-item:hover { background: #2a2a2a; }
+.source-item.active { background: rgba(46,213,115,0.2); border: 1px solid #2ed573; }
+.source-item .sname { font-size: 12px; color: #ccc; }
+.source-item .surl { font-size: 10px; color: #666; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
+.source-item .sactive { color: #2ed573; font-size: 10px; }
+.source-item .sbtns { display: flex; gap: 4px; }
+.source-item .sbtns button { padding: 4px 8px; font-size: 10px; background: #333; border: none; border-radius: 4px; color: #fff; cursor: pointer; }
+.source-item .sbtns button:hover { background: #444; }
+/* Reminder & Recording sections */
+.reminder-section, .recording-section { background: #000; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
+.reminder-item, .recording-item { display: flex; align-items: center; justify-content: space-between; background: #1a1a1a; border-radius: 8px; padding: 8px 12px; margin-bottom: 6px; }
+.reminder-item .rtime { font-size: 11px; color: #888; min-width: 120px; }
+.reminder-item .rprogram { font-size: 12px; color: #eee; flex: 1; }
+.reminder-item .raction { font-size: 10px; padding: 2px 6px; border-radius: 4px; }
+.reminder-item .raction.play { background: #2ed573; }
+.reminder-item .raction.record_front { background: #ffa502; }
+.reminder-item .raction.record_back { background: #ff6b6b; }
+.reminder-item .raction.notify { background: #57606f; }
+.recording-item .rcstatus { font-size: 11px; color: #888; }
+.recording-item .rcsize { font-size: 11px; color: #7bed9f; }
+/* Modal */
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 10000; }
+.modal-overlay.show { display: flex; }
+.modal-box { background: #1a1a2e; border-radius: 12px; padding: 20px; min-width: 300px; max-width: 400px; }
+.modal-box h3 { margin: 0 0 16px 0; font-size: 16px; color: #eee; }
+.modal-box label { display: block; font-size: 12px; color: #888; margin-bottom: 4px; }
+.modal-box input, .modal-box select { width: 100%; padding: 8px 12px; border: none; border-radius: 8px; background: #0f0f1a; color: #eee; font-size: 13px; margin-bottom: 12px; box-sizing: border-box; }
+.modal-box .mbtns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+.modal-box .mbtns button { padding: 8px 16px; border: none; border-radius: 8px; cursor: pointer; font-size: 13px; }
+.modal-box .mbtns .mcancel { background: #333; color: #fff; }
+.modal-box .mbtns .mok { background: #2ed573; color: #fff; }
+.modal-box .rem-info { font-size: 13px; color: #eee; margin-bottom: 8px; }
 </style>
 </head>
 <body>
@@ -590,6 +840,33 @@ body.light-theme .epg-badge-next { background: #8b5a00; }
 <button class=""btn btn-switch"" onclick=""switchSource()""><svg class=""icon"" viewBox=""0 0 24 24""><path d=""M12 4V1L8 5l4 4V6c3.31 0 6 2.69 6 6 0 1.01-.25 1.97-.7 2.8l1.46 1.46C19.54 15.03 20 13.57 20 12c0-4.42-3.58-8-8-8zm0 14c-3.31 0-6-2.69-6-6 0-1.01.25-1.97.7-2.8L5.24 7.74C4.46 8.97 4 10.43 4 12c0 4.42 3.58 8 8 8v3l4-4-4-4v3z""/></svg><span>__BTN_SWITCH__</span></button>
 <button class=""btn btn-exit"" onclick=""exitApp()""><svg class=""icon"" viewBox=""0 0 24 24""><path d=""M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z""/></svg><span>__BTN_EXIT__</span></button>
 <button class=""btn"" onclick=""refreshData()""><svg class=""icon"" viewBox=""0 0 24 24""><path d=""M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z""/></svg><span>__BTN_REFRESH__</span></button>
+<button class=""btn"" onclick=""seek(-10)""><svg class=""icon"" viewBox=""0 0 24 24""><path d=""M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z""/></svg><span>-10s</span></button>
+<button class=""btn"" onclick=""seek(10)""><svg class=""icon"" viewBox=""0 0 24 24""><path d=""M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z""/></svg><span>+10s</span></button>
+</div>
+</div>
+
+<!-- Reminder Modal -->
+<div class=""modal-overlay"" id=""reminderModal"">
+<div class=""modal-box"">
+<h3 id=""remModalTitle"">__MODAL_ADD_REMINDER__</h3>
+<div class=""rem-info""><span id=""remChannel""></span> - <span id=""remProgram""></span></div>
+<div class=""rem-info""><span id=""remStart""></span> ~ <span id=""remEnd""></span></div>
+<input type=""hidden"" id=""remChannelId"" />
+<input type=""hidden"" id=""remStartUtc"" />
+<input type=""hidden"" id=""remEndUtc"" />
+<input type=""hidden"" id=""remProgramTitle"" />
+<label>__LABEL_REMINDER_ACTION__</label>
+<select id=""remAction"">
+<option value=""play"">__ACTION_PLAY__</option>
+<option value=""record_front"">__ACTION_RECORD_FRONT__</option>
+<option value=""record_back"">__ACTION_RECORD_BACK__</option>
+</select>
+<label>__LABEL_PRE_ALERT__</label>
+<input type=""number"" id=""remPreAlert"" value=""60"" min=""0"" step=""30"" />
+<div class=""mbtns"">
+<button class=""mcancel"" onclick=""closeReminderModal()"">__BTN_CANCEL__</button>
+<button class=""mok"" onclick=""doAddReminder()"">__BTN_CONFIRM__</button>
+</div>
 </div>
 </div>
 
@@ -607,12 +884,52 @@ body.light-theme .epg-badge-next { background: #8b5a00; }
 <div class=""epg-section"">
 <div class=""epg-header"">
 <span class=""epg-header-title"">__SEC_EPG__</span>
+<div class=""epg-date-nav"">
+<button class=""epg-nav-btn"" id=""epgPrevDay"" onclick=""epgPrevDay()"">&#9664;</button>
+<span class=""epg-date-display"" id=""epgDateDisplay"" onclick=""showEpgDatePicker()"">--</span>
+<button class=""epg-nav-btn"" id=""epgNextDay"" onclick=""epgNextDay()"">&#9654;</button>
+<input type=""date"" id=""epgDatePicker"" style=""display:none"" onchange=""loadEpgForDate(this.value)"">
+</div>
 <span class=""epg-channel-name"" id=""epgChannelName"">-</span>
 </div>
 <div class=""epg-timeline"">
 <span class=""epg-current-time"" id=""currentTime""></span>
 </div>
 <div class=""epg-list"" id=""epgList""><div class=""loading"">__EPG_SELECT__</div></div>
+</div>
+</div>
+
+<!-- Source Management -->
+<div class=""source-section"" id=""sourceSection"" style=""display:none;"">
+<div class=""section-title"">__SEC_SOURCES__</div>
+<div id=""sourceList""><div class=""loading"">__LOADING__</div></div>
+<button class=""btn"" style=""margin-top:8px;width:100%"" onclick=""showAddSourceModal()"">__BTN_ADD_SOURCE__</button>
+</div>
+
+<!-- Reminder Management -->
+<div class=""reminder-section"" id=""reminderSection"" style=""display:none;"">
+<div class=""section-title"">__SEC_REMINDERS__</div>
+<div id=""reminderList""><div class=""loading"">__LOADING__</div></div>
+</div>
+
+<!-- Recording Management -->
+<div class=""recording-section"" id=""recordingSection"" style=""display:none;"">
+<div class=""section-title"">__SEC_RECORDINGS__</div>
+<div id=""recordingList""><div class=""loading"">__LOADING__</div></div>
+</div>
+
+<!-- Add Source Modal -->
+<div class=""modal-overlay"" id=""addSourceModal"">
+<div class=""modal-box"">
+<h3>__MODAL_ADD_SOURCE__</h3>
+<label>__LABEL_SOURCE_NAME__</label>
+<input type=""text"" id=""srcNameInput"" />
+<label>__LABEL_SOURCE_URL__</label>
+<input type=""text"" id=""srcUrlInput"" />
+<div class=""mbtns"">
+<button class=""mcancel"" onclick=""closeAddSourceModal()"">__BTN_CANCEL__</button>
+<button class=""mok"" onclick=""doAddSource()"">__BTN_CONFIRM__</button>
+</div>
 </div>
 </div>
 
@@ -646,8 +963,24 @@ else { document.getElementById('authError').style.display = 'block'; }
 return;
 }
 if (data.groups !== undefined) renderChannels(data);
-else if (data.programs !== undefined) renderEpg(data);
+else if (data.programs !== undefined) {
+                    // Debug: check badgeHtml in received data
+                    if (data.programs && data.programs.length > 0) {
+                        console.log('EPG received, first prog badgeHtml:', JSON.stringify(data.programs[0].badgeHtml), 'isCurrent:', data.programs[0].isCurrent);
+                        // Find current/live program
+                        for (var i = 0; i < data.programs.length; i++) {
+                            if (data.programs[i].isCurrent) {
+                                console.log('Current program at index', i, ':', data.programs[i].name, 'badgeHtml:', JSON.stringify(data.programs[i].badgeHtml));
+                                break;
+                            }
+                        }
+                    }
+                    renderEpg(data);
+                }
 else if (data.channel !== undefined || data.mode !== undefined) updateStatus(data);
+else if (data.sources !== undefined) renderSources(data);
+else if (data.reminders !== undefined) renderReminders(data);
+else if (data.recordings !== undefined) renderRecordings(data);
 } catch (err) { console.error(err); }
 };
 }
@@ -656,8 +989,155 @@ function send(action, data) { if (!data) data = {}; if (ws && ws.readyState === 
 function loadStatus() { send('getStatus'); }
 function doAuth() { const pwd = document.getElementById('pwdInput').value; if (!pwd) return; send('auth', { password: pwd }); }
 function loadChannels() { send('getChannels'); }
-function loadEpg(channelId) { send('getEpg', { channelId }); }
-function refreshData() { if (!isAuthenticated) return; loadStatus(); loadChannels(); if (currentChannelId) loadEpg(currentChannelId); }
+let currentEpgDate = null; // null means default (today)
+function loadEpg(channelId, dateStr) { send('getEpg', { channelId: channelId, date: dateStr || null }); }
+function loadEpgForDate(dateStr) {
+    currentEpgDate = dateStr;
+    var today = new Date();
+    today.setHours(0,0,0,0);
+    var selected = new Date(dateStr);
+    selected.setHours(0,0,0,0);
+    var diffDays = Math.round((selected - today) / 86400000);
+    var label = diffDays === 0 ? '今天' : (diffDays === -1 ? '昨天' : (diffDays === 1 ? '明天' : new Date(dateStr).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })));
+    document.getElementById('epgDateDisplay').textContent = label;
+    document.getElementById('epgDatePicker').style.display = 'none';
+    if (currentChannelId) loadEpg(currentChannelId, dateStr);
+}
+function epgPrevDay() {
+    var d = currentEpgDate ? new Date(currentEpgDate) : new Date();
+    d.setDate(d.getDate() - 1);
+    loadEpgForDate(d.toISOString().split('T')[0]);
+}
+function epgNextDay() {
+    var d = currentEpgDate ? new Date(currentEpgDate) : new Date();
+    d.setDate(d.getDate() + 1);
+    loadEpgForDate(d.toISOString().split('T')[0]);
+}
+function showEpgDatePicker() {
+    var picker = document.getElementById('epgDatePicker');
+    picker.style.display = 'inline';
+    picker.value = currentEpgDate || new Date().toISOString().split('T')[0];
+    picker.focus();
+}
+function refreshData() { if (!isAuthenticated) return; loadStatus(); loadChannels(); if (currentChannelId) loadEpg(currentChannelId, currentEpgDate); loadSources(); loadReminders(); loadRecordings(); }
+
+// Source Management
+function loadSources() { send('getSources'); }
+function renderSources(data) {
+  var list = document.getElementById('sourceList');
+  if (!list) return;
+  list.innerHTML = '';
+  if (!data.sources || !data.sources.length) { list.innerHTML = '<div class=""loading"">' + T.source_empty + '</div>'; return; }
+  data.sources.forEach(function(s) {
+    var div = document.createElement('div');
+    div.className = 'source-item' + (s.isSelected ? ' active' : '');
+    div.innerHTML = '<div><div class=""sname"">' + s.name + '</div><div class=""surl"">' + s.url + '</div></div>' +
+      '<div class=""sbtns"">' +
+      (s.isSelected ? '<span class=""sactive"">'+T.source_active+'</span>' : '<button onclick=""doSelectSource(\''+s.name+'\')"">'+T.source_select+'</button>') +
+      '<button onclick=""doRemoveSource(\''+s.name+'\')"">'+T.source_remove+'</button></div>';
+    list.appendChild(div);
+  });
+  document.getElementById('sourceSection').style.display = 'block';
+}
+function doSelectSource(name) { send('selectSource', { name }); }
+function doRemoveSource(name) { if (!confirm(T.confirm_remove_source)) return; send('removeSource', { name }); setTimeout(loadSources, 300); }
+function showAddSourceModal() { document.getElementById('addSourceModal').classList.add('show'); }
+function closeAddSourceModal() { document.getElementById('addSourceModal').classList.remove('show'); }
+function doAddSource() { var n = document.getElementById('srcNameInput').value; var u = document.getElementById('srcUrlInput').value; if (!n || !u) return; send('addSource', { name: n, url: u }); closeAddSourceModal(); setTimeout(loadSources, 500); }
+
+// Reminder Management
+function loadReminders() { send('getReminders'); }
+function renderReminders(data) {
+  var list = document.getElementById('reminderList');
+  if (!list) return;
+  list.innerHTML = '';
+  if (!data.reminders || !data.reminders.length) { list.innerHTML = '<div class=""loading"">' + T.reminder_empty + '</div>'; document.getElementById('reminderSection').style.display = 'block'; return; }
+  data.reminders.forEach(function(r) {
+    var badge = r.action === 'play' ? 'play' : r.action.includes('record') ? r.action : 'notify';
+    var d = new Date(r.startAt);
+    var timeStr = d.toLocaleString(document.documentElement.lang, { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
+    var div = document.createElement('div');
+    div.className = 'reminder-item';
+    div.innerHTML = '<div><div class=""rprogram"">' + r.channelName + ' - ' + r.programTitle + '</div></div>' +
+      '<div><span class=""raction ' + badge + '"">' + T['action_' + r.action] + '</span> ' +
+      '<span class=""rtime"">' + timeStr + '</span> ' +
+      (r.completed ? '<span style=""color:#666"">'+T.status_cancelled+'</span>' : '<button onclick=""doCancelReminder(\''+r.id+'\')"" style=""padding:2px 6px;font-size:10px;background:#ff4757;border:none;border-radius:4px;color:#fff;cursor:pointer"">'+T.reminder_cancel+'</button>') +
+      '</div>';
+    list.appendChild(div);
+  });
+  document.getElementById('reminderSection').style.display = 'block';
+}
+function doCancelReminder(id) { send('cancelReminder', { id }); setTimeout(loadReminders, 300); }
+
+// Recording Management
+function loadRecordings() { send('getRecordings'); }
+function renderRecordings(data) {
+  var list = document.getElementById('recordingList');
+  if (!list) return;
+  list.innerHTML = '';
+  if (!data.recordings || !data.recordings.length) { list.innerHTML = '<div class=""loading"">' + T.recording_empty + '</div>'; document.getElementById('recordingSection').style.display = 'block'; return; }
+  data.recordings.forEach(function(r) {
+    var div = document.createElement('div');
+    div.className = 'recording-item';
+    div.innerHTML = '<div><div class=""rprogram"">' + r.channelName + ' - ' + r.programTitle + '</div><div class=""rcstatus"">' + r.type + ' | ' + r.statusLabel + '</div></div>' +
+      '<div><span class=""rcsize"">' + r.sizeLabel + '</span> ' +
+      (r.status === 'Recording' || r.status === 'Waiting' ? '<button onclick=""doStopRecording(\''+r.id+'\')"" style=""padding:2px 6px;font-size:10px;background:#ff4757;border:none;border-radius:4px;color:#fff;cursor:pointer"">'+T.recording_stop+'</button>' : '') +
+      (r.status === 'Completed' || r.status === 'Failed' || r.status === 'Cancelled' || r.status === 'Stopped' ? '<button onclick=""doDeleteRecording(\''+r.id+'\')"" style=""padding:2px 6px;font-size:10px;background:#57606f;border:none;border-radius:4px;color:#fff;cursor:pointer"">'+T.recording_delete+'</button>' : '') +
+      '</div>';
+    list.appendChild(div);
+  });
+  document.getElementById('recordingSection').style.display = 'block';
+}
+function doStopRecording(id) { send('stopRecording', { id }); setTimeout(loadRecordings, 300); }
+function doDeleteRecording(id) { send('deleteRecording', { id }); setTimeout(loadRecordings, 300); }
+
+// Speed & Seek
+async function seek(seconds) { send('seek', { seconds }); await loadStatus(); }
+async function setSpeed(speed) { send('setSpeed', { speed }); await loadStatus(); }
+
+// Timeshift toggle
+var isTimeshiftEnabled = false;
+function toggleTimeshift() { isTimeshiftEnabled = !isTimeshiftEnabled; send('setTimeshift', { enabled: isTimeshiftEnabled }); updateTimeshiftBtn(); }
+function updateTimeshiftBtn() {
+  var btn = document.getElementById('btnTimeshift');
+  var path = document.getElementById('timeshiftPath');
+  if (btn) { btn.className = 'btn' + (isTimeshiftEnabled ? ' active' : ''); }
+  if (path) {
+    // Play icon (triangle) when off, Pause icon (two bars) when on
+    path.setAttribute('d', isTimeshiftEnabled ? 'M6 19h4V5H6v14zm8-14v14h4V5h-4z' : 'M8 5v14l11-7z');
+  }
+  var text = document.getElementById('btnTimeshiftText');
+  if (text) text.textContent = isTimeshiftEnabled ? T.btn_timeshift_on : T.btn_timeshift_off;
+}
+
+// EPG replay/timeshift/remind
+async function doReplayProgram(channelId, programTitle, start, end) { send('replayProgram', { channelId: channelId, programTitle: programTitle, start: start, end: end }); await loadStatus(); }
+function showAddReminderModal(channelId, channelName, programTitle, start, end, action) {
+  var modal = document.getElementById('reminderModal');
+  if (!modal) return;
+  document.getElementById('remChannel').textContent = channelName;
+  document.getElementById('remProgram').textContent = programTitle;
+  document.getElementById('remStart').textContent = new Date(start).toLocaleString();
+  document.getElementById('remEnd').textContent = new Date(end).toLocaleString();
+  document.getElementById('remChannelId').value = channelId;
+  document.getElementById('remStartUtc').value = start;
+  document.getElementById('remEndUtc').value = end;
+  document.getElementById('remProgramTitle').value = programTitle;
+  document.getElementById('remAction').value = action || 'play';
+  modal.classList.add('show');
+}
+function closeReminderModal() { var modal = document.getElementById('reminderModal'); if (modal) modal.classList.remove('show'); }
+async function doAddReminder() {
+  var channelId = document.getElementById('remChannelId').value;
+  var startAt = document.getElementById('remStartUtc').value;
+  var endTime = document.getElementById('remEndUtc').value;
+  var programTitle = document.getElementById('remProgramTitle').value;
+  var action = document.getElementById('remAction').value;
+  var preAlert = parseInt(document.getElementById('remPreAlert').value) || 60;
+  if (!channelId || !startAt) return;
+  send('addReminder', { channelId: channelId, startAt: startAt, endTime: endTime, action: action, programTitle: programTitle, preAlertSeconds: preAlert });
+  closeReminderModal();
+}
 
 function toggleTheme() {
 isDarkTheme = !isDarkTheme;
@@ -691,15 +1171,20 @@ el.textContent = modeMap[s.mode] || s.mode || T.mode_default;
 el.className = 'now-playing-mode ' + (modeClass[s.mode] || 'mode-stopped');
 document.getElementById('channelName').textContent = (s.channel && s.channel.name) || T.status_stopped;
 document.getElementById('programName').textContent = (s.currentProgram && s.currentProgram.name) || '';
-document.getElementById('programTime').textContent = s.currentProgram ? (s.currentProgram.start + ' - ' + s.currentProgram.end) : '';
+document.getElementById('programTime').textContent = s.currentProgram ? (s.currentProgram.date + ' ' + s.currentProgram.start + ' - ' + s.currentProgram.end) : '';
 document.getElementById('liveBadge').textContent = T.live_badge;
 document.getElementById('liveBadge').style.display = s.mode === 'Live' ? 'inline' : 'none';
 currentChannelId = (s.channel && s.channel.id) || '';
 if (!s.muted && s.volume > 0) previousVolume = s.volume;
 currentVolume = s.muted ? previousVolume : (s.volume || 0);
 isMuted = s.muted || false;
+isTimeshiftEnabled = s.timeshiftEnabled || false;
 updateVolumeUI(); updateChannelActive();
-if (currentChannelId) loadEpg(currentChannelId);
+if (currentChannelId) loadEpg(currentChannelId, currentEpgDate);
+// Update date display to today if no date selected
+if (!currentEpgDate) {
+    document.getElementById('epgDateDisplay').textContent = '今天';
+}
 document.getElementById('currentTime').textContent = new Date().toLocaleTimeString(document.documentElement.lang, { hour: '2-digit', minute: '2-digit' });
 }
 
@@ -731,12 +1216,30 @@ var now = new Date();
 data.programs.forEach(function(p, i) {
 var div = document.createElement('div');
 div.className = 'epg-item' + (p.isCurrent ? ' current' : '');
-var isPast = p.end && new Date('2000/1/1 ' + p.end) < now;
+// Use ISO UTC timestamps for accurate time comparison
+var pStart = p.startISO ? new Date(p.startISO) : null;
+var pEnd = p.endISO ? new Date(p.endISO) : null;
+var isPast = pEnd && pEnd < now;
+var isFuture = pStart && pStart > now;
 if (isPast) div.classList.add('past');
-var badge = p.badgeHtml || '';
-div.innerHTML = '<div class=""epg-time""><span>' + p.start + '</span><span class=""epg-time-end"">' + p.end + '</span></div>' +
-'<div class=""epg-content""><div class=""epg-name"">' + p.name + badge + '</div></div>';
-div.onclick = function() { changeChannel(data.channelId); };
+// Add badge-based class for colored bottom border (LIVE=red, replay=green, reminder=blue)
+if (p.badge === 'live') div.classList.add('epg-item-live');
+else if (p.badge === 'replay') div.classList.add('epg-item-replay');
+else if (p.badge === 'reminder') div.classList.add('epg-item-reminder');
+var actionHtml = '';
+if (p.isCurrent) {
+actionHtml += '<button class=""epg-btn-live"" onclick=""event.stopPropagation();changeChannel(\'' + data.channelId + '\')"">' + T.btn_watch + '</button>';
+}
+else if (isPast && isTimeshiftEnabled) {
+actionHtml += '<button class=""epg-btn-replay"" onclick=""event.stopPropagation();doReplayProgram(\'' + data.channelId + '\', \'' + p.name + '\', \'' + p.startISO + '\', \'' + p.endISO + '\')"">' + T.btn_replay + '</button>';
+}
+else if (isFuture) {
+actionHtml += '<button class=""epg-btn-remind"" onclick=""event.stopPropagation();showAddReminderModal(\'' + data.channelId + '\', \'' + (channel ? channel.name : '') + '\', \'' + p.name + '\', \'' + p.startISO + '\', \'' + p.endISO + '\', \'play\')"">' + T.btn_remind + '</button>';
+}
+div.innerHTML = '<div class=""epg-time""><span>' + (p.date ? p.date + ' ' : '') + p.start + '</span><span class=""epg-time-end"">' + p.end + '</span></div>' +
+'<div class=""epg-content"">' + p.name + '</div>' +
+'<div class=""epg-right-col"">' + actionHtml + '</div>';
+div.onclick = function() { div.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); changeChannel(data.channelId); };
 list.appendChild(div);
 });
 }
@@ -780,6 +1283,7 @@ connect();
         public double Speed { get; set; } = 1.0;
         public WebRemoteProgram? CurrentProgram { get; set; }
         public WebRemoteTimeshift? Timeshift { get; set; }
+        public bool TimeshiftEnabled { get; set; }
     }
 
     public class WebRemoteChannel
@@ -792,8 +1296,11 @@ connect();
     public class WebRemoteProgram
     {
         public string Name { get; set; } = "";
-        public string Start { get; set; } = "";
-        public string End { get; set; } = "";
+        public string Start { get; set; } = "";      // HH:mm
+        public string End { get; set; } = "";        // HH:mm
+        public string StartISO { get; set; } = "";   // yyyy-MM-ddTHH:mm:ss
+        public string EndISO { get; set; } = "";     // yyyy-MM-ddTHH:mm:ss
+        public string Date { get; set; } = "";       // MM-dd (显示日期)
         public bool IsCurrent { get; set; }
         // 微标类型: "live"=正在播出 "replay"=回看 "reminder"=预约 "next"=下一节目
         public string? Badge { get; set; }
@@ -811,5 +1318,40 @@ connect();
     {
         public string Name { get; set; } = "";
         public List<WebRemoteChannel> Channels { get; set; } = new();
+    }
+
+    public class WebRemoteSource
+    {
+        public string Name { get; set; } = "";
+        public string Url { get; set; } = "";
+        public bool IsSelected { get; set; }
+    }
+
+    public class WebRemoteReminder
+    {
+        public string Id { get; set; } = "";
+        public string ChannelId { get; set; } = "";
+        public string ChannelName { get; set; } = "";
+        public string ProgramTitle { get; set; } = "";
+        public string StartAt { get; set; } = "";
+        public string EndTime { get; set; } = "";
+        public string Action { get; set; } = "";
+        public bool Enabled { get; set; }
+        public bool Completed { get; set; }
+        public int? RecordDurationMin { get; set; }
+    }
+
+    public class WebRemoteRecording
+    {
+        public string Id { get; set; } = "";
+        public string ChannelName { get; set; } = "";
+        public string ProgramTitle { get; set; } = "";
+        public string Type { get; set; } = "";
+        public string Status { get; set; } = "";
+        public string StatusLabel { get; set; } = "";
+        public string ScheduledStart { get; set; } = "";
+        public string ScheduledEnd { get; set; } = "";
+        public string SizeLabel { get; set; } = "";
+        public string? FilePath { get; set; }
     }
 }
