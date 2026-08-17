@@ -276,7 +276,7 @@ namespace LibmpvIptvClient.Services.WebRemote
                 {
                     Name = group.Name ?? "",
                     Channels = group.Items?.Select(c => {
-                        var prog = _shell.EpgService?.GetPrograms(c.Id ?? c.TvgId ?? "", c.Name, c.Name)?.FirstOrDefault(p => p.Start <= DateTime.Now && p.End > DateTime.Now);
+                        var prog = _shell.EpgService?.GetPrograms(c.Id ?? c.TvgId ?? "", c.TvgName, c.Name)?.FirstOrDefault(p => p.Start <= DateTime.Now && p.End > DateTime.Now);
                         return new WebRemoteChannel
                         {
                             Id = c.Id ?? c.TvgId ?? "",
@@ -298,7 +298,7 @@ namespace LibmpvIptvClient.Services.WebRemote
                 {
                     Name = GetLocalizedFavGroupName(),
                     Channels = favorites.Select(c => {
-                        var prog = _shell.EpgService?.GetPrograms(c.Id ?? c.TvgId ?? "", c.Name, c.Name)?.FirstOrDefault(p => p.Start <= DateTime.Now && p.End > DateTime.Now);
+                        var prog = _shell.EpgService?.GetPrograms(c.Id ?? c.TvgId ?? "", c.TvgName, c.Name)?.FirstOrDefault(p => p.Start <= DateTime.Now && p.End > DateTime.Now);
                         return new WebRemoteChannel
                         {
                             Id = c.Id ?? c.TvgId ?? "",
