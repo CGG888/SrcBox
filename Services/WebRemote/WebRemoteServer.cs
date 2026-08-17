@@ -645,6 +645,8 @@ body.light-theme .section-title { color: #555; font-weight: 600; }
 body.light-theme .channel-item { background: rgba(0,0,0,0.08); }
 body.light-theme .channel-item:hover { background: rgba(0,0,0,0.14); }
 body.light-theme .channel-item .name { color: #333; font-weight: 500; }
+body.light-theme .channel-item .program { color: #1a6b3a; }
+body.light-theme .channel-item .time { color: #666; }
 body.light-theme .epg-section { background: rgba(0,0,0,0.06); }
 body.light-theme .epg-header-title { color: #555; font-weight: 600; }
 body.light-theme .epg-channel-name { color: #1a6b3a; font-weight: 600; }
@@ -706,11 +708,15 @@ body.light-theme .source-item .sactive { color: #1a6b3a; }
 .channel-section { background: #000; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
 .section-title { font-size: 12px; color: #888; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
 .channel-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; max-height: 250px; overflow-y: auto; }
-.channel-item { background: #1a1a1a; border-radius: 10px; padding: 10px 6px; text-align: center; cursor: pointer; transition: all 0.2s; border: 2px solid transparent; }
+.channel-item { background: #1a1a1a; border-radius: 10px; padding: 8px 10px; text-align: left; cursor: pointer; transition: all 0.2s; border: 2px solid transparent; display: flex; align-items: center; gap: 8px; }
 .channel-item:hover { background: #2a2a2a; }
 .channel-item.active { background: rgba(46,213,115,0.2); border-color: #2ed573; }
-.channel-item .logo { font-size: 22px; margin-bottom: 4px; }
-.channel-item .name { font-size: 10px; color: #ccc; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.channel-item .logo { font-size: 22px; flex-shrink: 0; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
+.channel-item .logo img { width: 28px; height: 28px; object-fit: contain; }
+.channel-item .info { flex: 1; min-width: 0; }
+.channel-item .name { font-size: 11px; color: #eee; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.channel-item .program { font-size: 9px; color: #7bed9f; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px; }
+.channel-item .time { font-size: 9px; color: #888; margin-left: auto; flex-shrink: 0; }
 .epg-section { background: #000; border-radius: 12px; padding: 12px; }
 .epg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
 .epg-header-title { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
@@ -1223,13 +1229,16 @@ updateChannelActive();
 }
 function addChannelItem(grid, c, isFavorite) {
 var div = document.createElement('div'); div.className = 'channel-item'; div.dataset.id = c.id;
-var logo = c.logo;
-if (logo && logo.indexOf('http') === 0) {
-div.innerHTML = '<div class=logo><img src=' + logo + ' style=width:28px;height:28px;object-fit:contain></div><div class=name>' + c.name + '</div>';
+var logoHtml;
+if (c.logo && c.logo.indexOf('http') === 0) {
+logoHtml = '<img src=' + c.logo + ' style=width:28px;height:28px;object-fit:contain crossorigin=anonymous>';
 } else {
-var icon = isFavorite ? FAV_STAR : 'TV';
-div.innerHTML = '<div class=logo><span style=font-size:22px>' + icon + '</span></div><div class=name>' + c.name + '</div>';
+logoHtml = '<span style=font-size:22px>' + (isFavorite ? FAV_STAR : 'TV') + '</span>';
 }
+var nameHtml = '<div class=name>' + (c.name || '') + '</div>';
+var progHtml = '<div class=program>' + (c.currentProgram || '') + '</div>';
+var timeHtml = '<div class=time>' + (c.currentTime || '') + '</div>';
+div.innerHTML = '<div class=logo>' + logoHtml + '</div><div class=info>' + nameHtml + progHtml + '</div>' + timeHtml;
 div.onclick = function() { changeChannel(c.id); };
 grid.appendChild(div);
 }
@@ -1318,6 +1327,8 @@ connect();
         public string Id { get; set; } = "";
         public string Name { get; set; } = "";
         public string? Logo { get; set; }
+        public string? CurrentProgram { get; set; }
+        public string? CurrentTime { get; set; }
     }
 
     public class WebRemoteProgram

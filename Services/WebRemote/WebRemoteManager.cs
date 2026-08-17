@@ -275,11 +275,16 @@ namespace LibmpvIptvClient.Services.WebRemote
                 var channelGroup = new WebRemoteChannelGroup
                 {
                     Name = group.Name ?? "",
-                    Channels = group.Items?.Select(c => new WebRemoteChannel
-                    {
-                        Id = c.Id ?? c.TvgId ?? "",
-                        Name = c.Name ?? "",
-                        Logo = c.Logo
+                    Channels = group.Items?.Select(c => {
+                        var prog = _shell.EpgService?.GetPrograms(c.Id ?? c.TvgId ?? "", c.Name, c.Name)?.FirstOrDefault(p => p.Start <= DateTime.Now && p.End > DateTime.Now);
+                        return new WebRemoteChannel
+                        {
+                            Id = c.Id ?? c.TvgId ?? "",
+                            Name = c.Name ?? "",
+                            Logo = c.Logo,
+                            CurrentProgram = prog?.Title,
+                            CurrentTime = prog != null ? prog.Start.ToString("HH:mm") + "-" + prog.End.ToString("HH:mm") : ""
+                        };
                     }).ToList() ?? new List<WebRemoteChannel>()
                 };
                 groups.Add(channelGroup);
@@ -292,11 +297,16 @@ namespace LibmpvIptvClient.Services.WebRemote
                 var favGroup = new WebRemoteChannelGroup
                 {
                     Name = GetLocalizedFavGroupName(),
-                    Channels = favorites.Select(c => new WebRemoteChannel
-                    {
-                        Id = c.Id ?? c.TvgId ?? "",
-                        Name = c.Name ?? "",
-                        Logo = c.Logo
+                    Channels = favorites.Select(c => {
+                        var prog = _shell.EpgService?.GetPrograms(c.Id ?? c.TvgId ?? "", c.Name, c.Name)?.FirstOrDefault(p => p.Start <= DateTime.Now && p.End > DateTime.Now);
+                        return new WebRemoteChannel
+                        {
+                            Id = c.Id ?? c.TvgId ?? "",
+                            Name = c.Name ?? "",
+                            Logo = c.Logo,
+                            CurrentProgram = prog?.Title,
+                            CurrentTime = prog != null ? prog.Start.ToString("HH:mm") + "-" + prog.End.ToString("HH:mm") : ""
+                        };
                     }).ToList()
                 };
                 groups.Insert(0, favGroup);
