@@ -142,7 +142,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 volumeUp: null,
                 volumeDown: null,
                 toggleTopmost: (on) => { _window.Topmost = on; },
-                openDebug: null,
+                openDebug: () => _window.Dispatcher.Invoke(() => _window.OpenDebugWindowFromManager()),
                 showShortcuts: () => _window.Dispatcher.Invoke(() => _window.ShowShortcuts()),
                 isTopmostChecked: _window.Topmost,
                 clearCloseMode: null,
