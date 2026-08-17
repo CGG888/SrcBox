@@ -159,6 +159,15 @@ namespace LibmpvIptvClient.Services.WebRemote
         {
             try
             {
+                // Check if it's a logo request
+                var lines = request.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+                var firstLine = lines.Length > 0 ? lines[0] : "";
+                if (firstLine.StartsWith("GET /logo/"))
+                {
+                    await ServeLogoAsync(tcpClient, stream, firstLine, ct);
+                    return;
+                }
+
                 Logger.Debug("[WebRemote] Sending HTML page");
                 var lang = ParseAcceptLanguage(request);
                 var html = GetRemoteHtml(lang);
@@ -174,6 +183,63 @@ namespace LibmpvIptvClient.Services.WebRemote
                 Logger.Error($"[WebRemote] ServeHttpPage error: {ex.Message}");
             }
             finally { tcpClient.Close(); }
+        }
+
+        private async Task ServeLogoAsync(TcpClient tcpClient, NetworkStream stream, string request, CancellationToken ct)
+        {
+            try
+            {
+                // Parse: GET /logo/<encoded_path>
+                var parts = request.Split(' ');
+                if (parts.Length < 2)
+                {
+                    await SendErrorAsync(stream, "400 Bad Request", ct);
+                    return;
+                }
+                var encodedPath = parts[1].Substring("/logo/".Length);
+                var filePath = Uri.UnescapeDataString(encodedPath);
+
+                Logger.Debug($"[WebRemote] Logo request: {filePath}");
+
+                if (!File.Exists(filePath))
+                {
+                    Logger.Warn($"[WebRemote] Logo file not found: {filePath}");
+                    await SendErrorAsync(stream, "404 Not Found", ct);
+                    return;
+                }
+
+                var ext = Path.GetExtension(filePath).ToLowerInvariant();
+                var contentType = ext switch
+                {
+                    ".png" => "image/png",
+                    ".jpg" or ".jpeg" => "image/jpeg",
+                    ".gif" => "image/gif",
+                    ".webp" => "image/webp",
+                    _ => "application/octet-stream"
+                };
+
+                var fileBytes = await File.ReadAllBytesAsync(filePath, ct);
+                var header = $"HTTP/1.1 200 OK\r\nContent-Type: {contentType}\r\nContent-Length: {fileBytes.Length}\r\nCache-Control: max-age=86400\r\nConnection: close\r\n\r\n";
+                var headerBuf = Encoding.UTF8.GetBytes(header);
+                await stream.WriteAsync(headerBuf, ct);
+                await stream.WriteAsync(fileBytes, ct);
+                Logger.Debug($"[WebRemote] Logo served: {filePath} ({fileBytes.Length} bytes)");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"[WebRemote] ServeLogo error: {ex.Message}");
+            }
+            finally { tcpClient.Close(); }
+        }
+
+        private async Task SendErrorAsync(NetworkStream stream, string message, CancellationToken ct)
+        {
+            var body = $"<html><body><h1>{message}</h1></body></html>";
+            var header = $"HTTP/1.1 {message}\r\nContent-Type: text/html\r\nContent-Length: {Encoding.UTF8.GetByteCount(body)}\r\nConnection: close\r\n\r\n";
+            var headerBuf = Encoding.UTF8.GetBytes(header);
+            var bodyBuf = Encoding.UTF8.GetBytes(body);
+            await stream.WriteAsync(headerBuf, ct);
+            await stream.WriteAsync(bodyBuf, ct);
         }
 
         private async Task HandleWebSocketAsync(TcpClient tcpClient, NetworkStream stream, string request, CancellationToken ct)
@@ -1230,8 +1296,20 @@ updateChannelActive();
 function addChannelItem(grid, c, isFavorite) {
 var div = document.createElement('div'); div.className = 'channel-item'; div.dataset.id = c.id;
 var logoHtml;
-if (c.logo && c.logo.indexOf('http') === 0) {
+if (c.logo && c.logo.length > 0) {
+if (c.logo.indexOf('http') === 0) {
+// External HTTP URL - use directly
 logoHtml = '<img src=' + c.logo + ' style=width:28px;height:28px;object-fit:contain crossorigin=anonymous>';
+} else if (c.logo.indexOf('file:///') === 0 || c.logo.indexOf('\\\\') === 0 || c.logo.indexOf('D:') === 0 || c.logo.indexOf('C:') === 0) {
+// Local file path - convert to /logo/ endpoint
+var localPath = c.logo.replace('file:///', '').replace(/\//g, '\\\\');
+var encodedPath = encodeURIComponent(localPath).replace(/%5C/g, '/');
+logoHtml = '<img src=/logo/' + encodedPath + ' style=width:28px;height:28px;object-fit:contain>';
+} else {
+// Assume it's a local path
+var encodedPath = encodeURIComponent(c.logo).replace(/%5C/g, '/');
+logoHtml = '<img src=/logo/' + encodedPath + ' style=width:28px;height:28px;object-fit:contain>';
+}
 } else {
 logoHtml = '<span style=font-size:22px>' + (isFavorite ? FAV_STAR : 'TV') + '</span>';
 }
