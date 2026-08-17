@@ -10,9 +10,10 @@
 <span style="color:#22c55e">✔</span> **M3U 播放列表** - 本地/遠程支援，UTF-8/GB18030 編碼，`#EXTINF` 擴展屬性<br>
 <span style="color:#22c55e">✔</span> **M3U 二進制緩存** - ETag/Last-Modified 驗證，毫秒級載入<br>
 <span style="color:#22c55e">✔</span> **EPG 電子節目單** - XMLTV (gz) 解析，央視/教育台類型後綴支援<br>
-<span style="color:#22c55e">✔</span> **頻道回看 (Catchup)** - 模板自動生成回放 URL<br>
+<span style="color:#22c55e">✔</span> **頻道回看 (Catchup)** - 模板自動生成回放 URL，支援時移回看<br>
 <span style="color:#22c55e">✔</span> **時移 (Time-Shift)** - 即時拖動回看，節目邊界內快進快退<br>
-<span style="color:#22c55e">✔</span> **頻道管理** - 分組、搜尋、收藏、歷史，支援分組排序
+<span style="color:#22c55e">✔</span> **頻道管理** - 分組、搜尋、收藏、歷史，支援分組排序<br>
+<span style="color:#22c55e">✔</span> **RTP 直連地址** - UDP 優化，減少網路延遲
 
 ### 播放優化
 
@@ -20,7 +21,8 @@
 <span style="color:#22c55e">✔</span> **去交錯處理** - 1080i/720i 優化，yadif/bwdif 演算法<br>
 <span style="color:#22c55e">✔</span> **音頻設定** - 音量增益、最大音量、音頻延遲<br>
 <span style="color:#22c55e">✔</span> **倍速播放** - 時移/回放模式 0.5×~5.0×，音高校正<br>
-<span style="color:#22c55e">✔</span> **自動換源** - 源失效時自動切換下一源
+<span style="color:#22c55e">✔</span> **自動換源** - 源失效時自動切換下一源<br>
+<span style="color:#22c55e">✔</span> **連接預熱** - 預先建立連接，加速換台速度
 
 ### 多屏與錄製
 
@@ -37,13 +39,22 @@
 <span style="color:#22c55e">✔</span> **精簡模式** - 緊湊視窗形態<br>
 <span style="color:#22c55e">✔</span> **系統匣** - 常駐圖示，快速操作功能表<br>
 <span style="color:#22c55e">✔</span> **快捷鍵支援** - 完整的鍵盤快捷鍵，快捷鍵幫助窗口<br>
-<span style="color:#22c55e">✔</span> **關閉模式記憶** - 記住退出/最小化到系統匣的選擇
+<span style="color:#22c55e">✔</span> **關閉模式記憶** - 記住退出/最小化到系統匣的選擇<br>
+<span style="color:#22c55e">✔</span> **頻道預覽** - 懸停顯示頻道縮圖，支援自訂大小<br>
+<span style="color:#22c55e">✔</span> **除錯窗口** - 即時日誌查看，除錯模式開關
 
 ### 遠程與同步
 
-<span style="color:#22c55e">✔</span> **Web 遠程控制** - 瀏覽器遠程操控播放器<br>
+<span style="color:#22c55e">✔</span> **Web 遠程控制** - 瀏覽器遠程操控，支援完整播放控制、回看、預約、錄製<br>
 <span style="color:#22c55e">✔</span> **節目預約提醒** - 節目到點通知，支援自動播放策略<br>
 <span style="color:#22c55e">✔</span> **多語言** - 簡體中文、繁體中文、English、Русский
+
+### 源健康與穩定性
+
+<span style="color:#22c55e">✔</span> **源健康檢測** - 後台 HTTP HEAD 探測，即時顯示源狀態<br>
+<span style="color:#22c55e">✔</span> **源狀態指示器** - 頻道列表顯示源健康狀態（綠色/紅色橢圓）<br>
+<span style="color:#22c55e">✔</span> **右鍵源功能表** - 查看所有源健康狀態、延遲、切換源<br>
+<span style="color:#22c55e">✔</span> **自動源降級** - 主源失敗時自動切換到健康備用源
 
 ## <span style="font-size:1.2em">🚧</span> 進行中
 
@@ -54,6 +65,5 @@
 
 <span style="color:#6b7280">○</span> **雲端錄製 (PVR)** - 連接遠端儲存進行節目錄製<br>
 <span style="color:#6b7280">○</span> **播放鏈路優化** - 繼續降低切台延遲，優化弱網場景穩定性<br>
-<span style="color:#6b7280">○</span> **多源治理** - 源健康檢測、自動降級與可觀測性日誌<br>
 <span style="color:#6b7280">○</span> **測試體系擴展** - 補齊播放狀態機、錄播索引、EPG 同步相關單元測試<br>
 <span style="color:#6b7280">○</span> **錄播體驗增強** - 錄製中信息同步、遠端元資料一致性
