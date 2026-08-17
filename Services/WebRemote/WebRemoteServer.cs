@@ -269,19 +269,20 @@ namespace LibmpvIptvClient.Services.WebRemote
             try
             {
                 var manifest = @"{
-  ""name"": ""SrcBox 遥控器"",
+  ""name"": ""SrcBox Remote"",
   ""short_name"": ""SrcBox"",
-  ""description"": ""SrcBox IPTV 远程控制"",
+  ""description"": ""SrcBox IPTV Remote Control"",
   ""start_url"": ""/"",
   ""display"": ""standalone"",
   ""background_color"": ""#1a1a2e"",
   ""theme_color"": ""#0f0c29"",
+  ""orientation"": ""portrait"",
   ""icons"": [
-    { ""src"": ""/icons/icon-192.png"", ""sizes"": ""192x192"", ""type"": ""image/png"" },
-    { ""src"": ""/icons/icon-512.png"", ""sizes"": ""512x512"", ""type"": ""image/png"" }
+    { ""src"": ""/icons/icon-192.png"", ""sizes"": ""192x192"", ""type"": ""image/png"", ""purpose"": ""any maskable"" },
+    { ""src"": ""/icons/icon-512.png"", ""sizes"": ""512x512"", ""type"": ""image/png"", ""purpose"": ""any maskable"" }
   ],
-  ""scope"": ""/"",
-  ""lang"": ""zh-CN""
+  ""categories"": [""entertainment"", ""utilities""],
+  ""lang"": ""en""
 }";
                 var header = $"HTTP/1.1 200 OK\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: {Encoding.UTF8.GetByteCount(manifest)}\r\nCache-Control: max-age=86400\r\nConnection: close\r\n\r\n";
                 await stream.WriteAsync(Encoding.UTF8.GetBytes(header), ct);
@@ -925,11 +926,14 @@ self.addEventListener('fetch', function(event) {
 <meta charset=""UTF-8"">
 <meta name=""viewport"" content=""width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"">
 <!-- PWA Meta Tags -->
+<meta name=""description"" content=""SrcBox IPTV Remote Control"">
 <link rel=""manifest"" href=""/manifest.json"">
 <meta name=""theme-color"" content=""#0f0c29"">
 <meta name=""apple-mobile-web-app-capable"" content=""yes"">
 <meta name=""apple-mobile-web-app-status-bar-style"" content=""black-translucent"">
+<meta name=""apple-mobile-web-app-title"" content=""SrcBox"">
 <link rel=""apple-touch-icon"" href=""/icons/icon-192.png"">
+<link rel=""apple-touch-icon-precomposed"" href=""/icons/icon-192.png"">
 <title>__TITLE__</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
