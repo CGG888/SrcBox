@@ -41,7 +41,7 @@ http://192.168.1.100:8899
 
 ## 介面截圖
 
-![Web 遠程控制](../screenshots/web.jpeg)
+![Web 遠程控制](../../screenshots/web.jpeg)
 
 ## 界面說明
 

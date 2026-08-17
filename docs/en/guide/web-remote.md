@@ -41,7 +41,7 @@ http://192.168.1.100:8899
 
 ## Screenshot
 
-![Web Remote Control](../screenshots/web.jpeg)
+![Web Remote Control](../../screenshots/web.jpeg)
 
 ## Interface Description
 
