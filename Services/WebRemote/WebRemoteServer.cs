@@ -1295,28 +1295,31 @@ updateChannelActive();
 }
 function addChannelItem(grid, c, isFavorite) {
 var div = document.createElement('div'); div.className = 'channel-item'; div.dataset.id = c.id;
-var logoHtml;
+var logoContainer = document.createElement('div'); logoContainer.className = 'logo';
 if (c.logo && c.logo.length > 0) {
+var imgStyle = 'height:56px;width:auto;max-width:80px;object-fit:contain';
+var fallbackIcon = '<span style=font-size:22px;display:none;align-items:center;justify-content:center;width:48px;height:56px>' + (isFavorite ? FAV_STAR : 'TV') + '</span>';
 if (c.logo.indexOf('http') === 0) {
 // External HTTP URL - use directly
-logoHtml = '<img src=' + c.logo + ' style=height:56px;width:auto;max-width:80px;object-fit:contain crossorigin=anonymous>';
-} else if (c.logo.indexOf('file:///') === 0 || c.logo.indexOf('\\\\') === 0 || c.logo.indexOf('D:') === 0 || c.logo.indexOf('C:') === 0) {
+var img = document.createElement('img'); img.src = c.logo; img.style = imgStyle; img.crossOrigin = 'anonymous';
+img.onerror = function() { img.style.display = 'none'; img.nextSibling.style.display = 'flex'; };
+logoContainer.innerHTML = fallbackIcon; logoContainer.insertBefore(img, logoContainer.firstChild);
+} else {
 // Local file path - convert to /logo/ endpoint
 var localPath = c.logo.replace('file:///', '').replace(/\//g, '\\\\');
 var encodedPath = encodeURIComponent(localPath).replace(/%5C/g, '/');
-logoHtml = '<img src=/logo/' + encodedPath + ' style=height:56px;width:auto;max-width:80px;object-fit:contain>';
-} else {
-// Assume it's a local path
-var encodedPath = encodeURIComponent(c.logo).replace(/%5C/g, '/');
-logoHtml = '<img src=/logo/' + encodedPath + ' style=height:56px;width:auto;max-width:80px;object-fit:contain>';
+var img = document.createElement('img'); img.src = '/logo/' + encodedPath; img.style = imgStyle;
+img.onerror = function() { img.style.display = 'none'; img.nextSibling.style.display = 'flex'; };
+logoContainer.innerHTML = fallbackIcon; logoContainer.insertBefore(img, logoContainer.firstChild);
 }
 } else {
-logoHtml = '<span style=font-size:22px>' + (isFavorite ? FAV_STAR : 'TV') + '</span>';
+logoContainer.innerHTML = '<span style=font-size:22px;display:flex;align-items:center;justify-content:center;width:48px;height:56px>' + (isFavorite ? FAV_STAR : 'TV') + '</span>';
 }
 var nameHtml = '<div class=name>' + (c.name || '') + '</div>';
 var progHtml = '<div class=program>' + (c.currentProgram || '') + '</div>';
 var timeHtml = '<div class=time>' + (c.currentTime || '') + '</div>';
-div.innerHTML = '<div class=logo>' + logoHtml + '</div><div class=info>' + nameHtml + progHtml + '</div>' + timeHtml;
+var infoDiv = document.createElement('div'); infoDiv.className = 'info'; infoDiv.innerHTML = nameHtml + progHtml + timeHtml;
+div.appendChild(logoContainer); div.appendChild(infoDiv);
 div.onclick = function() { changeChannel(c.id); };
 grid.appendChild(div);
 }
