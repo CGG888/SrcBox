@@ -321,8 +321,10 @@ namespace LibmpvIptvClient.Services
             // 这里我们采取一个宽松策略：如果没找到正在播放的，但有一个节目结束时间就在刚才（例如 5 分钟内），可能因为时钟误差，仍然显示它
             var recentPast = list.LastOrDefault(p => p.End <= now && (now - p.End).TotalMinutes < 15);
             if (recentPast != null) return recentPast;
-            
-            // 3. 或者找马上要开始的？（暂时不处理，避免显示未开始的节目造成误解）
+
+            // 3. 如果还是没有，找到下一个即将开始的节目（最多显示2小时内的）
+            var nextProgram = list.FirstOrDefault(p => p.Start > now && (p.Start - now).TotalHours <= 2);
+            if (nextProgram != null) return nextProgram;
 
             return null;
         }
