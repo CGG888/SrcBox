@@ -387,8 +387,8 @@ self.addEventListener('fetch', function(event) {
 
                 // Read project logo.png - resolve path from exe directory
                 var exeDir = AppDomain.CurrentDomain.BaseDirectory;
-                // From bin/Debug/net8.0-windows/ go up to project root
-                var projectRoot = Path.GetFullPath(Path.Combine(exeDir, "..", "..", "..", ".."));
+                // From bin/Debug/net8.0-windows/ go up to project root: ..\..\.. = SrcBox\
+                var projectRoot = Path.GetFullPath(Path.Combine(exeDir, "..", "..", ".."));
                 var iconPath = Path.Combine(projectRoot, "docs", "public", "logo.png");
                 if (!File.Exists(iconPath))
                 {
@@ -412,7 +412,7 @@ self.addEventListener('fetch', function(event) {
             try
             {
                 var exeDir = AppDomain.CurrentDomain.BaseDirectory;
-                var projectRoot = Path.GetFullPath(Path.Combine(exeDir, "..", "..", "..", ".."));
+                var projectRoot = Path.GetFullPath(Path.Combine(exeDir, "..", "..", ".."));
                 var iconPath = Path.Combine(projectRoot, "srcbox.ico");
                 if (!File.Exists(iconPath))
                 {
