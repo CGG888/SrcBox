@@ -171,6 +171,7 @@ public sealed class MainWindowEpgActionsViewModel : ViewModelBase
 
         var changed = 0;
         var total = 0;
+        var unmatched = new System.Text.StringBuilder();
         foreach (var ch in channels)
         {
             total++;
@@ -197,6 +198,14 @@ public sealed class MainWindowEpgActionsViewModel : ViewModelBase
                         ch.CurrentProgramTitle = "";
                         changed++;
                     }
+                    else
+                    {
+                        // 只记录有问题的频道名称（卫视、电台等）
+                        if (ch.Name.Contains("卫视") || ch.Name.Contains("央视") || ch.Name.Contains("广播"))
+                        {
+                            unmatched.Append(ch.Name).Append(" ");
+                        }
+                    }
                 }
             }
             catch
@@ -208,7 +217,11 @@ public sealed class MainWindowEpgActionsViewModel : ViewModelBase
                 }
             }
         }
-        LibmpvIptvClient.Diagnostics.Logger.Debug($"[EPG] SyncChannelCurrentProgramTitles: processed {total} channels, changed {changed}");
+        LibmpvIptvClient.Diagnostics.Logger.Debug($"[EPG] SyncChannelCurrentProgramTitles: processed {total} channels, changed {changed}, unmatched: {unmatched}");
+        if (unmatched.Length > 0)
+        {
+            LibmpvIptvClient.Diagnostics.Logger.Info($"[EPG] Unmatched channels (no current program): {unmatched}");
+        }
 
         return changed;
     }
