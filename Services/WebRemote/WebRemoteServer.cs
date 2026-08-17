@@ -3,10 +3,8 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
-using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.WebSockets;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -29,7 +27,6 @@ namespace LibmpvIptvClient.Services.WebRemote
         // 密码保护
         private bool _requirePassword;
         private string _password = "";
-        // NEW-13: ConcurrentDictionary instead of HashSet + lock, eliminating data race
         private readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> _authenticatedTokens = new();
 
         public Func<WebRemoteStatus>? GetStatusCallback { get; set; }
@@ -58,10 +55,6 @@ namespace LibmpvIptvClient.Services.WebRemote
         public Action<string>? StopRecordingCallback { get; set; }
         public Action<string>? DeleteRecordingCallback { get; set; }
 
-        private TcpListener? _httpsListener;
-        private X509Certificate2? _sslCert;
-        private bool _isHttpsMode;
-
         public void Start(int port, bool requirePassword = false, string password = "")
         {
             if (IsRunning) return;
@@ -71,7 +64,6 @@ namespace LibmpvIptvClient.Services.WebRemote
             _password = password ?? "";
             _authenticatedTokens.Clear();
             _cts = new CancellationTokenSource();
-            _isHttpsMode = false;
 
             try
             {
@@ -88,188 +80,6 @@ namespace LibmpvIptvClient.Services.WebRemote
             }
         }
 
-        public void StartHttps(int port, string certPath, string? certPassword, bool requirePassword = false, string password = "")
-        {
-            if (IsRunning) return;
-
-            Port = port;
-            _requirePassword = requirePassword;
-            _password = password ?? "";
-            _authenticatedTokens.Clear();
-            _cts = new CancellationTokenSource();
-            _isHttpsMode = true;
-
-            try
-            {
-                _sslCert = string.IsNullOrEmpty(certPassword)
-                    ? new X509Certificate2(certPath)
-                    : new X509Certificate2(certPath, certPassword);
-
-                _httpsListener = new TcpListener(IPAddress.Any, port);
-                _httpsListener.Start();
-                IsRunning = true;
-                _ = Task.Run(() => AcceptHttpsClientsAsync(_cts.Token));
-                Logger.Debug($"[WebRemote] HTTPS Server started on port {port}");
-            }
-            catch (Exception ex)
-            {
-                Logger.Error($"[WebRemote] Failed to start HTTPS server: {ex.Message}");
-                Stop();
-            }
-        }
-
-        private async Task AcceptHttpsClientsAsync(CancellationToken ct)
-        {
-            while (!ct.IsCancellationRequested && _httpsListener != null)
-            {
-                try
-                {
-                    var client = await _httpsListener.AcceptTcpClientAsync(ct);
-                    _ = Task.Run(() => HandleHttpsClientAsync(client, ct), ct);
-                }
-                catch (OperationCanceledException) { break; }
-                catch (Exception ex) { Logger.Error($"[WebRemote] Accept HTTPS error: {ex.Message}"); }
-            }
-        }
-
-        private async Task HandleHttpsClientAsync(TcpClient tcpClient, CancellationToken ct)
-        {
-            using (tcpClient)
-            {
-                try
-                {
-                    var stream = tcpClient.GetStream();
-                    stream.ReadTimeout = 5000;
-
-                    using var sslStream = new SslStream(stream, false, (sender, certificate, chain, errors) => true);
-                    await sslStream.AuthenticateAsServerAsync(_sslCert!, false, System.Security.Authentication.SslProtocols.Tls12, true);
-
-                    var sb = new StringBuilder();
-                    var buf = new byte[8192];
-                    int read;
-
-                    while ((read = await sslStream.ReadAsync(buf, 0, buf.Length)) > 0)
-                    {
-                        sb.Append(Encoding.UTF8.GetString(buf, 0, read));
-                        if (sb.ToString().Contains("\r\n\r\n")) break;
-                    }
-
-                    var request = sb.ToString();
-                    bool isWebSocket = request.Contains("Upgrade:") && request.Contains("websocket");
-
-                    if (isWebSocket)
-                    {
-                        await HandleWebSocketOverSslAsync(sslStream, request, ct);
-                    }
-                    else
-                    {
-                        await ServeHttpsPageAsync(sslStream, request, ct);
-                    }
-                }
-                catch (Exception ex) { Logger.Error($"[WebRemote] HandleHttpsClient error: {ex.Message}"); }
-            }
-        }
-
-        private async Task ServeHttpsPageAsync(SslStream sslStream, string request, CancellationToken ct)
-        {
-            try
-            {
-                var lines = request.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
-                var firstLine = lines.Length > 0 ? lines[0] : "";
-
-                if (firstLine.StartsWith("GET /logo/"))
-                {
-                    await ServeLogoOverSslAsync(sslStream, firstLine, ct);
-                    return;
-                }
-                if (firstLine.TrimStart().StartsWith("GET /manifest.json"))
-                {
-                    await ServeManifestOverSslAsync(sslStream, ct);
-                    return;
-                }
-                if (firstLine.TrimStart().StartsWith("GET /sw.js"))
-                {
-                    await ServeServiceWorkerOverSslAsync(sslStream, ct);
-                    return;
-                }
-                if (firstLine.TrimStart().StartsWith("GET /icons/"))
-                {
-                    await ServeIconOverSslAsync(sslStream, firstLine, ct);
-                    return;
-                }
-                if (firstLine.TrimStart().StartsWith("GET /favicon.ico"))
-                {
-                    await ServeFaviconOverSslAsync(sslStream, ct);
-                    return;
-                }
-
-                var lang = ParseAcceptLanguage(request);
-                var html = GetRemoteHtml(lang);
-                var header = $"HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: {Encoding.UTF8.GetByteCount(html)}\r\nConnection: close\r\n\r\n";
-                await sslStream.WriteAsync(Encoding.UTF8.GetBytes(header));
-                await sslStream.WriteAsync(Encoding.UTF8.GetBytes(html));
-            }
-            catch (Exception ex) { Logger.Error($"[WebRemote] ServeHttpsPage error: {ex.Message}"); }
-        }
-
-        private async Task HandleWebSocketOverSslAsync(SslStream sslStream, string request, CancellationToken ct)
-        {
-            try
-            {
-                var key = "";
-                foreach (var line in request.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None))
-                {
-                    if (line.StartsWith("Sec-WebSocket-Key:"))
-                    {
-                        key = line.Substring(line.IndexOf(":") + 1).Trim();
-                        break;
-                    }
-                }
-
-                if (string.IsNullOrEmpty(key))
-                {
-                    return;
-                }
-
-                var acceptKey = Convert.ToBase64String(System.Security.Cryptography.SHA1.Create()
-                    .ComputeHash(Encoding.UTF8.GetBytes(key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")));
-                var handshake = $"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {acceptKey}\r\nSec-WebSocket-Version: 13\r\n\r\n";
-                await sslStream.WriteAsync(Encoding.UTF8.GetBytes(handshake));
-
-                var ws = WebSocket.CreateFromStream(sslStream, true, null, TimeSpan.FromMinutes(30));
-
-                lock (_clientsLock) { _clients.Add(ws); }
-
-                var receiveBuf = new byte[8192];
-                while (ws.State == WebSocketState.Open && !ct.IsCancellationRequested)
-                {
-                    try
-                    {
-                        var result = await ws.ReceiveAsync(new ArraySegment<byte>(receiveBuf), ct);
-                        if (result.MessageType == WebSocketMessageType.Close)
-                        {
-                            await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "", ct);
-                            break;
-                        }
-                        if (result.MessageType == WebSocketMessageType.Text)
-                        {
-                            var msg = Encoding.UTF8.GetString(receiveBuf, 0, result.Count);
-                            HandleMessage(ws, msg, ct);
-                        }
-                    }
-                    catch (WebSocketException) { break; }
-                    catch (OperationCanceledException) { break; }
-                }
-            }
-            catch (Exception ex) { Logger.Error($"[WebRemote] WebSocket over SSL error: {ex.Message}"); }
-        }
-
-        private async Task ServeLogoOverSslAsync(SslStream sslStream, string request, CancellationToken ct) { await ServeLogoAsync(null, sslStream, request, ct); }
-        private async Task ServeManifestOverSslAsync(SslStream sslStream, CancellationToken ct) { await ServeManifestAsync(null, sslStream, ct); }
-        private async Task ServeServiceWorkerOverSslAsync(SslStream sslStream, CancellationToken ct) { await ServeServiceWorkerAsync(null, sslStream, ct); }
-        private async Task ServeIconOverSslAsync(SslStream sslStream, string request, CancellationToken ct) { await ServeIconAsync(null, sslStream, request, ct); }
-        private async Task ServeFaviconOverSslAsync(SslStream sslStream, CancellationToken ct) { await ServeFaviconAsync(null, sslStream, ct); }
-
         public void Stop()
         {
             if (!IsRunning) return;
@@ -283,14 +93,9 @@ namespace LibmpvIptvClient.Services.WebRemote
                 }
                 _clients.Clear();
             }
-            _httpsListener?.Stop();
-            _httpsListener = null;
-            _sslCert?.Dispose();
-            _sslCert = null;
             _tcpListener?.Stop();
             _tcpListener = null;
             IsRunning = false;
-            _isHttpsMode = false;
             Logger.Debug("[WebRemote] Server stopped");
         }
 
@@ -318,7 +123,6 @@ namespace LibmpvIptvClient.Services.WebRemote
                     stream.ReadTimeout = 5000;
                     Logger.Debug($"[WebRemote] Client connected from {tcpClient.Client.RemoteEndPoint}");
 
-                    // Read all HTTP headers first
                     var sb = new StringBuilder();
                     var buf = new byte[8192];
                     int read;
@@ -330,9 +134,8 @@ namespace LibmpvIptvClient.Services.WebRemote
                     }
 
                     var request = sb.ToString();
-                    Logger.Debug($"[WebRemote] Request length: {request.Length}, starts with: {request.Substring(0, Math.Min(20, request.Length)).Replace("\r\n", "\\r\\n")}");
+                    Logger.Debug($"[WebRemote] Request length: {request.Length}");
 
-                    // Check if it's a WebSocket upgrade request
                     bool isWebSocket = request.Contains("Upgrade:") && request.Contains("websocket");
                     Logger.Debug($"[WebRemote] Is WebSocket upgrade: {isWebSocket}");
 
@@ -353,37 +156,29 @@ namespace LibmpvIptvClient.Services.WebRemote
         {
             try
             {
-                // Check if it's a logo request
                 var lines = request.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
                 var firstLine = lines.Length > 0 ? lines[0] : "";
+
                 if (firstLine.StartsWith("GET /logo/"))
                 {
                     await ServeLogoAsync(tcpClient, stream, firstLine, ct);
                     return;
                 }
-
-                // PWA: manifest.json
                 if (firstLine.TrimStart().StartsWith("GET /manifest.json"))
                 {
                     await ServeManifestAsync(tcpClient, stream, ct);
                     return;
                 }
-
-                // PWA: service worker
                 if (firstLine.TrimStart().StartsWith("GET /sw.js"))
                 {
                     await ServeServiceWorkerAsync(tcpClient, stream, ct);
                     return;
                 }
-
-                // PWA: favicon.ico
                 if (firstLine.TrimStart().StartsWith("GET /favicon.ico"))
                 {
                     await ServeFaviconAsync(tcpClient, stream, ct);
                     return;
                 }
-
-                // PWA: app icons
                 if (firstLine.TrimStart().StartsWith("GET /icons/"))
                 {
                     await ServeIconAsync(tcpClient, stream, firstLine, ct);
@@ -411,7 +206,6 @@ namespace LibmpvIptvClient.Services.WebRemote
         {
             try
             {
-                // Parse: GET /logo/<encoded_path>
                 var parts = request.Split(' ');
                 if (parts.Length < 2)
                 {
@@ -489,7 +283,7 @@ namespace LibmpvIptvClient.Services.WebRemote
                 await stream.WriteAsync(Encoding.UTF8.GetBytes(manifest), ct);
             }
             catch (Exception ex) { Logger.Error($"[WebRemote] ServeManifest error: {ex.Message}"); }
-            finally { tcpClient.Close(); }
+            finally { tcpClient?.Close(); }
         }
 
         private async Task ServeServiceWorkerAsync(TcpClient? tcpClient, Stream stream, CancellationToken ct)
@@ -529,10 +323,7 @@ self.addEventListener('activate', function(event) {
 });
 
 self.addEventListener('fetch', function(event) {
-  // Skip non-GET requests
   if (event.request.method !== 'GET') return;
-
-  // Skip WebSocket and logo requests
   var url = event.request.url;
   if (url.includes('/ws') || url.includes('/logo/') || url.includes('/icons/')) return;
 
@@ -540,7 +331,6 @@ self.addEventListener('fetch', function(event) {
     caches.match(event.request).then(function(response) {
       if (response) return response;
       return fetch(event.request).then(function(networkResponse) {
-        // Cache successful responses
         if (networkResponse && networkResponse.status === 200) {
           var responseClone = networkResponse.clone();
           caches.open(CACHE_NAME).then(function(cache) {
@@ -549,7 +339,6 @@ self.addEventListener('fetch', function(event) {
         }
         return networkResponse;
       }).catch(function() {
-        // Return cached HTML for navigation requests when offline
         if (event.request.mode === 'navigate') {
           return caches.match('/');
         }
@@ -564,14 +353,13 @@ self.addEventListener('fetch', function(event) {
                 await stream.WriteAsync(Encoding.UTF8.GetBytes(sw), ct);
             }
             catch (Exception ex) { Logger.Error($"[WebRemote] ServeServiceWorker error: {ex.Message}"); }
-            finally { tcpClient.Close(); }
+            finally { tcpClient?.Close(); }
         }
 
         private async Task ServeIconAsync(TcpClient? tcpClient, Stream stream, string request, CancellationToken ct)
         {
             try
             {
-                // Parse icon size from request: /icons/icon-192.png or /icons/icon-512.png
                 var parts = request.Split(' ');
                 if (parts.Length < 2)
                 {
@@ -579,9 +367,7 @@ self.addEventListener('fetch', function(event) {
                     return;
                 }
 
-                // Read project logo.png - resolve path from exe directory
                 var exeDir = AppDomain.CurrentDomain.BaseDirectory;
-                // From bin/Debug/net8.0-windows/ go up to project root: ..\..\.. = SrcBox\
                 var projectRoot = Path.GetFullPath(Path.Combine(exeDir, "..", "..", ".."));
                 var iconPath = Path.Combine(projectRoot, "docs", "public", "logo.png");
                 if (!File.Exists(iconPath))
@@ -598,7 +384,7 @@ self.addEventListener('fetch', function(event) {
                 Logger.Debug($"[WebRemote] Icon served: {iconPath} ({pngData.Length} bytes)");
             }
             catch (Exception ex) { Logger.Error($"[WebRemote] ServeIcon error: {ex.Message}"); }
-            finally { tcpClient.Close(); }
+            finally { tcpClient?.Close(); }
         }
 
         private async Task ServeFaviconAsync(TcpClient? tcpClient, Stream stream, CancellationToken ct)
@@ -622,7 +408,7 @@ self.addEventListener('fetch', function(event) {
                 Logger.Debug($"[WebRemote] Favicon served: {iconPath} ({icoData.Length} bytes)");
             }
             catch (Exception ex) { Logger.Error($"[WebRemote] ServeFavicon error: {ex.Message}"); }
-            finally { tcpClient.Close(); }
+            finally { tcpClient?.Close(); }
         }
 
         private async Task HandleWebSocketAsync(TcpClient tcpClient, NetworkStream stream, string request, CancellationToken ct)
@@ -630,7 +416,6 @@ self.addEventListener('fetch', function(event) {
             WebSocket? ws = null;
             try
             {
-                // Parse WebSocket key for handshake
                 var key = "";
                 foreach (var line in request.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None))
                 {
@@ -649,19 +434,16 @@ self.addEventListener('fetch', function(event) {
                     return;
                 }
 
-                // WebSocket handshake response
                 var acceptKey = Convert.ToBase64String(System.Security.Cryptography.SHA1.Create()
                     .ComputeHash(Encoding.UTF8.GetBytes(key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")));
                 var handshake = $"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {acceptKey}\r\nSec-WebSocket-Version: 13\r\n\r\n";
                 await stream.WriteAsync(Encoding.UTF8.GetBytes(handshake), ct);
 
-                // Create WebSocket from raw connection
                 ws = WebSocket.CreateFromStream(stream, true, null, TimeSpan.FromMinutes(30));
 
                 lock (_clientsLock) { _clients.Add(ws); }
                 Logger.Debug($"[WebRemote] WebSocket client connected, state: {ws.State}");
 
-                // Receive messages
                 var receiveBuf = new byte[8192];
                 while (ws.State == WebSocketState.Open && !ct.IsCancellationRequested)
                 {
@@ -704,11 +486,10 @@ self.addEventListener('fetch', function(event) {
                 var action = actionElem.GetString() ?? "";
                 Logger.Debug($"[WebRemote] Action: {action}");
 
-                // 密码验证：除了 auth 动作外都需要验证
                 if (_requirePassword && action != "auth")
                 {
                     var token = ws.SubProtocol ?? "";
-                    bool isAuth = _authenticatedTokens.ContainsKey(token); // NEW-13: lock-free
+                    bool isAuth = _authenticatedTokens.ContainsKey(token);
                     if (!isAuth)
                     {
                         Logger.Warn($"[WebRemote] Unauthorized access attempt: {action}");
@@ -730,7 +511,7 @@ self.addEventListener('fetch', function(event) {
                         bool ok = !string.IsNullOrEmpty(_password) && pwd == _password;
                         if (ok)
                         {
-                            _authenticatedTokens.TryAdd(ws.SubProtocol ?? "", true); // NEW-13: lock-free
+                            _authenticatedTokens.TryAdd(ws.SubProtocol ?? "", true);
                             Logger.Debug("[WebRemote] Client authenticated successfully");
                         }
                         else
@@ -1064,7 +845,6 @@ self.addEventListener('fetch', function(event) {
 <head>
 <meta charset=""UTF-8"">
 <meta name=""viewport"" content=""width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"">
-<!-- PWA Meta Tags -->
 <meta name=""description"" content=""SrcBox IPTV Remote Control"">
 <link rel=""manifest"" href=""/manifest.json"">
 <meta name=""theme-color"" content=""#0f0c29"">
@@ -1127,7 +907,6 @@ body.light-theme .epg-badge-replay { background: #2ed573; }
 body.light-theme .epg-badge-reminder { background: #1a6b3a; }
 body.light-theme .epg-badge-next { }
 body.light-theme .epg-content { color: #222; }
-/* Source Management light-theme */
 body.light-theme .source-item { background: rgba(0,0,0,0.08); }
 body.light-theme .source-item:hover { background: rgba(0,0,0,0.14); }
 body.light-theme .source-item .sname { color: #333; }
@@ -1223,7 +1002,6 @@ body.light-theme .epg-date-display { color: #1a6b3a; }
 .controls { grid-template-columns: repeat(5, 1fr); gap: 4px; }
 .btn { padding: 10px 4px; font-size: 16px; }
 }
-/* EPG Action Buttons */
 .epg-btn-live { background: #ff4757; border: none; border-radius: 4px; padding: 2px 6px; font-size: 10px; color: #fff; cursor: pointer; font-weight: bold; }
 .epg-btn-replay { background: #2ed573; border: none; border-radius: 4px; padding: 2px 6px; font-size: 10px; color: #fff; cursor: pointer; font-weight: bold; }
 .epg-btn-timeshift { background: #1e90ff; border: none; border-radius: 4px; padding: 2px 6px; font-size: 9px; color: #fff; cursor: pointer; }
@@ -1235,7 +1013,6 @@ body.light-theme .epg-date-display { color: #1a6b3a; }
 .epg-right-area { display: flex; align-items: center; justify-content: flex-end; }
 .epg-actions-row { display: flex; gap: 4px; align-items: center; margin-right: 4px; }
 .epg-item.past { opacity: 0.6; }
-/* Source Management */
 .source-section { background: #000; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
 .source-item { display: flex; align-items: center; justify-content: space-between; background: #1a1a1a; border-radius: 8px; padding: 8px 12px; margin-bottom: 6px; cursor: pointer; }
 .source-item:hover { background: #2a2a2a; }
@@ -1246,7 +1023,6 @@ body.light-theme .epg-date-display { color: #1a6b3a; }
 .source-item .sbtns { display: flex; gap: 4px; }
 .source-item .sbtns button { padding: 4px 8px; font-size: 10px; background: #333; border: none; border-radius: 4px; color: #fff; cursor: pointer; }
 .source-item .sbtns button:hover { background: #444; }
-/* Reminder & Recording sections */
 .reminder-section, .recording-section { background: #000; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
 .reminder-item, .recording-item { display: flex; align-items: center; justify-content: space-between; background: #1a1a1a; border-radius: 8px; padding: 8px 12px; margin-bottom: 6px; }
 .reminder-item .rtime { font-size: 11px; color: #888; min-width: 120px; }
@@ -1258,7 +1034,6 @@ body.light-theme .epg-date-display { color: #1a6b3a; }
 .reminder-item .raction.notify { background: #57606f; }
 .recording-item .rcstatus { font-size: 11px; color: #888; }
 .recording-item .rcsize { font-size: 11px; color: #7bed9f; }
-/* Modal */
 .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); display: none; align-items: center; justify-content: center; z-index: 10000; }
 .modal-overlay.show { display: flex; }
 .modal-box { background: #1a1a2e; border-radius: 12px; padding: 20px; min-width: 300px; max-width: 400px; }
@@ -1270,7 +1045,6 @@ body.light-theme .epg-date-display { color: #1a6b3a; }
 .modal-box .mbtns .mcancel { background: #333; color: #fff; }
 .modal-box .mbtns .mok { background: #2ed573; color: #fff; }
 .modal-box .rem-info { font-size: 13px; color: #eee; margin-bottom: 8px; }
-/* Light theme for modals */
 body.light-theme .modal-overlay { background: rgba(0,0,0,0.5); }
 body.light-theme .modal-box { background: #f0f0f0; }
 body.light-theme .modal-box h3 { color: #222; }
@@ -1327,7 +1101,6 @@ body.light-theme .modal-box .rem-info { color: #222; }
 </div>
 </div>
 
-<!-- Reminder Modal -->
 <div class=""modal-overlay"" id=""reminderModal"">
 <div class=""modal-box"">
 <h3 id=""remModalTitle"">__MODAL_ADD_REMINDER__</h3>
@@ -1384,7 +1157,6 @@ body.light-theme .modal-box .rem-info { color: #222; }
 </div>
 </div>
 
-<!-- Source Management Modal -->
 <div class=""modal-overlay"" id=""sourceModal"">
 <div class=""modal-box"" style=""max-width:420px;"">
 <h3 id=""sourceModalTitle"">__SEC_SOURCES__</h3>
@@ -1396,19 +1168,16 @@ body.light-theme .modal-box .rem-info { color: #222; }
 </div>
 </div>
 
-<!-- Reminder Management -->
 <div class=""reminder-section"" id=""reminderSection"" style=""display:none;"">
 <div class=""section-title"">__SEC_REMINDERS__</div>
 <div id=""reminderList""><div class=""loading"">__LOADING__</div></div>
 </div>
 
-<!-- Recording Management -->
 <div class=""recording-section"" id=""recordingSection"" style=""display:none;"">
 <div class=""section-title"">__SEC_RECORDINGS__</div>
 <div id=""recordingList""><div class=""loading"">__LOADING__</div></div>
 </div>
 
-<!-- Add Source Modal -->
 <div class=""modal-overlay"" id=""addSourceModal"">
 <div class=""modal-box"">
 <h3>__MODAL_ADD_SOURCE__</h3>
@@ -1437,8 +1206,7 @@ document.title = T.title;
 }
 
 function connect() {
-const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
-ws = new WebSocket(protocol + '//' + location.host);
+ws = new WebSocket('ws://' + location.host);
 ws.onopen = function() { loadTheme(); applyStaticText(); loadStatus(); loadChannels(); };
 ws.onclose = function() { isAuthenticated = false; setTimeout(connect, 3000); };
 ws.onerror = function() { document.getElementById('channelName').textContent = T.connecting; };
@@ -1453,20 +1221,7 @@ else { document.getElementById('authError').style.display = 'block'; }
 return;
 }
 if (data.groups !== undefined) renderChannels(data);
-else if (data.programs !== undefined) {
-                    // Debug: check badgeHtml in received data
-                    if (data.programs && data.programs.length > 0) {
-                        console.log('EPG received, first prog badgeHtml:', JSON.stringify(data.programs[0].badgeHtml), 'isCurrent:', data.programs[0].isCurrent);
-                        // Find current/live program
-                        for (var i = 0; i < data.programs.length; i++) {
-                            if (data.programs[i].isCurrent) {
-                                console.log('Current program at index', i, ':', data.programs[i].name, 'badgeHtml:', JSON.stringify(data.programs[i].badgeHtml));
-                                break;
-                            }
-                        }
-                    }
-                    renderEpg(data);
-                }
+else if (data.programs !== undefined) { renderEpg(data); }
 else if (data.channel !== undefined || data.mode !== undefined) updateStatus(data);
 else if (data.sources !== undefined) renderSources(data);
 else if (data.reminders !== undefined) renderReminders(data);
@@ -1479,7 +1234,7 @@ function send(action, data) { if (!data) data = {}; if (ws && ws.readyState === 
 function loadStatus() { send('getStatus'); }
 function doAuth() { const pwd = document.getElementById('pwdInput').value; if (!pwd) return; send('auth', { password: pwd }); }
 function loadChannels() { send('getChannels'); }
-let currentEpgDate = null; // null means default (today)
+let currentEpgDate = null;
 function loadEpg(channelId, dateStr) { send('getEpg', { channelId: channelId, date: dateStr || null }); }
 function loadEpgForDate(dateStr) {
     currentEpgDate = dateStr;
@@ -1490,8 +1245,7 @@ function loadEpgForDate(dateStr) {
     var diffDays = Math.round((selected - today) / 86400000);
     var label = diffDays === 0 ? '今天' : (diffDays === -1 ? '昨天' : (diffDays === 1 ? '明天' : new Date(dateStr).toLocaleDateString('zh-CN', { month: '2-digit', day: '2-digit' })));
     document.getElementById('epgDateDisplay').textContent = label;
-    document.getElementById('epgDatePicker').style.display = 'none';
-    if (currentChannelId) loadEpg(currentChannelId, dateStr);
+    loadEpg(currentChannelId, dateStr);
 }
 function epgPrevDay() {
     var d = currentEpgDate ? new Date(currentEpgDate) : new Date();
@@ -1503,288 +1257,122 @@ function epgNextDay() {
     d.setDate(d.getDate() + 1);
     loadEpgForDate(d.toISOString().split('T')[0]);
 }
-function showEpgDatePicker() {
-    var picker = document.getElementById('epgDatePicker');
-    picker.style.display = 'inline';
-    picker.value = currentEpgDate || new Date().toISOString().split('T')[0];
-    picker.focus();
-}
-function refreshData() { if (!isAuthenticated) return; loadStatus(); loadChannels(); if (currentChannelId) loadEpg(currentChannelId, currentEpgDate); loadSources(); loadReminders(); loadRecordings(); }
-
-// Source Management
-function openSourceModal() { loadSources(); document.getElementById('sourceModal').classList.add('show'); }
-function closeSourceModal() { document.getElementById('sourceModal').classList.remove('show'); }
-function loadSources() { send('getSources'); }
-function renderSources(data) {
-  var list = document.getElementById('sourceList');
-  if (!list) return;
-  list.innerHTML = '';
-  if (!data.sources || !data.sources.length) { list.innerHTML = '<div class=""loading"">' + T.source_empty + '</div>'; return; }
-  data.sources.forEach(function(s) {
-    var div = document.createElement('div');
-    div.className = 'source-item' + (s.isSelected ? ' active' : '');
-    div.innerHTML = '<div><div class=""sname"">' + s.name + '</div><div class=""surl"">' + s.url + '</div></div>' +
-      '<div class=""sbtns"">' +
-      (s.isSelected ? '<span class=""sactive"">'+T.source_active+'</span>' : '<button onclick=""doSelectSource(\''+s.name+'\')"">'+T.source_select+'</button>') +
-      '<button onclick=""doRemoveSource(\''+s.name+'\')"">'+T.source_remove+'</button></div>';
-    list.appendChild(div);
-    if (s.isSelected) document.getElementById('currentSourceName').textContent = '(' + s.name + ')';
-  });
-}
-function doSelectSource(name) { send('selectSource', { name }); closeSourceModal(); setTimeout(refreshData, 500); }
-function doRemoveSource(name) { if (!confirm(T.confirm_remove_source)) return; send('removeSource', { name }); setTimeout(loadSources, 300); }
-function showAddSourceModal() { document.getElementById('addSourceModal').classList.add('show'); }
-function closeAddSourceModal() { document.getElementById('addSourceModal').classList.remove('show'); }
-function doAddSource() { var n = document.getElementById('srcNameInput').value; var u = document.getElementById('srcUrlInput').value; if (!n || !u) return; send('addSource', { name: n, url: u }); closeAddSourceModal(); setTimeout(loadSources, 500); }
-
-// Reminder Management
-function loadReminders() { send('getReminders'); }
-function renderReminders(data) {
-  var list = document.getElementById('reminderList');
-  if (!list) return;
-  list.innerHTML = '';
-  if (!data.reminders || !data.reminders.length) { list.innerHTML = '<div class=""loading"">' + T.reminder_empty + '</div>'; document.getElementById('reminderSection').style.display = 'block'; return; }
-  data.reminders.forEach(function(r) {
-    var badge = r.action === 'play' ? 'play' : r.action.includes('record') ? r.action : 'notify';
-    var d = new Date(r.startAt);
-    var timeStr = d.toLocaleString(document.documentElement.lang, { month:'2-digit', day:'2-digit', hour:'2-digit', minute:'2-digit' });
-    var div = document.createElement('div');
-    div.className = 'reminder-item';
-    div.innerHTML = '<div><div class=""rprogram"">' + r.channelName + ' - ' + r.programTitle + '</div></div>' +
-      '<div><span class=""raction ' + badge + '"">' + T['action_' + r.action] + '</span> ' +
-      '<span class=""rtime"">' + timeStr + '</span> ' +
-      (r.completed ? '<span style=""color:#666"">'+T.status_cancelled+'</span>' : '<button onclick=""doCancelReminder(\''+r.id+'\')"" style=""padding:2px 6px;font-size:10px;background:#ff4757;border:none;border-radius:4px;color:#fff;cursor:pointer"">'+T.reminder_cancel+'</button>') +
-      '</div>';
-    list.appendChild(div);
-  });
-  document.getElementById('reminderSection').style.display = 'block';
-}
-function doCancelReminder(id) { send('cancelReminder', { id }); setTimeout(loadReminders, 300); }
-
-// Recording Management
-function loadRecordings() { send('getRecordings'); }
-function renderRecordings(data) {
-  var list = document.getElementById('recordingList');
-  if (!list) return;
-  list.innerHTML = '';
-  if (!data.recordings || !data.recordings.length) { list.innerHTML = '<div class=""loading"">' + T.recording_empty + '</div>'; document.getElementById('recordingSection').style.display = 'block'; return; }
-  data.recordings.forEach(function(r) {
-    var div = document.createElement('div');
-    div.className = 'recording-item';
-    div.innerHTML = '<div><div class=""rprogram"">' + r.channelName + ' - ' + r.programTitle + '</div><div class=""rcstatus"">' + r.type + ' | ' + r.statusLabel + '</div></div>' +
-      '<div><span class=""rcsize"">' + r.sizeLabel + '</span> ' +
-      (r.status === 'Recording' || r.status === 'Waiting' ? '<button onclick=""doStopRecording(\''+r.id+'\')"" style=""padding:2px 6px;font-size:10px;background:#ff4757;border:none;border-radius:4px;color:#fff;cursor:pointer"">'+T.recording_stop+'</button>' : '') +
-      (r.status === 'Completed' || r.status === 'Failed' || r.status === 'Cancelled' || r.status === 'Stopped' ? '<button onclick=""doDeleteRecording(\''+r.id+'\')"" style=""padding:2px 6px;font-size:10px;background:#57606f;border:none;border-radius:4px;color:#fff;cursor:pointer"">'+T.recording_delete+'</button>' : '') +
-      '</div>';
-    list.appendChild(div);
-  });
-  document.getElementById('recordingSection').style.display = 'block';
-}
-function doStopRecording(id) { send('stopRecording', { id }); setTimeout(loadRecordings, 300); }
-function doDeleteRecording(id) { send('deleteRecording', { id }); setTimeout(loadRecordings, 300); }
-
-// Speed & Seek
-async function seek(seconds) { send('seek', { seconds }); await loadStatus(); }
-async function setSpeed(speed) { send('setSpeed', { speed }); await loadStatus(); }
-
-// Timeshift toggle
-var isTimeshiftEnabled = false;
-function toggleTimeshift() { isTimeshiftEnabled = !isTimeshiftEnabled; send('setTimeshift', { enabled: isTimeshiftEnabled }); updateTimeshiftBtn(); }
-function updateTimeshiftBtn() {
-  var btn = document.getElementById('btnTimeshift');
-  var path = document.getElementById('timeshiftPath');
-  if (btn) { btn.className = 'btn' + (isTimeshiftEnabled ? ' active' : ''); }
-  if (path) {
-    // Play icon (triangle) when off, Pause icon (two bars) when on
-    path.setAttribute('d', isTimeshiftEnabled ? 'M6 19h4V5H6v14zm8-14v14h4V5h-4z' : 'M8 5v14l11-7z');
-  }
-  var text = document.getElementById('btnTimeshiftText');
-  if (text) text.textContent = isTimeshiftEnabled ? T.btn_timeshift_on : T.btn_timeshift_off;
-}
-
-// EPG replay/timeshift/remind
-async function doReplayProgram(channelId, programTitle, start, end) { send('replayProgram', { channelId: channelId, programTitle: programTitle, start: start, end: end }); await loadStatus(); }
-function showAddReminderModal(channelId, channelName, programTitle, start, end, action) {
-  var modal = document.getElementById('reminderModal');
-  if (!modal) return;
-  document.getElementById('remChannel').textContent = channelName;
-  document.getElementById('remProgram').textContent = programTitle;
-  document.getElementById('remStart').textContent = new Date(start).toLocaleString();
-  document.getElementById('remEnd').textContent = new Date(end).toLocaleString();
-  document.getElementById('remChannelId').value = channelId;
-  document.getElementById('remStartUtc').value = start;
-  document.getElementById('remEndUtc').value = end;
-  document.getElementById('remProgramTitle').value = programTitle;
-  document.getElementById('remAction').value = action || 'play';
-  modal.classList.add('show');
-}
-function closeReminderModal() { var modal = document.getElementById('reminderModal'); if (modal) modal.classList.remove('show'); }
-async function doAddReminder() {
-  var channelId = document.getElementById('remChannelId').value;
-  var startAt = document.getElementById('remStartUtc').value;
-  var endTime = document.getElementById('remEndUtc').value;
-  var programTitle = document.getElementById('remProgramTitle').value;
-  var action = document.getElementById('remAction').value;
-  var preAlert = parseInt(document.getElementById('remPreAlert').value) || 60;
-  if (!channelId || !startAt) return;
-  send('addReminder', { channelId: channelId, startAt: startAt, endTime: endTime, action: action, programTitle: programTitle, preAlertSeconds: preAlert });
-  closeReminderModal();
-}
-
+function showEpgDatePicker() { document.getElementById('epgDatePicker').showPicker(); }
+function play() { send('play'); }
+function pause() { send('pause'); }
+function stop() { send('stop'); }
+function fullscreen() { send('fullscreen'); }
+function exitApp() { if (confirm(T.exit_confirm)) send('exit'); }
+function toggleMute() { isMuted = !isMuted; send('volume', { volume: isMuted ? 0 : previousVolume }); }
+function setVolumeFromClick(e) { var bar = document.getElementById('volBar'); var pct = (e.clientX - bar.getBoundingClientRect().left) / bar.offsetWidth * 100; setVolume(Math.max(0, Math.min(100, pct))); }
+function setVolume(v) { currentVolume = v; isMuted = v === 0; document.getElementById('volFill').style.width = v + '%'; document.getElementById('volValue').textContent = Math.round(v) + '%'; send('volume', { volume: v }); }
+function prevChannel() { var idx = channelList.findIndex(c => c.Id === currentChannelId); if (idx > 0) changeChannel(channelList[idx - 1].Id); }
+function nextChannel() { var idx = channelList.findIndex(c => c.Id === currentChannelId); if (idx >= 0 && idx < channelList.length - 1) changeChannel(channelList[idx + 1].Id); }
+function changeChannel(id) { currentChannelId = id; send('channel', { channelId: id }); document.querySelectorAll('.channel-item').forEach(el => el.classList.toggle('active', el.dataset.id === id)); }
+function switchSource() { send('switchSource'); }
+function refreshData() { loadStatus(); loadChannels(); }
+function seek(seconds) { send('seek', { seconds: seconds }); }
 function toggleTheme() {
-isDarkTheme = !isDarkTheme;
-document.body.classList.toggle('light-theme', !isDarkTheme);
-document.getElementById('themeToggle').textContent = isDarkTheme ? T.theme_dark : T.theme_light;
-try { localStorage.setItem('remote-theme', isDarkTheme ? 'dark' : 'light'); } catch (e) { }
+    isDarkTheme = !isDarkTheme;
+    document.body.classList.toggle('light-theme', !isDarkTheme);
+    document.getElementById('themeToggle').textContent = isDarkTheme ? T.theme_dark : T.theme_light;
+    localStorage.setItem('theme', isDarkTheme ? 'dark' : 'light');
 }
-function loadTheme() {
-var saved = null; try { saved = localStorage.getItem('remote-theme'); } catch (e) { }
-isDarkTheme = saved !== 'light';
-document.body.classList.toggle('light-theme', !isDarkTheme);
-document.getElementById('themeToggle').textContent = isDarkTheme ? T.theme_dark : T.theme_light;
-}
-
-function updateVolumeUI() {
-document.getElementById('volFill').style.width = (isMuted ? 0 : currentVolume) + '%';
-document.getElementById('volValue').textContent = isMuted ? 'x' : currentVolume + '%';
-var volPath = isMuted
-? 'M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77zM4.27 3L3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4L9.91 6.09 12 8.18V4z'
-: 'M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z';
-var volIconEl = document.getElementById('volIcon'); var muteIconEl = document.getElementById('muteIcon');
-if (volIconEl && volIconEl.querySelector('path')) volIconEl.querySelector('path').setAttribute('d', volPath);
-if (muteIconEl && muteIconEl.querySelector('path')) muteIconEl.querySelector('path').setAttribute('d', volPath);
-}
-
-function updateStatus(s) {
-var modeMap = { Live: T.mode_live, Replay: T.mode_replay, Timeshift: T.mode_timeshift, Recording: T.mode_recording, LocalFile: T.mode_local, Stopped: T.mode_default };
-var modeClass = { Live:'mode-live', Replay:'mode-replay', Timeshift:'mode-timeshift', Recording:'mode-recording', LocalFile:'mode-local', Stopped:'mode-stopped' };
-var el = document.getElementById('statusMode');
-el.textContent = modeMap[s.mode] || s.mode || T.mode_default;
-el.className = 'now-playing-mode ' + (modeClass[s.mode] || 'mode-stopped');
-document.getElementById('channelName').textContent = (s.channel && s.channel.name) || T.status_stopped;
-document.getElementById('programName').textContent = (s.currentProgram && s.currentProgram.name) || '';
-document.getElementById('programTime').textContent = s.currentProgram ? (s.currentProgram.date + ' ' + s.currentProgram.start + ' - ' + s.currentProgram.end) : '';
-document.getElementById('liveBadge').textContent = T.live_badge;
-document.getElementById('liveBadge').style.display = s.mode === 'Live' ? 'inline' : 'none';
-currentChannelId = (s.channel && s.channel.id) || '';
-if (!s.muted && s.volume > 0) previousVolume = s.volume;
-currentVolume = s.muted ? previousVolume : (s.volume || 0);
-isMuted = s.muted || false;
-isTimeshiftEnabled = s.timeshiftEnabled || false;
-updateVolumeUI(); updateChannelActive();
-if (currentChannelId) loadEpg(currentChannelId, currentEpgDate);
-// Update date display to today if no date selected
-if (!currentEpgDate) {
-    document.getElementById('epgDateDisplay').textContent = '今天';
-}
-document.getElementById('currentTime').textContent = new Date().toLocaleTimeString(document.documentElement.lang, { hour: '2-digit', minute: '2-digit' });
-}
+function loadTheme() { var t = localStorage.getItem('theme'); isDarkTheme = t !== 'light'; document.body.classList.toggle('light-theme', !isDarkTheme); document.getElementById('themeToggle').textContent = isDarkTheme ? T.theme_dark : T.theme_light; }
 
 function renderChannels(data) {
-var grid = document.getElementById('channelGrid'); grid.innerHTML = ''; channelList = [];
-if (data.favorites && data.favorites.length) { data.favorites.forEach(function(c) { channelList.push(c); addChannelItem(grid, c, true); }); }
-if (data.groups && data.groups.length) { data.groups.forEach(function(g) { if (g.name === FAV_GROUP) return; if (g.channels) g.channels.forEach(function(c) { channelList.push(c); addChannelItem(grid, c); }); }); }
-updateChannelActive();
+    channelList = [];
+    var grid = document.getElementById('channelGrid');
+    grid.innerHTML = '';
+    if (!data.groups || data.groups.length === 0) { grid.innerHTML = '<div class=""loading"">' + T.source_empty + '</div>'; return; }
+    var allChannels = [];
+    data.groups.forEach(function(g) {
+        g.Channels.forEach(function(c) {
+            allChannels.push(c);
+            var div = document.createElement('div');
+            div.className = 'channel-item';
+            div.dataset.id = c.Id;
+            div.onclick = function() { changeChannel(c.Id); };
+            div.innerHTML = '<div class=""logo"">' + (c.Logo && c.Logo.indexOf('file://') === 0 ? '<img src=""' + c.Logo + '""/>' : '') + '</div>' +
+                '<div class=""info""><div class=""name"">' + (c.Name || '') + '</div><div class=""program"">' + (c.CurrentProgram || '') + '</div></div>' +
+                '<div class=""time"">' + (c.CurrentTime || '') + '</div>';
+            grid.appendChild(div);
+        });
+    });
+    channelList = allChannels;
+    if (data.favorites && data.favorites.length > 0) {
+        document.querySelectorAll('.channel-item').forEach(function(el) {
+            var isFav = data.favorites.some(function(f) { return f.Id === el.dataset.id; });
+            if (isFav) el.querySelector('.name').textContent = FAV_STAR + ' ' + el.querySelector('.name').textContent;
+        });
+    }
+    document.getElementById('currentSourceName').textContent = data.groups.length > 0 ? '' : '';
 }
-function addChannelItem(grid, c, isFavorite) {
-var div = document.createElement('div'); div.className = 'channel-item'; div.dataset.id = c.id;
-var logoContainer = document.createElement('div'); logoContainer.className = 'logo';
-if (c.logo && c.logo.length > 0) {
-var imgStyle = 'height:56px;width:auto;max-width:80px;object-fit:contain';
-var fallbackIcon = '<span style=font-size:22px;display:none;align-items:center;justify-content:center;width:80px;height:56px>' + (isFavorite ? FAV_STAR : 'TV') + '</span>';
-if (c.logo.indexOf('http') === 0) {
-// External HTTP URL - use directly
-var img = document.createElement('img'); img.src = c.logo; img.style = imgStyle; img.crossOrigin = 'anonymous';
-img.onerror = function() { img.style.display = 'none'; img.nextSibling.style.display = 'flex'; };
-logoContainer.innerHTML = fallbackIcon; logoContainer.insertBefore(img, logoContainer.firstChild);
-} else {
-// Local file path - convert to /logo/ endpoint
-var localPath = c.logo.replace('file:///', '').replace(/\//g, '\\\\');
-var encodedPath = encodeURIComponent(localPath).replace(/%5C/g, '/');
-var img = document.createElement('img'); img.src = '/logo/' + encodedPath; img.style = imgStyle;
-img.onerror = function() { img.style.display = 'none'; img.nextSibling.style.display = 'flex'; };
-logoContainer.innerHTML = fallbackIcon; logoContainer.insertBefore(img, logoContainer.firstChild);
-}
-} else {
-logoContainer.innerHTML = '<span style=font-size:22px;display:flex;align-items:center;justify-content:center;width:80px;height:56px>' + (isFavorite ? FAV_STAR : 'TV') + '</span>';
-}
-var nameHtml = '<div class=name>' + (c.name || '') + '</div>';
-var progHtml = '<div class=program>' + (c.currentProgram || '') + '</div>';
-var timeHtml = '<div class=time>' + (c.currentTime || '') + '</div>';
-var infoDiv = document.createElement('div'); infoDiv.className = 'info'; infoDiv.innerHTML = nameHtml + progHtml + timeHtml;
-div.appendChild(logoContainer); div.appendChild(infoDiv);
-div.onclick = function() { changeChannel(c.id); };
-grid.appendChild(div);
-}
-function renderEpg(data) {
-var list = document.getElementById('epgList'); var channelName = document.getElementById('epgChannelName');
-if (!data.programs || !data.programs.length) { list.innerHTML = '<div class=""loading"">' + T.epg_empty + '</div>'; return; }
-var channel = channelList.find(function(c) { return c.id === data.channelId; });
-channelName.textContent = channel ? channel.name : T.status_stopped;
-list.innerHTML = '';
-var now = new Date();
-data.programs.forEach(function(p, i) {
-var div = document.createElement('div');
-div.className = 'epg-item' + (p.isCurrent ? ' current' : '');
-// Use ISO UTC timestamps for accurate time comparison
-var pStart = p.startISO ? new Date(p.startISO) : null;
-var pEnd = p.endISO ? new Date(p.endISO) : null;
-var isPast = pEnd && pEnd < now;
-var isFuture = pStart && pStart > now;
-if (isPast) div.classList.add('past');
-// Add badge-based class for colored bottom border (LIVE=red, replay=green, reminder=blue)
-if (p.badge === 'live') div.classList.add('epg-item-live');
-else if (p.badge === 'replay') div.classList.add('epg-item-replay');
-else if (p.badge === 'reminder') div.classList.add('epg-item-reminder');
-var actionHtml = '';
-if (p.isCurrent) {
-actionHtml += '<button class=""epg-btn-live"" onclick=""event.stopPropagation();changeChannel(\'' + data.channelId + '\')"">' + T.btn_watch + '</button>';
-}
-else if (isPast && isTimeshiftEnabled) {
-actionHtml += '<button class=""epg-btn-replay"" onclick=""event.stopPropagation();doReplayProgram(\'' + data.channelId + '\', \'' + p.name + '\', \'' + p.startISO + '\', \'' + p.endISO + '\')"">' + T.btn_replay + '</button>';
-}
-else if (isFuture) {
-actionHtml += '<button class=""epg-btn-remind"" onclick=""event.stopPropagation();showAddReminderModal(\'' + data.channelId + '\', \'' + (channel ? channel.name : '') + '\', \'' + p.name + '\', \'' + p.startISO + '\', \'' + p.endISO + '\', \'play\')"">' + T.btn_remind + '</button>';
-}
-div.innerHTML = '<div class=""epg-time""><span>' + (p.date ? p.date + ' ' : '') + p.start + '</span><span class=""epg-time-end"">' + p.end + '</span></div>' +
-'<div class=""epg-content"">' + p.name + '</div>' +
-'<div class=""epg-right-col"">' + actionHtml + '</div>';
-div.onclick = function() { div.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); changeChannel(data.channelId); };
-list.appendChild(div);
-});
-}
-function updateChannelActive() {
-var items = document.querySelectorAll('.channel-item');
-for (var i = 0; i < items.length; i++) {
-var el = items[i];
-if (el.dataset.id === currentChannelId) el.classList.add('active'); else el.classList.remove('active');
-}
-}
-async function play() { send('play'); await loadStatus(); }
-async function pause() { send('pause'); await loadStatus(); }
-async function stop() { send('stop'); await loadStatus(); }
-async function toggleMute() { send('volume', { volume: isMuted ? previousVolume : 0 }); await loadStatus(); }
-async function setVolumeFromClick(e) {
-var bar = document.getElementById('volBar');
-var pct = Math.round((e.clientX - bar.getBoundingClientRect().left) / bar.offsetWidth * 100);
-previousVolume = pct; send('volume', { volume: pct }); await loadStatus();
-}
-async function changeChannel(id) { send('channel', { channelId: id }); await loadStatus(); }
-async function prevChannel() { var idx = channelList.findIndex(function(c) { return c.id === currentChannelId; }); if (idx > 0) await changeChannel(channelList[idx - 1].id); }
-async function nextChannel() { var idx = channelList.findIndex(function(c) { return c.id === currentChannelId; }); if (idx >= 0 && idx < channelList.length - 1) await changeChannel(channelList[idx + 1].id); }
-function fullscreen() { send('fullscreen'); }
-function switchSource() { send('switchSource'); }
-async function exitApp() { if (confirm(T.exit_confirm)) send('exit'); }
-connect();
 
-// Register Service Worker for PWA install support
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js').then(function(reg) {
-    console.log('Service Worker registered:', reg.scope);
-  }).catch(function(err) {
-    console.log('Service Worker registration failed:', err);
-  });
+function renderEpg(data) {
+    var list = document.getElementById('epgList');
+    if (!data.programs || data.programs.length === 0) { list.innerHTML = '<div class=""loading"">' + T.epg_empty + '</div>'; return; }
+    var now = new Date();
+    list.innerHTML = '';
+    data.programs.forEach(function(p, idx) {
+        var isCurrent = p.isCurrent;
+        var badge = p.badgeHtml || '';
+        var isPast = p.Start && new Date(p.StartISO || p.Start) < now && !isCurrent;
+        var div = document.createElement('div');
+        div.className = 'epg-item' + (isCurrent ? ' current' : '') + (isPast ? ' past' : '');
+        if (p.badge) div.classList.add('epg-item-' + p.badge);
+        div.innerHTML = '<div class=""epg-time""><div>' + (p.Start || '') + '</div><div class=""epg-time-end"">' + (p.End || '') + '</div></div>' +
+            '<div class=""epg-content"">' + (p.Name || '') + badge + '</div>';
+        div.onclick = function() {
+            if (p.badge === 'replay' || p.badge === 'live') { send('replayProgram', { channelId: data.channelId, programTitle: p.Name, start: p.StartISO, end: p.EndISO }); }
+        };
+        list.appendChild(div);
+    });
 }
+
+function updateStatus(data) {
+    if (data.channel) {
+        document.getElementById('channelName').textContent = data.channel.Name || '-';
+        document.getElementById('liveBadge').style.display = data.Playing ? 'inline' : 'none';
+    }
+    if (data.mode) {
+        var modeEl = document.getElementById('statusMode');
+        modeEl.textContent = data.ModeText || data.mode;
+        modeEl.className = 'now-playing-mode mode-' + data.mode.toLowerCase();
+    }
+    if (data.volume !== undefined) {
+        currentVolume = data.volume;
+        isMuted = data.volume === 0;
+        document.getElementById('volFill').style.width = data.volume + '%';
+        document.getElementById('volValue').textContent = Math.round(data.volume) + '%';
+    }
+    if (data.programName !== undefined) document.getElementById('programName').textContent = data.programName || '-';
+    if (data.programTime !== undefined) document.getElementById('programTime').textContent = data.programTime || '';
+}
+
+function openSourceModal() { document.getElementById('sourceModal').classList.add('show'); send('getSources'); }
+function closeSourceModal() { document.getElementById('sourceModal').classList.remove('show'); }
+function showAddSourceModal() { document.getElementById('addSourceModal').classList.add('show'); }
+function closeAddSourceModal() { document.getElementById('addSourceModal').classList.remove('show'); document.getElementById('srcNameInput').value = ''; document.getElementById('srcUrlInput').value = ''; }
+function doAddSource() { var n = document.getElementById('srcNameInput').value; var u = document.getElementById('srcUrlInput').value; if (n && u) { send('addSource', { name: n, url: u }); closeAddSourceModal(); } }
+
+function renderSources(data) {
+    var list = document.getElementById('sourceList');
+    list.innerHTML = '';
+    if (!data.sources || data.sources.length === 0) { list.innerHTML = '<div class=""loading"">' + T.source_empty + '</div>'; return; }
+    data.sources.forEach(function(s) {
+        var div = document.createElement('div');
+        div.className = 'source-item' + (s.IsSelected ? ' active' : '');
+        div.innerHTML = '<div><div class=""sname"">' + (s.Name || '') + '</div><div class=""surl"">' + (s.Url || '') + '</div></div>' +
+            '<div class=""sbtns""><button onclick=""event.stopPropagation();selectSource(\'' + (s.Name || '') + '\')"">' + T.source_select + '</button>' +
+            '<button onclick=""event.stopPropagation();removeSource(\'' + (s.Name || '') + '\')"">' + T.source_remove + '</button></div>';
+        list.appendChild(div);
+    });
+}
+function selectSource(name) { send('selectSource', { name: name }); closeSourceModal(); }
+function removeSource(name) { if (confirm(T.confirm_remove_source)) send('removeSource', { name: name }); }
+
+connect();
 </script>
 </body>
 </html>";
@@ -1794,12 +1382,12 @@ if ('serviceWorker' in navigator) {
     public class WebRemoteStatus
     {
         public bool Playing { get; set; }
-        public string Mode { get; set; } = "Stopped";
-        public string ModeText { get; set; } = "已停止";
-        public WebRemoteChannel? Channel { get; set; }
         public double Volume { get; set; }
         public bool Muted { get; set; }
-        public double Speed { get; set; } = 1.0;
+        public double Speed { get; set; }
+        public string Mode { get; set; } = "";
+        public string ModeText { get; set; } = "";
+        public WebRemoteChannel? Channel { get; set; }
         public WebRemoteProgram? CurrentProgram { get; set; }
         public WebRemoteTimeshift? Timeshift { get; set; }
         public bool TimeshiftEnabled { get; set; }
@@ -1809,21 +1397,26 @@ if ('serviceWorker' in navigator) {
     {
         public string Id { get; set; } = "";
         public string Name { get; set; } = "";
-        public string? Logo { get; set; }
+        public string Logo { get; set; } = "";
         public string? CurrentProgram { get; set; }
         public string? CurrentTime { get; set; }
     }
 
-    public class WebRemoteProgram
+    public class WebRemoteChannelGroup
     {
         public string Name { get; set; } = "";
-        public string Start { get; set; } = "";      // HH:mm
-        public string End { get; set; } = "";        // HH:mm
-        public string StartISO { get; set; } = "";   // yyyy-MM-ddTHH:mm:ss
-        public string EndISO { get; set; } = "";     // yyyy-MM-ddTHH:mm:ss
-        public string Date { get; set; } = "";       // MM-dd (显示日期)
+        public List<WebRemoteChannel> Channels { get; set; } = new();
+    }
+
+    public class WebRemoteProgram
+    {
+        public string? Name { get; set; }
+        public string? Start { get; set; }
+        public string? End { get; set; }
+        public string? StartISO { get; set; }
+        public string? EndISO { get; set; }
+        public string? Date { get; set; }
         public bool IsCurrent { get; set; }
-        // 微标类型: "live"=正在播出 "replay"=回看 "reminder"=预约 "next"=下一节目
         public string? Badge { get; set; }
         public string? BadgeHtml { get; set; }
     }
@@ -1835,28 +1428,22 @@ if ('serviceWorker' in navigator) {
         public string? Range { get; set; }
     }
 
-    public class WebRemoteChannelGroup
-    {
-        public string Name { get; set; } = "";
-        public List<WebRemoteChannel> Channels { get; set; } = new();
-    }
-
     public class WebRemoteSource
     {
-        public string Name { get; set; } = "";
-        public string Url { get; set; } = "";
+        public string? Name { get; set; }
+        public string? Url { get; set; }
         public bool IsSelected { get; set; }
     }
 
     public class WebRemoteReminder
     {
-        public string Id { get; set; } = "";
-        public string ChannelId { get; set; } = "";
-        public string ChannelName { get; set; } = "";
-        public string ProgramTitle { get; set; } = "";
-        public string StartAt { get; set; } = "";
-        public string EndTime { get; set; } = "";
-        public string Action { get; set; } = "";
+        public string? Id { get; set; }
+        public string? ChannelId { get; set; }
+        public string? ChannelName { get; set; }
+        public string? ProgramTitle { get; set; }
+        public string? StartAt { get; set; }
+        public string? EndTime { get; set; }
+        public string? Action { get; set; }
         public bool Enabled { get; set; }
         public bool Completed { get; set; }
         public int? RecordDurationMin { get; set; }
@@ -1864,15 +1451,15 @@ if ('serviceWorker' in navigator) {
 
     public class WebRemoteRecording
     {
-        public string Id { get; set; } = "";
-        public string ChannelName { get; set; } = "";
-        public string ProgramTitle { get; set; } = "";
-        public string Type { get; set; } = "";
-        public string Status { get; set; } = "";
-        public string StatusLabel { get; set; } = "";
-        public string ScheduledStart { get; set; } = "";
-        public string ScheduledEnd { get; set; } = "";
-        public string SizeLabel { get; set; } = "";
+        public string? Id { get; set; }
+        public string? ChannelName { get; set; }
+        public string? ProgramTitle { get; set; }
+        public string? Type { get; set; }
+        public string? Status { get; set; }
+        public string? StatusLabel { get; set; }
+        public string? ScheduledStart { get; set; }
+        public string? ScheduledEnd { get; set; }
+        public string? SizeLabel { get; set; }
         public string? FilePath { get; set; }
     }
 }

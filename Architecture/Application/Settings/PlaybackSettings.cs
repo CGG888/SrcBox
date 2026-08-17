@@ -236,9 +236,6 @@ namespace LibmpvIptvClient
     {
         public bool Enabled { get; set; } = false;
         public int HttpPort { get; set; } = 8899;
-        public int HttpsPort { get; set; } = 0;  // 0 = disabled
-        public string? HttpsCertPath { get; set; }
-        public string? HttpsCertPassword { get; set; }
         public bool RequirePassword { get; set; } = false;
         public string Password { get; set; } = "";
         public bool ShowChannelList { get; set; } = true;

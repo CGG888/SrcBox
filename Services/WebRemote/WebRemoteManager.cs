@@ -64,13 +64,6 @@ namespace LibmpvIptvClient.Services.WebRemote
 
                 _server.Start(config.HttpPort, config.RequirePassword, config.Password);
                 Logger.Debug($"[WebRemote] Manager initialized on port {config.HttpPort}");
-
-                // Start HTTPS if configured
-                if (config.HttpsPort > 0 && !string.IsNullOrEmpty(config.HttpsCertPath))
-                {
-                    _server.StartHttps(config.HttpsPort, config.HttpsCertPath, config.HttpsCertPassword, config.RequirePassword, config.Password);
-                    Logger.Debug($"[WebRemote] HTTPS enabled on port {config.HttpsPort}");
-                }
             }
             catch (Exception ex)
             {
@@ -90,11 +83,14 @@ namespace LibmpvIptvClient.Services.WebRemote
         {
             if (_shell == null) return;
             var config = AppSettings.Current.WebRemote;
-            if (config.Enabled && !IsRunning)
+
+            // Always restart if enabled (settings may have changed)
+            if (config.Enabled)
             {
-                Initialize(_shell);
+                Stop(); // Stop existing server first
+                Initialize(_shell); // Reinitialize with new settings
             }
-            else if (!config.Enabled && IsRunning)
+            else if (IsRunning)
             {
                 Stop();
             }
