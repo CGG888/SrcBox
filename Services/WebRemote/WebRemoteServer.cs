@@ -938,7 +938,7 @@ const T = __T_JSON__;
 const FAV_GROUP = '__FAV_GROUP__';
 const FAV_STAR = '__FAV_STAR__';
 let ws; let currentChannelId = ''; let currentVolume = 70; let previousVolume = 70;
-let isMuted = false; let channelList = []; let statusInterval; let isDarkTheme = true; let isAuthenticated = false;
+let isMuted = false; let channelList = []; let isDarkTheme = true; let isAuthenticated = false;
 
 function applyStaticText() {
 document.getElementById('statusMode').textContent = T.status_stopped;
@@ -949,8 +949,8 @@ document.title = T.title;
 function connect() {
 const protocol = location.protocol === 'https:' ? 'wss:' : 'ws:';
 ws = new WebSocket(protocol + '//' + location.host);
-ws.onopen = function() { loadTheme(); applyStaticText(); loadStatus(); loadChannels(); statusInterval = setInterval(loadStatus, 5000); };
-ws.onclose = function() { clearInterval(statusInterval); isAuthenticated = false; setTimeout(connect, 3000); };
+ws.onopen = function() { loadTheme(); applyStaticText(); loadStatus(); loadChannels(); };
+ws.onclose = function() { isAuthenticated = false; setTimeout(connect, 3000); };
 ws.onerror = function() { document.getElementById('channelName').textContent = T.connecting; };
 ws.onmessage = function(e) {
 try {
