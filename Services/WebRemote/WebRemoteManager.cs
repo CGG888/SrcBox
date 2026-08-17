@@ -235,7 +235,7 @@ namespace LibmpvIptvClient.Services.WebRemote
                 // Try to get current program from EPG service directly (may not be synced yet after WebRemote playback start)
                 if (_shell.EpgService != null)
                 {
-                    var liveProg = _shell.EpgService.GetCurrentProgram(_shell.CurrentChannel.TvgId, _shell.CurrentChannel.Name);
+                    var liveProg = _shell.EpgService.GetCurrentProgram(_shell.CurrentChannel.TvgId, _shell.CurrentChannel.TvgName, _shell.CurrentChannel.Name);
                     if (liveProg != null && !string.IsNullOrWhiteSpace(liveProg.Title))
                     {
                         status.CurrentProgram = new WebRemoteProgram

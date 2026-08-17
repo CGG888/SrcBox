@@ -43,7 +43,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             if (_epgService == null) return;
             _shell.EpgActions.SyncChannelCurrentProgramTitles(
                 _shell.Channels,
-                ch => _epgService.GetCurrentProgram(ch.TvgId, ch.Name));
+                ch => _epgService.GetCurrentProgram(ch.TvgId, ch.TvgName, ch.Name));
 
             if (_window.EpgPanel.Visibility == Visibility.Visible && _shell.CurrentChannel != null)
             {

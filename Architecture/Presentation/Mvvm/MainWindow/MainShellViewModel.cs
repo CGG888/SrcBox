@@ -889,7 +889,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                             await _epgService.LoadEpgAsync(epgUrl);
                             System.Windows.Application.Current.Dispatcher.Invoke(() =>
                             {
-                                EpgActions.SyncChannelCurrentProgramTitles(loadedChannels, ch => _epgService.GetCurrentProgram(ch.TvgId, ch.Name));
+                                EpgActions.SyncChannelCurrentProgramTitles(loadedChannels, ch => _epgService.GetCurrentProgram(ch.TvgId, ch.TvgName, ch.Name));
                             });
                             System.Windows.Application.Current.Dispatcher.Invoke(async () =>
                             {
