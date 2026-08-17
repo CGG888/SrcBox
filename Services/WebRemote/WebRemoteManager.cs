@@ -5,6 +5,7 @@ using System.Windows;
 using LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow;
 using LibmpvIptvClient.Diagnostics;
 using LibmpvIptvClient.Models;
+using LibmpvIptvClient.Services;
 
 namespace LibmpvIptvClient.Services.WebRemote
 {
@@ -190,11 +191,13 @@ namespace LibmpvIptvClient.Services.WebRemote
 
             if (_shell.CurrentChannel != null)
             {
+                var cachedLogo = LogoCacheService.Instance.GetCachedPath(_shell.CurrentChannel.Logo ?? "");
+                var logoUrl = !string.IsNullOrEmpty(cachedLogo) ? ("file:///" + cachedLogo.Replace("\\", "/")) : (_shell.CurrentChannel.Logo ?? "");
                 status.Channel = new WebRemoteChannel
                 {
                     Id = _shell.CurrentChannel.Id ?? _shell.CurrentChannel.TvgId ?? "",
                     Name = _shell.CurrentChannel.Name ?? "",
-                    Logo = _shell.CurrentChannel.Logo
+                    Logo = logoUrl
                 };
             }
 
@@ -277,11 +280,18 @@ namespace LibmpvIptvClient.Services.WebRemote
                     Name = group.Name ?? "",
                     Channels = group.Items?.Select(c => {
                         var prog = _shell.EpgService?.GetPrograms(c.Id ?? c.TvgId ?? "", c.TvgName, c.Name)?.FirstOrDefault(p => p.Start <= DateTime.Now && p.End > DateTime.Now);
+                        // Use cached logo path if available
+                        var cachedLogo = LogoCacheService.Instance.GetCachedPath(c.Logo ?? "");
+                        var logoUrl = !string.IsNullOrEmpty(cachedLogo) ? ("file:///" + cachedLogo.Replace("\\", "/")) : (c.Logo ?? "");
+                        if (group.Name == "央视频" || c.Name.Contains("央视"))
+                        {
+                            Logger.Debug($"[WebRemote] Logo for {c.Name}: original={c.Logo}, cached={cachedLogo}, url={logoUrl}");
+                        }
                         return new WebRemoteChannel
                         {
                             Id = c.Id ?? c.TvgId ?? "",
                             Name = c.Name ?? "",
-                            Logo = c.Logo,
+                            Logo = logoUrl,
                             CurrentProgram = prog?.Title,
                             CurrentTime = prog != null ? prog.Start.ToString("HH:mm") + "-" + prog.End.ToString("HH:mm") : ""
                         };
@@ -299,11 +309,13 @@ namespace LibmpvIptvClient.Services.WebRemote
                     Name = GetLocalizedFavGroupName(),
                     Channels = favorites.Select(c => {
                         var prog = _shell.EpgService?.GetPrograms(c.Id ?? c.TvgId ?? "", c.TvgName, c.Name)?.FirstOrDefault(p => p.Start <= DateTime.Now && p.End > DateTime.Now);
+                        var cachedLogo = LogoCacheService.Instance.GetCachedPath(c.Logo ?? "");
+                        var logoUrl = !string.IsNullOrEmpty(cachedLogo) ? ("file:///" + cachedLogo.Replace("\\", "/")) : (c.Logo ?? "");
                         return new WebRemoteChannel
                         {
                             Id = c.Id ?? c.TvgId ?? "",
                             Name = c.Name ?? "",
-                            Logo = c.Logo,
+                            Logo = logoUrl,
                             CurrentProgram = prog?.Title,
                             CurrentTime = prog != null ? prog.Start.ToString("HH:mm") + "-" + prog.End.ToString("HH:mm") : ""
                         };
