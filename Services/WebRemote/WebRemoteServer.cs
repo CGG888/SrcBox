@@ -777,7 +777,7 @@ body.light-theme .source-item .sactive { color: #1a6b3a; }
 .channel-item { background: #1a1a1a; border-radius: 10px; padding: 10px 12px; text-align: left; cursor: pointer; transition: all 0.2s; border: 2px solid transparent; display: flex; align-items: center; gap: 10px; }
 .channel-item:hover { background: #2a2a2a; }
 .channel-item.active { background: rgba(46,213,115,0.2); border-color: #2ed573; }
-.channel-item .logo { font-size: 26px; flex-shrink: 0; height: 56px; display: flex; align-items: center; justify-content: center; }
+.channel-item .logo { font-size: 26px; flex-shrink: 0; height: 56px; width: 80px; display: flex; align-items: center; justify-content: center; }
 .channel-item .logo img { height: 56px; width: auto; max-width: 80px; object-fit: contain; }
 .channel-item .info { flex: 1; min-width: 0; }
 .channel-item .name { font-size: 13px; color: #eee; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -1298,7 +1298,7 @@ var div = document.createElement('div'); div.className = 'channel-item'; div.dat
 var logoContainer = document.createElement('div'); logoContainer.className = 'logo';
 if (c.logo && c.logo.length > 0) {
 var imgStyle = 'height:56px;width:auto;max-width:80px;object-fit:contain';
-var fallbackIcon = '<span style=font-size:22px;display:none;align-items:center;justify-content:center;width:48px;height:56px>' + (isFavorite ? FAV_STAR : 'TV') + '</span>';
+var fallbackIcon = '<span style=font-size:22px;display:none;align-items:center;justify-content:center;width:80px;height:56px>' + (isFavorite ? FAV_STAR : 'TV') + '</span>';
 if (c.logo.indexOf('http') === 0) {
 // External HTTP URL - use directly
 var img = document.createElement('img'); img.src = c.logo; img.style = imgStyle; img.crossOrigin = 'anonymous';
@@ -1313,7 +1313,7 @@ img.onerror = function() { img.style.display = 'none'; img.nextSibling.style.dis
 logoContainer.innerHTML = fallbackIcon; logoContainer.insertBefore(img, logoContainer.firstChild);
 }
 } else {
-logoContainer.innerHTML = '<span style=font-size:22px;display:flex;align-items:center;justify-content:center;width:48px;height:56px>' + (isFavorite ? FAV_STAR : 'TV') + '</span>';
+logoContainer.innerHTML = '<span style=font-size:22px;display:flex;align-items:center;justify-content:center;width:80px;height:56px>' + (isFavorite ? FAV_STAR : 'TV') + '</span>';
 }
 var nameHtml = '<div class=name>' + (c.name || '') + '</div>';
 var progHtml = '<div class=program>' + (c.currentProgram || '') + '</div>';
