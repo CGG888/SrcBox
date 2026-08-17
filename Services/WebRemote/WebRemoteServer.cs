@@ -777,8 +777,8 @@ body.light-theme .source-item .sactive { color: #1a6b3a; }
 .channel-item { background: #1a1a1a; border-radius: 10px; padding: 10px 12px; text-align: left; cursor: pointer; transition: all 0.2s; border: 2px solid transparent; display: flex; align-items: center; gap: 10px; }
 .channel-item:hover { background: #2a2a2a; }
 .channel-item.active { background: rgba(46,213,115,0.2); border-color: #2ed573; }
-.channel-item .logo { font-size: 26px; flex-shrink: 0; width: 48px; height: 48px; display: flex; align-items: center; justify-content: center; }
-.channel-item .logo img { width: 48px; height: 48px; object-fit: contain; }
+.channel-item .logo { font-size: 26px; flex-shrink: 0; height: 56px; display: flex; align-items: center; justify-content: center; }
+.channel-item .logo img { height: 56px; width: auto; max-width: 80px; object-fit: contain; }
 .channel-item .info { flex: 1; min-width: 0; }
 .channel-item .name { font-size: 13px; color: #eee; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .channel-item .program { font-size: 11px; color: #7bed9f; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
@@ -1299,16 +1299,16 @@ var logoHtml;
 if (c.logo && c.logo.length > 0) {
 if (c.logo.indexOf('http') === 0) {
 // External HTTP URL - use directly
-logoHtml = '<img src=' + c.logo + ' style=width:48px;height:48px;object-fit:contain crossorigin=anonymous>';
+logoHtml = '<img src=' + c.logo + ' style=height:56px;width:auto;max-width:80px;object-fit:contain crossorigin=anonymous>';
 } else if (c.logo.indexOf('file:///') === 0 || c.logo.indexOf('\\\\') === 0 || c.logo.indexOf('D:') === 0 || c.logo.indexOf('C:') === 0) {
 // Local file path - convert to /logo/ endpoint
 var localPath = c.logo.replace('file:///', '').replace(/\//g, '\\\\');
 var encodedPath = encodeURIComponent(localPath).replace(/%5C/g, '/');
-logoHtml = '<img src=/logo/' + encodedPath + ' style=width:48px;height:48px;object-fit:contain>';
+logoHtml = '<img src=/logo/' + encodedPath + ' style=height:56px;width:auto;max-width:80px;object-fit:contain>';
 } else {
 // Assume it's a local path
 var encodedPath = encodeURIComponent(c.logo).replace(/%5C/g, '/');
-logoHtml = '<img src=/logo/' + encodedPath + ' style=width:48px;height:48px;object-fit:contain>';
+logoHtml = '<img src=/logo/' + encodedPath + ' style=height:56px;width:auto;max-width:80px;object-fit:contain>';
 }
 } else {
 logoHtml = '<span style=font-size:22px>' + (isFavorite ? FAV_STAR : 'TV') + '</span>';
