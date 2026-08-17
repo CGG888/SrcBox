@@ -182,6 +182,13 @@ namespace LibmpvIptvClient.Services.WebRemote
                     return;
                 }
 
+                // PWA: favicon.ico
+                if (firstLine.TrimStart().StartsWith("GET /favicon.ico"))
+                {
+                    await ServeFaviconAsync(tcpClient, stream, ct);
+                    return;
+                }
+
                 // PWA: app icons
                 if (firstLine.TrimStart().StartsWith("GET /icons/"))
                 {
@@ -378,16 +385,14 @@ self.addEventListener('fetch', function(event) {
                     return;
                 }
 
-                // Read project logo.png directly - browser will scale as needed
+                // Read project logo.png - resolve path from exe directory
                 var exeDir = AppDomain.CurrentDomain.BaseDirectory;
-                var iconPath = Path.Combine(exeDir, "docs", "public", "logo.png");
+                // From bin/Debug/net8.0-windows/ go up to project root
+                var projectRoot = Path.GetFullPath(Path.Combine(exeDir, "..", "..", "..", ".."));
+                var iconPath = Path.Combine(projectRoot, "docs", "public", "logo.png");
                 if (!File.Exists(iconPath))
                 {
-                    // Fallback to root if running from different location
-                    iconPath = Path.Combine(exeDir, "..", "..", "..", "..", "docs", "public", "logo.png");
-                }
-                if (!File.Exists(iconPath))
-                {
+                    Logger.Warn($"[WebRemote] Icon not found: {iconPath}");
                     await SendErrorAsync(stream, "404 Not Found", ct);
                     return;
                 }
@@ -399,6 +404,30 @@ self.addEventListener('fetch', function(event) {
                 Logger.Debug($"[WebRemote] Icon served: {iconPath} ({pngData.Length} bytes)");
             }
             catch (Exception ex) { Logger.Error($"[WebRemote] ServeIcon error: {ex.Message}"); }
+            finally { tcpClient.Close(); }
+        }
+
+        private async Task ServeFaviconAsync(TcpClient tcpClient, NetworkStream stream, CancellationToken ct)
+        {
+            try
+            {
+                var exeDir = AppDomain.CurrentDomain.BaseDirectory;
+                var projectRoot = Path.GetFullPath(Path.Combine(exeDir, "..", "..", "..", ".."));
+                var iconPath = Path.Combine(projectRoot, "srcbox.ico");
+                if (!File.Exists(iconPath))
+                {
+                    Logger.Warn($"[WebRemote] Favicon not found: {iconPath}");
+                    await SendErrorAsync(stream, "404 Not Found", ct);
+                    return;
+                }
+
+                var icoData = await File.ReadAllBytesAsync(iconPath, ct);
+                var header = $"HTTP/1.1 200 OK\r\nContent-Type: image/x-icon\r\nContent-Length: {icoData.Length}\r\nCache-Control: max-age=86400\r\nConnection: close\r\n\r\n";
+                await stream.WriteAsync(Encoding.UTF8.GetBytes(header), ct);
+                await stream.WriteAsync(icoData, ct);
+                Logger.Debug($"[WebRemote] Favicon served: {iconPath} ({icoData.Length} bytes)");
+            }
+            catch (Exception ex) { Logger.Error($"[WebRemote] ServeFavicon error: {ex.Message}"); }
             finally { tcpClient.Close(); }
         }
 
@@ -850,6 +879,7 @@ self.addEventListener('fetch', function(event) {
 <meta name=""apple-mobile-web-app-title"" content=""SrcBox"">
 <link rel=""apple-touch-icon"" href=""/icons/icon-192.png"">
 <link rel=""apple-touch-icon-precomposed"" href=""/icons/icon-192.png"">
+<link rel=""icon"" type=""image/x-icon"" href=""/favicon.ico"">
 <title>__TITLE__</title>
 <style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
