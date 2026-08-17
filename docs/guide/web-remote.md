@@ -39,6 +39,10 @@ http://localhost:8899
 http://192.168.1.100:8899
 ```
 
+## 界面截图
+
+![Web 远程控制](../screenshots/web.jpeg)
+
 ## 界面说明
 
 ### 状态显示区

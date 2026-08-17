@@ -39,6 +39,10 @@ For local access, use `localhost`. For LAN remote access, replace `localhost` wi
 http://192.168.1.100:8899
 ```
 
+## Screenshot
+
+![Web Remote Control](../screenshots/web.jpeg)
+
 ## Interface Description
 
 ### Status Display Area
