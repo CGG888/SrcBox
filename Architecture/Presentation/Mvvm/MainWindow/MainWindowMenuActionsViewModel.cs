@@ -260,6 +260,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         {
             _shell.SourceLoader.UpdateLastSource("", src);
             RequestLoadChannels?.Invoke(src.Url);
+            RequestRefreshM3uList?.Invoke();
         }
 
         public void ShowAbout()

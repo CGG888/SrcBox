@@ -274,6 +274,7 @@ namespace LibmpvIptvClient
 
         void CbM3uList_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
+            if (_isRefreshingM3uList) return;
             if (sender is System.Windows.Controls.ComboBox cb && cb.SelectedItem is M3uSource src)
             {
                 if (cb.Name == nameof(CbM3uList))
