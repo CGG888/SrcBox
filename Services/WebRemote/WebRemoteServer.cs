@@ -805,6 +805,15 @@ body.light-theme .epg-date-display { color: #1a6b3a; }
 .modal-box .mbtns .mcancel { background: #333; color: #fff; }
 .modal-box .mbtns .mok { background: #2ed573; color: #fff; }
 .modal-box .rem-info { font-size: 13px; color: #eee; margin-bottom: 8px; }
+/* Light theme for modals */
+body.light-theme .modal-overlay { background: rgba(0,0,0,0.5); }
+body.light-theme .modal-box { background: #f0f0f0; }
+body.light-theme .modal-box h3 { color: #222; }
+body.light-theme .modal-box label { color: #555; }
+body.light-theme .modal-box input, body.light-theme .modal-box select { background: #fff; color: #222; }
+body.light-theme .modal-box .mcancel { background: rgba(0,0,0,0.12); color: #000; }
+body.light-theme .modal-box .mok { background: #2ed573; color: #fff; }
+body.light-theme .modal-box .rem-info { color: #222; }
 </style>
 </head>
 <body>
@@ -1040,6 +1049,8 @@ function refreshData() { if (!isAuthenticated) return; loadStatus(); loadChannel
 // Source Management
 function openSourceModal() { loadSources(); document.getElementById('sourceModal').classList.add('show'); }
 function closeSourceModal() { document.getElementById('sourceModal').classList.remove('show'); }
+function loadSources() { send('getSources'); }
+function renderSources(data) {
   var list = document.getElementById('sourceList');
   if (!list) return;
   list.innerHTML = '';
