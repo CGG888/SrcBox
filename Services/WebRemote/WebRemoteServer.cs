@@ -3,8 +3,10 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.WebSockets;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -56,6 +58,10 @@ namespace LibmpvIptvClient.Services.WebRemote
         public Action<string>? StopRecordingCallback { get; set; }
         public Action<string>? DeleteRecordingCallback { get; set; }
 
+        private TcpListener? _httpsListener;
+        private X509Certificate2? _sslCert;
+        private bool _isHttpsMode;
+
         public void Start(int port, bool requirePassword = false, string password = "")
         {
             if (IsRunning) return;
@@ -65,6 +71,7 @@ namespace LibmpvIptvClient.Services.WebRemote
             _password = password ?? "";
             _authenticatedTokens.Clear();
             _cts = new CancellationTokenSource();
+            _isHttpsMode = false;
 
             try
             {
@@ -81,6 +88,188 @@ namespace LibmpvIptvClient.Services.WebRemote
             }
         }
 
+        public void StartHttps(int port, string certPath, string? certPassword, bool requirePassword = false, string password = "")
+        {
+            if (IsRunning) return;
+
+            Port = port;
+            _requirePassword = requirePassword;
+            _password = password ?? "";
+            _authenticatedTokens.Clear();
+            _cts = new CancellationTokenSource();
+            _isHttpsMode = true;
+
+            try
+            {
+                _sslCert = string.IsNullOrEmpty(certPassword)
+                    ? new X509Certificate2(certPath)
+                    : new X509Certificate2(certPath, certPassword);
+
+                _httpsListener = new TcpListener(IPAddress.Any, port);
+                _httpsListener.Start();
+                IsRunning = true;
+                _ = Task.Run(() => AcceptHttpsClientsAsync(_cts.Token));
+                Logger.Debug($"[WebRemote] HTTPS Server started on port {port}");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"[WebRemote] Failed to start HTTPS server: {ex.Message}");
+                Stop();
+            }
+        }
+
+        private async Task AcceptHttpsClientsAsync(CancellationToken ct)
+        {
+            while (!ct.IsCancellationRequested && _httpsListener != null)
+            {
+                try
+                {
+                    var client = await _httpsListener.AcceptTcpClientAsync(ct);
+                    _ = Task.Run(() => HandleHttpsClientAsync(client, ct), ct);
+                }
+                catch (OperationCanceledException) { break; }
+                catch (Exception ex) { Logger.Error($"[WebRemote] Accept HTTPS error: {ex.Message}"); }
+            }
+        }
+
+        private async Task HandleHttpsClientAsync(TcpClient tcpClient, CancellationToken ct)
+        {
+            using (tcpClient)
+            {
+                try
+                {
+                    var stream = tcpClient.GetStream();
+                    stream.ReadTimeout = 5000;
+
+                    using var sslStream = new SslStream(stream, false, (sender, certificate, chain, errors) => true);
+                    await sslStream.AuthenticateAsServerAsync(_sslCert!, false, System.Security.Authentication.SslProtocols.Tls12, true);
+
+                    var sb = new StringBuilder();
+                    var buf = new byte[8192];
+                    int read;
+
+                    while ((read = await sslStream.ReadAsync(buf, 0, buf.Length)) > 0)
+                    {
+                        sb.Append(Encoding.UTF8.GetString(buf, 0, read));
+                        if (sb.ToString().Contains("\r\n\r\n")) break;
+                    }
+
+                    var request = sb.ToString();
+                    bool isWebSocket = request.Contains("Upgrade:") && request.Contains("websocket");
+
+                    if (isWebSocket)
+                    {
+                        await HandleWebSocketOverSslAsync(sslStream, request, ct);
+                    }
+                    else
+                    {
+                        await ServeHttpsPageAsync(sslStream, request, ct);
+                    }
+                }
+                catch (Exception ex) { Logger.Error($"[WebRemote] HandleHttpsClient error: {ex.Message}"); }
+            }
+        }
+
+        private async Task ServeHttpsPageAsync(SslStream sslStream, string request, CancellationToken ct)
+        {
+            try
+            {
+                var lines = request.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
+                var firstLine = lines.Length > 0 ? lines[0] : "";
+
+                if (firstLine.StartsWith("GET /logo/"))
+                {
+                    await ServeLogoOverSslAsync(sslStream, firstLine, ct);
+                    return;
+                }
+                if (firstLine.TrimStart().StartsWith("GET /manifest.json"))
+                {
+                    await ServeManifestOverSslAsync(sslStream, ct);
+                    return;
+                }
+                if (firstLine.TrimStart().StartsWith("GET /sw.js"))
+                {
+                    await ServeServiceWorkerOverSslAsync(sslStream, ct);
+                    return;
+                }
+                if (firstLine.TrimStart().StartsWith("GET /icons/"))
+                {
+                    await ServeIconOverSslAsync(sslStream, firstLine, ct);
+                    return;
+                }
+                if (firstLine.TrimStart().StartsWith("GET /favicon.ico"))
+                {
+                    await ServeFaviconOverSslAsync(sslStream, ct);
+                    return;
+                }
+
+                var lang = ParseAcceptLanguage(request);
+                var html = GetRemoteHtml(lang);
+                var header = $"HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: {Encoding.UTF8.GetByteCount(html)}\r\nConnection: close\r\n\r\n";
+                await sslStream.WriteAsync(Encoding.UTF8.GetBytes(header));
+                await sslStream.WriteAsync(Encoding.UTF8.GetBytes(html));
+            }
+            catch (Exception ex) { Logger.Error($"[WebRemote] ServeHttpsPage error: {ex.Message}"); }
+        }
+
+        private async Task HandleWebSocketOverSslAsync(SslStream sslStream, string request, CancellationToken ct)
+        {
+            try
+            {
+                var key = "";
+                foreach (var line in request.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None))
+                {
+                    if (line.StartsWith("Sec-WebSocket-Key:"))
+                    {
+                        key = line.Substring(line.IndexOf(":") + 1).Trim();
+                        break;
+                    }
+                }
+
+                if (string.IsNullOrEmpty(key))
+                {
+                    return;
+                }
+
+                var acceptKey = Convert.ToBase64String(System.Security.Cryptography.SHA1.Create()
+                    .ComputeHash(Encoding.UTF8.GetBytes(key + "258EAFA5-E914-47DA-95CA-C5AB0DC85B11")));
+                var handshake = $"HTTP/1.1 101 Switching Protocols\r\nUpgrade: websocket\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: {acceptKey}\r\nSec-WebSocket-Version: 13\r\n\r\n";
+                await sslStream.WriteAsync(Encoding.UTF8.GetBytes(handshake));
+
+                var ws = WebSocket.CreateFromStream(sslStream, true, null, TimeSpan.FromMinutes(30));
+
+                lock (_clientsLock) { _clients.Add(ws); }
+
+                var receiveBuf = new byte[8192];
+                while (ws.State == WebSocketState.Open && !ct.IsCancellationRequested)
+                {
+                    try
+                    {
+                        var result = await ws.ReceiveAsync(new ArraySegment<byte>(receiveBuf), ct);
+                        if (result.MessageType == WebSocketMessageType.Close)
+                        {
+                            await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "", ct);
+                            break;
+                        }
+                        if (result.MessageType == WebSocketMessageType.Text)
+                        {
+                            var msg = Encoding.UTF8.GetString(receiveBuf, 0, result.Count);
+                            HandleMessage(ws, msg, ct);
+                        }
+                    }
+                    catch (WebSocketException) { break; }
+                    catch (OperationCanceledException) { break; }
+                }
+            }
+            catch (Exception ex) { Logger.Error($"[WebRemote] WebSocket over SSL error: {ex.Message}"); }
+        }
+
+        private async Task ServeLogoOverSslAsync(SslStream sslStream, string request, CancellationToken ct) { await ServeLogoAsync(null, sslStream, request, ct); }
+        private async Task ServeManifestOverSslAsync(SslStream sslStream, CancellationToken ct) { await ServeManifestAsync(null, sslStream, ct); }
+        private async Task ServeServiceWorkerOverSslAsync(SslStream sslStream, CancellationToken ct) { await ServeServiceWorkerAsync(null, sslStream, ct); }
+        private async Task ServeIconOverSslAsync(SslStream sslStream, string request, CancellationToken ct) { await ServeIconAsync(null, sslStream, request, ct); }
+        private async Task ServeFaviconOverSslAsync(SslStream sslStream, CancellationToken ct) { await ServeFaviconAsync(null, sslStream, ct); }
+
         public void Stop()
         {
             if (!IsRunning) return;
@@ -94,9 +283,14 @@ namespace LibmpvIptvClient.Services.WebRemote
                 }
                 _clients.Clear();
             }
+            _httpsListener?.Stop();
+            _httpsListener = null;
+            _sslCert?.Dispose();
+            _sslCert = null;
             _tcpListener?.Stop();
             _tcpListener = null;
             IsRunning = false;
+            _isHttpsMode = false;
             Logger.Debug("[WebRemote] Server stopped");
         }
 
@@ -213,7 +407,7 @@ namespace LibmpvIptvClient.Services.WebRemote
             finally { tcpClient.Close(); }
         }
 
-        private async Task ServeLogoAsync(TcpClient tcpClient, NetworkStream stream, string request, CancellationToken ct)
+        private async Task ServeLogoAsync(TcpClient? tcpClient, Stream stream, string request, CancellationToken ct)
         {
             try
             {
@@ -257,10 +451,10 @@ namespace LibmpvIptvClient.Services.WebRemote
             {
                 Logger.Error($"[WebRemote] ServeLogo error: {ex.Message}");
             }
-            finally { tcpClient.Close(); }
+            finally { if (tcpClient != null) tcpClient.Close(); }
         }
 
-        private async Task SendErrorAsync(NetworkStream stream, string message, CancellationToken ct)
+        private async Task SendErrorAsync(Stream stream, string message, CancellationToken ct)
         {
             var body = $"<html><body><h1>{message}</h1></body></html>";
             var header = $"HTTP/1.1 {message}\r\nContent-Type: text/html\r\nContent-Length: {Encoding.UTF8.GetByteCount(body)}\r\nConnection: close\r\n\r\n";
@@ -270,7 +464,7 @@ namespace LibmpvIptvClient.Services.WebRemote
             await stream.WriteAsync(bodyBuf, ct);
         }
 
-        private async Task ServeManifestAsync(TcpClient tcpClient, NetworkStream stream, CancellationToken ct)
+        private async Task ServeManifestAsync(TcpClient? tcpClient, Stream stream, CancellationToken ct)
         {
             try
             {
@@ -298,7 +492,7 @@ namespace LibmpvIptvClient.Services.WebRemote
             finally { tcpClient.Close(); }
         }
 
-        private async Task ServeServiceWorkerAsync(TcpClient tcpClient, NetworkStream stream, CancellationToken ct)
+        private async Task ServeServiceWorkerAsync(TcpClient? tcpClient, Stream stream, CancellationToken ct)
         {
             try
             {
@@ -373,7 +567,7 @@ self.addEventListener('fetch', function(event) {
             finally { tcpClient.Close(); }
         }
 
-        private async Task ServeIconAsync(TcpClient tcpClient, NetworkStream stream, string request, CancellationToken ct)
+        private async Task ServeIconAsync(TcpClient? tcpClient, Stream stream, string request, CancellationToken ct)
         {
             try
             {
@@ -407,7 +601,7 @@ self.addEventListener('fetch', function(event) {
             finally { tcpClient.Close(); }
         }
 
-        private async Task ServeFaviconAsync(TcpClient tcpClient, NetworkStream stream, CancellationToken ct)
+        private async Task ServeFaviconAsync(TcpClient? tcpClient, Stream stream, CancellationToken ct)
         {
             try
             {
