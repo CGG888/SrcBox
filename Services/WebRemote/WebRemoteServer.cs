@@ -1563,7 +1563,7 @@ function updateChannelActive() {
 var items = document.querySelectorAll('.channel-item');
 for (var i = 0; i < items.length; i++) {
 var el = items[i];
-if (el.dataset.id === currentChannelId) el.classList.add('active'); else el.classList.remove('active');
+if (el.dataset.id === currentChannelId) { el.classList.add('active'); el.scrollIntoView({ block: 'center' }); } else el.classList.remove('active');
 }
 }
 async function play() { send('play'); await loadStatus(); }
