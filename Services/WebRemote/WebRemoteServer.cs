@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.IO.Compression;
 using System.Linq;
 using System.Net;
 using System.Net.Sockets;
@@ -378,112 +377,29 @@ self.addEventListener('fetch', function(event) {
                     await SendErrorAsync(stream, "400 Bad Request", ct);
                     return;
                 }
-                var path = parts[1];
-                int size = 192;
-                if (path.Contains("512")) size = 512;
 
-                // Generate a simple PNG icon (SrcBox logo placeholder - gradient circle with "SB")
-                var pngData = GenerateIconPng(size);
+                // Read project logo.png directly - browser will scale as needed
+                var exeDir = AppDomain.CurrentDomain.BaseDirectory;
+                var iconPath = Path.Combine(exeDir, "docs", "public", "logo.png");
+                if (!File.Exists(iconPath))
+                {
+                    // Fallback to root if running from different location
+                    iconPath = Path.Combine(exeDir, "..", "..", "..", "..", "docs", "public", "logo.png");
+                }
+                if (!File.Exists(iconPath))
+                {
+                    await SendErrorAsync(stream, "404 Not Found", ct);
+                    return;
+                }
+
+                var pngData = await File.ReadAllBytesAsync(iconPath, ct);
                 var header = $"HTTP/1.1 200 OK\r\nContent-Type: image/png\r\nContent-Length: {pngData.Length}\r\nCache-Control: max-age=86400\r\nConnection: close\r\n\r\n";
                 await stream.WriteAsync(Encoding.UTF8.GetBytes(header), ct);
                 await stream.WriteAsync(pngData, ct);
+                Logger.Debug($"[WebRemote] Icon served: {iconPath} ({pngData.Length} bytes)");
             }
             catch (Exception ex) { Logger.Error($"[WebRemote] ServeIcon error: {ex.Message}"); }
             finally { tcpClient.Close(); }
-        }
-
-        private static byte[] GenerateIconPng(int size)
-        {
-            // Create a simple PNG: solid color with rounded rect effect using raw PNG encoding
-            // For a production app, you would embed actual icon files
-            using var ms = new System.IO.MemoryStream();
-            // PNG signature
-            ms.WriteByte(0x89); ms.WriteByte(0x50); ms.WriteByte(0x4E); ms.WriteByte(0x47);
-            ms.WriteByte(0x0D); ms.WriteByte(0x0A); ms.WriteByte(0x1A); ms.WriteByte(0x0A);
-
-            // IHDR chunk
-            var ihdr = new byte[] {
-                (byte)(size >> 24), (byte)(size >> 16), (byte)(size >> 8), (byte)size, // width
-                (byte)(size >> 24), (byte)(size >> 16), (byte)(size >> 8), (byte)size, // height
-                8, // bit depth
-                2, // color type (RGB)
-                0, // compression
-                0, // filter
-                0  // interlace
-            };
-            WritePngChunk(ms, "IHDR", ihdr);
-
-            // IDAT chunk - uncompressed pixel data with zlib wrapper
-            var rawData = new byte[size * (size * 3 + 1)]; // +1 for filter byte per row
-            for (int y = 0; y < size; y++)
-            {
-                rawData[y * (size * 3 + 1)] = 0; // filter byte (none)
-                for (int x = 0; x < size; x++)
-                {
-                    int idx = y * (size * 3 + 1) + 1 + x * 3;
-                    // Gradient background: dark blue to purple
-                    rawData[idx] = (byte)(15 + (x * 20 + y * 15) % 40);     // R
-                    rawData[idx + 1] = (byte)(12 + (x * 15 + y * 25) % 40); // G
-                    rawData[idx + 2] = (byte)(41 + (x * 25 + y * 20) % 40); // B
-                }
-            }
-
-            using var deflateStream = new System.IO.MemoryStream();
-            using (var ds = new System.IO.Compression.DeflateStream(deflateStream, System.IO.Compression.CompressionMode.Compress))
-            {
-                ds.Write(rawData, 0, rawData.Length);
-            }
-            var compressed = deflateStream.ToArray();
-
-            // Build zlib wrapper (CMF + FLG)
-            var zlibData = new byte[compressed.Length + 2];
-            zlibData[0] = 0x78; // CMF
-            zlibData[1] = 0x9C; // FLG (default compression)
-            Array.Copy(compressed, 0, zlibData, 2, compressed.Length);
-            WritePngChunk(ms, "IDAT", zlibData);
-
-            // IEND chunk
-            WritePngChunk(ms, "IEND", Array.Empty<byte>());
-
-            return ms.ToArray();
-        }
-
-        private static void WritePngChunk(System.IO.MemoryStream ms, string type, byte[] data)
-        {
-            var chunk = new byte[data.Length + 12];
-            // Length
-            var len = data.Length;
-            chunk[0] = (byte)(len >> 24);
-            chunk[1] = (byte)(len >> 16);
-            chunk[2] = (byte)(len >> 8);
-            chunk[3] = (byte)len;
-            // Type
-            var typeBytes = Encoding.ASCII.GetBytes(type);
-            Array.Copy(typeBytes, 0, chunk, 4, 4);
-            // Data
-            Array.Copy(data, 0, chunk, 8, data.Length);
-            // CRC
-            var crcData = new byte[4 + data.Length];
-            Array.Copy(typeBytes, 0, crcData, 0, 4);
-            Array.Copy(data, 0, crcData, 4, data.Length);
-            var crc = Crc32(crcData);
-            chunk[8 + data.Length] = (byte)(crc >> 24);
-            chunk[9 + data.Length] = (byte)(crc >> 16);
-            chunk[10 + data.Length] = (byte)(crc >> 8);
-            chunk[11 + data.Length] = (byte)crc;
-            ms.Write(chunk, 0, chunk.Length);
-        }
-
-        private static uint Crc32(byte[] data)
-        {
-            uint crc = 0xFFFFFFFF;
-            foreach (var b in data)
-            {
-                crc ^= b;
-                for (int i = 0; i < 8; i++)
-                    crc = (crc >> 1) ^ (0xEDB88320 * (crc & 1));
-            }
-            return ~crc;
         }
 
         private async Task HandleWebSocketAsync(TcpClient tcpClient, NetworkStream stream, string request, CancellationToken ct)
