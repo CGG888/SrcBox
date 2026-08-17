@@ -707,16 +707,16 @@ body.light-theme .source-item .sactive { color: #1a6b3a; }
 .volume-value { min-width: 40px; text-align: right; font-size: 12px; color: #7bed9f; }
 .channel-section { background: #000; border-radius: 12px; padding: 12px; margin-bottom: 12px; }
 .section-title { font-size: 12px; color: #888; margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
-.channel-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; max-height: 250px; overflow-y: auto; }
-.channel-item { background: #1a1a1a; border-radius: 10px; padding: 8px 10px; text-align: left; cursor: pointer; transition: all 0.2s; border: 2px solid transparent; display: flex; align-items: center; gap: 8px; }
+.channel-grid { display: grid; grid-template-columns: repeat(1, 1fr); gap: 6px; max-height: 320px; overflow-y: auto; }
+.channel-item { background: #1a1a1a; border-radius: 10px; padding: 10px 12px; text-align: left; cursor: pointer; transition: all 0.2s; border: 2px solid transparent; display: flex; align-items: center; gap: 10px; }
 .channel-item:hover { background: #2a2a2a; }
 .channel-item.active { background: rgba(46,213,115,0.2); border-color: #2ed573; }
-.channel-item .logo { font-size: 22px; flex-shrink: 0; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
-.channel-item .logo img { width: 28px; height: 28px; object-fit: contain; }
+.channel-item .logo { font-size: 22px; flex-shrink: 0; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
+.channel-item .logo img { width: 32px; height: 32px; object-fit: contain; }
 .channel-item .info { flex: 1; min-width: 0; }
-.channel-item .name { font-size: 11px; color: #eee; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.channel-item .program { font-size: 9px; color: #7bed9f; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 1px; }
-.channel-item .time { font-size: 9px; color: #888; margin-left: auto; flex-shrink: 0; }
+.channel-item .name { font-size: 13px; color: #eee; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.channel-item .program { font-size: 11px; color: #7bed9f; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; margin-top: 2px; }
+.channel-item .time { font-size: 10px; color: #888; margin-left: auto; flex-shrink: 0; white-space: nowrap; }
 .epg-section { background: #000; border-radius: 12px; padding: 12px; }
 .epg-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 8px; }
 .epg-header-title { font-size: 12px; color: #888; text-transform: uppercase; letter-spacing: 1px; }
