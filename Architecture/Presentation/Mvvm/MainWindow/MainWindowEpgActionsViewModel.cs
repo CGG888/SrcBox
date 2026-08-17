@@ -170,8 +170,10 @@ public sealed class MainWindowEpgActionsViewModel : ViewModelBase
         }
 
         var changed = 0;
+        var total = 0;
         foreach (var ch in channels)
         {
+            total++;
             if (ch == null)
             {
                 continue;
@@ -206,6 +208,7 @@ public sealed class MainWindowEpgActionsViewModel : ViewModelBase
                 }
             }
         }
+        LibmpvIptvClient.Diagnostics.Logger.Debug($"[EPG] SyncChannelCurrentProgramTitles: processed {total} channels, changed {changed}");
 
         return changed;
     }

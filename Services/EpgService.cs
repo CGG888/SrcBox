@@ -307,6 +307,10 @@ namespace LibmpvIptvClient.Services
         public EpgProgram? GetCurrentProgram(string tvgId, string? tvgName = null, string? channelName = null)
         {
             var list = GetPrograms(tvgId, tvgName, channelName);
+            if (list.Count == 0 && !string.IsNullOrEmpty(channelName))
+            {
+                LibmpvIptvClient.Diagnostics.Logger.Debug($"[EPG] GetCurrentProgram no match for channelName={channelName}, tvgId={tvgId}, tvgName={tvgName}");
+            }
             var now = DateTime.Now;
             // 优化：节目表可能跨越日期，或者节目时间存在时区偏差
             // 1. 直接查找包含当前时间的节目
