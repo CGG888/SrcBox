@@ -666,6 +666,14 @@ body.light-theme .epg-badge-replay { background: #2ed573; }
 body.light-theme .epg-badge-reminder { background: #1a6b3a; }
 body.light-theme .epg-badge-next { }
 body.light-theme .epg-content { color: #222; }
+/* Source Management light-theme */
+body.light-theme .source-item { background: rgba(0,0,0,0.08); }
+body.light-theme .source-item:hover { background: rgba(0,0,0,0.14); }
+body.light-theme .source-item .sname { color: #333; }
+body.light-theme .source-item .surl { color: #666; }
+body.light-theme .source-item .sbtns button { background: rgba(0,0,0,0.12); color: #000; }
+body.light-theme .source-item .sbtns button:hover { background: rgba(0,0,0,0.2); }
+body.light-theme .source-item .sactive { color: #1a6b3a; }
 .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 8px 12px; background: #000; border-radius: 12px; }
 .header h1 { font-size: 16px; margin: 0; display: flex; align-items: center; gap: 8px; }
 .live-badge { background: #ff4757; color: white; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: bold; animation: pulse 2s infinite; }
@@ -877,7 +885,10 @@ body.light-theme .epg-date-display { color: #1a6b3a; }
 </div>
 
 <div class=""channel-section"">
-<div class=""section-title"">__SEC_CHANNELS__</div>
+<div style=""display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;"">
+<div class=""section-title"" style=""margin:0;"">__SEC_CHANNELS__ <span id=""currentSourceName"" style=""font-weight:normal;color:#888;font-size:10px;""></span></div>
+<button class=""btn"" style=""padding:2px 8px;font-size:10px;"" onclick=""openSourceModal()"">__SEC_SOURCES__</button>
+</div>
 <div class=""channel-grid"" id=""channelGrid""><div class=""loading"">__LOADING__</div></div>
 </div>
 
@@ -899,11 +910,16 @@ body.light-theme .epg-date-display { color: #1a6b3a; }
 </div>
 </div>
 
-<!-- Source Management -->
-<div class=""source-section"" id=""sourceSection"" style=""display:none;"">
-<div class=""section-title"">__SEC_SOURCES__</div>
+<!-- Source Management Modal -->
+<div class=""modal-overlay"" id=""sourceModal"">
+<div class=""modal-box"" style=""max-width:420px;"">
+<h3 id=""sourceModalTitle"">__SEC_SOURCES__</h3>
 <div id=""sourceList""><div class=""loading"">__LOADING__</div></div>
 <button class=""btn"" style=""margin-top:8px;width:100%"" onclick=""showAddSourceModal()"">__BTN_ADD_SOURCE__</button>
+<div class=""mbtns"" style=""margin-top:12px;"">
+<button class=""mcancel"" onclick=""closeSourceModal()"">__BTN_CANCEL__</button>
+</div>
+</div>
 </div>
 
 <!-- Reminder Management -->
@@ -1022,8 +1038,8 @@ function showEpgDatePicker() {
 function refreshData() { if (!isAuthenticated) return; loadStatus(); loadChannels(); if (currentChannelId) loadEpg(currentChannelId, currentEpgDate); loadSources(); loadReminders(); loadRecordings(); }
 
 // Source Management
-function loadSources() { send('getSources'); }
-function renderSources(data) {
+function openSourceModal() { loadSources(); document.getElementById('sourceModal').classList.add('show'); }
+function closeSourceModal() { document.getElementById('sourceModal').classList.remove('show'); }
   var list = document.getElementById('sourceList');
   if (!list) return;
   list.innerHTML = '';
@@ -1036,10 +1052,10 @@ function renderSources(data) {
       (s.isSelected ? '<span class=""sactive"">'+T.source_active+'</span>' : '<button onclick=""doSelectSource(\''+s.name+'\')"">'+T.source_select+'</button>') +
       '<button onclick=""doRemoveSource(\''+s.name+'\')"">'+T.source_remove+'</button></div>';
     list.appendChild(div);
+    if (s.isSelected) document.getElementById('currentSourceName').textContent = '(' + s.name + ')';
   });
-  document.getElementById('sourceSection').style.display = 'block';
 }
-function doSelectSource(name) { send('selectSource', { name }); }
+function doSelectSource(name) { send('selectSource', { name }); closeSourceModal(); setTimeout(refreshData, 500); }
 function doRemoveSource(name) { if (!confirm(T.confirm_remove_source)) return; send('removeSource', { name }); setTimeout(loadSources, 300); }
 function showAddSourceModal() { document.getElementById('addSourceModal').classList.add('show'); }
 function closeAddSourceModal() { document.getElementById('addSourceModal').classList.remove('show'); }

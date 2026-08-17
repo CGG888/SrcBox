@@ -324,18 +324,8 @@ namespace LibmpvIptvClient.Services.WebRemote
                     channelName = channel.Name;
                 }
 
-                Logger.Debug($"[WebRemote] GetEpg channelId={channelId}, tvgName={tvgName}, channelName={channelName}, filterDate={filterDate}");
                 var programs = _shell.EpgService.GetPrograms(channelId, tvgName, channelName);
                 var now = DateTime.Now;
-                Logger.Debug($"[WebRemote] GetEpg returned {programs.Count} programs for channelId={channelId}, now={now:yyyy-MM-dd HH:mm:ss}");
-
-                // Debug: 检查前3个节目的时间信息
-                var debugCount = Math.Min(3, programs.Count);
-                for (int i = 0; i < debugCount; i++)
-                {
-                    var p = programs[i];
-                    Logger.Debug($"[WebRemote] Program[{i}]: {p.Title}, Start={p.Start:yyyy-MM-dd HH:mm:ss}");
-                }
 
                 // 判断当前频道是否在回看某个节目
                 var replayTitle = (_shell.CurrentPlayingProgram != null &&
