@@ -765,7 +765,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 
         public void UpdateGroups()
         {
-            ChannelGroups = ChannelListActions.BuildGroups(Channels);
+            ChannelGroups = ChannelListActions.BuildGroups(Channels, CurrentSourceUrl);
         }
 
         public void UpdateFavorites()
@@ -813,6 +813,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 
         public async System.Threading.Tasks.Task LoadChannels(string url)
         {
+            CurrentSourceUrl = url;
             if (ChannelService == null) return;
 
             try
@@ -863,7 +864,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                     try
                     {
                         var filterResult = ChannelListActions.BuildChannelFilterResult(loadedChannels, SearchText, SelectedGroup);
-                        var groupsResult = ChannelListActions.BuildGroups(loadedChannels);
+                        var groupsResult = ChannelListActions.BuildGroups(loadedChannels, url);
                         var favoritesResult = ChannelInteractionActions.BuildFavoriteList(loadedChannels, c => UserDataStore.ComputeKey(c));
                         System.Windows.Application.Current.Dispatcher.Invoke(() =>
                         {
@@ -915,6 +916,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 
         public void LoadSingleStream(string url)
         {
+            CurrentSourceUrl = null;
             Channels.Clear();
             var streamLabel = LibmpvIptvClient.Helpers.ResxLocalizer.Get("Stream_Network", "网络流");
             Channels = SourceLoader.LoadSingleStream(url, streamLabel);
@@ -1026,6 +1028,9 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             get => _currentUrl;
             set => SetProperty(ref _currentUrl, value);
         }
+
+        // Current M3U source URL (runtime only, not persisted). Used to key per-source group order.
+        public string? CurrentSourceUrl { get; set; }
 
         private bool _isSeeking;
         public bool IsSeeking

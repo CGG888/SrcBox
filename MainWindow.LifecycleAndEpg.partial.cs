@@ -435,8 +435,15 @@ namespace LibmpvIptvClient
         {
             try
             {
-                var order = AppSettings.Current.ChannelGroupOrder;
-                if (order == null) order = new List<string>();
+                var sourceUrl = _shell.CurrentSourceUrl;
+                var bySource = AppSettings.Current.ChannelGroupOrderBySource;
+                // Read per-source order (copy to avoid mutating persisted ref directly)
+                List<string> order;
+                if (!string.IsNullOrEmpty(sourceUrl) && bySource != null
+                    && bySource.TryGetValue(sourceUrl, out var perSource) && perSource != null)
+                    order = new List<string>(perSource);
+                else
+                    order = AppSettings.Current.ChannelGroupOrder?.ToList() ?? new List<string>();
 
                 int idx = order.IndexOf(groupName);
                 if (idx < 0)
@@ -451,9 +458,18 @@ namespace LibmpvIptvClient
 
                 order.RemoveAt(idx);
                 order.Insert(newIdx, groupName);
-                AppSettings.Current.ChannelGroupOrder = order;
-                AppSettings.Current.Save();
 
+                // Write back per-source (null source → legacy field, keeps old behavior)
+                if (!string.IsNullOrEmpty(sourceUrl))
+                {
+                    AppSettings.Current.ChannelGroupOrderBySource ??= new Dictionary<string, List<string>>();
+                    AppSettings.Current.ChannelGroupOrderBySource[sourceUrl] = order;
+                }
+                else
+                {
+                    AppSettings.Current.ChannelGroupOrder = order;
+                }
+                AppSettings.Current.Save();
                 _shell.UpdateGroups();
             }
             catch { }

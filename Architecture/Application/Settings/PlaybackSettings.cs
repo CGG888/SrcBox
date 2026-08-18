@@ -156,6 +156,8 @@ namespace LibmpvIptvClient
         public bool ConfirmOnClose { get; set; } = true;
         public string CloseMode { get; set; } = "";
         public List<string> ChannelGroupOrder { get; set; } = new List<string>();
+        /// <summary>Per-source group order. Key=source URL, Value=ordered group names. Falls back to ChannelGroupOrder when no entry.</summary>
+        public Dictionary<string, List<string>> ChannelGroupOrderBySource { get; set; } = new();
         public bool SkipShortcutsDialog { get; set; } = false;
 
         public static PlaybackSettings Load()

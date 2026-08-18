@@ -42,7 +42,7 @@ public sealed class MainWindowChannelListActionsViewModel : ViewModelBase
         return new ChannelFilterResult(distinct, countText);
     }
 
-    public IReadOnlyList<ChannelGroupItem> BuildGroups(IReadOnlyList<Channel> channels)
+    public IReadOnlyList<ChannelGroupItem> BuildGroups(IReadOnlyList<Channel> channels, string? sourceUrl = null)
     {
         var map = new Dictionary<string, List<Channel>>(StringComparer.OrdinalIgnoreCase);
         foreach (var c in channels ?? Array.Empty<Channel>())
@@ -62,7 +62,7 @@ public sealed class MainWindowChannelListActionsViewModel : ViewModelBase
             for (int i = 0; i < items.Count; i++) items[i].DisplayIndex = i + 1;
             groups.Add(new ChannelGroupItem { Name = $"{kv.Key}", Items = items });
         }
-        var savedOrder = AppSettings.Current.ChannelGroupOrder;
+        var savedOrder = ResolveGroupOrder(sourceUrl);
         groups.Sort((a, b) =>
         {
             int indexA = savedOrder.IndexOf(a.Name);
@@ -73,6 +73,15 @@ public sealed class MainWindowChannelListActionsViewModel : ViewModelBase
             return string.Compare(a.Name, b.Name, StringComparison.OrdinalIgnoreCase);
         });
         return groups;
+    }
+
+    private List<string> ResolveGroupOrder(string? sourceUrl)
+    {
+        var bySource = AppSettings.Current.ChannelGroupOrderBySource;
+        if (!string.IsNullOrEmpty(sourceUrl) && bySource != null
+            && bySource.TryGetValue(sourceUrl, out var perSource) && perSource != null && perSource.Count > 0)
+            return perSource;
+        return AppSettings.Current.ChannelGroupOrder ?? new List<string>();
     }
 
     public IReadOnlyList<Channel> BuildDistinctByNamePreserveOrder(IReadOnlyList<Channel> list)
