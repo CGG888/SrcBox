@@ -16,7 +16,7 @@
   <sys:String x:Key="UI_ChannelPreview_ConcurrentHint">Максимум одновременных запросов снимков (1–16, по умолч. 2); большее число занимает больше линий ONU/модема</sys:String>
   <sys:String x:Key="UI_SourceHealth_Title">Проверка состояния источников</sys:String>
   <sys:String x:Key="UI_SourceHealth_Enable">Включить автоматическую проверку источников</sys:String>
-  <sys:String x:Key="UI_SourceHealth_Hint">Проверяются только источники текущего канала — полного сканирования нет. Успешно запущенный источник помечается здоровым без лишних запросов.</sys:String>
+  <sys:String x:Key="UI_SourceHealth_Hint">Выключено по умолчанию. При включении проверяются только источники текущего канала — полного сканирования нет. Успешно запущенный источник помечается здоровым без лишних запросов.</sys:String>
   <sys:String x:Key="UI_SourceHealth_Concurrent">Одновременных проверок за раз</sys:String>
   <sys:String x:Key="UI_SourceHealth_ConcurrentHint">Сколько источников проверяется одновременно (1–100, по умолч. 5). Уменьшайте при ограничении числа потоков ONU/провайдером; само воспроизведение занимает 1.</sys:String>
   <sys:String x:Key="UI_TabRecording">Запись</sys:String>

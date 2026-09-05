@@ -79,11 +79,11 @@ namespace LibmpvIptvClient
         public int SourceTimeoutSec { get; set; } = 5; // NEW-24: 3s was too short for some streams, increased to 5s
 
         // 源健康检测设置
-        /// <summary>Master switch for automatic source health scanning. When off, no automatic
-        /// probing happens (channel play-triggered and context-menu auto probes are skipped);
-        /// the manual "检测源健康" context action still works. Playing the channel still marks
-        /// its current source healthy without any network probe.</summary>
-        public bool EnableSourceHealthScan { get; set; } = true;
+        /// <summary>Master switch for automatic source health scanning. DEFAULT OFF: automatic
+        /// probing happens only after the user enables it here (the manual "检测源健康" context
+        /// action still works). Playing a channel still marks its current source healthy
+        /// without any network probe.</summary>
+        public bool EnableSourceHealthScan { get; set; } = false;
         public int SourceHealthProbeTimeoutSec { get; set; } = 5;    // HTTP HEAD 探测超时（秒）
         public int SourceHealthScanIntervalSec { get; set; } = 7200; // (reserved) 后台扫描间隔（秒），当前无定时全量扫描
         public int SourceHealthFailureThreshold { get; set; } = 3;   // 连续失败次数阈值，超过则标记为不健康

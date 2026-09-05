@@ -24,24 +24,28 @@ namespace LibmpvIptvClient.Services
         // Prevent duplicate concurrent requests for the same URL
         private readonly ConcurrentDictionary<string, Task<BitmapImage?>> _pendingRequests = new ConcurrentDictionary<string, Task<BitmapImage?>>(StringComparer.OrdinalIgnoreCase);
 
-        // Limit concurrent snapshot requests to avoid overloading rtp2httpd / ONU stream
-        // budget. The limit is read live from ChannelPreviewMaxConcurrent (1~16) so settings
-        // changes take effect immediately without rebuilding the semaphore. Requests are
-        // short (5s timeout), so the blocking gate is acceptable.
+        // Dynamic ASYNC concurrency gate for snapshot requests (never blocks the caller —
+        // important because preview fetches can start on the UI thread from hover events).
+        // The limit is read live from ChannelPreviewMaxConcurrent (1~16) so settings changes
+        // take effect immediately. Waiters are released via TCS, not Monitor.Wait.
         private readonly object _slotLock = new object();
         private int _activeSnapshots;
+        private readonly Queue<TaskCompletionSource<bool>> _slotWaiters = new();
 
         private int MaxConcurrent => Math.Max(1, Math.Min(16, AppSettings.Current.ChannelPreviewMaxConcurrent));
 
-        private void AcquireSlot()
+        private Task AcquireSlotAsync()
         {
             lock (_slotLock)
             {
-                while (_activeSnapshots >= MaxConcurrent)
+                if (_activeSnapshots < MaxConcurrent)
                 {
-                    Monitor.Wait(_slotLock);
+                    _activeSnapshots++;
+                    return Task.CompletedTask;
                 }
-                _activeSnapshots++;
+                var tcs = new TaskCompletionSource<bool>(TaskCreationOptions.RunContinuationsAsynchronously);
+                _slotWaiters.Enqueue(tcs);
+                return tcs.Task;
             }
         }
 
@@ -49,8 +53,14 @@ namespace LibmpvIptvClient.Services
         {
             lock (_slotLock)
             {
-                _activeSnapshots--;
-                Monitor.PulseAll(_slotLock);
+                if (_activeSnapshots > 0) _activeSnapshots--;
+                // Grant as many queued waiters as the (possibly changed) limit allows.
+                while (_activeSnapshots < MaxConcurrent && _slotWaiters.Count > 0)
+                {
+                    var tcs = _slotWaiters.Dequeue();
+                    _activeSnapshots++;
+                    tcs.TrySetResult(true);
+                }
             }
         }
 
@@ -96,7 +106,7 @@ namespace LibmpvIptvClient.Services
         {
             try
             {
-                AcquireSlot();
+                await AcquireSlotAsync().ConfigureAwait(false);
                 try
                 {
                     // Double-check cache after acquiring the slot (another request might have populated it)

@@ -16,7 +16,7 @@
   <sys:String x:Key="UI_ChannelPreview_ConcurrentHint">同時請求快照的最大數量（1~16，預設 2）；數值越大佔用的光貓線路越多</sys:String>
   <sys:String x:Key="UI_SourceHealth_Title">源健康檢查</sys:String>
   <sys:String x:Key="UI_SourceHealth_Enable">啟用自動源健康檢查</sys:String>
-  <sys:String x:Key="UI_SourceHealth_Hint">僅探測目前播放頻道的源，不再全量掃描所有頻道；成功起播的源會自動標記為健康，不產生額外探測流量。</sys:String>
+  <sys:String x:Key="UI_SourceHealth_Hint">預設關閉。開啟後僅探測目前播放頻道的源，不再全量掃描所有頻道；成功起播的源會自動標記為健康，不產生額外探測流量。</sys:String>
   <sys:String x:Key="UI_SourceHealth_Concurrent">單次探測並發數</sys:String>
   <sys:String x:Key="UI_SourceHealth_ConcurrentHint">同時探測的源數量（1~100，預設 5）。受光貓/電信商線路限制時請調低；播放本身佔 1 路。</sys:String>
   <sys:String x:Key="UI_TabRecording">錄製</sys:String>
