@@ -79,12 +79,17 @@ namespace LibmpvIptvClient
         public int SourceTimeoutSec { get; set; } = 5; // NEW-24: 3s was too short for some streams, increased to 5s
 
         // 源健康检测设置
+        /// <summary>Master switch for automatic source health scanning. When off, no automatic
+        /// probing happens (channel play-triggered and context-menu auto probes are skipped);
+        /// the manual "检测源健康" context action still works. Playing the channel still marks
+        /// its current source healthy without any network probe.</summary>
+        public bool EnableSourceHealthScan { get; set; } = true;
         public int SourceHealthProbeTimeoutSec { get; set; } = 5;    // HTTP HEAD 探测超时（秒）
-        public int SourceHealthScanIntervalSec { get; set; } = 7200; // 后台扫描间隔（秒），默认 120 分钟
+        public int SourceHealthScanIntervalSec { get; set; } = 7200; // (reserved) 后台扫描间隔（秒），当前无定时全量扫描
         public int SourceHealthFailureThreshold { get; set; } = 3;   // 连续失败次数阈值，超过则标记为不健康
         public int SourceHealthBatchSize { get; set; } = 50;        // 每批探测的源数量，避免瞬时并发过高
         public int SourceHealthBatchDelayMs { get; set; } = 200;    // 批次之间的延迟（毫秒）
-        public int SourceHealthMaxConcurrent { get; set; } = 8;     // 每批最大并发数
+        public int SourceHealthMaxConcurrent { get; set; } = 5;     // 单次探测最大并发（可调 1~100，默认 5，适配光猫线路额度）
 
         // 反交错 (Deinterlace) - 针对 1080i/720i 隔行扫描流
         // 模式: "no"=关闭 / "yes"=强制 / "auto"=自动检测(推荐, 零副作用)
@@ -152,6 +157,8 @@ namespace LibmpvIptvClient
         // 频道快照尺寸（默认 214x120，16:9）
         public int ChannelPreviewWidth { get; set; } = 214;
         public int ChannelPreviewHeight { get; set; } = 120;
+        /// <summary>Max concurrent channel-preview snapshot requests (1~16, default 2).</summary>
+        public int ChannelPreviewMaxConcurrent { get; set; } = 2;
         public List<ScheduledReminder> ScheduledReminders { get; set; } = new List<ScheduledReminder>();
         public bool ConfirmOnClose { get; set; } = true;
         public string CloseMode { get; set; } = "";

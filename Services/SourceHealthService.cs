@@ -11,36 +11,76 @@ using LibmpvIptvClient.Models;
 namespace LibmpvIptvClient.Services
 {
     /// <summary>
-    /// Background service that periodically probes HTTP/HTTPS stream sources
-    /// and updates their health status (IsReachable, LatencyMs, FailureCount, LastChecked).
+    /// Background source health service that probes HTTP/HTTPS stream sources and updates
+    /// their health status (IsReachable, LatencyMs, FailureCount, LastChecked).
     ///
-    /// Only probes HTTP/HTTPS sources. Results are written directly onto Source model
+    /// Design: there is NO full-list periodic scan. Probing happens only for
+    ///   1. the channel that just started playing (auto, gated by EnableSourceHealthScan),
+    ///   2. explicit per-channel re-checks from the right-click menu,
+    ///   3. a single-source probe of the tag when its context menu opens (auto, gated).
+    /// Successful playback marks the current source healthy with zero network traffic.
+    ///
+    /// Only HTTP/HTTPS sources are probed. Results are written directly onto Source model
     /// objects, which implement INotifyPropertyChanged for UI auto-refresh.
     /// </summary>
     public class SourceHealthService
     {
         public static SourceHealthService Instance { get; } = new SourceHealthService();
 
-        private System.Threading.Timer? _timer;
-        private bool _running;
-        private bool _firstScan = true; // true = next scan probes all sources at once (no batching)
-        private List<Channel>? _shellChannels;
-        private readonly SemaphoreSlim _sem = new SemaphoreSlim(1, 1);
+        // Min gap between two automatic probes of the same channel (avoids re-probing on
+        // quick channel re-select / auto-degrade retries).
+        private const int ChannelProbeMinIntervalMs = 20_000;
+        // Min gap for the zero-traffic "playback started" healthy mark.
+        private const int MarkHealthyMinIntervalMs = 10_000;
+        // Delay before a channel probe actually starts so it never contends with mpv start.
+        private const int ProbeStartDelayMs = 500;
         // Throttle NotifySourceHealthChanged to at most once per second per channel
-        private readonly Dictionary<string, DateTime> _lastNotifyTime = new();
         private const int NotifyThrottleMs = 1000;
+
+        // Throttle NotifySourceHealthChanged per channel
+        private readonly Dictionary<string, DateTime> _lastNotifyTime = new();
         // Use Dictionary so concurrent probes for the same URL can wait for the first to finish
         private readonly Dictionary<string, TaskCompletionSource<ProbeResult>> _pendingProbes =
             new Dictionary<string, TaskCompletionSource<ProbeResult>>(StringComparer.OrdinalIgnoreCase);
-        private readonly Random _rng = new Random();
+        // Bookkeeping guarded by _lock
+        private readonly object _lock = new object();
+        private readonly Dictionary<string, DateTime> _lastChannelProbe = new(); // auto probe throttle
+        private readonly Dictionary<string, Task> _channelProbeTasks = new();     // in-flight channel probes
+        private readonly Dictionary<string, DateTime> _lastMarkHealthy = new();   // playback mark throttle
+        // Serializes ProbeSourcesAsync runs so the global concurrent probe count stays bounded
+        private readonly SemaphoreSlim _sem = new SemaphoreSlim(1, 1);
 
         private SourceHealthService() { }
+
+        private static bool AutoScanEnabled => AppSettings.Current.EnableSourceHealthScan;
+
+        private static string? GetChannelKey(Channel? ch)
+        {
+            if (ch == null) return null;
+            if (!string.IsNullOrWhiteSpace(ch.Id)) return ch.Id;
+            if (ch.Tag is Source t && !string.IsNullOrWhiteSpace(t.Url)) return SanitizeUrl(t.Url) ?? t.Url;
+            if (ch.Sources != null && ch.Sources.Count > 0 && !string.IsNullOrWhiteSpace(ch.Sources[0].Url))
+                return SanitizeUrl(ch.Sources[0].Url) ?? ch.Sources[0].Url;
+            return null;
+        }
+
+        /// <summary>Stops housekeeping. Kept for lifecycle compatibility (window close / disabling the scan).</summary>
+        public void Stop()
+        {
+            lock (_lock)
+            {
+                _lastChannelProbe.Clear();
+                _channelProbeTasks.Clear();
+                _lastMarkHealthy.Clear();
+            }
+            Logger.Debug("[Source] Health service stopped");
+        }
 
         /// <summary>Calls ch.NotifySourceHealthChanged() at most once per NotifyThrottleMs to prevent log flooding.</summary>
         private void ThrottledNotify(Channel ch)
         {
-            var id = ch.Id;
-            if (string.IsNullOrEmpty(id)) { try { ch.NotifySourceHealthChanged(); } catch { } return; }
+            var id = GetChannelKey(ch);
+            if (id == null) { try { ch.NotifySourceHealthChanged(); } catch { } return; }
             var now = DateTime.Now;
             lock (_lastNotifyTime)
             {
@@ -52,62 +92,79 @@ namespace LibmpvIptvClient.Services
         }
 
         /// <summary>
-        /// Starts periodic background health scanning of all sources in the given channels.
-        /// First scan is delayed by a random 0~2000ms to avoid all clients probing at once.
-        /// Subsequent scans respect SourceHealthScanIntervalSec.
+        /// Zero-traffic health confirmation: the channel's current source just played
+        /// successfully, so mark it reachable/healthy without any HTTP probe. Works even
+        /// when automatic scanning is disabled, keeping the source indicator and
+        /// auto-degrade logic functional.
         /// </summary>
-        public void Start(IEnumerable<Channel> channels)
+        public void MarkPlaybackHealthy(Channel channel)
         {
-            if (_running) return;
-            _running = true;
-            _firstScan = true;
-            _shellChannels = channels?.ToList() ?? new List<Channel>();
+            if (channel == null) return;
+            var source = channel.Tag ?? channel.Sources?.FirstOrDefault();
+            if (source == null) return;
 
-            var intervalMs = Math.Max(10_000, AppSettings.Current.SourceHealthScanIntervalSec * 1000);
-            // Random initial delay 0~2s to stagger first probe across multiple clients
-            var initialDelayMs = _rng.Next(0, 2000);
-            _timer = new System.Threading.Timer(_ => _ = ScanAllAsync(_shellChannels), null, initialDelayMs, intervalMs);
-            Logger.Debug($"[Source] Health service started, initial delay={initialDelayMs}ms, interval={AppSettings.Current.SourceHealthScanIntervalSec}s");
+            var id = GetChannelKey(channel);
+            lock (_lock)
+            {
+                if (id != null && _lastMarkHealthy.TryGetValue(id, out var last) &&
+                    (DateTime.Now - last).TotalMilliseconds < MarkHealthyMinIntervalMs) return;
+                if (id != null) _lastMarkHealthy[id] = DateTime.Now;
+            }
+
+            WireChannel(channel);
+            source.IsReachable = true;
+            source.FailureCount = 0;
+            source.LastChecked = DateTime.UtcNow;
+            ThrottledNotify(channel);
+            Logger.Info($"[Source] Playback confirmed healthy (no probe): {channel.Name} -> {source.Url}");
         }
 
         /// <summary>
-        /// Stops the background health scanner.
+        /// Automatic, channel-scoped probe triggered when a channel starts playing.
+        /// Probes ONLY this channel's sources (no full-list scan) with the configured
+        /// concurrency (default 5). Gated by EnableSourceHealthScan and throttled per channel.
         /// </summary>
-        public void Stop()
+        public void ProbeChannelSourcesAsync(Channel channel)
         {
-            _running = false;
-            _timer?.Dispose();
-            _timer = null;
-            Logger.Debug("[Source] Health service stopped");
+            if (channel == null) return;
+            if (!AutoScanEnabled) return;
+
+            var id = GetChannelKey(channel);
+            lock (_lock)
+            {
+                if (id != null && _lastChannelProbe.TryGetValue(id, out var last) &&
+                    (DateTime.Now - last).TotalMilliseconds < ChannelProbeMinIntervalMs) return;
+                if (id != null) _lastChannelProbe[id] = DateTime.Now;
+            }
+
+            WireChannel(channel);
+            var task = ProbeChannelCoreAsync(channel, delayBeforeProbe: true);
+            if (id != null)
+            {
+                lock (_lock) { _channelProbeTasks[id] = task; }
+            }
         }
 
         /// <summary>
-        /// Triggers an immediate health re-check for all sources of the given channel.
-        /// Called from the right-click context menu "重新检测源健康" action.
+        /// Manual full re-check for a single channel (right-click menu "检测源健康").
+        /// Always allowed, even when automatic scanning is disabled.
         /// </summary>
         public void StartImmediateRecheck(Channel channel)
         {
             if (channel?.Sources == null) return;
-            _ = ProbeSourcesAsync(channel.Sources);
+            WireChannel(channel);
+            _ = ProbeChannelCoreAsync(channel, delayBeforeProbe: false);
         }
 
-        /// <summary>
-        /// Immediately scans all sources from all channels in the given list.
-        /// Call this after channels are loaded to trigger instant health detection.
-        /// </summary>
-        public void RefreshAll(IEnumerable<Channel>? channels)
+        /// <summary>True while a channel-scoped probe is still running (used by auto-degrade retry).</summary>
+        public bool IsProbePending(Channel channel)
         {
-            if (channels == null)
+            var id = GetChannelKey(channel);
+            if (id == null) return false;
+            lock (_lock)
             {
-                Logger.Info($"[Source] RefreshAll called with NULL channels");
-                return;
+                return _channelProbeTasks.TryGetValue(id, out var t) && !t.IsCompleted;
             }
-            var list = channels.ToList();
-            Logger.Info($"[Source] RefreshAll called _running={_running} channels={list.Count}");
-            _firstScan = true;
-            // Update _shellChannels so timer-based scans use the loaded channels
-            _shellChannels = list;
-            _ = ScanAllAsync(list, fromRefreshAll: true);
         }
 
         /// <summary>
@@ -127,6 +184,7 @@ namespace LibmpvIptvClient.Services
             var httpUrls = urls
                 .Select(u => SanitizeUrl(u.Trim()))
                 .Where(u => !string.IsNullOrWhiteSpace(u) && u.StartsWith("http", StringComparison.OrdinalIgnoreCase))
+                .Cast<string>()
                 .ToList();
 
             if (httpUrls.Count == 0) return;
@@ -219,7 +277,9 @@ namespace LibmpvIptvClient.Services
         }
 
         /// <summary>
-        /// Probes multiple sources concurrently, respecting the max concurrent limit.
+        /// Probes multiple sources concurrently, respecting the configured concurrency
+        /// limit (1~100, default 5). Runs are serialized so concurrent callers cannot
+        /// exceed the limit in total.
         /// </summary>
         public async Task ProbeSourcesAsync(IEnumerable<Source> sources)
         {
@@ -233,7 +293,7 @@ namespace LibmpvIptvClient.Services
             await _sem.WaitAsync().ConfigureAwait(false);
             try
             {
-                var maxConcurrent = Math.Max(2, Math.Min(16, AppSettings.Current.SourceHealthMaxConcurrent));
+                var maxConcurrent = Math.Max(1, Math.Min(100, AppSettings.Current.SourceHealthMaxConcurrent));
                 using var throttler = new SemaphoreSlim(maxConcurrent, maxConcurrent);
 
                 var tasks = sourceList.Select(async s =>
@@ -257,77 +317,56 @@ namespace LibmpvIptvClient.Services
             }
         }
 
-        private async Task ScanAllAsync(IEnumerable<Channel> channels, bool fromRefreshAll = false)
+        private async Task ProbeChannelCoreAsync(Channel channel, bool delayBeforeProbe)
         {
-            // RefreshAll triggers immediate scan regardless of timer state
-            if (!_running && !fromRefreshAll) return;
-
-            Logger.Info($"[Source] ScanAllAsync running _running={_running} fromRefreshAll={fromRefreshAll}");
-
             try
             {
-                var allSources = new List<(Channel ch, Source src)>();
-                foreach (var ch in channels ?? Enumerable.Empty<Channel>())
+                if (delayBeforeProbe)
                 {
-                    if (ch?.Sources == null) continue;
-                    foreach (var s in ch.Sources)
-                    {
-                        // Wire Source → Channel callback so Ellipse binding refreshes
-                        s.OnHealthChanged = () => ThrottledNotify(ch);
-                        allSources.Add((ch, s));
-                    }
-                    // Always include the current Tag source even if its URL differs after sanitization
-                    // (e.g. assembled via $$-separator or URL query param order differs)
-                    if (ch.Tag != null && !allSources.Any(x => x.src.Id == ch.Tag.Id))
-                    {
-                        ch.Tag.OnHealthChanged = () => ThrottledNotify(ch);
-                        allSources.Add((ch, ch.Tag));
-                    }
+                    // Give an in-progress mpv stream start a head start (ONU/modem line budget).
+                    await Task.Delay(ProbeStartDelayMs).ConfigureAwait(false);
                 }
+                if (!AutoScanEnabled) return; // user disabled the scan while we waited
+                if (channel?.Sources == null || channel.Sources.Count == 0) return;
 
-                // Deduplicate by URL to avoid redundant probes
-                var uniqueSources = allSources
-                    .Where(t => !string.IsNullOrWhiteSpace(t.src.Url))
-                    .GroupBy(t => SanitizeUrl(t.src.Url) ?? "")
-                    .Select(g => g.First().src)
-                    .ToList();
-
-                if (uniqueSources.Count == 0)
+                // Deduplicate by sanitized URL; always include the current Tag source.
+                var list = new List<Source>();
+                var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                foreach (var s in channel.Sources)
                 {
-                    Logger.Info($"[Source] ScanAllAsync no unique sources, allSources={allSources.Count}");
-                    return;
+                    if (s == null || string.IsNullOrWhiteSpace(s.Url)) continue;
+                    var key = SanitizeUrl(s.Url) ?? s.Url;
+                    if (seen.Add(key)) list.Add(s);
                 }
-
-                Logger.Info($"[Source] ScanAllAsync uniqueSources={uniqueSources.Count} firstScan={_firstScan}");
-
-                // Batch scanning: split into groups and probe each batch sequentially
-                var batchSize = Math.Max(10, AppSettings.Current.SourceHealthBatchSize);
-                var batchDelayMs = Math.Max(50, AppSettings.Current.SourceHealthBatchDelayMs);
-                var batches = uniqueSources
-                    .Select((src, idx) => new { src, idx })
-                    .GroupBy(x => x.idx / batchSize)
-                    .Select(g => g.Select(x => x.src).ToList())
-                    .ToList();
-
-                if (_firstScan)
+                if (channel.Tag != null && !string.IsNullOrWhiteSpace(channel.Tag.Url))
                 {
-                    _firstScan = false;
-                    await ProbeSourcesAsync(uniqueSources).ConfigureAwait(false);
+                    var key = SanitizeUrl(channel.Tag.Url) ?? channel.Tag.Url;
+                    if (seen.Add(key)) list.Add(channel.Tag);
                 }
-                else
-                {
-                    for (var i = 0; i < batches.Count; i++)
-                    {
-                        if (!_running) break;
-                        var batch = batches[i];
-                        await ProbeSourcesAsync(batch).ConfigureAwait(false);
+                if (list.Count == 0) return;
 
-                        if (i < batches.Count - 1)
-                            await Task.Delay(batchDelayMs).ConfigureAwait(false);
-                    }
-                }
+                await ProbeSourcesAsync(list).ConfigureAwait(false);
             }
             catch { }
+            finally
+            {
+                var id = GetChannelKey(channel);
+                if (id != null)
+                {
+                    lock (_lock) { _channelProbeTasks.Remove(id); }
+                }
+            }
+        }
+
+        /// <summary>Wires Source→Channel callback so ellipse bindings refresh after probes.</summary>
+        private void WireChannel(Channel ch)
+        {
+            if (ch?.Sources == null) return;
+            foreach (var s in ch.Sources)
+            {
+                if (s != null) s.OnHealthChanged = () => ThrottledNotify(ch);
+            }
+            if (ch.Tag != null) ch.Tag.OnHealthChanged = () => ThrottledNotify(ch);
         }
 
         private static string? SanitizeUrl(string? input)

@@ -845,10 +845,9 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                     LoadHistory();
                 });
 
-                // Trigger immediate health scan after channels are loaded
-                Diagnostics.Logger.Info($"[Shell] About to call RefreshAll with {loadedChannels?.Count ?? -1} channels");
-                LibmpvIptvClient.Services.SourceHealthService.Instance.RefreshAll(loadedChannels);
-
+                // No full-list health scan here: sources are probed only when their channel
+                // starts playing (SourceHealthService.ProbeChannelSourcesAsync), keeping
+                // ONU/modem line limits free for playback startup.
                 try
                 {
                     // NEW-14: Run DNS prefetch and connection preheat in parallel instead of sequentially

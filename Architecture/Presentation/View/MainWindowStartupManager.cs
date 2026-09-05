@@ -73,8 +73,9 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 }
             }
 
-            // Start background source health monitoring
-            SourceHealthService.Instance.Start(_shell.Channels);
+            // No full-list source health scan on startup: sources are probed only when their
+            // channel starts playing (SourceHealthService.ProbeChannelSourcesAsync) so ONU /
+            // modem line limits are not consumed at launch.
         }
 
         private void OnRecordingTriggered(object? sender, ScheduledRecordingTriggerArgs e)

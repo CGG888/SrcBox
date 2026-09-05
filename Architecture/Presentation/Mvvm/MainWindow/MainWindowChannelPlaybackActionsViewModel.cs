@@ -25,6 +25,9 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 
         private readonly MainShellViewModel _shell;
         private readonly DispatcherTimer _sourceTimeoutTimer;
+        // True after one failed degrade attempt while the channel probe was still running;
+        // allows a single delayed retry so freshly probed fallbacks can be picked up.
+        private bool _degradeRetried;
 
         public event Action? RequestEpgRefresh;
         public event Action? RequestHistoryRefresh;
@@ -108,6 +111,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 _shell.CurrentUrl = url;
 
                 _sourceTimeoutTimer.Stop();
+                _degradeRetried = false;
                 _sourceTimeoutTimer.Interval = TimeSpan.FromSeconds(Math.Max(1, AppSettings.Current.SourceTimeoutSec));
                 _sourceTimeoutTimer.Start();
 
@@ -134,6 +138,11 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 {
                     _shell.PlayerEngine.Play(url);
                 }
+
+                // Channel-scoped health probe (NO full-list scan): only the playing channel's
+                // own sources are checked, in the background with a small delay so mpv startup
+                // is never contended (respects EnableSourceHealthScan + 1~100 concurrency).
+                try { LibmpvIptvClient.Services.SourceHealthService.Instance.ProbeChannelSourcesAsync(ch); } catch { }
 
                 try
                 {
@@ -217,6 +226,19 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             }
             else
             {
+                // The channel probe (started when playback began) may still be in flight —
+                // fallback results may not be written yet. Retry once after the probe timeout
+                // so a freshly discovered healthy fallback is not missed.
+                if (!_degradeRetried &&
+                    LibmpvIptvClient.Services.SourceHealthService.Instance.IsProbePending(_shell.CurrentChannel))
+                {
+                    _degradeRetried = true;
+                    var retrySec = Math.Max(1, AppSettings.Current.SourceHealthProbeTimeoutSec) + 1;
+                    _sourceTimeoutTimer.Interval = TimeSpan.FromSeconds(retrySec);
+                    _sourceTimeoutTimer.Start();
+                    LibmpvIptvClient.Diagnostics.Logger.Warn($"[Source] Probe still in flight, retrying auto-degrade in {retrySec}s");
+                    return;
+                }
                 LibmpvIptvClient.Diagnostics.Logger.Warn($"[Source] All sources unreachable for {_shell.CurrentChannel.Name}, no more to switch to.");
             }
         }
@@ -229,7 +251,23 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 
         public void CheckPlaybackStarted(double timePos)
         {
-            if (timePos > 0) _sourceTimeoutTimer.Stop();
+            if (timePos <= 0) return;
+            _sourceTimeoutTimer.Stop();
+            _degradeRetried = false;
+            // Zero-traffic health confirmation: the channel's current source really plays,
+            // so mark it healthy without spending an HTTP probe / ONU stream slot.
+            try
+            {
+                if (_shell.CurrentChannel?.Tag is Source s && !string.IsNullOrWhiteSpace(s.Url))
+                {
+                    var cur = _shell.SourceLoader.SanitizeUrl(s.Url);
+                    if (cur != null && string.Equals(cur, _shell.CurrentUrl, StringComparison.OrdinalIgnoreCase))
+                    {
+                        LibmpvIptvClient.Services.SourceHealthService.Instance.MarkPlaybackHealthy(_shell.CurrentChannel);
+                    }
+                }
+            }
+            catch { }
         }
 
         public void PlayCatchup(Channel ch, EpgProgram prog)

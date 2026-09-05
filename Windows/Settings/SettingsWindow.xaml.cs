@@ -248,6 +248,15 @@ namespace LibmpvIptvClient
                     if (CbChannelPreview != null) CbChannelPreview.IsChecked = current.EnableChannelPreview;
                     if (TbChannelPreviewWidth != null) TbChannelPreviewWidth.Text = current.ChannelPreviewWidth.ToString();
                     if (TbChannelPreviewHeight != null) TbChannelPreviewHeight.Text = current.ChannelPreviewHeight.ToString();
+                    if (TbChannelPreviewConcurrent != null) TbChannelPreviewConcurrent.Text = current.ChannelPreviewMaxConcurrent.ToString();
+                }
+                catch { }
+
+                // 源健康检查（开关 + 探测并发数）
+                try
+                {
+                    if (CbSourceHealthEnable != null) CbSourceHealthEnable.IsChecked = current.EnableSourceHealthScan;
+                    if (TbSourceHealthConcurrent != null) TbSourceHealthConcurrent.Text = current.SourceHealthMaxConcurrent.ToString();
                 }
                 catch { }
             }
@@ -536,6 +545,15 @@ namespace LibmpvIptvClient
                 s.EnableChannelPreview = CbChannelPreview?.IsChecked == true;
                 s.ChannelPreviewWidth = int.TryParse(TbChannelPreviewWidth?.Text, out var w) ? Math.Max(80, w) : 214;
                 s.ChannelPreviewHeight = int.TryParse(TbChannelPreviewHeight?.Text, out var h) ? Math.Max(60, h) : 120;
+                s.ChannelPreviewMaxConcurrent = int.TryParse(TbChannelPreviewConcurrent?.Text, out var pc) ? Math.Max(1, Math.Min(16, pc)) : 2;
+            }
+            catch { }
+
+            // 源健康检查
+            try
+            {
+                s.EnableSourceHealthScan = CbSourceHealthEnable?.IsChecked == true;
+                s.SourceHealthMaxConcurrent = int.TryParse(TbSourceHealthConcurrent?.Text, out var hc) ? Math.Max(1, Math.Min(100, hc)) : 5;
             }
             catch { }
 

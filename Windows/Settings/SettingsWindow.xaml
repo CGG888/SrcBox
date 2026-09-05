@@ -529,6 +529,11 @@
                       <TextBlock Text="px" VerticalAlignment="Center" Margin="4,0,0,0"/>
                     </StackPanel>
                     <TextBlock Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" Margin="24,4,0,0" TextWrapping="Wrap" Text="{DynamicResource UI_ChannelPreview_SizeHint}"/>
+                    <StackPanel Orientation="Horizontal" Margin="24,10,0,0">
+                      <TextBlock Text="{DynamicResource UI_ChannelPreview_Concurrent}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                      <TextBox x:Name="TbChannelPreviewConcurrent" Width="60" Height="24"/>
+                    </StackPanel>
+                    <TextBlock Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" Margin="24,4,0,0" TextWrapping="Wrap" Text="{DynamicResource UI_ChannelPreview_ConcurrentHint}"/>
                   </StackPanel>
                 </Border>
                 <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16">
@@ -654,6 +659,20 @@
                       <TextBlock Grid.Row="14" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" Margin="0,4,0,8"
                                  Text="{DynamicResource UI_HttpHeader_HeadersHint}" TextWrapping="Wrap"/>
                     </Grid>
+                  </StackPanel>
+                </Border>
+
+                <!-- 源健康检查 -->
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
+                  <StackPanel>
+                    <TextBlock Text="{DynamicResource UI_SourceHealth_Title}" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                    <CheckBox x:Name="CbSourceHealthEnable" Content="{DynamicResource UI_SourceHealth_Enable}"/>
+                    <TextBlock Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" Margin="24,2,0,0" TextWrapping="Wrap" Text="{DynamicResource UI_SourceHealth_Hint}"/>
+                    <StackPanel Orientation="Horizontal" Margin="24,10,0,0">
+                      <TextBlock Text="{DynamicResource UI_SourceHealth_Concurrent}" VerticalAlignment="Center" Margin="0,0,8,0"/>
+                      <TextBox x:Name="TbSourceHealthConcurrent" Width="60" Height="24"/>
+                    </StackPanel>
+                    <TextBlock Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" Margin="24,4,0,0" TextWrapping="Wrap" Text="{DynamicResource UI_SourceHealth_ConcurrentHint}"/>
                   </StackPanel>
                 </Border>
 

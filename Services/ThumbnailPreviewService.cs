@@ -24,8 +24,35 @@ namespace LibmpvIptvClient.Services
         // Prevent duplicate concurrent requests for the same URL
         private readonly ConcurrentDictionary<string, Task<BitmapImage?>> _pendingRequests = new ConcurrentDictionary<string, Task<BitmapImage?>>(StringComparer.OrdinalIgnoreCase);
 
-        // Limit concurrent snapshot requests to avoid overloading rtp2httpd
-        private readonly SemaphoreSlim _semaphore = new SemaphoreSlim(2, 2);
+        // Limit concurrent snapshot requests to avoid overloading rtp2httpd / ONU stream
+        // budget. The limit is read live from ChannelPreviewMaxConcurrent (1~16) so settings
+        // changes take effect immediately without rebuilding the semaphore. Requests are
+        // short (5s timeout), so the blocking gate is acceptable.
+        private readonly object _slotLock = new object();
+        private int _activeSnapshots;
+
+        private int MaxConcurrent => Math.Max(1, Math.Min(16, AppSettings.Current.ChannelPreviewMaxConcurrent));
+
+        private void AcquireSlot()
+        {
+            lock (_slotLock)
+            {
+                while (_activeSnapshots >= MaxConcurrent)
+                {
+                    Monitor.Wait(_slotLock);
+                }
+                _activeSnapshots++;
+            }
+        }
+
+        private void ReleaseSlot()
+        {
+            lock (_slotLock)
+            {
+                _activeSnapshots--;
+                Monitor.PulseAll(_slotLock);
+            }
+        }
 
         private readonly HttpClient _http;
 
@@ -69,10 +96,10 @@ namespace LibmpvIptvClient.Services
         {
             try
             {
-                await _semaphore.WaitAsync().ConfigureAwait(false);
+                AcquireSlot();
                 try
                 {
-                    // Double-check cache after acquiring semaphore (another request might have populated it)
+                    // Double-check cache after acquiring the slot (another request might have populated it)
                     if (_cache.TryGetValue(streamUrl, out var cached) && !cached.IsExpired)
                         return cached.Image;
 
@@ -129,7 +156,7 @@ namespace LibmpvIptvClient.Services
                 }
                 finally
                 {
-                    _semaphore.Release();
+                    ReleaseSlot();
                 }
             }
             catch (Exception ex)

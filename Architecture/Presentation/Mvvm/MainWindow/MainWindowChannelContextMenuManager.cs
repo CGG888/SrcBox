@@ -35,9 +35,10 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 
             _sourceItems.Clear();
 
-            // Immediately probe the Tag source so right-click always shows accurate latency
+            // Immediately probe the Tag source so right-click always shows accurate latency.
+            // This is an automatic probe → skipped when the user disabled source health scanning.
             var tag = channel.Tag ?? channel.Sources?.FirstOrDefault();
-            if (tag != null && tag.IsHttpSource)
+            if (tag != null && tag.IsHttpSource && AppSettings.Current.EnableSourceHealthScan)
             {
                 // Wire callback so Ellipse updates when background scan completes
                 tag.OnHealthChanged = () => channel.NotifySourceHealthChanged();

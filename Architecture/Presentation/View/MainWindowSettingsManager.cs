@@ -100,6 +100,16 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             AppSettings.Current.EnableChannelPreview = settings.EnableChannelPreview;
             AppSettings.Current.ChannelPreviewWidth = settings.ChannelPreviewWidth;
             AppSettings.Current.ChannelPreviewHeight = settings.ChannelPreviewHeight;
+            AppSettings.Current.ChannelPreviewMaxConcurrent = settings.ChannelPreviewMaxConcurrent;
+            AppSettings.Current.EnableSourceHealthScan = settings.EnableSourceHealthScan;
+            AppSettings.Current.SourceHealthMaxConcurrent = settings.SourceHealthMaxConcurrent;
+            try
+            {
+                // Disabling the scan takes effect immediately; manual per-channel re-checks stay available.
+                if (!settings.EnableSourceHealthScan)
+                    LibmpvIptvClient.Services.SourceHealthService.Instance.Stop();
+            }
+            catch { }
             AppSettings.Current.Deinterlace = settings.Deinterlace;
             AppSettings.Current.DeinterlaceFieldParity = settings.DeinterlaceFieldParity;
             AppSettings.Current.DeinterlaceAlgorithm = settings.DeinterlaceAlgorithm;

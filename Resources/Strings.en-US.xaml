@@ -12,6 +12,13 @@
   <sys:String x:Key="UI_ChannelPreview_Width">Width</sys:String>
   <sys:String x:Key="UI_ChannelPreview_Height">Height</sys:String>
   <sys:String x:Key="UI_ChannelPreview_SizeHint">Recommended 16:9 ratio, e.g. 214x120 / 320x180</sys:String>
+  <sys:String x:Key="UI_ChannelPreview_Concurrent">Preview concurrency</sys:String>
+  <sys:String x:Key="UI_ChannelPreview_ConcurrentHint">Max simultaneous snapshot requests (1~16, default 2); higher values consume more ONU/modem streams</sys:String>
+  <sys:String x:Key="UI_SourceHealth_Title">Source health check</sys:String>
+  <sys:String x:Key="UI_SourceHealth_Enable">Enable automatic source health check</sys:String>
+  <sys:String x:Key="UI_SourceHealth_Hint">Only probes sources of the currently playing channel — no full-list scans. A source that starts playing successfully is marked healthy with zero extra probe traffic.</sys:String>
+  <sys:String x:Key="UI_SourceHealth_Concurrent">Probe concurrency</sys:String>
+  <sys:String x:Key="UI_SourceHealth_ConcurrentHint">Sources probed at the same time (1~100, default 5). Lower it when the ONU/ISP limits concurrent streams; playback itself uses 1.</sys:String>
   <sys:String x:Key="UI_TabRecording">Recording</sys:String>
   <sys:String x:Key="UI_TabAbout">About</sys:String>
   <sys:String x:Key="UI_TabEpgLogo">EPG &amp; Logos</sys:String>
