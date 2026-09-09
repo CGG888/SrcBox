@@ -21,6 +21,12 @@ namespace LibmpvIptvClient.Architecture.Application.Player
         void EnsureReadyForLoad();
         bool IsEofReached();
         void LoadWithPrefetch(string url, System.Collections.Generic.IEnumerable<string> nextUrls);
+
+        /// <summary>Fast-zap: switch to the playlist entry that is currently prefetched when it matches url. Returns false otherwise.</summary>
+        bool SwitchToPrefetchedNext(string url);
+
+        /// <summary>(Re)anchor the prefetch window to one upcoming URL without interrupting the playing entry; pass null to drop it.</summary>
+        void AnchorPrefetch(string? nextUrl);
         void SetPropertyString(string name, string value);
         void SetRecordingMode(bool recording);
         string? GetPropertyString(string name);

@@ -29,6 +29,23 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         // allows a single delayed retry so freshly probed fallbacks can be picked up.
         private bool _degradeRetried;
 
+        // ---- Fast zap (方案 A: playlist prefetch + debounce) ----
+        // Collapse burst key presses while a zap is still loading; the latest intent is
+        // applied once the current zap actually shows its first frame.
+        private Channel? _queuedZap;
+        private DateTime _queuedZapAt;
+        private DateTime _lastZapAt = DateTime.MinValue;
+        // URL of the neighbor to prefetch once the current zap shows its first frame.
+        private string? _pendingAnchorUrl;
+        private const double ZapCoalesceMs = 400;      // burst key presses within this window collapse into one queue slot
+        private const double ZapQueueExpiryMs = 2000;  // a queued zap older than this is discarded (user moved on)
+        private const double ZapMinApplyGapMs = 350;   // minimum gap between two actually-applied zaps
+        // Auto-release the neighbor prefetch after this idle time so we do not hold a
+        // second ONU/modem stream line forever (zap fast-path stays for bursts only).
+        private const double ZapAnchorHoldMs = 15000;
+        private readonly DispatcherTimer _anchorReleaseTimer;
+        // ---- /Fast zap ----
+
         public event Action? RequestEpgRefresh;
         public event Action? RequestHistoryRefresh;
         public event Action<Channel, DateTime?>? RequestEpgReload;
@@ -39,11 +56,27 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             _shell = shell;
             _sourceTimeoutTimer = new DispatcherTimer();
             _sourceTimeoutTimer.Tick += OnSourceTimeout;
+            _anchorReleaseTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(ZapAnchorHoldMs) };
+            _anchorReleaseTimer.Tick += (_, _) =>
+            {
+                _anchorReleaseTimer.Stop();
+                try { _shell.PlayerEngine?.AnchorPrefetch(null); } catch { }
+            };
         }
 
-        public void PlayChannel(Channel ch, IEnumerable<EpgProgram>? epgItems = null)
+        public void PlayChannel(Channel ch, IEnumerable<EpgProgram>? epgItems = null, bool viaZap = false)
         {
             if (_shell.PlayerEngine == null || ch == null || _shell.UserDataStore == null) return;
+
+            // A non-zap switch (click / history / web-remote / auto-degrade / resume) cancels
+            // any pending fast-zap intent and its prefetch anchor. Any play restarts the
+            // anchor auto-release window (a new anchor is (re)armed when the first frame shows).
+            _anchorReleaseTimer.Stop();
+            if (!viaZap)
+            {
+                _queuedZap = null;
+                _pendingAnchorUrl = null;
+            }
 
             try
             {
@@ -115,24 +148,29 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 _sourceTimeoutTimer.Interval = TimeSpan.FromSeconds(Math.Max(1, AppSettings.Current.SourceTimeoutSec));
                 _sourceTimeoutTimer.Start();
 
-                if (AppSettings.Current.FccPrefetchCount > 0 && _shell.SourceLoader.IsMulticast(url))
+                var isMulticastWithFcc = AppSettings.Current.FccPrefetchCount > 0 && _shell.SourceLoader.IsMulticast(url);
+                if (viaZap)
                 {
-                    var idx = _shell.Channels.IndexOf(ch);
-                    var list = new List<string>();
-                    var count = Math.Max(0, AppSettings.Current.FccPrefetchCount);
-                    for (int i = 1; i <= count; i++)
+                    // Fast zap: if the target is exactly the neighbor mpv already prefetched,
+                    // switch through the playlist (near-instant, no network wait).
+                    bool zapHit = _shell.PlayerEngine.SwitchToPrefetchedNext(url);
+                    if (!zapHit)
                     {
-                        var n = idx + i;
-                        if (n >= 0 && n < _shell.Channels.Count)
-                        {
-                            var next = _shell.Channels[n];
-                            if (next?.Tag is Source nextSrc)
-                            {
-                                list.Add(_shell.SourceLoader.SanitizeUrl(nextSrc.Url));
-                            }
-                        }
+                        if (isMulticastWithFcc)
+                            _shell.PlayerEngine.LoadWithPrefetch(url, BuildFccNeighborUrls(ch));
+                        else
+                            _shell.PlayerEngine.Play(url);
                     }
-                    _shell.PlayerEngine.LoadWithPrefetch(url, list);
+                    else
+                    {
+                        LibmpvIptvClient.Diagnostics.Logger.Info($"[Live] Fast zap via mpv prefetch: {ch.Name} {url}");
+                    }
+                    // Prefetch the NEXT neighbor once this channel actually shows a picture.
+                    _pendingAnchorUrl = ResolveZapAnchorUrl(ch);
+                }
+                else if (isMulticastWithFcc)
+                {
+                    _shell.PlayerEngine.LoadWithPrefetch(url, BuildFccNeighborUrls(ch));
                 }
                 else
                 {
@@ -268,6 +306,113 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 }
             }
             catch { }
+
+            // Fast zap housekeeping (single shot per first frame):
+            // 1) anchor the next neighbor prefetch now that this channel is really playing;
+            // 2) apply the latest queued zap intent if the user kept pressing ↑/↓ while loading.
+            // Only meaningful while we are still on the live zap target's URL (not catchup/replay).
+            try
+            {
+                var onLiveZapTarget = _shell.CurrentChannel?.Tag is Source zt &&
+                                      !string.IsNullOrWhiteSpace(zt.Url) &&
+                                      string.Equals(_shell.SourceLoader.SanitizeUrl(zt.Url), _shell.CurrentUrl, StringComparison.OrdinalIgnoreCase);
+
+                if (onLiveZapTarget && _pendingAnchorUrl != null)
+                {
+                    var anchor = _pendingAnchorUrl;
+                    _pendingAnchorUrl = null;
+                    _shell.PlayerEngine?.AnchorPrefetch(anchor);
+                    _anchorReleaseTimer.Stop();
+                    _anchorReleaseTimer.Start(); // drop the extra stream line if zapping stops
+                }
+                if (onLiveZapTarget && _queuedZap != null)
+                {
+                    var q = _queuedZap;
+                    var age = (DateTime.Now - _queuedZapAt).TotalMilliseconds;
+                    _queuedZap = null;
+                    if (age <= ZapQueueExpiryMs &&
+                        q != _shell.CurrentChannel &&
+                        (DateTime.Now - _lastZapAt).TotalMilliseconds >= ZapMinApplyGapMs)
+                    {
+                        _lastZapAt = DateTime.Now;
+                        PlayChannel(q, null, viaZap: true);
+                    }
+                }
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// ↑/↓ channel zap entry point. Burst key presses while a zap is still loading are
+        /// collapsed into one queue slot; the latest target is applied when the current zap
+        /// shows its first frame. Neighbor prefetch makes consecutive zaps near-instant.
+        /// </summary>
+        public void RequestZapSwitch(Channel target)
+        {
+            if (_shell.PlayerEngine == null || target == null || _shell.UserDataStore == null) return;
+            var now = DateTime.Now;
+            if ((now - _lastZapAt).TotalMilliseconds < ZapCoalesceMs)
+            {
+                // Still loading (or just requested) — remember the newest intent.
+                _queuedZap = target;
+                _queuedZapAt = now;
+                return;
+            }
+            _lastZapAt = now;
+            _queuedZap = null;
+            PlayChannel(target, null, viaZap: true);
+        }
+
+        /// <summary>URL of the channel right after `ch` in the filtered list, used as the next prefetch target (only plain network URLs).</summary>
+        private string? ResolveZapAnchorUrl(Channel ch)
+        {
+            try
+            {
+                var list = _shell.FilteredChannels;
+                if (list == null || list.Count <= 1) return null;
+                int idx = -1;
+                for (int i = 0; i < list.Count; i++)
+                {
+                    if (list[i] == ch) { idx = i; break; }
+                }
+                if (idx < 0) return null;
+                var next = list[(idx + 1) % list.Count];
+                if (next == null || ReferenceEquals(next, ch)) return null;
+                if (next.Tag is not Source s || string.IsNullOrWhiteSpace(s.Url)) return null;
+                var u = _shell.SourceLoader.SanitizeUrl(s.Url);
+                if (string.IsNullOrWhiteSpace(u)) return null;
+                var lo = u.ToLowerInvariant();
+                if (!(lo.StartsWith("http") || lo.StartsWith("udp://") || lo.StartsWith("rtp://") || lo.StartsWith("rtsp://")))
+                    return null;
+                return u;
+            }
+            catch { return null; }
+        }
+
+        /// <summary>Neighbor URLs used by the multicast FCC preload path (existing behavior).</summary>
+        private List<string> BuildFccNeighborUrls(Channel ch)
+        {
+            var list = new List<string>();
+            try
+            {
+                var idx = _shell.Channels.IndexOf(ch);
+                var count = Math.Max(0, AppSettings.Current.FccPrefetchCount);
+                for (int i = 1; i <= count; i++)
+                {
+                    var n = idx + i;
+                    if (n >= 0 && n < _shell.Channels.Count)
+                    {
+                        var next = _shell.Channels[n];
+                        if (next?.Tag is Source nextSrc && !string.IsNullOrWhiteSpace(nextSrc.Url))
+                        {
+                            var u = _shell.SourceLoader.SanitizeUrl(nextSrc.Url);
+                            if (!string.IsNullOrWhiteSpace(u)) list.Add(u!);
+                        }
+                    }
+                }
+            }
+            catch { }
+            return list;
         }
 
         public void PlayCatchup(Channel ch, EpgProgram prog)

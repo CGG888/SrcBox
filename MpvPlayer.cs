@@ -11,6 +11,8 @@ namespace LibmpvIptvClient
         IntPtr _handle = IntPtr.Zero;
         PlaybackSettings _settings = AppSettings.Current;
         private bool _recordingMode = false;
+        // URL of the playlist entry mpv currently prefetches (immediate next entry).
+        private string? _prefetchedNextUrl;
         public void SetRecordingMode(bool recording) { _recordingMode = recording; }
         public void Create()
         {
@@ -314,6 +316,7 @@ namespace LibmpvIptvClient
             SetupProtocolOptions(url);
             var args = new string[] { "loadfile", url, null! };
             mpv_command(_handle, args);
+            _prefetchedNextUrl = null;
             Logger.Log("mpv loadfile 调用完成");
         }
         public void LoadWithPrefetch(string url, string? nextUrl)
@@ -331,6 +334,7 @@ namespace LibmpvIptvClient
                 mpv_command(_handle, loadNext);
                 Logger.Log("已预取下一频道");
             }
+            _prefetchedNextUrl = string.IsNullOrWhiteSpace(nextUrl) ? null : nextUrl!.Trim();
             Logger.Log("mpv loadfile + prefetch 调用完成");
         }
         public void LoadWithPrefetch(string url, System.Collections.Generic.IEnumerable<string> nextUrls)
@@ -341,14 +345,71 @@ namespace LibmpvIptvClient
             SetupProtocolOptions(url);
             var loadCurrent = new string[] { "loadfile", url, "replace", null! };
             mpv_command(_handle, loadCurrent);
+            string? firstNext = null;
             foreach (var n in nextUrls)
             {
                 if (string.IsNullOrWhiteSpace(n)) continue;
+                if (firstNext == null) firstNext = n.Trim();
                 SetupProtocolOptions(n);
                 var loadNext = new string[] { "loadfile", n, "append-play", null! };
                 mpv_command(_handle, loadNext);
             }
+            _prefetchedNextUrl = firstNext;
             Logger.Log("播放加载完成");
+        }
+
+        /// <summary>
+        /// Fast-zap: switches to the playlist entry mpv is currently prefetching, if it matches
+        /// the requested URL (mpv only prefetches the immediate next playlist entry). Returns
+        /// false when the target was not prefetched so the caller falls back to a normal load.
+        /// </summary>
+        public bool SwitchToPrefetchedNext(string url)
+        {
+            if (string.IsNullOrWhiteSpace(url)) return false;
+            if (_prefetchedNextUrl == null ||
+                !string.Equals(_prefetchedNextUrl, url.Trim(), StringComparison.OrdinalIgnoreCase))
+                return false;
+            try
+            {
+                _prefetchedNextUrl = null;
+                var args = new string[] { "playlist-next", null! };
+                mpv_command(_handle, args);
+                Logger.Log("mpv playlist-next (fast zap): " + url);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn($"[mpv] playlist-next failed: {ex.Message}");
+                return false;
+            }
+        }
+
+        /// <summary>
+        /// (Re)anchors the prefetch window to one upcoming URL WITHOUT interrupting the
+        /// currently playing entry (playlist-clear keeps the playing file). Pass null to
+        /// drop the prefetch and release the extra network line.
+        /// </summary>
+        public void AnchorPrefetch(string? nextUrl)
+        {
+            try
+            {
+                var hasNext = !string.IsNullOrWhiteSpace(nextUrl);
+                SetFlag("prefetch-playlist", hasNext);
+                var clear = new string[] { "playlist-clear", null! };
+                mpv_command(_handle, clear); // keeps the currently playing entry
+                if (hasNext)
+                {
+                    SetupProtocolOptions(nextUrl!);
+                    var args = new string[] { "loadfile", nextUrl!, "append-play", null! };
+                    mpv_command(_handle, args);
+                }
+                _prefetchedNextUrl = hasNext ? nextUrl!.Trim() : null;
+                Logger.Log(hasNext ? "mpv prefetch anchored: " + nextUrl : "mpv prefetch cleared");
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn($"[mpv] AnchorPrefetch failed: {ex.Message}");
+            }
         }
         public void Pause(bool pause)
         {

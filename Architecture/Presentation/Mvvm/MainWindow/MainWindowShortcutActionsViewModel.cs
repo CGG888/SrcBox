@@ -276,7 +276,9 @@ public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
         {
             targetIdx = (idx - 1 + list.Count) % list.Count;
         }
-        _shell.ChannelPlaybackActions.PlayChannel(list[targetIdx], null);
+        // Fast zap: uses mpv playlist prefetch when the neighbor was preloaded, and debounces
+        // burst key presses so rapid ↑/↓ do not thrash the network.
+        _shell.ChannelPlaybackActions.RequestZapSwitch(list[targetIdx]);
     }
 
     public void TrySwitchProgram(bool next)

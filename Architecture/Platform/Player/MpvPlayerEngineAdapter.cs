@@ -146,6 +146,16 @@ namespace LibmpvIptvClient.Architecture.Platform.Player
             _mpv.LoadWithPrefetch(url, nextUrls);
         }
 
+        public bool SwitchToPrefetchedNext(string url)
+        {
+            return _mpv.SwitchToPrefetchedNext(url);
+        }
+
+        public void AnchorPrefetch(string? nextUrl)
+        {
+            _mpv.AnchorPrefetch(nextUrl);
+        }
+
         public void SetPropertyString(string name, string value)
         {
             _mpv.SetString(name, value);
