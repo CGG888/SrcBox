@@ -44,6 +44,15 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         // second ONU/modem stream line forever (zap fast-path stays for bursts only).
         private const double ZapAnchorHoldMs = 15000;
         private readonly DispatcherTimer _anchorReleaseTimer;
+        // One-shot verification after a playlist-next fast zap: if mpv did not actually move
+        // to the target entry we fall back to a direct load instead of waiting 5s for the
+        // source timeout.
+        private const double ZapVerifyMs = 700;
+        private readonly DispatcherTimer _zapVerifyTimer;
+        private Channel? _zapVerifyChannel;
+        private string? _zapVerifyUrl;
+        private long? _zapVerifyPosBefore;
+        private bool _zapVerifyActive;
         // ---- /Fast zap ----
 
         public event Action? RequestEpgRefresh;
@@ -62,6 +71,8 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 _anchorReleaseTimer.Stop();
                 try { _shell.PlayerEngine?.AnchorPrefetch(null); } catch { }
             };
+            _zapVerifyTimer = new DispatcherTimer { Interval = TimeSpan.FromMilliseconds(ZapVerifyMs) };
+            _zapVerifyTimer.Tick += OnZapVerifyTick;
         }
 
         public void PlayChannel(Channel ch, IEnumerable<EpgProgram>? epgItems = null, bool viaZap = false)
@@ -72,6 +83,8 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             // any pending fast-zap intent and its prefetch anchor. Any play restarts the
             // anchor auto-release window (a new anchor is (re)armed when the first frame shows).
             _anchorReleaseTimer.Stop();
+            _zapVerifyTimer.Stop();
+            _zapVerifyActive = false;
             if (!viaZap)
             {
                 _queuedZap = null;
@@ -164,6 +177,14 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                     else
                     {
                         LibmpvIptvClient.Diagnostics.Logger.Info($"[Live] Fast zap via mpv prefetch: {ch.Name} {url}");
+                        // Arm a one-shot verification: playlist-next could silently fail, and
+                        // we do not want to wait for the 5s source timeout in that case.
+                        _zapVerifyChannel = ch;
+                        _zapVerifyUrl = url;
+                        _zapVerifyPosBefore = _shell.PlayerEngine.GetPropertyLong("playlist-pos");
+                        _zapVerifyActive = true;
+                        _zapVerifyTimer.Stop();
+                        _zapVerifyTimer.Start();
                     }
                     // Prefetch the NEXT neighbor once this channel actually shows a picture.
                     _pendingAnchorUrl = ResolveZapAnchorUrl(ch);
@@ -329,14 +350,67 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 {
                     var q = _queuedZap;
                     var age = (DateTime.Now - _queuedZapAt).TotalMilliseconds;
-                    _queuedZap = null;
-                    if (age <= ZapQueueExpiryMs &&
-                        q != _shell.CurrentChannel &&
-                        (DateTime.Now - _lastZapAt).TotalMilliseconds >= ZapMinApplyGapMs)
+                    if (age > ZapQueueExpiryMs)
                     {
+                        _queuedZap = null; // stale intent: the user has moved on
+                    }
+                    else if (q == _shell.CurrentChannel)
+                    {
+                        _queuedZap = null; // already there
+                    }
+                    else if ((DateTime.Now - _lastZapAt).TotalMilliseconds >= ZapMinApplyGapMs)
+                    {
+                        _queuedZap = null;
                         _lastZapAt = DateTime.Now;
                         PlayChannel(q, null, viaZap: true);
                     }
+                    // else: KEEP it queued — this method runs every playback tick, so the
+                    // pending zap is applied as soon as the minimum gap has elapsed. Never
+                    // drop the user's intent just because the gap was too small.
+                }
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// One-shot check after a playlist-next fast zap. If mpv did not actually move to the
+        /// target entry (silent failure), immediately do a direct load instead of stalling
+        /// until the source-timeout degrade kicks in.
+        /// </summary>
+        private void OnZapVerifyTick(object? sender, EventArgs e)
+        {
+            _zapVerifyTimer.Stop();
+            if (!_zapVerifyActive) return;
+            _zapVerifyActive = false;
+            try
+            {
+                var ch = _zapVerifyChannel;
+                var url = _zapVerifyUrl;
+                var engine = _shell.PlayerEngine;
+                if (ch == null || string.IsNullOrWhiteSpace(url) || engine == null) return;
+
+                bool switched;
+                var path = engine.GetPropertyString("path");
+                if (!string.IsNullOrWhiteSpace(path) &&
+                    string.Equals(path.Trim(), url.Trim(), StringComparison.OrdinalIgnoreCase))
+                {
+                    switched = true;
+                }
+                else
+                {
+                    // Fallback signal: the playlist position advanced past the pre-command value.
+                    var posAfter = engine.GetPropertyLong("playlist-pos");
+                    switched = _zapVerifyPosBefore.HasValue && posAfter.HasValue &&
+                               posAfter.Value > _zapVerifyPosBefore.Value;
+                }
+
+                if (!switched)
+                {
+                    LibmpvIptvClient.Diagnostics.Logger.Warn($"[Live] Fast zap verify failed (path={path ?? "null"}), direct load fallback: {url}");
+                    if (AppSettings.Current.FccPrefetchCount > 0 && _shell.SourceLoader.IsMulticast(url))
+                        engine.LoadWithPrefetch(url, BuildFccNeighborUrls(ch));
+                    else
+                        engine.Play(url);
                 }
             }
             catch { }
@@ -363,18 +437,36 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             PlayChannel(target, null, viaZap: true);
         }
 
-        /// <summary>URL of the channel right after `ch` in the filtered list, used as the next prefetch target (only plain network URLs).</summary>
+        /// <summary>
+        /// Channel order used both by ↑/↓ zapping and by neighbor prefetch. The filtered list
+        /// (search/group view) is authoritative when available so the prefetched entry always
+        /// matches the next zap target; falls back to the full channel list.
+        /// </summary>
+        private System.Collections.Generic.IReadOnlyList<Channel> GetZapOrderList()
+        {
+            var filtered = _shell.FilteredChannels;
+            if (filtered != null && filtered.Count > 0) return filtered;
+            return _shell.Channels;
+        }
+
+        private static int IndexOfChannel(System.Collections.Generic.IReadOnlyList<Channel>? list, Channel ch)
+        {
+            if (list == null) return -1;
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (ReferenceEquals(list[i], ch)) return i;
+            }
+            return -1;
+        }
+
+        /// <summary>URL of the channel right after `ch` in the zap order, used as the next prefetch target (only plain network URLs).</summary>
         private string? ResolveZapAnchorUrl(Channel ch)
         {
             try
             {
-                var list = _shell.FilteredChannels;
+                var list = GetZapOrderList();
                 if (list == null || list.Count <= 1) return null;
-                int idx = -1;
-                for (int i = 0; i < list.Count; i++)
-                {
-                    if (list[i] == ch) { idx = i; break; }
-                }
+                var idx = IndexOfChannel(list, ch);
                 if (idx < 0) return null;
                 var next = list[(idx + 1) % list.Count];
                 if (next == null || ReferenceEquals(next, ch)) return null;
@@ -389,20 +481,29 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             catch { return null; }
         }
 
-        /// <summary>Neighbor URLs used by the multicast FCC preload path (existing behavior).</summary>
+        /// <summary>Neighbor URLs used by the multicast FCC preload path — same order as ↑/↓ zapping.</summary>
         private List<string> BuildFccNeighborUrls(Channel ch)
         {
             var list = new List<string>();
             try
             {
-                var idx = _shell.Channels.IndexOf(ch);
+                var order = GetZapOrderList();
+                var idx = IndexOfChannel(order, ch);
+                if (idx < 0)
+                {
+                    // Channel not in the current view (e.g. filtered out) — fall back to the full list.
+                    order = _shell.Channels;
+                    idx = IndexOfChannel(order, ch);
+                }
+                if (idx < 0 || order == null) return list;
+
                 var count = Math.Max(0, AppSettings.Current.FccPrefetchCount);
                 for (int i = 1; i <= count; i++)
                 {
                     var n = idx + i;
-                    if (n >= 0 && n < _shell.Channels.Count)
+                    if (n >= 0 && n < order.Count)
                     {
-                        var next = _shell.Channels[n];
+                        var next = order[n];
                         if (next?.Tag is Source nextSrc && !string.IsNullOrWhiteSpace(nextSrc.Url))
                         {
                             var u = _shell.SourceLoader.SanitizeUrl(nextSrc.Url);
