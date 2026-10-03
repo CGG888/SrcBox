@@ -27,6 +27,10 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 {
                     if (w is SettingsWindow existing)
                     {
+                        // The window snapshots the settings when it is constructed but stays open after
+                        // saving, so without reloading it would write stale control values back over
+                        // anything changed in the meantime (e.g. the decoder picked from the menu).
+                        try { existing.ReloadFromSettings(AppSettings.Current); } catch { }
                         try { existing.Owner = owner; } catch { }
                         try { existing.SelectTab(tabIndex); } catch { }
                         try { existing.Activate(); existing.Topmost = existing.Topmost; } catch { }

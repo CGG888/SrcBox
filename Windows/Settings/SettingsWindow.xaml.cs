@@ -386,7 +386,7 @@ namespace LibmpvIptvClient
                 (CbPlayseekKey?.Text ?? "playseek").Trim(),
                 CbUrlEncode?.IsChecked == true);
         }
-        void ReloadFromSettings(PlaybackSettings s)
+        public void ReloadFromSettings(PlaybackSettings s)
         {
             try
             {
@@ -452,6 +452,67 @@ namespace LibmpvIptvClient
                 ListCdn.ItemsSource = _cdnViewModel.CdnList;
                 // WebDAV
                 SetWebDavFields(s.WebDav);
+
+                // The sections below are written by Save(): reloading them keeps a reused window from
+                // writing stale control values back over changes made elsewhere (e.g. the decoder picked
+                // from the menu while this window was open).
+                var hh = s.HttpHeaders ?? new HttpHeaderConfig();
+                _tempHttpHeader = new HttpHeaderConfig
+                {
+                    Headers = hh.Headers,
+                    RtspUserAgent = hh.RtspUserAgent,
+                    RtspUser = hh.RtspUser,
+                    EncryptedRtspPassword = hh.EncryptedRtspPassword,
+                    RtspTransport = hh.RtspTransport,
+                    Rtp2httpdTimezoneEnabled = hh.Rtp2httpdTimezoneEnabled,
+                    Rtp2httpdTimezoneOffsetHours = hh.Rtp2httpdTimezoneOffsetHours,
+                    Rtp2httpdUserAgent = hh.Rtp2httpdUserAgent,
+                    ExtraPlaybackQuery = hh.ExtraPlaybackQuery
+                };
+                if (TbHttpHeaders != null) TbHttpHeaders.Text = hh.Headers ?? "";
+                if (CbRtspTransport != null)
+                {
+                    var transport = string.IsNullOrWhiteSpace(hh.RtspTransport) ? "tcp" : hh.RtspTransport;
+                    for (int i = 0; i < CbRtspTransport.Items.Count; i++)
+                    {
+                        if (CbRtspTransport.Items[i] is ComboBoxItem item &&
+                            string.Equals(item.Tag?.ToString(), transport, StringComparison.OrdinalIgnoreCase))
+                        {
+                            CbRtspTransport.SelectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+                if (TbRtspUserAgent != null) TbRtspUserAgent.Text = hh.RtspUserAgent ?? "";
+                if (TbRtspUser != null) TbRtspUser.Text = hh.RtspUser ?? "";
+                if (ChkRtp2httpdTz != null) ChkRtp2httpdTz.IsChecked = hh.Rtp2httpdTimezoneEnabled;
+                if (TbRtp2httpdTzOffset != null)
+                    TbRtp2httpdTzOffset.Text = hh.Rtp2httpdTimezoneOffsetHours.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                if (TbRtp2httpdUserAgent != null) TbRtp2httpdUserAgent.Text = hh.Rtp2httpdUserAgent ?? "";
+                if (TbExtraPlaybackQuery != null) TbExtraPlaybackQuery.Text = hh.ExtraPlaybackQuery ?? "";
+
+                SetComboByTag(CbDeinterlaceMode, string.IsNullOrWhiteSpace(s.Deinterlace) ? "auto" : s.Deinterlace);
+                SetComboByTag(CbDeinterlaceAlgo, string.IsNullOrWhiteSpace(s.DeinterlaceAlgorithm) ? "yadif" : s.DeinterlaceAlgorithm);
+
+                if (SliderVolumeGain != null) SliderVolumeGain.Value = s.VolumeGain;
+                if (SliderVolumeMax != null) SliderVolumeMax.Value = s.VolumeMax;
+                if (SliderAudioDelay != null) SliderAudioDelay.Value = s.AudioDelay;
+
+                var wr = s.WebRemote ?? new WebRemoteConfig();
+                if (CbWebRemoteEnabled != null) CbWebRemoteEnabled.IsChecked = wr.Enabled;
+                if (TbWebRemotePort != null) TbWebRemotePort.Text = wr.HttpPort.ToString();
+                if (CbWebRemotePassword != null) CbWebRemotePassword.IsChecked = wr.RequirePassword;
+                if (TbWebRemotePassword != null) TbWebRemotePassword.Text = wr.Password ?? "";
+                if (CbWebRemoteShowChannels != null) CbWebRemoteShowChannels.IsChecked = wr.ShowChannelList;
+                if (CbWebRemoteShowEpg != null) CbWebRemoteShowEpg.IsChecked = wr.ShowEpgList;
+
+                if (CbChannelPreview != null) CbChannelPreview.IsChecked = s.EnableChannelPreview;
+                if (TbChannelPreviewWidth != null) TbChannelPreviewWidth.Text = s.ChannelPreviewWidth.ToString();
+                if (TbChannelPreviewHeight != null) TbChannelPreviewHeight.Text = s.ChannelPreviewHeight.ToString();
+                if (TbChannelPreviewConcurrent != null) TbChannelPreviewConcurrent.Text = s.ChannelPreviewMaxConcurrent.ToString();
+
+                if (CbSourceHealthEnable != null) CbSourceHealthEnable.IsChecked = s.EnableSourceHealthScan;
+                if (TbSourceHealthConcurrent != null) TbSourceHealthConcurrent.Text = s.SourceHealthMaxConcurrent.ToString();
             }
             catch { }
         }
@@ -513,9 +574,21 @@ namespace LibmpvIptvClient
                     _tempLogo,
                     _tempRecording);
             }
-            catch
+            catch (Exception ex)
             {
-                s = new PlaybackSettings();
+                // Building the settings object used to fall back to a fresh default instance, which then
+                // overwrote and persisted the user's whole configuration because of one unexpected error
+                // while reading the form. Abort the save instead and say so.
+                try { LibmpvIptvClient.Diagnostics.Logger.Error("[Settings] 构建设置失败，本次保存已取消: " + ex); } catch { }
+                try
+                {
+                    ModernMessageBox.Show(this,
+                        LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Error", "错误") + ": " + ex.Message,
+                        LibmpvIptvClient.Helpers.ResxLocalizer.Get("Common_Tips", "提示"),
+                        MessageBoxButton.OK);
+                }
+                catch { }
+                return;
             }
             // Save HTTP/RTSP Header settings
             s.HttpHeaders = ReadHttpHeaderFormState();
