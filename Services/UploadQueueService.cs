@@ -23,6 +23,9 @@ namespace LibmpvIptvClient.Services
         int _backoffMs = 1000;
         int _maxKBps = 0;
         string QueueFile => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "upload_queue.json");
+        /// <summary>Last WebDAV configuration used, so an explicit Retry can restart the consumer
+        /// without the caller having to pass the configuration again.</summary>
+        LibmpvIptvClient.WebDavConfig? _lastWebDav;
         // NEW-11: Fire-and-forget async save to avoid blocking lock with sync I/O
         volatile bool _dirty = false;
         readonly SemaphoreSlim _saveLock = new(1, 1);
@@ -60,6 +63,7 @@ namespace LibmpvIptvClient.Services
                 _dirty = true;
             }
             _ = TrySaveAsync(); // non-blocking async save
+            _lastWebDav = wd;
             _ = RunAsync(wd);
         }
         public List<UploadItem> GetSnapshot()
@@ -91,10 +95,22 @@ namespace LibmpvIptvClient.Services
                 {
                     it.Status = "pending";
                     it.Error = null;
+                    // An explicit retry gets the full attempt budget back, otherwise an item that already
+                    // burned through its retries would be skipped by the scheduler.
+                    it.Attempts = 0;
                     needSave = true;
                 }
             }
-            if (needSave) { _dirty = true; _ = TrySaveAsync(); }
+            if (needSave)
+            {
+                _dirty = true;
+                _ = TrySaveAsync();
+
+                // The consumer only runs while something starts it, so a manual retry has to restart it:
+                // previously the item stayed "pending" until a new file was enqueued or the app restarted.
+                LibmpvIptvClient.Diagnostics.Logger.Info($"[Upload] 手动重试 id={id}");
+                _ = RunAsync(_lastWebDav);
+            }
         }
         public void Remove(string id)
         {
@@ -107,8 +123,14 @@ namespace LibmpvIptvClient.Services
             if (needSave) { _dirty = true; _ = TrySaveAsync(); }
         }
 
-        async Task RunAsync(LibmpvIptvClient.WebDavConfig wd)
+        async Task RunAsync(LibmpvIptvClient.WebDavConfig? wd)
         {
+            wd ??= AppSettings.Current?.WebDav;
+            if (wd == null)
+            {
+                LibmpvIptvClient.Diagnostics.Logger.Warn("[Upload] 未配置 WebDAV，队列无法开始上传");
+                return;
+            }
             if (_running) return;
             _running = true;
             try
