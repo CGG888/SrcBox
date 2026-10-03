@@ -314,8 +314,11 @@ namespace LibmpvIptvClient
         public void LoadFile(string url)
         {
             SetupProtocolOptions(url);
-            var args = new string[] { "loadfile", url, null! };
-            mpv_command(_handle, args);
+            // mpv expects UTF-8. The string[] overload of mpv_command marshals as
+            // UnmanagedType.LPStr (system ANSI code page), which re-encodes non-ASCII
+            // URLs to GBK and breaks proxies such as rtp2httpd, so use the explicit
+            // UTF-8 marshalling path instead.
+            Command("loadfile", ToMpvUrl(url));
             _prefetchedNextUrl = null;
             Logger.Log("mpv loadfile 调用完成");
         }
@@ -325,13 +328,11 @@ namespace LibmpvIptvClient
             var clear = new string[] { "playlist-clear", null! };
             mpv_command(_handle, clear);
             SetupProtocolOptions(url);
-            var loadCurrent = new string[] { "loadfile", url, "replace", null! };
-            mpv_command(_handle, loadCurrent);
+            Command("loadfile", ToMpvUrl(url), "replace");
             if (!string.IsNullOrWhiteSpace(nextUrl))
             {
                 SetupProtocolOptions(nextUrl!);
-                var loadNext = new string[] { "loadfile", nextUrl!, "append-play", null! };
-                mpv_command(_handle, loadNext);
+                Command("loadfile", ToMpvUrl(nextUrl!), "append-play");
                 Logger.Log("已预取下一频道");
             }
             _prefetchedNextUrl = string.IsNullOrWhiteSpace(nextUrl) ? null : nextUrl!.Trim();
@@ -343,16 +344,14 @@ namespace LibmpvIptvClient
             var clear = new string[] { "playlist-clear", null! };
             mpv_command(_handle, clear);
             SetupProtocolOptions(url);
-            var loadCurrent = new string[] { "loadfile", url, "replace", null! };
-            mpv_command(_handle, loadCurrent);
+            Command("loadfile", ToMpvUrl(url), "replace");
             string? firstNext = null;
             foreach (var n in nextUrls)
             {
                 if (string.IsNullOrWhiteSpace(n)) continue;
                 if (firstNext == null) firstNext = n.Trim();
                 SetupProtocolOptions(n);
-                var loadNext = new string[] { "loadfile", n, "append-play", null! };
-                mpv_command(_handle, loadNext);
+                Command("loadfile", ToMpvUrl(n), "append-play");
             }
             _prefetchedNextUrl = firstNext;
             Logger.Log("播放加载完成");
@@ -400,8 +399,7 @@ namespace LibmpvIptvClient
                 if (hasNext)
                 {
                     SetupProtocolOptions(nextUrl!);
-                    var args = new string[] { "loadfile", nextUrl!, "append-play", null! };
-                    mpv_command(_handle, args);
+                    Command("loadfile", ToMpvUrl(nextUrl!), "append-play");
                 }
                 _prefetchedNextUrl = hasNext ? nextUrl!.Trim() : null;
                 Logger.Log(hasNext ? "mpv prefetch anchored: " + nextUrl : "mpv prefetch cleared");
@@ -503,6 +501,26 @@ namespace LibmpvIptvClient
             var args = new string[] { "stop", null! };
             mpv_command(_handle, args);
         }
+
+        /// <summary>
+        /// mpv requires percent-encoded URLs. Non-ASCII characters are escaped as UTF-8 so the
+        /// request stays ASCII on the wire; otherwise upstream proxies receive the path
+        /// re-encoded with the local ANSI code page (GBK on zh-CN) and fail to route it.
+        /// </summary>
+        private static string ToMpvUrl(string url)
+        {
+            if (string.IsNullOrEmpty(url) || !url.Contains("://", StringComparison.Ordinal)) return url;
+            foreach (var c in url)
+            {
+                if (c > 127)
+                {
+                    try { return new Uri(url).AbsoluteUri; }
+                    catch { return url; }
+                }
+            }
+            return url;
+        }
+
         public void Command(params string[] args)
         {
             var ptrs = new IntPtr[args.Length + 1];
@@ -561,6 +579,9 @@ namespace LibmpvIptvClient
         static extern int mpv_set_property(IntPtr ctx, [MarshalAs(UnmanagedType.LPUTF8Str)] string name, mpv_format format, byte[] data);
         [DllImport("libmpv-2.dll", CallingConvention = CallingConvention.Cdecl)]
         static extern int mpv_set_property_string(IntPtr ctx, [MarshalAs(UnmanagedType.LPUTF8Str)] string name, [MarshalAs(UnmanagedType.LPUTF8Str)] string data);
+        // WARNING: LPStr marshals strings with the system ANSI code page (GBK on zh-CN).
+        // Only use this overload with ASCII-only arguments; URLs must go through
+        // Command()/mpv_command_ptr so they are marshalled as UTF-8.
         [DllImport("libmpv-2.dll", CallingConvention = CallingConvention.Cdecl)]
         static extern int mpv_command(IntPtr ctx, [MarshalAs(UnmanagedType.LPArray, ArraySubType = UnmanagedType.LPStr)] string[] args);
         [DllImport("libmpv-2.dll", CallingConvention = CallingConvention.Cdecl, EntryPoint = "mpv_command")]

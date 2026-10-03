@@ -737,8 +737,10 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 
         private string ProcessUrlPlaceholders(string url, DateTime start, DateTime end, bool appendEpgTime)
         {
-            // 0. Decode URL-encoded placeholders (e.g., $%7B(b)yyyyMMdd%7CUTC%7D -> ${(b)yyyyMMdd|UTC})
-            url = Uri.UnescapeDataString(url);
+            // 0. Decode only the escapes that hide placeholders (e.g. $%7B(b)yyyyMMdd%7CUTC%7D).
+            // Decoding the whole URL would corrupt the path/query (e.g. %2B -> +, %E5%.. -> CJK)
+            // and the mangled URL then reaches the upstream re-encoded in the local ANSI code page.
+            url = DecodePlaceholderEscapes(url);
 
             // 1. Unix Timestamp & Duration (rtp2httpd macros)
             long tsStart = new DateTimeOffset(start).ToUnixTimeSeconds();
@@ -801,6 +803,15 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 catch { }
             }
             return url;
+        }
+
+        private static string DecodePlaceholderEscapes(string url)
+        {
+            if (url.IndexOf('%') < 0) return url;
+            return url
+                .Replace("%7B", "{").Replace("%7b", "{")
+                .Replace("%7D", "}").Replace("%7d", "}")
+                .Replace("%24", "$");
         }
 
         private static string FormatUtcPlaceholder(string fmt, DateTime dt)
