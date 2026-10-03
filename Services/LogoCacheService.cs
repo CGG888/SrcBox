@@ -18,6 +18,10 @@ namespace LibmpvIptvClient.Services
         public static LogoCacheService Instance => _lazy.Value;
         private readonly HttpClient _http = HttpClientService.Instance.Client;
 
+        /// <summary>Directory holding the cached logo files. Exposed so callers can restrict what may be
+        /// served from it (the WebRemote /logo/ endpoint).</summary>
+        public string CacheDirectory => CacheDir;
+
         private string CacheDir
         {
             get

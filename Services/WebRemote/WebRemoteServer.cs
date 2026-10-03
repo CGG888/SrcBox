@@ -213,6 +213,42 @@ namespace LibmpvIptvClient.Services.WebRemote
             finally { tcpClient.Close(); }
         }
 
+        /// <summary>
+        /// True when a /logo/ request may be served: the target must be an image inside the logo cache
+        /// directory or the application directory. Without this the endpoint handed out any readable file
+        /// on the machine to anyone on the LAN.
+        /// </summary>
+        public static bool IsAllowedLogoPath(string? filePath)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(filePath)) return false;
+
+                var full = Path.GetFullPath(filePath);
+                var ext = Path.GetExtension(full).ToLowerInvariant();
+                if (ext is not (".png" or ".jpg" or ".jpeg" or ".gif" or ".webp" or ".bmp" or ".ico")) return false;
+
+                foreach (var root in AllowedLogoRoots())
+                {
+                    if (string.IsNullOrWhiteSpace(root)) continue;
+                    var prefix = Path.GetFullPath(root).TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar)
+                                 + Path.DirectorySeparatorChar;
+                    if (full.StartsWith(prefix, StringComparison.OrdinalIgnoreCase)) return true;
+                }
+                return false;
+            }
+            catch { return false; }
+        }
+
+        static string[] AllowedLogoRoots()
+        {
+            string cache = "", baseDir = "", exeDir = "";
+            try { cache = LibmpvIptvClient.Services.LogoCacheService.Instance.CacheDirectory; } catch { }
+            try { baseDir = AppContext.BaseDirectory; } catch { }
+            try { exeDir = Path.GetDirectoryName(System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName ?? "") ?? ""; } catch { }
+            return new[] { cache, baseDir, exeDir };
+        }
+
         private async Task ServeLogoAsync(TcpClient? tcpClient, Stream stream, string request, CancellationToken ct)
         {
             try
@@ -228,6 +264,16 @@ namespace LibmpvIptvClient.Services.WebRemote
                 var filePath = Uri.UnescapeDataString(encodedPath);
 
                 Logger.Debug($"[WebRemote] Logo request: {filePath}");
+
+                // The endpoint used to serve whatever path the client asked for, so anyone on the LAN could
+                // read arbitrary files (settings, credentials, ...). Only images from the logo cache or the
+                // application directory are served now.
+                if (!IsAllowedLogoPath(filePath))
+                {
+                    Logger.Warn($"[WebRemote] 拒绝非台标缓存目录的 /logo/ 请求: {filePath}");
+                    await SendErrorAsync(stream, "403 Forbidden", ct);
+                    return;
+                }
 
                 if (!File.Exists(filePath))
                 {
@@ -541,7 +587,9 @@ self.addEventListener('fetch', function(event) {
                         }
                         else
                         {
-                            Logger.Warn($"[WebRemote] Authentication failed with password: {pwd}");
+                            // Never log the value itself: the redactor only masks url style secrets and this
+                            // line used to write the password in clear text into the log file.
+                            Logger.Warn("[WebRemote] 认证失败（口令不匹配）");
                         }
                         result = new { success = ok, requireAuth = _requirePassword };
                         break;

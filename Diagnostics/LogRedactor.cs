@@ -15,6 +15,12 @@ namespace LibmpvIptvClient.Diagnostics
         // Regex for IPv4 addresses (standalone)
         private static readonly Regex IpRegex = new Regex(@"\b\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}\b", RegexOptions.Compiled);
 
+        // key: value / key=value / "key": "value" forms outside urls (the query rule only covers urls).
+        // Without this a line like "Authentication failed with password: hunter2" was written as is.
+        private static readonly Regex SecretValueRegex = new Regex(
+            @"(?i)\b(password|passwd|pwd|secret|token|apikey|api_key|access_token)""?\s*[:=]\s*""?([^\s"";,}]+)""?",
+            RegexOptions.Compiled);
+
         public static string Redact(string input)
         {
             if (string.IsNullOrEmpty(input)) return input;
@@ -93,6 +99,9 @@ namespace LibmpvIptvClient.Diagnostics
                     // If there is a standalone IP "Connected to 1.2.3.4", it will be found here.
                     return "***.***.***.***"; 
                 });
+
+                // 3. Redact key/value style secrets that are not part of a url
+                processed = SecretValueRegex.Replace(processed, m => m.Groups[1].Value + "=***");
 
                 return processed;
             }
