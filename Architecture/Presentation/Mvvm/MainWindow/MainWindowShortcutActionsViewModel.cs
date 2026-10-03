@@ -69,11 +69,11 @@ public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
 
     public MainWindowShortcutAction ResolveAction(Key key, ModifierKeys modifiers)
     {
-        bool isTimeshiftMode = _shell.IsTimeshiftActive || _shell.CurrentPlayingProgram != null;
+        bool isArchivePlayback = IsArchivePlayback(_shell);
         bool isCtrlPressed = (modifiers & ModifierKeys.Control) == ModifierKeys.Control;
         bool isShiftPressed = (modifiers & ModifierKeys.Shift) == ModifierKeys.Shift;
 
-        if (isTimeshiftMode && isCtrlPressed)
+        if (isArchivePlayback && isCtrlPressed)
         {
             return key switch
             {
@@ -87,8 +87,8 @@ public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
         {
             Key.Space => MainWindowShortcutAction.TogglePlayPause,
             Key.S => MainWindowShortcutAction.Stop,
-            Key.Left => isTimeshiftMode ? MainWindowShortcutAction.SeekBackward : MainWindowShortcutAction.PreviousSource,
-            Key.Right => isTimeshiftMode ? MainWindowShortcutAction.SeekForward : MainWindowShortcutAction.NextSource,
+            Key.Left => isArchivePlayback ? MainWindowShortcutAction.SeekBackward : MainWindowShortcutAction.PreviousSource,
+            Key.Right => isArchivePlayback ? MainWindowShortcutAction.SeekForward : MainWindowShortcutAction.NextSource,
             Key.Up => MainWindowShortcutAction.PreviousChannel,
             Key.Down => MainWindowShortcutAction.NextChannel,
             Key.M => isCtrlPressed ? MainWindowShortcutAction.ManageM3u : MainWindowShortcutAction.ToggleMute,
@@ -133,30 +133,10 @@ public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
                 }
                 break;
             case MainWindowShortcutAction.SeekBackward:
-                if (_shell.IsTimeshiftActive || _shell.CurrentPlayingProgram != null)
-                {
-                    if (_shell.IsTimeshiftActive)
-                    {
-                        TrySeekTimeshift(_shell, -10);
-                    }
-                    else
-                    {
-                        _shell.PlaybackActions.TrySeekRelative(_shell.PlayerEngine, -10);
-                    }
-                }
+                SeekBySeconds(-SeekStepSeconds);
                 break;
             case MainWindowShortcutAction.SeekForward:
-                if (_shell.IsTimeshiftActive || _shell.CurrentPlayingProgram != null)
-                {
-                    if (_shell.IsTimeshiftActive)
-                    {
-                        TrySeekTimeshift(_shell, 10);
-                    }
-                    else
-                    {
-                        _shell.PlaybackActions.TrySeekRelative(_shell.PlayerEngine, 10);
-                    }
-                }
+                SeekBySeconds(SeekStepSeconds);
                 break;
             case MainWindowShortcutAction.NextChannel:
             case MainWindowShortcutAction.PreviousChannel:
@@ -344,18 +324,84 @@ public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
         }
     }
 
-    void TrySeekTimeshift(MainShellViewModel shell, int seconds)
+    const int SeekStepSeconds = 10;
+
+    // Archive playback only. A known EPG program is intentionally NOT part of this check: live
+    // playback also carries the currently airing program, and treating that as an archive stream
+    // is what made the arrow keys do nothing during live TV.
+    static bool IsArchivePlayback(MainShellViewModel shell) =>
+        shell.PlaybackMode is PlaybackMode.Replay or PlaybackMode.Timeshift
+        || shell.IsTimeshiftActive;
+
+    /// <summary>
+    /// Single entry point for every seek command (keys, buttons, menu, fullscreen, web remote).
+    /// Archive streams are re-requested with a new start time because the upstream is not
+    /// seekable; seekable sources (local files, recordings) still use mpv directly.
+    /// </summary>
+    public void SeekBySeconds(int seconds)
     {
-        if (shell.CurrentChannel == null || shell.PlayerEngine == null)
+        if (_shell.IsTimeshiftActive)
         {
-            Diagnostics.Logger.Warn("[Seek] CurrentChannel or PlayerEngine is null");
+            TrySeekTimeshift(_shell, seconds);
             return;
         }
 
-        Diagnostics.Logger.Info($"[Seek] Timeshift seek: seconds={seconds}, currentCursor={shell.TimeshiftCursorSec}");
-        Diagnostics.Logger.Info($"[Seek] Timeshift mode - seeking directly without program boundary limits");
-        shell.PlayerEngine.SeekRelative(seconds);
-        shell.TimeshiftCursorSec = Math.Max(0, shell.TimeshiftCursorSec + seconds);
-        Diagnostics.Logger.Info($"[Seek] After seek, TimeshiftCursorSec updated to {shell.TimeshiftCursorSec}");
+        if (_shell.PlaybackMode is PlaybackMode.Replay or PlaybackMode.Timeshift)
+        {
+            TrySeekReplay(_shell, seconds);
+            return;
+        }
+
+        _shell.PlaybackActions.TrySeekRelative(_shell.PlayerEngine, seconds);
+    }
+
+    /// <summary>
+    /// Timeshift seek by re-requesting the catchup URL with a new start time. The upstream
+    /// streams are not seekable, so a relative mpv seek silently does nothing -- which is why
+    /// the arrow keys appeared dead.
+    /// </summary>
+    void TrySeekTimeshift(MainShellViewModel shell, int seconds)
+    {
+        if (shell.CurrentChannel == null || shell.PlayerEngine == null) return;
+
+        var min = shell.TimeshiftMin;
+        var max = shell.TimeshiftMax;
+        var totalSec = (max - min).TotalSeconds;
+        if (totalSec <= 0) return;
+
+        var newSec = Math.Max(0, Math.Min(totalSec, shell.TimeshiftCursorSec + seconds));
+        var targetTime = min.AddSeconds(newSec);
+
+        Diagnostics.Logger.Info($"[Seek] Timeshift seek: seconds={seconds}, target={targetTime:HH:mm:ss}");
+        shell.PlayerEngine.EnsureReadyForLoad();
+        shell.ChannelPlaybackActions.PlayCatchupAt(shell.CurrentChannel, targetTime);
+        shell.TimeshiftStart = targetTime;
+    }
+
+    /// <summary>
+    /// Replay seek by re-requesting the catchup URL, mirroring the seek bar behaviour.
+    /// </summary>
+    void TrySeekReplay(MainShellViewModel shell, int seconds)
+    {
+        var ch = shell.CurrentChannel;
+        if (ch == null || shell.PlayerEngine == null) return;
+
+        // PlaybackFocusTime is the start time of the loaded catchup stream (updated on every
+        // PlayCatchupAt), so mpv's time-pos is relative to it -- using the program start would
+        // drift after a mid-program seek.
+        var anchor = shell.PlaybackFocusTime ?? shell.CurrentPlayingProgram?.Start;
+        if (anchor == null) return;
+
+        var target = anchor.Value.AddSeconds(Math.Max(0, shell.CurrentTimePos)).AddSeconds(seconds);
+        var prog = shell.CurrentPlayingProgram;
+        if (prog != null)
+        {
+            if (target < prog.Start) target = prog.Start;
+            if (target >= prog.End) target = prog.End.AddSeconds(-1);
+        }
+
+        Diagnostics.Logger.Info($"[Seek] Replay seek: seconds={seconds}, target={target:HH:mm:ss}");
+        shell.PlayerEngine.EnsureReadyForLoad();
+        shell.ChannelPlaybackActions.PlayCatchupAt(ch, target);
     }
 }

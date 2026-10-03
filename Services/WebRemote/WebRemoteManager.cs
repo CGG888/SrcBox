@@ -622,7 +622,7 @@ namespace LibmpvIptvClient.Services.WebRemote
         {
             System.Windows.Application.Current?.Dispatcher.Invoke(() =>
             {
-                _shell?.PlaybackActions.TrySeekRelative(_shell.PlayerEngine, (int)seconds);
+                _shell?.ShortcutActions.SeekBySeconds((int)seconds);
             });
         }
 

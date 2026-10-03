@@ -81,11 +81,11 @@ namespace LibmpvIptvClient
         }
         void BtnRew_Click(object sender, RoutedEventArgs e)
         {
-            _shell.PlaybackActions.TrySeekRelative(_shell.PlayerEngine, -10);
+            _shell.ShortcutActions.SeekBySeconds(-10);
         }
         void BtnFwd_Click(object sender, RoutedEventArgs e)
         {
-            _shell.PlaybackActions.TrySeekRelative(_shell.PlayerEngine, 10);
+            _shell.ShortcutActions.SeekBySeconds(10);
         }
 
         void CbFullscreen_Checked(object sender, RoutedEventArgs e)

@@ -30,11 +30,7 @@ namespace LibmpvIptvClient
                     if (!on) UpdateIconBrushes();
                 },
                 ShowFsOverlayNow = _overlayManager.ShowFsOverlayNow,
-                TryArrowSeek = (dir) =>
-                {
-                    if (_shell.CurrentPlayingProgram != null)
-                        _shell.PlaybackActions.TrySeekRelative(_shell.PlayerEngine, dir * 10);
-                },
+                TryArrowSeek = (dir) => _shell.ShortcutActions.SeekBySeconds(dir * 10),
                 TogglePlayPause = () => BtnPlayPause_Click(this, new RoutedEventArgs()),
                 PositionOverlay = () => { _overlayManager.PositionOverlay(); _overlayManager.PositionTopOverlay(); },
                 ShowOverlayWithDelay = _overlayManager.ShowOverlayWithDelay,

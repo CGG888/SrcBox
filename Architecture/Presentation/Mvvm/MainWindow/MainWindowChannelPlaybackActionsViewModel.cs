@@ -715,6 +715,10 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                     ch.TvgId ?? ch.Id ?? ch.Name ?? "",
                     targetProgram,
                     url));
+
+                // Anchor the playback position to the requested start time: mpv's time-pos is
+                // relative to this instant, which is not necessarily the program start after a seek.
+                _shell.PlaybackFocusTime = start;
                 
                 try
                 {
