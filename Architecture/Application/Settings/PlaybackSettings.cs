@@ -269,32 +269,78 @@ namespace LibmpvIptvClient
         public bool ShowChannelList { get; set; } = true;
         public bool ShowEpgPanel { get; set; } = false;
 
-        public static PlaybackSettings Load()
+        /// <summary>Name of the settings file, kept next to the executable.</summary>
+        public const string FileName = "user_settings.json";
+
+        static readonly object _saveLock = new object();
+
+        static string DefaultPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, FileName);
+
+        public static PlaybackSettings Load() => LoadFrom(DefaultPath);
+
+        internal static PlaybackSettings LoadFrom(string path)
         {
             try
             {
-                var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "user_settings.json");
                 if (File.Exists(path))
                 {
                     var json = File.ReadAllText(path);
                     var obj = JsonSerializer.Deserialize<PlaybackSettings>(json);
                     if (obj != null) return obj;
+                    throw new InvalidDataException($"{Path.GetFileName(path)} deserialized to null");
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                // Never drop the configuration silently: keep the damaged file for support and log the
+                // reset, otherwise the user only notices that every setting is back to default.
+                try
+                {
+                    var broken = path + ".broken";
+                    File.Copy(path, broken, overwrite: true);
+                    LibmpvIptvClient.Diagnostics.Logger.Error(
+                        $"[Settings] 读取 {Path.GetFileName(path)} 失败，已备份为 {Path.GetFileName(broken)}，本次使用默认设置: {ex.Message}");
+                }
+                catch { }
+            }
             return new PlaybackSettings();
         }
 
-        public void Save()
+        public void Save() => SaveTo(DefaultPath);
+
+        internal void SaveTo(string path)
         {
-            try
+            lock (_saveLock)
             {
-                var path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "user_settings.json");
-                var json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
-                File.WriteAllText(path, json);
-                try { LibmpvIptvClient.Diagnostics.Logger.Info("[Settings] 保存成功 user_settings.json"); } catch { }
+                var tmp = path + ".tmp";
+                try
+                {
+                    var json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
+
+                    // Write a scratch file and swap it in: a crash mid-write used to leave a truncated
+                    // user_settings.json which the loader then replaced with defaults.
+                    File.WriteAllText(tmp, json, new System.Text.UTF8Encoding(false));
+
+                    if (File.Exists(path))
+                    {
+                        try { File.Replace(tmp, path, path + ".bak", ignoreMetadataErrors: true); }
+                        catch { File.Copy(tmp, path, overwrite: true); }
+                    }
+                    else
+                    {
+                        File.Copy(tmp, path, overwrite: true);
+                    }
+
+                    try { File.Delete(tmp); } catch { }
+                    LibmpvIptvClient.Diagnostics.Logger.Debug($"[Settings] 已保存 {Path.GetFileName(path)}");
+                }
+                catch (Exception ex)
+                {
+                    try { File.Delete(tmp); } catch { }
+                    // A failed save used to be completely invisible.
+                    LibmpvIptvClient.Diagnostics.Logger.Error($"[Settings] 保存 {Path.GetFileName(path)} 失败: {ex.Message}");
+                }
             }
-            catch { }
         }
     }
 
