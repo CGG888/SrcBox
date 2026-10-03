@@ -25,7 +25,9 @@ namespace LibmpvIptvClient.Services
             try
             {
                 LibmpvIptvClient.Diagnostics.Logger.Info("正在下载播放列表...");
-                var data = await _http.GetByteArrayAsync(url);
+                // Bounded download (64 MB default): an oversized or hostile playlist used to be buffered in
+                // full and could take the process down.
+                var data = await _http.GetByteArrayAsyncWithRetry(url);
                 LibmpvIptvClient.Diagnostics.Logger.Info($"播放列表下载完成: {data.Length} bytes");
                 
                 string text;
@@ -34,8 +36,9 @@ namespace LibmpvIptvClient.Services
                     LibmpvIptvClient.Diagnostics.Logger.Info("播放列表已解压");
                     using var ms = new MemoryStream(data);
                     using var gz = new GZipStream(ms, CompressionMode.Decompress);
-                    using var sr = new StreamReader(gz, Encoding.UTF8, true);
-                    text = await sr.ReadToEndAsync();
+                    // Bound the decompressed size as well: the compressed payload can be tiny and expand far
+                    // beyond the download limit (gzip bomb).
+                    text = await ReadBoundedTextAsync(gz);
                 }
                 else
                 {
@@ -49,8 +52,24 @@ namespace LibmpvIptvClient.Services
                 throw; // Rethrow to let caller handle
             }
         }
-        public async Task<List<Channel>> ParseFromPathAsync(string path)
+        /// <summary>Reads text from a stream while refusing to buffer more than the download limit.</summary>
+        static async Task<string> ReadBoundedTextAsync(Stream stream)
         {
+            using var buffer = new MemoryStream();
+            var chunk = new byte[81920];
+            int read;
+            while ((read = await stream.ReadAsync(chunk)) > 0)
+            {
+                if (buffer.Length + read > HttpClientExtensions.MaxDownloadBytes)
+                {
+                    throw new InvalidOperationException($"解压后的播放列表超过上限 {HttpClientExtensions.MaxDownloadBytes} 字节");
+                }
+                buffer.Write(chunk, 0, read);
+            }
+            return DetectAndDecodeText(buffer.ToArray());
+        }
+
+        public async Task<List<Channel>> ParseFromPathAsync(string path)        {
             var bytes = await File.ReadAllBytesAsync(path);
             var text = DetectAndDecodeText(bytes);
             return Parse(text, null);

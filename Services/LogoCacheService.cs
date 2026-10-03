@@ -16,6 +16,10 @@ namespace LibmpvIptvClient.Services
     {
         private static readonly Lazy<LogoCacheService> _lazy = new Lazy<LogoCacheService>(() => new LogoCacheService());
         public static LogoCacheService Instance => _lazy.Value;
+
+        /// <summary>Concurrent downloads during the warmup pass (keeps a huge playlist from firing one
+        /// request per channel at the same moment).</summary>
+        const int WarmupConcurrency = 8;
         private readonly HttpClient _http = HttpClientService.Instance.Client;
 
         /// <summary>Directory holding the cached logo files. Exposed so callers can restrict what may be
@@ -201,12 +205,16 @@ namespace LibmpvIptvClient.Services
             try { Logger.Info($"[LogoCache] Warmup starting: {list.Count()} channels"); } catch { }
             int ok = 0, fail = 0;
             var tasks = new List<Task>();
+            // Bound the fan-out: a large playlist used to start one request per channel at once, which
+            // floods the connection pool and gets the logo host to rate limit or block us.
+            using var gate = new SemaphoreSlim(WarmupConcurrency, WarmupConcurrency);
             foreach (var ch in list)
             {
                 var logo = ch?.Logo ?? "";
                 if (string.IsNullOrWhiteSpace(logo)) continue;
                 tasks.Add(Task.Run(async () =>
                 {
+                    await gate.WaitAsync().ConfigureAwait(false);
                     try
                     {
                         var local = await GetLogoPathAsync(ch.Name, logo);
@@ -228,7 +236,10 @@ namespace LibmpvIptvClient.Services
                             System.Threading.Interlocked.Increment(ref ok);
                             try
                             {
-                                System.Windows.Application.Current?.Dispatcher?.Invoke(() => ch.Logo = local);
+                                // BeginInvoke: this runs on a download thread and must not wait for the UI
+                                // thread (the old Invoke blocked it on every single successful logo).
+                                var dispatcher = System.Windows.Application.Current?.Dispatcher;
+                                if (dispatcher != null) dispatcher.BeginInvoke(new Action(() => ch.Logo = local));
                             }
                             catch { }
                         }
@@ -238,6 +249,7 @@ namespace LibmpvIptvClient.Services
                         }
                     }
                     catch { System.Threading.Interlocked.Increment(ref fail); }
+                    finally { gate.Release(); }
                 }));
             }
             try { await Task.WhenAll(tasks); } catch { }
