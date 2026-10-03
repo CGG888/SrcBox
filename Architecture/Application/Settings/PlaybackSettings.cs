@@ -198,6 +198,10 @@ namespace LibmpvIptvClient
         public double? WindowTop { get; set; }
         public bool WindowMaximized { get; set; }
 
+        // Panel state memory: the next launch opens the same panels as the last session
+        public bool ShowChannelList { get; set; } = true;
+        public bool ShowEpgPanel { get; set; } = false;
+
         public static PlaybackSettings Load()
         {
             try

@@ -90,6 +90,18 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             }
 
             try { _overlayManager.OverlayWpf?.SetEpgVisible(show); } catch { }
+
+            // Remember the layout so the next launch opens the same panels (not in fullscreen, where
+            // the EPG is a floating window, and not in minimal mode, which hides it temporarily).
+            if (!_shell.WindowStateActions.IsFullscreen && !_shell.IsMinimalMode)
+            {
+                try
+                {
+                    AppSettings.Current.ShowEpgPanel = show;
+                    AppSettings.Current.Save();
+                }
+                catch { }
+            }
             if (show) AttachEpgListInteractions();
             var plan = _shell.ViewToggleActions.BuildEpgRefreshPlan(
                 show,

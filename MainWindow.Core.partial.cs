@@ -44,6 +44,9 @@ namespace LibmpvIptvClient
         // Last window width applied for the current panel layout; the resize handler uses it to tell
         // our own panel-driven resizes apart from a real user resize.
         private double _panelAppliedWidth = double.NaN;
+        // True once a remembered window size was applied, so the panel restore knows whether the
+        // base width comes from the settings or from the designed window size.
+        private bool _geometryRestored;
 
         public MainWindow()
         {

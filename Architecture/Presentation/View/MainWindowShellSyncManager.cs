@@ -52,6 +52,18 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 var collapsed = _shell.IsDrawerCollapsed;
                 try { _overlayManager.OverlayWpf?.SetDrawerVisible(!collapsed); } catch { }
                 try { _window.CbDrawer.IsChecked = !collapsed; } catch { }
+
+                // Remember the layout so the next launch opens the same panels. Minimal mode
+                // collapses the drawer only for the duration of that mode, so it is not persisted.
+                if (!_shell.IsMinimalMode)
+                {
+                    try
+                    {
+                        AppSettings.Current.ShowChannelList = !collapsed;
+                        AppSettings.Current.Save();
+                    }
+                    catch { }
+                }
                 if (collapsed)
                 {
                     if (_shell.WindowStateActions.FullscreenDrawer != null) _shell.WindowStateActions.FullscreenDrawer.Visibility = Visibility.Collapsed;

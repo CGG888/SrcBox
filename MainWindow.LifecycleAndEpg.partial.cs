@@ -219,6 +219,39 @@ namespace LibmpvIptvClient
                 CbEpg.IsChecked == true);
             Width = _panelAppliedWidth;
         }
+
+        /// <summary>
+        /// Reopens the channel list / EPG panels exactly as they were when the app was closed and
+        /// re-applies the window width, so the playback area keeps its remembered size.
+        /// </summary>
+        void RestorePanelState()
+        {
+            try
+            {
+                var s = AppSettings.Current;
+                if (s == null) return;
+
+                var showDrawer = s.ShowChannelList;
+                _shell.IsDrawerCollapsed = !showDrawer;
+                DrawerPanel.Visibility = showDrawer ? Visibility.Visible : Visibility.Collapsed;
+
+                var showEpg = s.ShowEpgPanel;
+                CbEpg.IsChecked = showEpg;
+                EpgColumn.Width = new GridLength(showEpg ? Helpers.PanelWindowLayout.EpgWidth : 0);
+                EpgPanel.Visibility = showEpg ? Visibility.Visible : Visibility.Collapsed;
+                try { _overlayManager.OverlayWpf?.SetEpgVisible(showEpg); } catch { }
+
+                if (!_geometryRestored)
+                {
+                    // No remembered size: keep the designed window width as the playback area.
+                    _baseWindowWidth = Helpers.PanelWindowLayout.BaseWidthFromWindow(
+                        Width, _shell.IsDrawerCollapsed, _shell.DrawerWidth, CbEpg.IsChecked == true);
+                }
+
+                ApplyWindowWidthForPanels();
+            }
+            catch { }
+        }
         void BtnDrawerCollapse_Click(object sender, RoutedEventArgs e)
         {
             try { SetDrawerCollapsed(true); } catch { }
@@ -240,6 +273,7 @@ namespace LibmpvIptvClient
                 if (s.WindowWidth is >= 640 and <= 10000)
                 {
                     _baseWindowWidth = s.WindowWidth.Value;
+                    _geometryRestored = true;
                     ApplyWindowWidthForPanels();
                 }
 
