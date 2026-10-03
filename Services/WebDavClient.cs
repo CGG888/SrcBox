@@ -140,8 +140,11 @@ namespace LibmpvIptvClient.Services
                     var ok = await MkcolAsync(Combine(cur));
                     if (!ok)
                     {
-                        // MKCOL 405/409 表示已存在，继续；其他失败则中止
-                        // 已在 MkcolAsync 内处理 405/409 视为成功，这里仅继续
+                        // MKCOL 405/409 (already exists) count as success inside MkcolAsync, so a failure
+                        // here is real. Returning true made callers upload into a directory that was never
+                        // created and fail with an unrelated error later.
+                        LibmpvIptvClient.Diagnostics.Logger.Warn($"[WebDAV] 创建目录失败: {SanUrl(Combine(cur))}");
+                        return false;
                     }
                 }
                 return true;

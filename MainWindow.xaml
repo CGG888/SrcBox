@@ -252,7 +252,6 @@
                 </Setter>
             </Style>
             <local:ListIndexConverter x:Key="IndexConverter"/>
-            <local:AsyncImageConverter x:Key="AsyncImage"/>
             <local:StringToVisibilityConverter x:Key="StringToVis"/>
             <local:IntPlusOneConverter x:Key="IntPlusOne"/>
 

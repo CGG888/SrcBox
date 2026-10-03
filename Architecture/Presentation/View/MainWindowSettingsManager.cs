@@ -124,12 +124,14 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                     AppSettings.Current.Replay.Enabled = settings.Replay.Enabled;
                     AppSettings.Current.Replay.UrlFormat = settings.Replay.UrlFormat ?? "";
                     AppSettings.Current.Replay.DurationHours = settings.Replay.DurationHours;
+                    AppSettings.Current.Replay.AppendEpgTime = settings.Replay.AppendEpgTime;
                 }
                 if (settings.Timeshift != null)
                 {
                     AppSettings.Current.Timeshift.Enabled = settings.Timeshift.Enabled;
                     AppSettings.Current.Timeshift.UrlFormat = settings.Timeshift.UrlFormat ?? "";
                     AppSettings.Current.Timeshift.DurationHours = settings.Timeshift.DurationHours;
+                    AppSettings.Current.Timeshift.AppendEpgTime = settings.Timeshift.AppendEpgTime;
                 }
                 if (settings.Logo != null)
                 {

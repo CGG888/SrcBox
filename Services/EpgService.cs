@@ -215,7 +215,7 @@ namespace LibmpvIptvClient.Services
             }
             catch (Exception ex) 
             {
-                System.Diagnostics.Debug.WriteLine("XML Parse Error: " + ex.Message);
+                LibmpvIptvClient.Diagnostics.Logger.Warn("EPG XML 解析失败: " + ex.Message);
             }
 
             // Sort

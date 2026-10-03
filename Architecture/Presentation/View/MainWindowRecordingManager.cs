@@ -176,8 +176,14 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 _recordingsRefreshTimer?.Stop();
                 var intervalMs = string.IsNullOrWhiteSpace(channelKey) ? 260 : 90;
                 if (force) intervalMs = 35;
+                if (_recordingsRefreshTimer == null)
+                {
+                    // The watcher could not be created (see StartRecordingsWatcher): nothing to schedule on.
+                    LibmpvIptvClient.Diagnostics.Logger.Warn("[Recordings] 刷新定时器不可用，跳过刷新调度");
+                    return;
+                }
                 _recordingsRefreshTimer.Interval = TimeSpan.FromMilliseconds(intervalMs);
-                _recordingsRefreshTimer?.Start();
+                _recordingsRefreshTimer.Start();
             }
             catch (Exception ex)
             {

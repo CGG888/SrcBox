@@ -23,11 +23,11 @@ namespace LibmpvIptvClient.Services
                 using var fs = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                 long firstPts = -1, lastPts = -1;
                 double minPcr = double.MaxValue, maxPcr = double.MinValue;
-                // 扫描头部窗口
-                ScanWindow(fs, 0, Math.Min(windowBytes, (int)fi.Length / 2), ref firstPts, ref lastPts, ref minPcr, ref maxPcr, stopAfterFirst:true);
+                // 扫描头部窗口（用 long 计算：录像 >2GB 时 (int)fi.Length 会溢出为负数，导致时长为空）
+                ScanWindow(fs, 0, (int)Math.Min((long)windowBytes, fi.Length / 2), ref firstPts, ref lastPts, ref minPcr, ref maxPcr, stopAfterFirst:true);
                 // 扫描尾部窗口
-                long tailStart = Math.Max(0, (int)fi.Length - windowBytes);
-                ScanWindow(fs, tailStart, (int)Math.Min(windowBytes, fi.Length - tailStart), ref firstPts, ref lastPts, ref minPcr, ref maxPcr, stopAfterFirst:false);
+                long tailStart = Math.Max(0, fi.Length - windowBytes);
+                ScanWindow(fs, tailStart, (int)Math.Min((long)windowBytes, fi.Length - tailStart), ref firstPts, ref lastPts, ref minPcr, ref maxPcr, stopAfterFirst:false);
                 // 优先 PCR（更稳），否则回退 PTS
                 if (maxPcr > minPcr && minPcr < double.MaxValue)
                 {

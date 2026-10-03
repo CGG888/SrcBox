@@ -15,7 +15,9 @@ public sealed class SettingsTimeshiftDrawerViewModel : ViewModelBase
         {
             Enabled = source.Enabled,
             UrlFormat = source.UrlFormat,
-            DurationHours = source.DurationHours
+            DurationHours = source.DurationHours,
+            // The drawer edits this flag (Controls/PlaybackDrawer), so it has to survive the round trip.
+            AppendEpgTime = source.AppendEpgTime
         };
     }
 

@@ -358,7 +358,11 @@ namespace LibmpvIptvClient.Services
                     _items.AddRange(arr);
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                // An unreadable queue file used to clear the pending uploads without any trace.
+                LibmpvIptvClient.Diagnostics.Logger.Error($"[Upload] 读取上传队列失败（{QueueFile}）: {ex.Message}");
+            }
         }
 
         public class UploadItem
