@@ -44,6 +44,23 @@ namespace LibmpvIptvClient
         public bool EnableSmartMatch { get; set; } = true; // Added
         public bool StrictMatchByPlaybackTime { get; set; } = true; // 灰度开关：按回放/时移的播放时刻匹配节目单
 
+        /// <summary>
+        /// Copies the guide settings edited in a form back onto the live config. The settings page used to
+        /// copy only <see cref="Url"/>, so every additional EPG source (issue #38) was silently dropped on
+        /// save. Both directions go through this now, so they cannot drift apart again.
+        /// </summary>
+        public void CopyFrom(EpgConfig? other)
+        {
+            if (other == null) return;
+
+            Enabled = other.Enabled;
+            Url = other.Url ?? "";
+            Urls = other.Urls != null ? new List<string>(other.Urls) : new List<string>();
+            RefreshIntervalHours = other.RefreshIntervalHours;
+            EnableSmartMatch = other.EnableSmartMatch;
+            StrictMatchByPlaybackTime = other.StrictMatchByPlaybackTime;
+        }
+
         /// <summary>All configured EPG urls in priority order, without blanks or duplicates.</summary>
         public List<string> GetEffectiveUrls()
         {

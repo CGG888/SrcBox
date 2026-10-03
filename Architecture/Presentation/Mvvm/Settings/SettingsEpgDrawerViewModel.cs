@@ -6,19 +6,9 @@ public sealed class SettingsEpgDrawerViewModel : ViewModelBase
 {
     public EpgConfig BuildTempConfig(EpgConfig? source)
     {
-        if (source == null)
-        {
-            return new EpgConfig();
-        }
-
-        return new EpgConfig
-        {
-            Enabled = source.Enabled,
-            Url = source.Url,
-            RefreshIntervalHours = source.RefreshIntervalHours,
-            EnableSmartMatch = source.EnableSmartMatch,
-            StrictMatchByPlaybackTime = source.StrictMatchByPlaybackTime
-        };
+        var config = new EpgConfig();
+        config.CopyFrom(source);   // copies the additional Urls list too (issue #38)
+        return config;
     }
 
     public void LoadDrawer(EpgDrawer? drawer, EpgConfig config)

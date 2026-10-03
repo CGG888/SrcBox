@@ -138,11 +138,9 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 }
                 if (settings.Epg != null)
                 {
-                    AppSettings.Current.Epg.Enabled = settings.Epg.Enabled;
-                    AppSettings.Current.Epg.Url = settings.Epg.Url ?? "";
-                    AppSettings.Current.Epg.RefreshIntervalHours = settings.Epg.RefreshIntervalHours;
-                    AppSettings.Current.Epg.EnableSmartMatch = settings.Epg.EnableSmartMatch;
-                    AppSettings.Current.Epg.StrictMatchByPlaybackTime = settings.Epg.StrictMatchByPlaybackTime;
+                    // CopyFrom also writes the additional sources list, which used to be dropped here
+                    // (issue #38: extra EPG urls disappeared after saving the settings page).
+                    AppSettings.Current.Epg.CopyFrom(settings.Epg);
                 }
             }
             catch { }
