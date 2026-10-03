@@ -1201,7 +1201,7 @@
                                                                             <Button Style="{StaticResource IconGlyphButton}" Click="BtnRecordingDownload_Click" ToolTip="{DynamicResource Drawer_Recordings_Download}">
                                                                                 <Path Data="M 12,2 L 12,16 M 6,10 L 12,16 L 18,10 M 4,20 L 20,20" Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Stretch="Uniform" Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                                             </Button>
-                                                                            <Button Style="{StaticResource IconGlyphButton}" Click="BtnRecordingUpload_Click" Loaded="BtnRecordingUpload_Loaded" ToolTip="{DynamicResource Drawer_Recordings_Upload}" Margin="0,6,0,0">
+                                                                            <Button Style="{StaticResource IconGlyphButton}" Click="BtnRecordingUpload_Click" Loaded="BtnRecordingUpload_Loaded" ToolTip="{DynamicResource UI_Recording_Upload}" Margin="0,6,0,0">
                                                                                 <Path Data="M 12,22 L 12,8 M 6,14 L 12,8 L 18,14 M 4,22 L 20,22" Stroke="{DynamicResource TextPrimaryBrush}" StrokeThickness="2" StrokeStartLineCap="Round" StrokeEndLineCap="Round" Stretch="Uniform" Width="12" Height="12" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                                                                             </Button>
                                                                         </StackPanel>
@@ -1509,7 +1509,7 @@
                             <ContentControl x:Name="BtnRatioIcon"/>
                         </ToggleButton>
                         <!-- 倍速按钮（窗口模式） -->
-                        <ToggleButton x:Name="BtnSpeed" Style="{StaticResource BarToggle}" Click="BtnSpeed_Click" ToolTip="{DynamicResource Overlay_Speed}" IsEnabled="{Binding IsSpeedEnabled}">
+                        <ToggleButton x:Name="BtnSpeed" Style="{StaticResource BarToggle}" Click="BtnSpeed_Click" ToolTip="{DynamicResource Menu_Speed}" IsEnabled="{Binding IsSpeedEnabled}">
                             <TextBlock x:Name="LblSpeedWindow" Text="1.0x" FontSize="11" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                         </ToggleButton>
                         <!-- 实时录播 -->

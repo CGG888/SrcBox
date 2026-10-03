@@ -21,4 +21,9 @@
     <ProjectReference Include="..\LibmpvIptvClient.csproj" />
   </ItemGroup>
 
+  <!-- The localization consistency test reads the raw language files, so copy them next to the tests. -->
+  <ItemGroup>
+    <Content Include="..\Resources\Strings.*.xaml" Link="Resources\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+  </ItemGroup>
+
 </Project>
