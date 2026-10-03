@@ -53,6 +53,12 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 try { _overlayManager.OverlayWpf?.SetDrawerVisible(!collapsed); } catch { }
                 try { _window.CbDrawer.IsChecked = !collapsed; } catch { }
 
+                // Keep the window sized for the panel state whatever changed the flag (button, menu,
+                // shortcut, fullscreen drawer). ApplyWindowWidthForPanels is idempotent and ignores
+                // minimal mode, so this only fixes the menu/fullscreen paths that used to leave the
+                // window width untouched.
+                try { _window.ApplyPanelWidthFromManager(); } catch { }
+
                 // Remember the layout so the next launch opens the same panels. Minimal mode
                 // collapses the drawer only for the duration of that mode, so it is not persisted.
                 if (!_shell.IsMinimalMode)

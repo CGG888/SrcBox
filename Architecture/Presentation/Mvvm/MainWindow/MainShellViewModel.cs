@@ -577,20 +577,6 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             }
         }
 
-        public void SeekTo(double value)
-        {
-            if (IsTimeshiftActive)
-            {
-                TimeshiftCursorSec = Math.Max(0, value);
-                var t = TimeshiftMin.AddSeconds(value);
-                try { Diagnostics.Logger.Info($"时移定位到 {t:yyyy-MM-dd HH:mm:ss}"); } catch { }
-            }
-            else
-            {
-                _playerEngine?.SeekAbsolute(value);
-            }
-        }
-
         public void MarkTimeshiftSeeked()
         {
             _timeshiftSeeked = true;

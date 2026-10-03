@@ -232,6 +232,13 @@ namespace LibmpvIptvClient
         }
 
         /// <summary>
+        /// Applies the window width for the current panel state. Used when the panel flag is changed
+        /// by code that has no reference to this window (e.g. the app menu), so the window follows the
+        /// panel just like the toolbar button does.
+        /// </summary>
+        internal void ApplyPanelWidthFromManager() => ApplyWindowWidthForPanels();
+
+        /// <summary>
         /// Reopens the channel list / EPG panels exactly as they were when the app was closed and
         /// re-applies the window width, so the playback area keeps its remembered size.
         /// </summary>
@@ -242,6 +249,15 @@ namespace LibmpvIptvClient
                 var s = AppSettings.Current;
                 if (s == null) return;
 
+                // Establish the base width before touching the panel flags: the shell sync re-applies
+                // the window width on every IsDrawerCollapsed change, so the base must already be right.
+                if (!_geometryRestored)
+                {
+                    // No remembered size: keep the designed window width as the playback area.
+                    _baseWindowWidth = Helpers.PanelWindowLayout.BaseWidthFromWindow(
+                        Width, _shell.IsDrawerCollapsed, _shell.DrawerWidth, CbEpg.IsChecked == true);
+                }
+
                 var showDrawer = s.ShowChannelList;
                 _shell.IsDrawerCollapsed = !showDrawer;
                 DrawerPanel.Visibility = showDrawer ? Visibility.Visible : Visibility.Collapsed;
@@ -251,13 +267,6 @@ namespace LibmpvIptvClient
                 EpgColumn.Width = new GridLength(showEpg ? Helpers.PanelWindowLayout.EpgWidth : 0);
                 EpgPanel.Visibility = showEpg ? Visibility.Visible : Visibility.Collapsed;
                 try { _overlayManager.OverlayWpf?.SetEpgVisible(showEpg); } catch { }
-
-                if (!_geometryRestored)
-                {
-                    // No remembered size: keep the designed window width as the playback area.
-                    _baseWindowWidth = Helpers.PanelWindowLayout.BaseWidthFromWindow(
-                        Width, _shell.IsDrawerCollapsed, _shell.DrawerWidth, CbEpg.IsChecked == true);
-                }
 
                 ApplyWindowWidthForPanels();
             }
