@@ -154,26 +154,37 @@ namespace LibmpvIptvClient.Services
 
             instance.Completed += (_, e) =>
             {
-                info.Status = e.Success ? ScheduledRecordingStatus.Completed : ScheduledRecordingStatus.Failed;
+                // A user requested stop arrives as success=false with "Cancelled": keep the stop status and
+                // skip the failure styled toast (previously the recording was silently marked as failed).
+                var outcome = RecordingOutcome.Resolve(e.Success, e.ErrorMessage, info.Status);
+                var userStopped = RecordingOutcome.IsUserStopped(outcome);
+                info.Status = outcome;
                 info.StatusLabel = GetStatusLabelCore(info.Status);
                 info.SizeBytes = e.SizeBytes;
                 info.SizeLabel = FormatSizeCore(e.SizeBytes);
                 info.ActualEndTime = DateTime.Now;
                 if (e.Success && info.ActualStartTime.HasValue)
                     info.ActualDurationMin = (int)(info.ActualEndTime.Value - info.ActualStartTime.Value).TotalMinutes;
-                if (!string.IsNullOrEmpty(e.ErrorMessage))
+                if (!string.IsNullOrEmpty(e.ErrorMessage) && !userStopped)
                     info.ErrorMessage = e.ErrorMessage;
 
-                // Show completion toast
-                try
+                if (userStopped)
                 {
-                    var sizeLabel = FormatSizeCore(e.SizeBytes);
-                    var recordType = "back";
-                    LibmpvIptvClient.Services.ToastService.ShowRecordingCompletion(
-                        info.ChannelId, info.ChannelName, info.ProgramTitle, info.ChannelLogo,
-                        recordType, e.Success ? info.FilePath : null, sizeLabel);
+                    try { LibmpvIptvClient.Diagnostics.Logger.Info($"[Recording] 用户停止录制 id={info.Id} ch={info.ChannelName} status={info.Status}"); } catch { }
                 }
-                catch { }
+                else
+                {
+                    // Show completion toast
+                    try
+                    {
+                        var sizeLabel = FormatSizeCore(e.SizeBytes);
+                        var recordType = "back";
+                        LibmpvIptvClient.Services.ToastService.ShowRecordingCompletion(
+                            info.ChannelId, info.ChannelName, info.ProgramTitle, info.ChannelLogo,
+                            recordType, e.Success ? info.FilePath : null, sizeLabel);
+                    }
+                    catch { }
+                }
 
                 _activeInstances.TryRemove(info.Id, out var _removed1);
                 RecordingCompleted?.Invoke(this, (info.Id, e.Success, e.ErrorMessage));
