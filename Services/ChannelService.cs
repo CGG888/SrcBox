@@ -104,6 +104,7 @@ namespace LibmpvIptvClient.Services
             LibmpvIptvClient.Diagnostics.Logger.Info("M3U频道数量 " + fromM3u.Count);
             if (fromM3u.Count > 0)
             {
+                ApplyCustomLogoPattern(fromM3u);
                 try
                 {
                     LibmpvIptvClient.Diagnostics.Logger.Info("[ChannelService] Calling LogoCacheService.WarmupAndSwapAsync...");
@@ -129,25 +130,8 @@ namespace LibmpvIptvClient.Services
             }
             LibmpvIptvClient.Diagnostics.Logger.Info("后端频道数量 " + fromChecker.Count);
             var merged = MergeChannels(fromM3u, fromChecker, m3uPriority);
-            
-            // Apply custom logo URL pattern if configured
-            var customLogoPattern = AppSettings.Current.CustomLogoUrl;
-            if (!string.IsNullOrWhiteSpace(customLogoPattern) && customLogoPattern.Contains("{name}", StringComparison.OrdinalIgnoreCase))
-            {
-                foreach (var ch in merged)
-                {
-                    // Only apply if logo is missing, OR maybe user wants to override? 
-                    // Usually custom repo is for missing logos.
-                    // But if user explicitly sets it, they might want to use it.
-                    // Let's stick to "if missing" for now, or "always"? 
-                    // The user said "添加匹配规则...按这样的填写地址来处理". 
-                    // Let's assume fallback for missing logos first.
-                    if (string.IsNullOrWhiteSpace(ch.Logo) && !string.IsNullOrWhiteSpace(ch.Name))
-                    {
-                        ch.Logo = customLogoPattern.Replace("{name}", ch.Name, StringComparison.OrdinalIgnoreCase);
-                    }
-                }
-            }
+
+            ApplyCustomLogoPattern(merged);
 
             try
             {
@@ -159,6 +143,28 @@ namespace LibmpvIptvClient.Services
             }
             return (merged, _m3u.TvgUrl);
         }
+        /// <summary>
+        /// Fills missing channel logos from the configured "{name}" url template. Applied to every
+        /// source (m3u, txt, cached) so a template actually takes effect. The name is
+        /// percent-encoded because logo repositories use raw channel names including '+' and CJK.
+        /// </summary>
+        static void ApplyCustomLogoPattern(List<Channel> channels)
+        {
+            var pattern = AppSettings.Current?.CustomLogoUrl;
+            if (string.IsNullOrWhiteSpace(pattern) || !pattern!.Contains("{name}", StringComparison.OrdinalIgnoreCase))
+                return;
+
+            foreach (var ch in channels)
+            {
+                if (!string.IsNullOrWhiteSpace(ch.Logo) || string.IsNullOrWhiteSpace(ch.Name)) continue;
+                try
+                {
+                    ch.Logo = pattern.Replace("{name}", Uri.EscapeDataString(ch.Name), StringComparison.OrdinalIgnoreCase);
+                }
+                catch { }
+            }
+        }
+
         List<Channel> MergeChannels(List<Channel> a, List<Channel> b, bool aPriority)
         {
             var map = new Dictionary<string, Channel>(StringComparer.OrdinalIgnoreCase);

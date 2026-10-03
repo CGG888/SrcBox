@@ -81,7 +81,7 @@ namespace LibmpvIptvClient.Services
                     }
                 }
                 // 如果也没找到 #EXTINF，则无法解析（因为我们需要 EXTINF 元数据）
-                if (startIdx == -1) return channels;
+                if (startIdx == -1) return ParseAsTxtFallback(content);
             }
             
             // 解析头部属性
@@ -94,10 +94,16 @@ namespace LibmpvIptvClient.Services
             }
 
             string? currentInf = null;
+            string currentGroup = "";
             for (int i = startIdx + 1; i < lines.Length; i++)
             {
                 var line = lines[i].Trim();
-                if (line.StartsWith("#EXTINF", StringComparison.OrdinalIgnoreCase))
+                if (line.StartsWith("#EXTGRP", StringComparison.OrdinalIgnoreCase))
+                {
+                    var group = line.Substring("#EXTGRP".Length).TrimStart(':', ' ').Trim();
+                    if (group.Length > 0) currentGroup = group;
+                }
+                else if (line.StartsWith("#EXTINF", StringComparison.OrdinalIgnoreCase))
                 {
                     currentInf = line;
                 }
@@ -105,19 +111,37 @@ namespace LibmpvIptvClient.Services
                 {
                     if (currentInf != null)
                     {
-                        var ch = BuildChannel(currentInf.AsSpan(), line, baseUri);
+                        var ch = BuildChannel(currentInf.AsSpan(), line, baseUri, currentGroup);
                         if (ch != null) channels.Add(ch);
                     }
                     currentInf = null;
                 }
             }
+
+            if (channels.Count == 0)
+            {
+                return ParseAsTxtFallback(content);
+            }
+
             return channels;
         }
-        Channel? BuildChannel(ReadOnlySpan<char> extinf, string url, Uri? baseUri)
+
+        /// <summary>
+        /// Plain-text playlists ("名称,url" with "#genre#" groups) are common in China and are
+        /// served from urls without a .txt suffix, so fall back to the txt parser.
+        /// </summary>
+        static List<Channel> ParseAsTxtFallback(string content)
+        {
+            try { return new TxtParser().Parse(content); }
+            catch { return new List<Channel>(); }
+        }
+        Channel? BuildChannel(ReadOnlySpan<char> extinf, string url, Uri? baseUri, string? fallbackGroup = null)
         {
             var attrs = ParseAttributes(extinf);
             var name = ParseDisplayName(extinf);
             var groupTitle = attrs.GetValueOrDefault("group-title") ?? "";
+            if (string.IsNullOrWhiteSpace(groupTitle) && !string.IsNullOrWhiteSpace(fallbackGroup))
+                groupTitle = fallbackGroup!;
             var logoValue = attrs.GetValueOrDefault("tvg-logo") ?? attrs.GetValueOrDefault("logo") ?? "";
             var ch = ChannelPool.Rent();
             ch.Id = attrs.TryGetValue("tvg-id", out var tid) ? tid : "";

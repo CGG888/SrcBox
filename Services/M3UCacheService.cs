@@ -12,6 +12,11 @@ namespace LibmpvIptvClient.Services;
 
 public class M3UCacheEntry
 {
+    /// <summary>Bump this whenever the parsed channel shape changes (groups, logos, ...) so that
+    /// caches written by an older parser are discarded instead of being served for the whole TTL.</summary>
+    public const int CurrentSchemaVersion = 2;
+
+    public int SchemaVersion { get; set; } = 1;
     public string Url { get; set; } = "";
     public string? ETag { get; set; }
     public string? LastModified { get; set; }
@@ -97,6 +102,12 @@ public class M3UCacheService
             }
 
             if (meta == null) return (null, false, null);
+
+            if (meta.SchemaVersion != M3UCacheEntry.CurrentSchemaVersion)
+            {
+                Logger.Info($"[M3U Cache] Schema {meta.SchemaVersion} != {M3UCacheEntry.CurrentSchemaVersion}, ignoring cache");
+                return (null, false, null);
+            }
 
             var ttl = AppSettings.Current?.M3uCacheTtlHours ?? meta.CacheTtlHours;
             bool isCacheExpired = (DateTime.Now - meta.CachedAt).TotalHours > ttl;
@@ -263,6 +274,7 @@ public class M3UCacheService
             var data = JsonSerializer.Serialize(channels, options);
             var meta = new M3UCacheEntry
             {
+                SchemaVersion = M3UCacheEntry.CurrentSchemaVersion,
                 Url = url,
                 ETag = etag,
                 LastModified = lastModified,

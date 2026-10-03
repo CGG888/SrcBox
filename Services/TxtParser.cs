@@ -34,12 +34,20 @@ namespace LibmpvIptvClient.Services
             content = content.TrimStart('\uFEFF', '\u200B');
             var lines = content.Replace("\r\n", "\n").Split('\n', StringSplitOptions.RemoveEmptyEntries);
 
+            var currentGroup = "";
             foreach (var rawLine in lines)
             {
-                var line = rawLine.Trim();
+                var line = rawLine.Trim().Trim('\uFEFF', '\u200B');
                 if (string.IsNullOrWhiteSpace(line)) continue;
 
-                var channel = TryParseLine(line);
+                // Group header: "分组名,#genre#" (DIYP / Ku9 format)
+                if (TryParseGroupHeader(line, out var group))
+                {
+                    if (!string.IsNullOrWhiteSpace(group)) currentGroup = group;
+                    continue;
+                }
+
+                var channel = TryParseLine(line, currentGroup);
                 if (channel != null)
                 {
                     channels.Add(channel);
@@ -49,7 +57,24 @@ namespace LibmpvIptvClient.Services
             return channels;
         }
 
-        private Channel? TryParseLine(string line)
+        /// <summary>
+        /// "分组名,#genre#" starts a group. Some tools append the group EPG url after it
+        /// ("分组名,#genre#,http://epg/"), which is not a channel url and must be skipped.
+        /// </summary>
+        private static bool TryParseGroupHeader(string line, out string group)
+        {
+            group = "";
+            var comma = line.IndexOf(',');
+            if (comma <= 0) return false;
+
+            var first = line.Substring(comma + 1).Split(',')[0].Trim();
+            if (!first.Equals("#genre#", StringComparison.OrdinalIgnoreCase)) return false;
+
+            group = line.Substring(0, comma).Trim();
+            return true;
+        }
+
+        private Channel? TryParseLine(string line, string group)
         {
             string name;
             string url;
@@ -80,7 +105,7 @@ namespace LibmpvIptvClient.Services
             var channel = ChannelPool.Rent();
             channel.Id = Convert.ToHexString(Encoding.UTF8.GetBytes(name.ToLowerInvariant()));
             channel.Name = name;
-            channel.Group = "";
+            channel.Group = group ?? "";
             channel.Logo = "";
             channel.TvgId = "";
             channel.TvgName = "";
