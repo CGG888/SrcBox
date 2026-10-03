@@ -203,6 +203,9 @@
   <sys:String x:Key="Menu_FCC">FCC (быстрое переключение)</sys:String>
   <sys:String x:Key="Menu_UDP">UDP (оптимизация мульткаста)</sys:String>
   <sys:String x:Key="Menu_Deinterlace">Деинтерлейсинг (1080i/720i)</sys:String>
+  <sys:String x:Key="Menu_Subtitle">Субтитры</sys:String>
+  <sys:String x:Key="Subtitle_Off">Отключить субтитры</sys:String>
+  <sys:String x:Key="Subtitle_None">Встроенные субтитры не найдены</sys:String>
   <sys:String x:Key="Menu_List">Список</sys:String>
   <sys:String x:Key="Menu_EPG">Программа</sys:String>
   <sys:String x:Key="Menu_Channel">Каналы</sys:String>

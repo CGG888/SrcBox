@@ -259,6 +259,9 @@
   <sys:String x:Key="Menu_FCC">FCC (快速切台)</sys:String>
   <sys:String x:Key="Menu_UDP">UDP (组播优化)</sys:String>
   <sys:String x:Key="Menu_Deinterlace">反交错 (1080i/720i)</sys:String>
+  <sys:String x:Key="Menu_Subtitle">字幕</sys:String>
+  <sys:String x:Key="Subtitle_Off">关闭字幕</sys:String>
+  <sys:String x:Key="Subtitle_None">未检测到内嵌字幕</sys:String>
   <sys:String x:Key="Menu_List">列表</sys:String>
   <sys:String x:Key="Menu_EPG">节目指南</sys:String>
   <sys:String x:Key="Menu_Channel">频道</sys:String>

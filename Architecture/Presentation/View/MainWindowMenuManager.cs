@@ -65,6 +65,10 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 _shell.PlayerEngine?.SetAspectRatio(val);
             });
 
+            MenuBuilder.SetSubtitleCallbacks(
+                () => LibmpvIptvClient.Services.SubtitleTrackService.Read(_shell.PlayerEngine),
+                id => LibmpvIptvClient.Services.SubtitleTrackService.Select(_shell.PlayerEngine, id));
+
             MenuBuilder.SetRecToggleCallback((start) =>
             {
                 _window.Dispatcher.Invoke(() =>

@@ -265,6 +265,12 @@ namespace LibmpvIptvClient.Helpers
             miDeinterlace.Click += (s, args) => toggleDeinterlace?.Invoke(miDeinterlace.IsChecked);
             miVideo.Items.Add(miDeinterlace);
 
+            // Embedded subtitle tracks are only known once a file is playing, so the list is rebuilt
+            // every time the submenu opens (issue #35).
+            var miSubtitle = new MenuItem { Header = Localizer.S("Menu_Subtitle", "字幕") };
+            miSubtitle.SubmenuOpened += (s, args) => RebuildSubtitleMenu(miSubtitle);
+            miVideo.Items.Add(miSubtitle);
+
             var miTimeshift = new MenuItem { Header = Localizer.S("Menu_Timeshift", "时间偏移"), IsCheckable = true };
             miVideo.Items.Add(miTimeshift);
 
@@ -445,6 +451,65 @@ namespace LibmpvIptvClient.Helpers
 
         public static void SetSpeedCallback(Action<double> callback) { System.Diagnostics.Debug.WriteLine($"[MenuBuilder] SetSpeedCallback called, callback is null: {callback == null}"); _speedCallback = callback; }
         public static void SetRatioCallback(Action<string> callback) => _ratioCallback = callback;
+
+        static Func<IEnumerable<Models.SubtitleTrackInfo>>? _subtitleTrackProvider;
+        static Action<int?>? _subtitleSelectCallback;
+        static List<Models.SubtitleTrackInfo> _subtitleTracks = new List<Models.SubtitleTrackInfo>();
+
+        /// <summary>Binds the embedded subtitle track source and the selection handler.</summary>
+        public static void SetSubtitleCallbacks(Func<IEnumerable<Models.SubtitleTrackInfo>>? trackProvider, Action<int?> select)
+        {
+            _subtitleTrackProvider = trackProvider;
+            _subtitleSelectCallback = select;
+        }
+
+        /// <summary>Re-reads the current subtitle tracks and fills the submenu (called when it opens).</summary>
+        static void RebuildSubtitleMenu(MenuItem parent)
+        {
+            try
+            {
+                _subtitleTracks = _subtitleTrackProvider?.Invoke()?.Where(t => t != null).ToList()
+                                 ?? new List<Models.SubtitleTrackInfo>();
+            }
+            catch { _subtitleTracks = new List<Models.SubtitleTrackInfo>(); }
+
+            parent.Items.Clear();
+
+            var miOff = new MenuItem
+            {
+                Header = Localizer.S("Subtitle_Off", "关闭字幕"),
+                IsCheckable = true,
+                IsChecked = _subtitleTracks.All(t => !t.Selected)
+            };
+            miOff.Click += (s, args) => { try { _subtitleSelectCallback?.Invoke(null); } catch { } };
+            parent.Items.Add(miOff);
+
+            parent.Items.Add(new Separator());
+
+            if (_subtitleTracks.Count == 0)
+            {
+                parent.Items.Add(new MenuItem
+                {
+                    Header = Localizer.S("Subtitle_None", "未检测到内嵌字幕"),
+                    IsEnabled = false
+                });
+                return;
+            }
+
+            foreach (var track in _subtitleTracks)
+            {
+                var id = track.Id;
+                var miTrack = new MenuItem
+                {
+                    Header = Services.SubtitleTrackService.Describe(track),
+                    IsCheckable = true,
+                    IsChecked = track.Selected,
+                    Tag = id
+                };
+                miTrack.Click += (s, args) => { try { _subtitleSelectCallback?.Invoke(id); } catch { } };
+                parent.Items.Add(miTrack);
+            }
+        }
         public static void SetDecoderCallback(Action<string> callback) => _decoderCallback = callback;
         public static void SetCurrentDecoder(string decoder) { _currentDecoder = decoder; }
         public static void RefreshAllDecoderChecks(string currentDecoder)

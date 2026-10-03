@@ -212,6 +212,9 @@
   <sys:String x:Key="Menu_FCC">FCC (Fast channel change)</sys:String>
   <sys:String x:Key="Menu_UDP">UDP (Multicast optimization)</sys:String>
   <sys:String x:Key="Menu_Deinterlace">Deinterlace (1080i/720i)</sys:String>
+  <sys:String x:Key="Menu_Subtitle">Subtitles</sys:String>
+  <sys:String x:Key="Subtitle_Off">Turn subtitles off</sys:String>
+  <sys:String x:Key="Subtitle_None">No embedded subtitles found</sys:String>
   <sys:String x:Key="Menu_List">List</sys:String>
   <sys:String x:Key="Menu_EPG">Program guide</sys:String>
   <sys:String x:Key="Menu_Channel">Channels</sys:String>

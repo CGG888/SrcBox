@@ -15,6 +15,11 @@ namespace LibmpvIptvClient.Tests
         public double TimePos { get; set; }
         public double? Duration { get; set; }
 
+        /// <summary>Property values the fake player reports (name -> string/long/double/bool).</summary>
+        public Dictionary<string, object?> Properties { get; } = new Dictionary<string, object?>(System.StringComparer.OrdinalIgnoreCase);
+        /// <summary>Property writes the code under test performed.</summary>
+        public Dictionary<string, string> SetProperties { get; } = new Dictionary<string, string>(System.StringComparer.OrdinalIgnoreCase);
+
         public void Play(string url) => Played.Add(url);
         public void Stop() { }
         public void Pause(bool paused) { }
@@ -32,11 +37,15 @@ namespace LibmpvIptvClient.Tests
         public void LoadWithPrefetch(string url, IEnumerable<string> nextUrls) => Played.Add(url);
         public bool SwitchToPrefetchedNext(string url) => false;
         public void AnchorPrefetch(string? nextUrl) { }
-        public void SetPropertyString(string name, string value) { }
+        public void SetPropertyString(string name, string value) => SetProperties[name] = value;
         public void SetRecordingMode(bool recording) { }
-        public string? GetPropertyString(string name) => null;
-        public double? GetPropertyDouble(string name) => null;
-        public long? GetPropertyLong(string name) => null;
-        public bool? GetPropertyBool(string name) => null;
+        public string? GetPropertyString(string name)
+            => Properties.TryGetValue(name, out var v) ? v as string : null;
+        public double? GetPropertyDouble(string name)
+            => Properties.TryGetValue(name, out var v) && v is double d ? d : null;
+        public long? GetPropertyLong(string name)
+            => Properties.TryGetValue(name, out var v) ? v switch { long l => l, int i => i, _ => null } : null;
+        public bool? GetPropertyBool(string name)
+            => Properties.TryGetValue(name, out var v) && v is bool b ? b : null;
     }
 }
