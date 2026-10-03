@@ -128,6 +128,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 isEpgChecked: _window.CbEpg.IsChecked == true,
                 isDrawerChecked: !_shell.IsDrawerCollapsed,
                 isMinimalChecked: _shell.IsMinimalMode,
+                minimalMode: _shell.IsMinimalMode,
                 refreshChannels: () => {
                     var selected = AppSettings.Current.SavedSources?.FirstOrDefault(s => s.IsSelected);
                     if (selected != null) _ = _shell.ForceRefreshChannels(selected.Url);

@@ -329,11 +329,14 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 
         public void ToggleEpg(bool on)
         {
+            // Minimal mode shows the playback area only: the panels cannot be opened there.
+            if (on && !LibmpvIptvClient.Helpers.PanelWindowLayout.CanOpenPanels(_shell.IsMinimalMode)) return;
             RequestEpgToggle?.Invoke(on);
         }
 
         public void ToggleDrawer(bool on)
         {
+            if (on && !LibmpvIptvClient.Helpers.PanelWindowLayout.CanOpenPanels(_shell.IsMinimalMode)) return;
             _shell.IsDrawerCollapsed = !on;
         }
 

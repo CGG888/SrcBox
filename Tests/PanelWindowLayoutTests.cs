@@ -57,5 +57,24 @@ namespace LibmpvIptvClient.Tests
             Assert.AreEqual(Base,
                 PanelWindowLayout.BaseWidthFromWindow(Base + Drawer + 320, drawerCollapsed: false, Drawer, epgVisible: true), 0.01);
         }
+
+        // Minimal mode shows the playback area only: the window shrinks to the video area width (it
+        // used to keep the full width and hand the freed panel space to the video), the panels cannot
+        // be opened there, and leaving minimal mode restores the full layout.
+        [TestMethod]
+        public void MinimalMode_UsesPlaybackAreaWidthOnly()
+        {
+            var full = PanelWindowLayout.WindowWidth(Base, drawerCollapsed: false, Drawer, epgVisible: true);
+            Assert.AreEqual(Base + Drawer + 320, full, 0.01);
+
+            var minimal = PanelWindowLayout.MinimalWindowWidth(Base);
+            Assert.AreEqual(Base, minimal, 0.01);
+
+            Assert.IsFalse(PanelWindowLayout.CanOpenPanels(minimalMode: true), "panels stay closed in minimal mode");
+            Assert.IsTrue(PanelWindowLayout.CanOpenPanels(minimalMode: false));
+
+            var restored = PanelWindowLayout.WindowWidth(Base, drawerCollapsed: false, Drawer, epgVisible: true);
+            Assert.AreEqual(full, restored, 0.01, "leaving minimal mode must restore the full layout width");
+        }
     }
 }

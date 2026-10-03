@@ -148,6 +148,7 @@ namespace LibmpvIptvClient
                 isEpgChecked: IsEpgVisible?.Invoke() ?? false,
                 isDrawerChecked: IsDrawerVisible?.Invoke() ?? false,
                 isMinimalChecked: IsMinimalMode?.Invoke() ?? false,
+                minimalMode: IsMinimalMode?.Invoke() ?? false,
                 refreshChannels: null,
                 togglePlayPause: null,
                 stopPlayback: null,

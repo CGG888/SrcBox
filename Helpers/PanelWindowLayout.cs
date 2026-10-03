@@ -26,7 +26,15 @@ namespace LibmpvIptvClient.Helpers
             => windowWidth - DrawerWidth(drawerCollapsed, configuredDrawerWidth) - EpgWidthFor(epgVisible);
 
         /// <summary>
-        /// True when a size change came from an actual resize rather than from the width we applied
+        /// Minimal mode hides the chrome and both panels, so only the playback area is shown: the
+        /// window must shrink to the base (video area) width instead of absorbing the freed panels.
+        /// </summary>
+        public static double MinimalWindowWidth(double baseWidth) => baseWidth;
+
+        /// <summary>Panels cannot be opened in minimal mode - only the playback area is shown.</summary>
+        public static bool CanOpenPanels(bool minimalMode) => !minimalMode;
+
+        /// <summary>True when a size change came from an actual resize rather than from the width we applied
         /// for a panel toggle.
         /// </summary>
         public static bool IsUserResize(double currentWidth, double appliedWidth)

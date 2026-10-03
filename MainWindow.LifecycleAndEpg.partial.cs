@@ -192,6 +192,13 @@ namespace LibmpvIptvClient
 
         internal void SetDrawerCollapsed(bool collapsed)
         {
+            // Minimal mode shows the playback area only: the drawer can be collapsed but not opened.
+            if (!collapsed && !Helpers.PanelWindowLayout.CanOpenPanels(_shell.IsMinimalMode))
+            {
+                try { if (CbDrawer != null) CbDrawer.IsChecked = false; } catch { }
+                return;
+            }
+
             if (_shell.IsDrawerCollapsed == collapsed) return;
             _shell.IsDrawerCollapsed = collapsed;
             DrawerPanel.Visibility = collapsed ? Visibility.Collapsed : Visibility.Visible;
@@ -212,6 +219,10 @@ namespace LibmpvIptvClient
         /// </summary>
         void ApplyWindowWidthForPanels()
         {
+            // Minimal mode is sized by ApplyMinimalMode (playback area only); toggling a panel there
+            // must not widen the window.
+            if (_shell.IsMinimalMode) return;
+
             _panelAppliedWidth = Helpers.PanelWindowLayout.WindowWidth(
                 _baseWindowWidth,
                 _shell.IsDrawerCollapsed,
@@ -665,6 +676,15 @@ namespace LibmpvIptvClient
         internal void CbEpg_Click(object sender, RoutedEventArgs e)
         {
             var show = _shell.ViewToggleActions.ResolveEpgVisible(CbEpg.IsChecked);
+
+            // Minimal mode shows the playback area only: the EPG cannot be opened there.
+            if (show && !_shell.WindowStateActions.IsFullscreen &&
+                !Helpers.PanelWindowLayout.CanOpenPanels(_shell.IsMinimalMode))
+            {
+                CbEpg.IsChecked = false;
+                return;
+            }
+
             if (_shell.WindowStateActions.IsFullscreen)
             {
                 if (show) ShowFullscreenEpg();

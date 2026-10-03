@@ -26,6 +26,7 @@ namespace LibmpvIptvClient.Helpers
             bool isEpgChecked,
             bool isDrawerChecked,
             bool isMinimalChecked,
+            bool minimalMode = false,
             Action? refreshChannels = null,
             Action? togglePlayPause = null,
             Action? stopPlayback = null,
@@ -114,7 +115,9 @@ namespace LibmpvIptvClient.Helpers
                 Header = Localizer.S("Menu_EPG", "节目指南"),
                 InputGestureText = "E",
                 IsCheckable = true,
-                IsChecked = isEpgChecked
+                IsChecked = isEpgChecked,
+                // Minimal mode only shows the playback area, so the panel toggles are unavailable.
+                IsEnabled = LibmpvIptvClient.Helpers.PanelWindowLayout.CanOpenPanels(minimalMode)
             };
             miEpg.Click += (s, args) => toggleEpg?.Invoke(miEpg.IsChecked);
             miChannel.Items.Add(miEpg);
@@ -124,7 +127,8 @@ namespace LibmpvIptvClient.Helpers
                 Header = Localizer.S("Menu_Drawer", "频道列表"),
                 InputGestureText = "L",
                 IsCheckable = true,
-                IsChecked = isDrawerChecked
+                IsChecked = isDrawerChecked,
+                IsEnabled = LibmpvIptvClient.Helpers.PanelWindowLayout.CanOpenPanels(minimalMode)
             };
             miDrawer.Click += (s, args) => toggleDrawer?.Invoke(miDrawer.IsChecked);
             miChannel.Items.Add(miDrawer);
