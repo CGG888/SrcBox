@@ -7,6 +7,8 @@ namespace LibmpvIptvClient
     {
         public string SourceName { get; private set; } = "";
         public string SourceUrl { get; private set; } = "";
+        /// <summary>EPG url bound to this playlist (empty = use the global EPG list).</summary>
+        public string SourceEpgUrl { get; private set; } = "";
 
         public AddM3uWindow()
         {
@@ -27,6 +29,7 @@ namespace LibmpvIptvClient
         {
             SourceName = TxtName.Text.Trim();
             SourceUrl = TxtUrl.Text.Trim();
+            SourceEpgUrl = TxtEpgUrl.Text.Trim();
 
             if (TxtName.Visibility == Visibility.Visible && string.IsNullOrEmpty(SourceName))
             {

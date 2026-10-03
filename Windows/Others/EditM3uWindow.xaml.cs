@@ -7,19 +7,23 @@ namespace LibmpvIptvClient
     {
         public string SourceName { get; private set; } = "";
         public string SourceUrl { get; private set; } = "";
+        /// <summary>EPG url bound to this playlist (empty = use the global EPG list).</summary>
+        public string SourceEpgUrl { get; private set; } = "";
         public bool IsDeleteRequested { get; private set; } = false;
 
-        public EditM3uWindow(string name, string url)
+        public EditM3uWindow(string name, string url, string? epgUrl = null)
         {
             InitializeComponent();
             TxtName.Text = name;
             TxtUrl.Text = url;
+            TxtEpgUrl.Text = epgUrl ?? "";
         }
 
         private void BtnOk_Click(object sender, RoutedEventArgs e)
         {
             SourceName = TxtName.Text.Trim();
             SourceUrl = TxtUrl.Text.Trim();
+            SourceEpgUrl = TxtEpgUrl.Text.Trim();
 
             if (string.IsNullOrWhiteSpace(TxtName.Text))
             {

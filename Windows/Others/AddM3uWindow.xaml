@@ -2,7 +2,7 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:shell="clr-namespace:System.Windows.Shell;assembly=PresentationFramework"
         x:Class="LibmpvIptvClient.AddM3uWindow"
-        Title="{DynamicResource Menu_AddM3uUrl}" Height="220" Width="400"
+        Title="{DynamicResource Menu_AddM3uUrl}" Height="270" Width="400"
         WindowStartupLocation="CenterOwner" ResizeMode="NoResize"
         WindowStyle="None" Icon="pack://application:,,,/srcbox.ico"
         Background="Transparent" AllowsTransparency="True" Foreground="{DynamicResource TextPrimaryBrush}">
@@ -73,6 +73,9 @@
 
                 <TextBlock Text="{DynamicResource M3U_Url}" Grid.Row="1" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,10" Foreground="{DynamicResource TextSecondaryBrush}"/>
                 <TextBox x:Name="TxtUrl" Grid.Row="1" Grid.Column="1" Height="30" Margin="0,0,0,10" Background="{DynamicResource InputBackgroundBrush}" Foreground="{DynamicResource InputTextBrush}" BorderBrush="{DynamicResource InputBorderBrush}" BorderThickness="1" Padding="4" VerticalContentAlignment="Center"/>
+
+                <TextBlock Text="{DynamicResource UI_Epg_Url}" Grid.Row="2" Grid.Column="0" VerticalAlignment="Center" Margin="0,0,10,10" Foreground="{DynamicResource TextSecondaryBrush}" ToolTip="{DynamicResource UI_Epg_Url_Note}"/>
+                <TextBox x:Name="TxtEpgUrl" Grid.Row="2" Grid.Column="1" Height="30" Margin="0,0,0,10" Background="{DynamicResource InputBackgroundBrush}" Foreground="{DynamicResource InputTextBrush}" BorderBrush="{DynamicResource InputBorderBrush}" BorderThickness="1" Padding="4" VerticalContentAlignment="Center" ToolTip="{DynamicResource UI_Epg_Url_Note}"/>
 
                 <StackPanel Grid.Row="3" Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,20,0,0">
                     <Button Content="{DynamicResource Common_OK}" Width="80" Height="30" Click="BtnOk_Click" Background="{DynamicResource PrimaryButtonBackgroundBrush}" Foreground="{DynamicResource PrimaryButtonForegroundBrush}" BorderThickness="0" Margin="0,0,10,0" FontSize="12">

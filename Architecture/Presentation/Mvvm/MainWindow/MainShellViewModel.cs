@@ -861,7 +861,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                     return;
                 }
 
-                var epgUrls = AppSettings.Current.Epg.GetEffectiveUrls();
+                var epgUrls = AppSettings.Current.Epg.GetEffectiveUrlsForSource(url, AppSettings.Current.SavedSources);
                 if (!string.IsNullOrWhiteSpace(loadedTvgUrl) &&
                     !epgUrls.Contains(loadedTvgUrl.Trim(), System.StringComparer.OrdinalIgnoreCase))
                 {

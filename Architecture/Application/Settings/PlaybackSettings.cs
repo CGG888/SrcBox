@@ -28,6 +28,8 @@ namespace LibmpvIptvClient
     {
         public string Name { get; set; } = "";
         public string Url { get; set; } = "";
+        /// <summary>EPG url used for this playlist only (issue #38). Empty means "use the global list".</summary>
+        public string EpgUrl { get; set; } = "";
         public bool IsSelected { get; set; }
     }
 
@@ -51,6 +53,54 @@ namespace LibmpvIptvClient
             {
                 foreach (var u in Urls) add(u);
             }
+            return list;
+
+            void add(string? u)
+            {
+                u = (u ?? "").Trim();
+                if (u.Length == 0) return;
+                if (list.Contains(u, StringComparer.OrdinalIgnoreCase)) return;
+                list.Add(u);
+            }
+        }
+
+        /// <summary>
+        /// EPG urls to use for one playlist: the guide bound to that playlist (if any) wins, then the
+        /// global list. This is the "one EPG per playlist" model from issue #38.
+        /// </summary>
+        public List<string> GetEffectiveUrlsForSource(string? sourceUrl, IEnumerable<M3uSource>? savedSources)
+        {
+            var list = new List<string>();
+            add(Url);
+            if (Urls != null)
+            {
+                foreach (var u in Urls) add(u);
+            }
+
+            if (!string.IsNullOrWhiteSpace(sourceUrl) && savedSources != null)
+            {
+                foreach (var s in savedSources)
+                {
+                    if (s == null || string.IsNullOrWhiteSpace(s.Url) || string.IsNullOrWhiteSpace(s.EpgUrl)) continue;
+                    if (!string.Equals(s.Url.Trim(), sourceUrl!.Trim(), StringComparison.OrdinalIgnoreCase)) continue;
+                    add(s.EpgUrl);
+                }
+            }
+
+            // The playlist-bound guide must be consulted first, so move it to the front.
+            if (!string.IsNullOrWhiteSpace(sourceUrl) && savedSources != null)
+            {
+                foreach (var s in savedSources)
+                {
+                    if (s == null || string.IsNullOrWhiteSpace(s.EpgUrl)) continue;
+                    if (!string.Equals(s.Url?.Trim(), sourceUrl!.Trim(), StringComparison.OrdinalIgnoreCase)) continue;
+                    var bound = s.EpgUrl.Trim();
+                    list.RemoveAll(u => string.Equals(u, bound, StringComparison.OrdinalIgnoreCase));
+                    list.Insert(0, bound);
+                    break;
+                }
+            }
+
             return list;
 
             void add(string? u)

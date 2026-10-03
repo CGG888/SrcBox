@@ -37,7 +37,7 @@ namespace LibmpvIptvClient
             {
                 if (Grid.SelectedItem is M3uSource src)
                 {
-                    var dlg = new EditM3uWindow(src.Name, src.Url) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
+                    var dlg = new EditM3uWindow(src.Name, src.Url, src.EpgUrl) { Owner = this, WindowStartupLocation = WindowStartupLocation.CenterOwner };
                     try { LibmpvIptvClient.Helpers.ThemeHelper.ApplyTitleBarByTheme(dlg); } catch { }
                     if (dlg.ShowDialog() == true)
                     {
@@ -49,6 +49,7 @@ namespace LibmpvIptvClient
                         {
                             src.Name = dlg.SourceName;
                             src.Url = dlg.SourceUrl;
+                            src.EpgUrl = dlg.SourceEpgUrl;
                         }
                         AppSettings.Current.Save();
                         LoadData();

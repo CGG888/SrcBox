@@ -3,8 +3,8 @@ using LibmpvIptvClient.Architecture.Presentation.Mvvm;
 
 namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow;
 
-public sealed record AddM3uDialogResult(string Name, string Url);
-public sealed record EditM3uResult(bool IsDelete, string Name, string Url);
+public sealed record AddM3uDialogResult(string Name, string Url, string EpgUrl);
+public sealed record EditM3uResult(bool IsDelete, string Name, string Url, string EpgUrl);
 
 public sealed class MainWindowDialogActionsViewModel : ViewModelBase
 {
@@ -51,17 +51,17 @@ public sealed class MainWindowDialogActionsViewModel : ViewModelBase
             return null;
         }
 
-        return new AddM3uDialogResult(dlg.SourceName, dlg.SourceUrl);
+        return new AddM3uDialogResult(dlg.SourceName, dlg.SourceUrl, dlg.SourceEpgUrl);
     }
 
-    public EditM3uResult? PromptEditM3u(System.Windows.Window owner, string currentName, string currentUrl, bool topmost)
+    public EditM3uResult? PromptEditM3u(System.Windows.Window owner, string currentName, string currentUrl, bool topmost, string? currentEpgUrl = null)
     {
-        var dlg = new LibmpvIptvClient.EditM3uWindow(currentName, currentUrl) { Owner = owner };
+        var dlg = new LibmpvIptvClient.EditM3uWindow(currentName, currentUrl, currentEpgUrl) { Owner = owner };
         try { dlg.Topmost = topmost; } catch { }
         
         if (dlg.ShowDialog() == true)
         {
-            return new EditM3uResult(dlg.IsDeleteRequested, dlg.SourceName, dlg.SourceUrl);
+            return new EditM3uResult(dlg.IsDeleteRequested, dlg.SourceName, dlg.SourceUrl, dlg.SourceEpgUrl);
         }
         return null;
     }

@@ -220,7 +220,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             var owner = GetOwnerWindow();
             var result = _shell.DialogActions.PromptAddM3u(owner);
             if (result == null) return;
-            var src = new M3uSource { Name = result.Name, Url = result.Url };
+            var src = new M3uSource { Name = result.Name, Url = result.Url, EpgUrl = result.EpgUrl };
             if (AppSettings.Current.SavedSources == null) AppSettings.Current.SavedSources = new List<M3uSource>();
             AppSettings.Current.SavedSources.Add(src);
             AppSettings.Current.Save();
@@ -231,7 +231,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         public void EditM3u(M3uSource source)
         {
             var owner = GetOwnerWindow();
-            var result = _shell.DialogActions.PromptEditM3u(owner, source.Name, source.Url, _shell.WindowStateActions.IsFullscreen);
+            var result = _shell.DialogActions.PromptEditM3u(owner, source.Name, source.Url, _shell.WindowStateActions.IsFullscreen, source.EpgUrl);
             
             if (result != null)
             {
@@ -251,6 +251,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 {
                     source.Name = result.Name;
                     source.Url = result.Url;
+                    source.EpgUrl = result.EpgUrl;
                     AppSettings.Current.Save();
                 }
             }

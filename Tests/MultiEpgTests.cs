@@ -32,6 +32,28 @@ namespace LibmpvIptvClient.Tests
             Assert.AreEqual("http://epg.test/two.xml", urls[1]);
         }
 
+        // Issue #38: a playlist can carry its own guide; it wins over the global list and is de-duplicated.
+        [TestMethod]
+        public void GetEffectiveUrlsForSource_PrefersPlaylistBoundEpg()
+        {
+            var epg = new EpgConfig { Url = "http://global/epg.xml", Urls = { "http://global2/epg.xml" } };
+            var sources = new System.Collections.Generic.List<M3uSource>
+            {
+                new M3uSource { Name = "A", Url = "http://a/list.m3u", EpgUrl = "http://a/epg.xml" },
+                new M3uSource { Name = "B", Url = "http://b/list.m3u", EpgUrl = "http://global/epg.xml" }
+            };
+
+            var forA = epg.GetEffectiveUrlsForSource("http://a/list.m3u", sources);
+            CollectionAssert.AreEqual(
+                new[] { "http://a/epg.xml", "http://global/epg.xml", "http://global2/epg.xml" }, forA);
+
+            var forB = epg.GetEffectiveUrlsForSource("http://b/list.m3u", sources);
+            CollectionAssert.AreEqual(new[] { "http://global/epg.xml", "http://global2/epg.xml" }, forB);
+
+            var forUnknown = epg.GetEffectiveUrlsForSource("http://c/list.m3u", sources);
+            CollectionAssert.AreEqual(new[] { "http://global/epg.xml", "http://global2/epg.xml" }, forUnknown);
+        }
+
         // Issue #38: several EPG sources must be merged, not replace each other.
         [TestMethod]
         public async Task LoadEpgAsync_MergesProgramsFromSeveralSources()
