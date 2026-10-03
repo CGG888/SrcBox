@@ -50,22 +50,22 @@ namespace LibmpvIptvClient.Helpers
             // 1. 打开 (File)
             var miFile = new MenuItem { Header = Localizer.S("Menu_File", "打开") };
             var miOpenFile = new MenuItem { Header = Localizer.S("Menu_OpenFile", "打开文件..."), InputGestureText = "Ctrl+O" };
-            miOpenFile.Click += (s, args) => openFile?.Invoke();
+            Wire(miOpenFile, openFile);
             miFile.Items.Add(miOpenFile);
 
             var miOpenUrl = new MenuItem { Header = Localizer.S("Menu_OpenUrl", "打开链接..."), InputGestureText = "Ctrl+U" };
-            miOpenUrl.Click += (s, args) => openUrl?.Invoke();
+            Wire(miOpenUrl, openUrl);
             miFile.Items.Add(miOpenUrl);
             cm.Items.Add(miFile);
 
             // 2. 频道 (M3U Management)
             var miChannel = new MenuItem { Header = Localizer.S("Menu_Channel", "频道") };
             var miAddFile = new MenuItem { Header = Localizer.S("Menu_AddM3uFile", "添加文件"), InputGestureText = "Ctrl+N" };
-            miAddFile.Click += (s, args) => addM3uFile?.Invoke();
+            Wire(miAddFile, addM3uFile);
             miChannel.Items.Add(miAddFile);
 
             var miAddUrl = new MenuItem { Header = Localizer.S("Menu_AddM3uUrl", "添加链接"), InputGestureText = "Ctrl+B" };
-            miAddUrl.Click += (s, args) => addM3uUrl?.Invoke();
+            Wire(miAddUrl, addM3uUrl);
             miChannel.Items.Add(miAddUrl);
 
             miChannel.Items.Add(new Separator());
@@ -82,7 +82,7 @@ namespace LibmpvIptvClient.Helpers
             miChannel.Items.Add(miManage);
 
             var miRefresh = new MenuItem { Header = Localizer.S("Menu_RefreshChannels", "刷新频道"), InputGestureText = "F5" };
-            miRefresh.Click += (s, args) => refreshChannels?.Invoke();
+            Wire(miRefresh, refreshChannels);
             miChannel.Items.Add(miRefresh);
 
             miChannel.Items.Add(new Separator());
@@ -119,7 +119,7 @@ namespace LibmpvIptvClient.Helpers
                 // Minimal mode only shows the playback area, so the panel toggles are unavailable.
                 IsEnabled = LibmpvIptvClient.Helpers.PanelWindowLayout.CanOpenPanels(minimalMode)
             };
-            miEpg.Click += (s, args) => toggleEpg?.Invoke(miEpg.IsChecked);
+            Wire(miEpg, toggleEpg);
             miChannel.Items.Add(miEpg);
 
             var miDrawer = new MenuItem
@@ -130,7 +130,7 @@ namespace LibmpvIptvClient.Helpers
                 IsChecked = isDrawerChecked,
                 IsEnabled = LibmpvIptvClient.Helpers.PanelWindowLayout.CanOpenPanels(minimalMode)
             };
-            miDrawer.Click += (s, args) => toggleDrawer?.Invoke(miDrawer.IsChecked);
+            Wire(miDrawer, toggleDrawer);
             miChannel.Items.Add(miDrawer);
 
             cm.Items.Add(miChannel);
@@ -140,37 +140,37 @@ namespace LibmpvIptvClient.Helpers
 
             var miControl = new MenuItem { Header = Localizer.S("Menu_Control", "控制") };
             var miPlayPause = new MenuItem { Header = Localizer.S("Menu_PlayPause", "播放/暂停"), InputGestureText = "Space" };
-            miPlayPause.Click += (s, args) => togglePlayPause?.Invoke();
+            Wire(miPlayPause, togglePlayPause);
             miControl.Items.Add(miPlayPause);
 
             var miStop = new MenuItem { Header = Localizer.S("Menu_Stop", "停止"), InputGestureText = "S" };
-            miStop.Click += (s, args) => stopPlayback?.Invoke();
+            Wire(miStop, stopPlayback);
             miControl.Items.Add(miStop);
 
             miControl.Items.Add(new Separator());
 
             var miFastForward = new MenuItem { Header = Localizer.S("Menu_FastForward", "快进"), InputGestureText = "→" };
-            miFastForward.Click += (s, args) => seekForward?.Invoke();
+            Wire(miFastForward, seekForward);
             miControl.Items.Add(miFastForward);
 
             var miRewind = new MenuItem { Header = Localizer.S("Menu_Rewind", "快退"), InputGestureText = "←" };
-            miRewind.Click += (s, args) => seekBackward?.Invoke();
+            Wire(miRewind, seekBackward);
             miControl.Items.Add(miRewind);
 
             miControl.Items.Add(new Separator());
 
             var miPrevCh = new MenuItem { Header = Localizer.S("Menu_PrevChannel", "上一频道"), InputGestureText = "↑" };
-            miPrevCh.Click += (s, args) => prevChannel?.Invoke();
+            Wire(miPrevCh, prevChannel);
             miControl.Items.Add(miPrevCh);
 
             var miNextCh = new MenuItem { Header = Localizer.S("Menu_NextChannel", "下一频道"), InputGestureText = "↓" };
-            miNextCh.Click += (s, args) => nextChannel?.Invoke();
+            Wire(miNextCh, nextChannel);
             miControl.Items.Add(miNextCh);
 
             miControl.Items.Add(new Separator());
 
             var miSwitchSource = new MenuItem { Header = Localizer.S("Menu_SwitchSource", "切换源"), InputGestureText = "←/→" };
-            miSwitchSource.Click += (s, args) => _switchSourceCallback?.Invoke();
+            Wire(miSwitchSource, _switchSourceCallback);
             miControl.Items.Add(miSwitchSource);
 
             miPlay.Items.Add(miControl);
@@ -195,12 +195,11 @@ namespace LibmpvIptvClient.Helpers
             foreach (var sp in speeds)
             {
                 var miSp = new MenuItem { Header = $"{sp:0.##}x", Tag = sp, IsCheckable = true, IsChecked = Math.Abs(sp - _currentSpeed) < 0.001 };
+                if (_speedCallback == null) miSp.IsEnabled = false;   // no handler bound (e.g. the title bar menu)
                 miSp.Click += (s, args) =>
                 {
-                    System.Diagnostics.Debug.WriteLine($"[MenuBuilder] Speed item clicked: {sp}, _speedCallback is null: {_speedCallback == null}");
                     _currentSpeed = sp;
-                    if (_speedCallback != null)
-                        _speedCallback(sp);
+                    try { _speedCallback?.Invoke(sp); } catch { }
                 };
                 miSpeed.Items.Add(miSp);
                 _speedMenuItems.Add(miSp);
@@ -228,11 +227,11 @@ namespace LibmpvIptvClient.Helpers
             foreach (var (label, val) in ratios)
             {
                 var miRatioItem = new MenuItem { Header = label, Tag = val, IsCheckable = true, IsChecked = string.Equals(val, _currentAspectRatio, StringComparison.OrdinalIgnoreCase) };
+                if (_ratioCallback == null) miRatioItem.IsEnabled = false;   // no handler bound
                 miRatioItem.Click += (s, args) =>
                 {
                     _currentAspectRatio = val;
-                    if (_ratioCallback != null)
-                        _ratioCallback(val);
+                    try { _ratioCallback?.Invoke(val); } catch { }
                 };
                 miRatio.Items.Add(miRatioItem);
                 _ratioMenuItems.Add(miRatioItem);
@@ -262,7 +261,7 @@ namespace LibmpvIptvClient.Helpers
                 IsCheckable = true,
                 IsChecked = !string.Equals(AppSettings.Current.Deinterlace, "no", StringComparison.OrdinalIgnoreCase)
             };
-            miDeinterlace.Click += (s, args) => toggleDeinterlace?.Invoke(miDeinterlace.IsChecked);
+            Wire(miDeinterlace, toggleDeinterlace);
             miVideo.Items.Add(miDeinterlace);
 
             // Embedded subtitle tracks are only known once a file is playing, so the list is rebuilt
@@ -281,7 +280,7 @@ namespace LibmpvIptvClient.Helpers
                 IsCheckable = true,
                 IsChecked = isMinimalChecked
             };
-            miMinimal.Click += (s, args) => toggleMinimal?.Invoke(miMinimal.IsChecked);
+            Wire(miMinimal, toggleMinimal);
             miVideo.Items.Add(miMinimal);
 
             cm.Items.Add(miVideo);
@@ -289,15 +288,15 @@ namespace LibmpvIptvClient.Helpers
             // 5. 声音
             var miSound = new MenuItem { Header = Localizer.S("Menu_Sound", "声音") };
             var miMute = new MenuItem { Header = Localizer.S("Menu_Mute", "静音"), InputGestureText = "M" };
-            miMute.Click += (s, args) => toggleMute?.Invoke();
+            Wire(miMute, toggleMute);
             miSound.Items.Add(miMute);
 
             var miVolUp = new MenuItem { Header = Localizer.S("Menu_VolumeUp", "音量+"), InputGestureText = "=" };
-            miVolUp.Click += (s, args) => volumeUp?.Invoke();
+            Wire(miVolUp, volumeUp);
             miSound.Items.Add(miVolUp);
 
             var miVolDown = new MenuItem { Header = Localizer.S("Menu_VolumeDown", "音量-"), InputGestureText = "-" };
-            miVolDown.Click += (s, args) => volumeDown?.Invoke();
+            Wire(miVolDown, volumeDown);
             miSound.Items.Add(miVolDown);
 
             cm.Items.Add(miSound);
@@ -310,7 +309,7 @@ namespace LibmpvIptvClient.Helpers
                 IsCheckable = true,
                 IsChecked = AppSettings.Current.EnableUdpOptimization
             };
-            miUdp.Click += (s, args) => toggleUdp?.Invoke(miUdp.IsChecked);
+            Wire(miUdp, toggleUdp);
             miNetwork.Items.Add(miUdp);
 
             var miFcc = new MenuItem
@@ -319,7 +318,7 @@ namespace LibmpvIptvClient.Helpers
                 IsCheckable = true,
                 IsChecked = AppSettings.Current.FccPrefetchCount > 0
             };
-            miFcc.Click += (s, args) => toggleFcc?.Invoke(miFcc.IsChecked);
+            Wire(miFcc, toggleFcc);
             miNetwork.Items.Add(miFcc);
 
             cm.Items.Add(miNetwork);
@@ -386,11 +385,11 @@ namespace LibmpvIptvClient.Helpers
             // 9. 应用
             var miApp = new MenuItem { Header = Localizer.S("Menu_Application", "应用") };
             var miSettings = new MenuItem { Header = Localizer.S("Menu_Settings", "设置"), InputGestureText = "Ctrl+," };
-            miSettings.Click += (s, args) => openSettings?.Invoke();
+            Wire(miSettings, openSettings);
             miApp.Items.Add(miSettings);
 
             var miAbout = new MenuItem { Header = Localizer.S("Menu_About", "关于"), InputGestureText = "Ctrl+I" };
-            miAbout.Click += (s, args) => showAbout?.Invoke();
+            Wire(miAbout, showAbout);
             miApp.Items.Add(miAbout);
 
             var miTopmost = new MenuItem
@@ -399,15 +398,15 @@ namespace LibmpvIptvClient.Helpers
                 IsCheckable = true,
                 IsChecked = isTopmostChecked
             };
-            miTopmost.Click += (s, args) => toggleTopmost?.Invoke(miTopmost.IsChecked);
+            Wire(miTopmost, toggleTopmost);
             miApp.Items.Add(miTopmost);
 
             var miDebug = new MenuItem { Header = Localizer.S("Menu_Debug", "调试"), InputGestureText = "F1" };
-            miDebug.Click += (s, args) => openDebug?.Invoke();
+            Wire(miDebug, openDebug);
             miApp.Items.Add(miDebug);
 
             var miShortcuts = new MenuItem { Header = Localizer.S("Menu_Shortcuts", "快捷键说明"), InputGestureText = "Ctrl+/" };
-            miShortcuts.Click += (s, args) => showShortcuts?.Invoke();
+            Wire(miShortcuts, showShortcuts);
             miApp.Items.Add(miShortcuts);
 
             // 清除关闭记忆 - 仅在已记住时显示（放在快捷键说明下面）
@@ -427,7 +426,7 @@ namespace LibmpvIptvClient.Helpers
 
             // 10. 退出
             var miExit = new MenuItem { Header = Localizer.S("Menu_Exit", "退出"), InputGestureText = "Alt+F4" };
-            miExit.Click += (s, args) => exitApp?.Invoke();
+            Wire(miExit, exitApp);
             cm.Items.Add(miExit);
 
             return cm;
@@ -449,8 +448,26 @@ namespace LibmpvIptvClient.Helpers
         private static readonly List<System.Windows.Controls.MenuItem> _speedMenuItems = new();
         private static readonly List<System.Windows.Controls.ContextMenu> _speedMenus = new();
 
-        public static void SetSpeedCallback(Action<double> callback) { System.Diagnostics.Debug.WriteLine($"[MenuBuilder] SetSpeedCallback called, callback is null: {callback == null}"); _speedCallback = callback; }
+        public static void SetSpeedCallback(Action<double> callback) => _speedCallback = callback;
         public static void SetRatioCallback(Action<string> callback) => _ratioCallback = callback;
+
+        /// <summary>
+        /// Wires a menu item to a handler, disabling it when no handler is bound. The title bar menu
+        /// passes null for most commands, and a clickable item that silently does nothing is worse than a
+        /// greyed out one.
+        /// </summary>
+        static void Wire(MenuItem item, Action? handler)
+        {
+            if (handler == null) { item.IsEnabled = false; return; }
+            item.Click += (s, e) => { try { handler(); } catch { } };
+        }
+
+        /// <summary>Checkable variant: the handler receives the item's new checked state.</summary>
+        static void Wire(MenuItem item, Action<bool>? handler)
+        {
+            if (handler == null) { item.IsEnabled = false; return; }
+            item.Click += (s, e) => { try { handler(item.IsChecked); } catch { } };
+        }
 
         static Func<IEnumerable<Models.SubtitleTrackInfo>>? _subtitleTrackProvider;
         static Action<int?>? _subtitleSelectCallback;
