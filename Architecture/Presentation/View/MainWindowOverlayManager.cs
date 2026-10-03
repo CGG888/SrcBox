@@ -470,9 +470,15 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
 
                 if (screenW <= 0 || screenH <= 0) return;
 
+                // This poll runs every 120 ms regardless of where the pointer actually is, so a
+                // cursor sitting on another monitor (or over another application) must never
+                // drive the fullscreen hot zones. Mixed-DPI setups additionally skew
+                // PointFromScreen, hence both the monitor check and the window rect check.
+                bool insideWindow = IsCursorInsideFullscreenWindow(fsWindow, p, relX, relY, screenW, screenH);
+
                 // 1. Bottom Zone (Overlay Controls)
                 double bottomZone = Math.Max(160, screenH * 0.26);
-                bool inBottomZone = relY > screenH - bottomZone;
+                bool inBottomZone = insideWindow && relY > screenH - bottomZone;
                 bool keepBottomForMenu = _overlayWpf != null && _overlayWpf.IsAnyMenuOpen;
                 if (inBottomZone) 
                 {
@@ -520,7 +526,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 }
 
                 // 2. Top Zone (Top Overlay)
-                bool inTopZone = relY < 120;
+                bool inTopZone = insideWindow && relY < 120;
                 bool keepTopForMenu = _shell.WindowStateActions.TopOverlay != null && _shell.WindowStateActions.TopOverlay.IsMenuOpen;
                 bool preferTopOverlay = inTopZone || keepTopForMenu;
                 try
@@ -574,11 +580,30 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 // Option A: Make them internal in MainWindow.
                 // Option B: Re-implement them here (they call _shell.WindowStateActions anyway).
                 
-                HandleFullscreenSidebars(relX, screenW, preferTopOverlay);
+                HandleFullscreenSidebars(relX, screenW, preferTopOverlay, insideWindow);
             }
         }
 
-        private void HandleFullscreenSidebars(double relX, double screenW, bool preferTopOverlay)
+        /// <summary>
+        /// True when the cursor is on the same monitor as the fullscreen window and inside its
+        /// client rectangle. Guards the hot zones against pointer positions on other screens.
+        /// </summary>
+        private static bool IsCursorInsideFullscreenWindow(System.Windows.Window fsWindow, POINT p, double relX, double relY, double screenW, double screenH)
+        {
+            try
+            {
+                var fsHandle = new System.Windows.Interop.WindowInteropHelper(fsWindow).Handle;
+                var cursorMonitor = MonitorFromPoint(new POINT { X = p.X, Y = p.Y }, MONITOR_DEFAULTTONEAREST);
+                var windowMonitor = MonitorFromWindow(fsHandle, MONITOR_DEFAULTTONEAREST);
+                if (cursorMonitor != IntPtr.Zero && windowMonitor != IntPtr.Zero && cursorMonitor != windowMonitor)
+                    return false;
+            }
+            catch { }
+
+            return relX >= 0 && relY >= 0 && relX <= screenW && relY <= screenH;
+        }
+
+        private void HandleFullscreenSidebars(double relX, double screenW, bool preferTopOverlay, bool insideWindow)
         {
             try
             {
@@ -608,8 +633,8 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                         // Now it loads. We just need to add back the "Hide if not in zone" logic.
                         
                         bool isVisible = _shell.WindowStateActions.FullscreenEpg.Visibility == Visibility.Visible;
-                        bool inZone = relX <= 320; 
-                        bool onEdge = relX <= 20;
+                        bool inZone = insideWindow && relX <= 320; 
+                        bool onEdge = insideWindow && relX <= 20;
 
                         // If user toggled it ON, we treat it as "Enabled for Auto-Hide interaction"
                         // If user toggled it OFF, we close it completely (handled by else block).
@@ -659,8 +684,8 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                     {
                         bool isVisible = _shell.WindowStateActions.FullscreenDrawer.Visibility == Visibility.Visible;
                         double w = _shell.DrawerWidth > 0 ? _shell.DrawerWidth : 380;
-                        bool inZone = relX >= screenW - w;
-                        bool onEdge = relX >= screenW - 20;
+                        bool inZone = insideWindow && relX >= screenW - w;
+                        bool onEdge = insideWindow && relX >= screenW - 20;
 
                         if (inZone || onEdge)
                         {
@@ -802,6 +827,14 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
         [DllImport("user32.dll")]
         [return: MarshalAs(UnmanagedType.Bool)]
         static extern bool GetCursorPos(out POINT lpPoint);
+
+        const uint MONITOR_DEFAULTTONEAREST = 2;
+
+        [DllImport("user32.dll")]
+        static extern IntPtr MonitorFromPoint(POINT pt, uint dwFlags);
+
+        [DllImport("user32.dll")]
+        static extern IntPtr MonitorFromWindow(IntPtr hwnd, uint dwFlags);
 
         [StructLayout(LayoutKind.Sequential)]
         public struct POINT
