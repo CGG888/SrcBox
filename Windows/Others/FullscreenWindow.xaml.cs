@@ -44,8 +44,10 @@ namespace LibmpvIptvClient
         }
         void OnKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
         {
+            var key = LibmpvIptvClient.Helpers.WpfKeyInput.NormalizeKey(e);
+
             // 所有快捷键都通过 ShortcutKeyPressed 处理
-            bool handledByShortcut = ShortcutKeyPressed?.Invoke(e.Key, e.KeyboardDevice.Modifiers) ?? false;
+            bool handledByShortcut = ShortcutKeyPressed?.Invoke(key, e.KeyboardDevice.Modifiers) ?? false;
             if (handledByShortcut)
             {
                 e.Handled = true;
@@ -53,7 +55,7 @@ namespace LibmpvIptvClient
             }
 
             // 未被快捷键系统处理的特殊键
-            switch (e.Key)
+            switch (key)
             {
                 case Key.Escape:
                     ExitRequested?.Invoke();

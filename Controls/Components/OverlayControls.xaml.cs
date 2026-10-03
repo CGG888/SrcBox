@@ -42,7 +42,7 @@ namespace LibmpvIptvClient
         {
             if (ShortcutKeyPressed != null)
             {
-                bool handled = ShortcutKeyPressed.Invoke(e.Key, e.KeyboardDevice.Modifiers);
+                bool handled = ShortcutKeyPressed.Invoke(LibmpvIptvClient.Helpers.WpfKeyInput.NormalizeKey(e), e.KeyboardDevice.Modifiers);
                 if (handled)
                 {
                     e.Handled = true;

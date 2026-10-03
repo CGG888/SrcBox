@@ -199,13 +199,20 @@ namespace LibmpvIptvClient
         {
             try
             {
-                if (_shell.IsMinimalMode && e.Key == Key.Escape)
+                var key = LibmpvIptvClient.Helpers.WpfKeyInput.NormalizeKey(e);
+
+                if (_shell.IsMinimalMode && key == Key.Escape)
                 {
                     _shell.IsMinimalMode = false;
                     e.Handled = true;
                     return;
                 }
-                var action = _shell.ShortcutActions.ResolveAction(e.Key, e.KeyboardDevice.Modifiers);
+
+                // Text inputs (search boxes, url fields) keep their own keys.
+                if (e.OriginalSource is System.Windows.Controls.TextBox or System.Windows.Controls.PasswordBox)
+                    return;
+
+                var action = _shell.ShortcutActions.ResolveAction(key, e.KeyboardDevice.Modifiers);
                 if (action != MainWindowShortcutAction.None)
                 {
                     _shell.ShortcutActions.ExecuteAction(action);

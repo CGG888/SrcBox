@@ -444,7 +444,7 @@ namespace LibmpvIptvClient
         {
             try
             {
-                if (_windowUiActionsViewModel.ShouldTriggerDebug(e.Key))
+                if (_windowUiActionsViewModel.ShouldTriggerDebug(LibmpvIptvClient.Helpers.WpfKeyInput.NormalizeKey(e)))
                 {
                     _shellActionsViewModel.RaiseDebug(DebugRequested);
                     e.Handled = true;
