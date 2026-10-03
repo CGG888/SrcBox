@@ -10,19 +10,6 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 {
     public class MainWindowChannelPlaybackActionsViewModel : ViewModelBase
     {
-        // Pre-compiled regex patterns for rtp2httpd time placeholder expansion (OPT-4)
-        private static readonly System.Text.RegularExpressions.Regex s_rtp2httpdMacroRegex =
-            new System.Text.RegularExpressions.Regex(@"\$\{\((b|e)\)(.*?)\}",
-                System.Text.RegularExpressions.RegexOptions.Compiled);
-
-        private static readonly System.Text.RegularExpressions.Regex s_utcPlaceholderRegex =
-            new System.Text.RegularExpressions.Regex(@"\{utc:(.*?)\}",
-                System.Text.RegularExpressions.RegexOptions.Compiled);
-
-        private static readonly System.Text.RegularExpressions.Regex s_utcendPlaceholderRegex =
-            new System.Text.RegularExpressions.Regex(@"\{utcend:(.*?)\}",
-                System.Text.RegularExpressions.RegexOptions.Compiled);
-
         private readonly MainShellViewModel _shell;
         private readonly DispatcherTimer _sourceTimeoutTimer;
         // True after one failed degrade attempt while the channel probe was still running;
@@ -740,92 +727,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         }
 
         private string ProcessUrlPlaceholders(string url, DateTime start, DateTime end, bool appendEpgTime)
-        {
-            // 0. Decode only the escapes that hide placeholders (e.g. $%7B(b)yyyyMMdd%7CUTC%7D).
-            // Decoding the whole URL would corrupt the path/query (e.g. %2B -> +, %E5%.. -> CJK)
-            // and the mangled URL then reaches the upstream re-encoded in the local ANSI code page.
-            url = DecodePlaceholderEscapes(url);
-
-            // 1. Unix Timestamp & Duration (rtp2httpd macros)
-            long tsStart = new DateTimeOffset(start).ToUnixTimeSeconds();
-            long tsEnd = new DateTimeOffset(end).ToUnixTimeSeconds();
-            url = url.Replace("${timestamp}", tsStart.ToString());
-            url = url.Replace("{timestamp}", tsStart.ToString());
-            url = url.Replace("${end_timestamp}", tsEnd.ToString());
-            url = url.Replace("{end_timestamp}", tsEnd.ToString());
-
-            long dur = (long)(end - start).TotalSeconds;
-            url = url.Replace("${duration}", dur.ToString());
-            url = url.Replace("{duration}", dur.ToString());
-
-            // 2. {utc:...} and {utcend:...} with Macro Expansion - use pre-compiled regex
-            url = s_utcPlaceholderRegex.Replace(url, m => FormatUtcPlaceholder(m.Groups[1].Value, start.ToUniversalTime()));
-            url = s_utcendPlaceholderRegex.Replace(url, m => FormatUtcPlaceholder(m.Groups[1].Value, end.ToUniversalTime()));
-
-            // 3. ${...} format with Macro Expansion - use pre-compiled regex
-            url = s_rtp2httpdMacroRegex.Replace(url, m =>
-            {
-                var type = m.Groups[1].Value;
-                var fmt = m.Groups[2].Value;
-
-                // Expand rtp2httpd Macros
-                if (fmt == "YmdHMS") fmt = "yyyyMMddHHmmss";
-                else if (fmt == "Ymd") fmt = "yyyyMMdd";
-                else if (fmt == "HMS") fmt = "HHmmss";
-
-                var dt = (type == "b" ? start : end);
-                if (fmt.EndsWith("|UTC", StringComparison.OrdinalIgnoreCase))
-                {
-                    dt = dt.ToUniversalTime();
-                    fmt = fmt.Substring(0, fmt.Length - 4);
-                }
-
-                // Unix seconds for start/end
-                if (string.Equals(fmt, "timestamp", StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(fmt, "unix", StringComparison.OrdinalIgnoreCase) ||
-                    string.Equals(fmt, "epoch", StringComparison.OrdinalIgnoreCase))
-                {
-                    var unix = new DateTimeOffset(dt.ToUniversalTime()).ToUnixTimeSeconds();
-                    return unix.ToString();
-                }
-                try { return dt.ToString(fmt); } catch { return m.Value; }
-            });
-
-            // 4. Fixed Local Time Placeholders
-            url = url.Replace("{start}", start.ToString("yyyyMMddHHmmss"));
-            url = url.Replace("{end}", end.ToString("yyyyMMddHHmmss"));
-            // 5. Append EPG tracking parameters (minute-level) for replay/timeshift correlation
-            // 仅当 appendEpgTime 为 true 时追加，避免影响不支持该参数的播放源
-            if (appendEpgTime)
-            {
-                try
-                {
-                    var minTs = start.ToString("yyyy-MM-ddTHH:mm");
-                    var sep = url.Contains("?") ? "&" : "?";
-                    url = url + sep + "epg_time=" + Uri.EscapeDataString(minTs);
-                }
-                catch { }
-            }
-            return url;
-        }
-
-        private static string DecodePlaceholderEscapes(string url)
-        {
-            if (url.IndexOf('%') < 0) return url;
-            return url
-                .Replace("%7B", "{").Replace("%7b", "{")
-                .Replace("%7D", "}").Replace("%7d", "}")
-                .Replace("%24", "$");
-        }
-
-        private static string FormatUtcPlaceholder(string fmt, DateTime dt)
-        {
-            // Expand rtp2httpd Macros
-            if (fmt == "YmdHMS") fmt = "yyyyMMddHHmmss";
-            else if (fmt == "Ymd") fmt = "yyyyMMdd";
-            else if (fmt == "HMS") fmt = "HHmmss";
-            try { return dt.ToString(fmt); } catch { return "{utc:" + fmt + "}"; }
-        }
+            => LibmpvIptvClient.Services.UrlPlaceholderExpander.Expand(url, start, end, appendEpgTime);
 
         public void JumpToChannelByIdOrName(string id, string name)
         {
