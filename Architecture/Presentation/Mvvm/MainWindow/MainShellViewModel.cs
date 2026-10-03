@@ -283,6 +283,10 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         private PlaybackStatusKind _timeshiftReturnKind = PlaybackStatusKind.Live;
         private bool _suppressTimeshiftAutoReturn;
         private EpgProgram? _timeshiftReturnProgram;
+
+        /// <summary>How far behind the live edge a timeshift session starts, so there is archive
+        /// content to pause/rewind right away (and the requested window is not zero length).</summary>
+        const int TimeshiftEnterBackSeconds = 30;
         private PlaybackState _playbackState = PlaybackState.Default;
         public bool IsTimeshiftActive
         {
@@ -371,6 +375,18 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 // Initial UI Sync
                 UpdateTimeshiftUi();
                 SyncPlaybackSpeed(true, true, false);
+
+                // Really switch to the archive stream. Previously entering timeshift only flipped the UI
+                // state, so the picture stayed live and pause/rewind had nothing to act on.
+                if (CurrentChannel != null)
+                {
+                    var start = TimeshiftMax.AddSeconds(-TimeshiftEnterBackSeconds);
+                    if (start < TimeshiftMin) start = TimeshiftMin;
+                    TimeshiftStart = start;
+                    TimeshiftCursorSec = Math.Max(0, (start - TimeshiftMin).TotalSeconds);
+                    ChannelPlaybackActions.PlayCatchupAt(CurrentChannel, start, keepTimeshiftMode: true);
+                    UpdateTimeshiftUi();
+                }
             }
             else
             {

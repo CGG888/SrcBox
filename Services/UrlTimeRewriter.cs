@@ -12,12 +12,15 @@ namespace LibmpvIptvClient.Services
             if (settings == null) return url;
             var cfg = settings.TimeOverride;
 
-            if (isTimeshift)
+            if (cfg == null || !cfg.Enabled)
             {
-                return RewriteUrlWithDuration(url, start, end);
+                // No explicit override configured: never touch a url that already carries seek times.
+                // The channel's own catchup-source template (or the configured timeshift format) has
+                // produced them already -- often in UTC or another layout -- and rewriting them into the
+                // local "yyyyMMddHHmmss" starttime/endtime pair silently broke those sources.
+                // Times are only injected when the url contains no time parameter at all.
+                return HasTimeParam(url) ? url : RewriteUrlWithDuration(url, start, end);
             }
-
-            if (cfg == null || !cfg.Enabled) return url;
             var mode = (cfg.Mode ?? "time_only").ToLowerInvariant();
             if (mode != "time_only" && mode != "replace_all") return url;
             var layout = (cfg.Layout ?? "start_end").ToLowerInvariant();
@@ -67,6 +70,25 @@ namespace LibmpvIptvClient.Services
             if (rebuilt.Length == 0) return path;
             return path + "?" + rebuilt;
         }
+
+        /// <summary>True when the url already carries any of the seek parameters the rewriter manages.</summary>
+        public static bool HasTimeParam(string url)
+        {
+            if (string.IsNullOrEmpty(url)) return false;
+            var qIdx = url.IndexOf('?');
+            if (qIdx < 0 || qIdx >= url.Length - 1) return false;
+
+            foreach (var key in TimeKeys)
+            {
+                if (url.IndexOf(key + "=", qIdx, StringComparison.OrdinalIgnoreCase) >= 0) return true;
+            }
+            return false;
+        }
+
+        static readonly string[] TimeKeys =
+        {
+            "starttime", "endtime", "start", "end", "begin", "finish", "duration", "playseek", "tvdr"
+        };
 
         private static string RewriteUrlWithDuration(string url, DateTime start, DateTime end)
         {

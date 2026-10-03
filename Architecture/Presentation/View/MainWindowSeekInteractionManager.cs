@@ -38,7 +38,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             {
                 _shell.TimeshiftCursorSec = Math.Max(0, v);
                 var t = _shell.TimeshiftMin.AddSeconds(_shell.TimeshiftCursorSec);
-                _shell.ChannelPlaybackActions.PlayCatchupAt(_shell.CurrentChannel, t);
+                _shell.ChannelPlaybackActions.PlayCatchupAt(_shell.CurrentChannel, t, keepTimeshiftMode: true);
                 _shell.TimeshiftStart = t;
             }
             else

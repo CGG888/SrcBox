@@ -340,6 +340,15 @@ public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
     /// </summary>
     public void SeekBySeconds(int seconds)
     {
+        try
+        {
+            Diagnostics.Logger.Info(
+                $"[Seek] request {seconds}s mode={_shell.PlaybackMode} timeshift={_shell.IsTimeshiftActive} " +
+                $"pos={_shell.CurrentTimePos:0.#} anchor={_shell.PlaybackFocusTime:HH:mm:ss} " +
+                $"program={_shell.CurrentPlayingProgram?.Start:HH:mm:ss} channel={_shell.CurrentChannel?.Name ?? "-"}");
+        }
+        catch { }
+
         if (_shell.IsTimeshiftActive)
         {
             TrySeekTimeshift(_shell, seconds);
@@ -374,7 +383,7 @@ public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
 
         Diagnostics.Logger.Info($"[Seek] Timeshift seek: seconds={seconds}, target={targetTime:HH:mm:ss}");
         shell.PlayerEngine.EnsureReadyForLoad();
-        shell.ChannelPlaybackActions.PlayCatchupAt(shell.CurrentChannel, targetTime);
+        shell.ChannelPlaybackActions.PlayCatchupAt(shell.CurrentChannel, targetTime, keepTimeshiftMode: true);
         shell.TimeshiftStart = targetTime;
     }
 
@@ -390,7 +399,13 @@ public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
         // PlayCatchupAt), so mpv's time-pos is relative to it -- using the program start would
         // drift after a mid-program seek.
         var anchor = shell.PlaybackFocusTime ?? shell.CurrentPlayingProgram?.Start;
-        if (anchor == null) return;
+        if (anchor == null)
+        {
+            // Unknown archive start (e.g. a replay started from history): let the player try.
+            Diagnostics.Logger.Warn("[Seek] Replay seek: no anchor time, falling back to player relative seek");
+            shell.PlaybackActions.TrySeekRelative(shell.PlayerEngine, seconds);
+            return;
+        }
 
         var target = anchor.Value.AddSeconds(Math.Max(0, shell.CurrentTimePos)).AddSeconds(seconds);
         var prog = shell.CurrentPlayingProgram;

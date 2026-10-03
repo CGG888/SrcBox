@@ -510,27 +510,8 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             _shell.ClearRecordingPlayingIndicator();
             _shell.PlayerEngine.EnsureReadyForLoad();
             
-            var url = ch.CatchupSource;
-            if (string.IsNullOrEmpty(url))
-            {
-                if (AppSettings.Current.Replay.Enabled && !string.IsNullOrEmpty(AppSettings.Current.Replay.UrlFormat))
-                {
-                    var fmt = AppSettings.Current.Replay.UrlFormat;
-                    if (!string.IsNullOrEmpty(fmt) && (fmt.StartsWith("?") || fmt.StartsWith("&")))
-                    {
-                        var live = (ch.Tag is Source s1 && !string.IsNullOrEmpty(s1.Url)) ? s1.Url
-                                   : (ch.Sources != null && ch.Sources.Count > 0 ? ch.Sources[0].Url : "");
-                        if (string.IsNullOrEmpty(live)) return;
-                        var sep = live.Contains("?") ? "&" : "?";
-                        url = live + sep + fmt.TrimStart('?', '&');
-                    }
-                    else
-                    {
-                        url = fmt.Replace("{id}", ch.Id ?? ch.Name);
-                    }
-                }
-                else return;
-            }
+            var url = ResolveArchiveUrl(ch);
+            if (string.IsNullOrEmpty(url)) return;
 
             try
             {
@@ -637,30 +618,22 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             _shell.IsPaused = false;
         }
 
-        public void PlayCatchupAt(Channel ch, DateTime start)
+        public void PlayCatchupAt(Channel ch, DateTime start) => PlayCatchupAt(ch, start, keepTimeshiftMode: false);
+
+        /// <summary>
+        /// Seeks inside an archive stream by re-requesting the catchup URL with a new start time.
+        /// When <paramref name="keepTimeshiftMode"/> is true the timeshift session stays active
+        /// (progress bar, arrow keys and entering timeshift all use that variant).
+        /// </summary>
+        public void PlayCatchupAt(Channel ch, DateTime start, bool keepTimeshiftMode)
         {
             if (_shell.PlayerEngine == null) return;
 
-            var url = ch.CatchupSource;
+            var url = ResolveArchiveUrl(ch);
             if (string.IsNullOrEmpty(url))
             {
-                if (AppSettings.Current.Timeshift.Enabled && !string.IsNullOrEmpty(AppSettings.Current.Timeshift.UrlFormat))
-                {
-                    var fmt = AppSettings.Current.Timeshift.UrlFormat;
-                    if (!string.IsNullOrEmpty(fmt) && (fmt.StartsWith("?") || fmt.StartsWith("&")))
-                    {
-                        var live = (ch.Tag is Source s1 && !string.IsNullOrEmpty(s1.Url)) ? s1.Url
-                                   : (ch.Sources != null && ch.Sources.Count > 0 ? ch.Sources[0].Url : "");
-                        if (string.IsNullOrEmpty(live)) return;
-                        var sep = live.Contains("?") ? "&" : "?";
-                        url = live + sep + fmt.TrimStart('?', '&');
-                    }
-                    else
-                    {
-                        url = fmt.Replace("{id}", ch.Id ?? ch.Name);
-                    }
-                }
-                else return;
+                LibmpvIptvClient.Diagnostics.Logger.Warn($"[Replay] No catchup url for {ch?.Name}: channel has no catchup-source and no replay/timeshift format is configured");
+                return;
             }
 
             try
@@ -687,7 +660,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 catch { }
 
                 url = ProcessUrlPlaceholders(url, start, end, AppSettings.Current.Timeshift.AppendEpgTime);
-                try { url = LibmpvIptvClient.Services.UrlTimeRewriter.RewriteIfEnabled(AppSettings.Current, url, start, end, _shell.IsTimeshiftActive); } catch { }
+                try { url = LibmpvIptvClient.Services.UrlTimeRewriter.RewriteIfEnabled(AppSettings.Current, url, start, end, keepTimeshiftMode || _shell.IsTimeshiftActive); } catch { }
                 
                 LibmpvIptvClient.Diagnostics.Logger.Info($"[Replay] Start Replay - Channel: {ch.Name}, Time: {start:yyyy-MM-dd HH:mm:ss}, URL: {url}");
                 _shell.PlayerEngine.Play(url);
@@ -695,13 +668,24 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 LibmpvIptvClient.Diagnostics.Logger.Info($"[Replay] After Play - CurrentPlayingProgram={_shell.CurrentPlayingProgram?.Title ?? "null"}");
                 _shell.CurrentPlayingProgram = targetProgram;
                 LibmpvIptvClient.Diagnostics.Logger.Info($"[Replay] After assignment - CurrentPlayingProgram={_shell.CurrentPlayingProgram?.Title ?? "null"}");
-                _shell.IsTimeshiftActive = false;
+                if (!keepTimeshiftMode) _shell.IsTimeshiftActive = false;
                 RequestVideoShow?.Invoke();
 
-                _shell.DispatchPlaybackEvent(new StartReplayPlayback(
-                    ch.TvgId ?? ch.Id ?? ch.Name ?? "",
-                    targetProgram,
-                    url));
+                if (keepTimeshiftMode)
+                {
+                    _shell.DispatchPlaybackEvent(new StartTimeshiftPlayback(
+                        ch.TvgId ?? ch.Id ?? ch.Name ?? "",
+                        start,
+                        targetProgram,
+                        url));
+                }
+                else
+                {
+                    _shell.DispatchPlaybackEvent(new StartReplayPlayback(
+                        ch.TvgId ?? ch.Id ?? ch.Name ?? "",
+                        targetProgram,
+                        url));
+                }
 
                 // Anchor the playback position to the requested start time: mpv's time-pos is
                 // relative to this instant, which is not necessarily the program start after a seek.
@@ -728,6 +712,52 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 
         private string ProcessUrlPlaceholders(string url, DateTime start, DateTime end, bool appendEpgTime)
             => LibmpvIptvClient.Services.UrlPlaceholderExpander.Expand(url, start, end, appendEpgTime);
+
+        /// <summary>
+        /// Resolves the url used for replay/timeshift playback: the per-channel catchup-source first,
+        /// then the global replay format, then the global timeshift format. The initial replay and every
+        /// later seek share this, otherwise a channel without catchup-source can be opened for replay
+        /// but never seeked.
+        /// </summary>
+        string? ResolveArchiveUrl(Channel? ch)
+        {
+            if (ch == null) return null;
+            if (!string.IsNullOrEmpty(ch.CatchupSource)) return ch.CatchupSource;
+
+            var replay = AppSettings.Current.Replay;
+            if (replay.Enabled)
+            {
+                var fromReplay = BuildFromFormat(ch, replay.UrlFormat);
+                if (!string.IsNullOrEmpty(fromReplay)) return fromReplay;
+            }
+
+            var timeshift = AppSettings.Current.Timeshift;
+            if (timeshift.Enabled)
+            {
+                var fromTimeshift = BuildFromFormat(ch, timeshift.UrlFormat);
+                if (!string.IsNullOrEmpty(fromTimeshift)) return fromTimeshift;
+            }
+
+            return null;
+        }
+
+        static string? BuildFromFormat(Channel ch, string? fmt)
+        {
+            if (string.IsNullOrWhiteSpace(fmt)) return null;
+            fmt = fmt!.Trim();
+
+            // "?playseek=..." style formats are appended to the channel's live url.
+            if (fmt.StartsWith("?") || fmt.StartsWith("&"))
+            {
+                var live = (ch.Tag is Source s1 && !string.IsNullOrEmpty(s1.Url)) ? s1.Url
+                           : (ch.Sources != null && ch.Sources.Count > 0 ? ch.Sources[0].Url : "");
+                if (string.IsNullOrEmpty(live)) return null;
+                var sep = live.Contains("?") ? "&" : "?";
+                return live + sep + fmt.TrimStart('?', '&');
+            }
+
+            return fmt.Replace("{id}", ch.Id ?? ch.Name);
+        }
 
         public void JumpToChannelByIdOrName(string id, string name)
         {

@@ -661,7 +661,7 @@ namespace LibmpvIptvClient.Services.WebRemote
                     var startTime = DateTime.Parse(start);
                     Logger.Info($"[WebRemote] DoReplayProgram: input='{start}', parsed={startTime:yyyy-MM-dd HH:mm:ss} Kind={startTime.Kind}, ToUniversalTime={startTime.ToUniversalTime():yyyy-MM-dd HH:mm:ss}");
                     Logger.Info($"[WebRemote] DoReplayProgram: {channel.Name} at {startTime}, CatchupSource={channel.CatchupSource}, Timeshift.Enabled={AppSettings.Current.Timeshift?.Enabled}, Timeshift.UrlFormat={AppSettings.Current.Timeshift?.UrlFormat}");
-                    _shell?.ChannelPlaybackActions.PlayCatchupAt(channel, startTime);
+                    _shell?.ChannelPlaybackActions.PlayCatchupAt(channel, startTime, keepTimeshiftMode: _shell.IsTimeshiftActive);
                     Logger.Debug($"[WebRemote] DoReplayProgram success: {channel.Name} at {startTime}");
                 }
                 catch (Exception ex)
