@@ -26,68 +26,116 @@ namespace LibmpvIptvClient.Services
         {
         }
 
-        public async Task LoadEpgAsync(string url)
+        public Task LoadEpgAsync(string url) => LoadEpgAsync(new[] { url });
+
+        /// <summary>
+        /// Loads and merges one or more EPG sources (issue #38). Programmes are merged per channel
+        /// id: the first source wins, later sources only add what is still missing.
+        /// </summary>
+        public async Task LoadEpgAsync(IEnumerable<string> urls)
         {
-            if (string.IsNullOrWhiteSpace(url)) return;
-            
+            var list = urls?
+                .Where(u => !string.IsNullOrWhiteSpace(u))
+                .Select(u => u.Trim())
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList() ?? new List<string>();
+            if (list.Count == 0) return;
+
             // Clear cache on reload
             _smartMatchCache.Clear();
 
-            try 
+            var mergedPrograms = new Dictionary<string, List<EpgProgram>>(StringComparer.OrdinalIgnoreCase);
+            var mergedNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var mergedTvgNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+            foreach (var url in list)
             {
-                byte[] data;
-                // 使用 URL 的 Hash 作为缓存文件名的一部分
-                var hash = Convert.ToHexString(System.Security.Cryptography.MD5.HashData(System.Text.Encoding.UTF8.GetBytes(url)));
-                var cachePath = Path.Combine(Path.GetTempPath(), $"iptv_epg_{hash}.dat");
-                
-                // 简单的缓存策略：文件存在且小于 12 小时则直接使用
-                if (File.Exists(cachePath) && (DateTime.Now - File.GetLastWriteTime(cachePath)).TotalHours < 12)
+                try
                 {
-                    LibmpvIptvClient.Diagnostics.Logger.Info("正在从缓存加载节目单...");
-                    data = await File.ReadAllBytesAsync(cachePath);
-                }
-                else
-                {
-                    LibmpvIptvClient.Diagnostics.Logger.Info("正在下载节目单...");
-                    try
+                    var data = await DownloadEpgDataAsync(url).ConfigureAwait(false);
+                    if (data == null || data.Length == 0) continue;
+
+                    LibmpvIptvClient.Diagnostics.Logger.Info($"节目单数据大小: {data.Length} bytes ({url})");
+                    var parsed = await Task.Run(() => ParseXmlResult(OpenEpgStream(data)));
+
+                    foreach (var kv in parsed.Programs)
                     {
-                        data = await _http.GetByteArrayAsyncWithRetry(url);
+                        if (!mergedPrograms.TryGetValue(kv.Key, out var target))
+                        {
+                            target = new List<EpgProgram>();
+                            mergedPrograms[kv.Key] = target;
+                        }
+                        foreach (var prog in kv.Value)
+                        {
+                            if (seen.Add($"{kv.Key}|{prog.Start:O}|{prog.End:O}|{prog.Title}")) target.Add(prog);
+                        }
                     }
-                    catch (Exception ex)
-                    {
-                        LibmpvIptvClient.Diagnostics.Logger.Error($"EPG Download Failed: {ex.Message}");
-                        return;
-                    }
-                    // 异步写入缓存
-                    _ = File.WriteAllBytesAsync(cachePath, data);
+                    foreach (var kv in parsed.ChannelNames) mergedNames.TryAdd(kv.Key, kv.Value);
+                    foreach (var kv in parsed.TvgNames) mergedTvgNames.TryAdd(kv.Key, kv.Value);
+
+                    LibmpvIptvClient.Diagnostics.Logger.Info($"节目单已合并 {url}: {parsed.Programs.Count} 个频道");
                 }
-
-                LibmpvIptvClient.Diagnostics.Logger.Info($"节目单数据大小: {data.Length} bytes");
-
-                using var ms = new MemoryStream(data);
-                Stream stream = ms;
-                
-                // Check for GZIP
-                if (data.Length > 2 && data[0] == 0x1F && data[1] == 0x8B)
+                catch (Exception ex)
                 {
-                    LibmpvIptvClient.Diagnostics.Logger.Info("节目单已解压");
-                    stream = new GZipStream(ms, CompressionMode.Decompress);
+                    LibmpvIptvClient.Diagnostics.Logger.Error($"EPG Load Error ({url}): {ex.Message}");
                 }
-                else
-                {
-                    LibmpvIptvClient.Diagnostics.Logger.Info("节目单格式: XML");
-                }
+            }
 
-                await Task.Run(() => ParseXml(stream));
-                LibmpvIptvClient.Diagnostics.Logger.Info($"节目单加载完成，包含 {_programs.Count} 个频道");
+            foreach (var kv in mergedPrograms)
+            {
+                kv.Value.Sort((a, b) => a.Start.CompareTo(b.Start));
+            }
+
+            _programs = mergedPrograms;
+            _channelNameMap = mergedNames;
+            _tvgNameMap = mergedTvgNames;
+            _programsByHour.Clear();
+            LibmpvIptvClient.Diagnostics.Logger.Info($"节目单加载完成，包含 {_programs.Count} 个频道（来源 {list.Count} 个）");
+        }
+
+        /// <summary>Downloads an EPG url, reusing the 12 hour temp-file cache.</summary>
+        private async Task<byte[]?> DownloadEpgDataAsync(string url)
+        {
+            // 使用 URL 的 Hash 作为缓存文件名的一部分
+            var hash = Convert.ToHexString(System.Security.Cryptography.MD5.HashData(System.Text.Encoding.UTF8.GetBytes(url)));
+            var cachePath = Path.Combine(Path.GetTempPath(), $"iptv_epg_{hash}.dat");
+
+            // 简单的缓存策略：文件存在且小于 12 小时则直接使用
+            if (File.Exists(cachePath) && (DateTime.Now - File.GetLastWriteTime(cachePath)).TotalHours < 12)
+            {
+                LibmpvIptvClient.Diagnostics.Logger.Info("正在从缓存加载节目单...");
+                return await File.ReadAllBytesAsync(cachePath).ConfigureAwait(false);
+            }
+
+            LibmpvIptvClient.Diagnostics.Logger.Info("正在下载节目单...");
+            try
+            {
+                var data = await _http.GetByteArrayAsyncWithRetry(url).ConfigureAwait(false);
+                _ = File.WriteAllBytesAsync(cachePath, data);
+                return data;
             }
             catch (Exception ex)
             {
-                LibmpvIptvClient.Diagnostics.Logger.Error($"EPG Load Error: {ex.Message}");
+                LibmpvIptvClient.Diagnostics.Logger.Error($"EPG Download Failed: {ex.Message}");
+                return null;
             }
         }
 
-        private void ParseXml(Stream stream)
+        private static Stream OpenEpgStream(byte[] data)
+        {
+            var ms = new MemoryStream(data);
+            if (data.Length > 2 && data[0] == 0x1F && data[1] == 0x8B)
+            {
+                LibmpvIptvClient.Diagnostics.Logger.Info("节目单已解压");
+                return new GZipStream(ms, CompressionMode.Decompress);
+            }
+
+            LibmpvIptvClient.Diagnostics.Logger.Info("节目单格式: XML");
+            return ms;
+        }
+
+        private (Dictionary<string, List<EpgProgram>> Programs, Dictionary<string, string> ChannelNames, Dictionary<string, string> TvgNames) ParseXmlResult(Stream stream)
         {
             var newPrograms = new Dictionary<string, List<EpgProgram>>(StringComparer.OrdinalIgnoreCase);
             var newMap = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
@@ -176,11 +224,8 @@ namespace LibmpvIptvClient.Services
                 kv.Value.Sort((a, b) => a.Start.CompareTo(b.Start));
             }
 
-            _programs = newPrograms;
-            _channelNameMap = newMap;
-            _tvgNameMap = newTvgNameMap;
+            return (newPrograms, newMap, newTvgNameMap);
         }
-
         private bool TryParseTime(string? s, out DateTime dt)
         {
             dt = DateTime.MinValue;

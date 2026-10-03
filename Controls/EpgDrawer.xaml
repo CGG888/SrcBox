@@ -12,7 +12,8 @@
         
         <!-- URL -->
         <TextBlock Text="{DynamicResource UI_Epg_Url}" FontWeight="SemiBold" Margin="0,0,0,8"/>
-        <TextBox x:Name="TbUrl" Height="24" Padding="4"/>
+        <TextBox x:Name="TbUrl" Height="72" Padding="4" AcceptsReturn="True"
+                 VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto"/>
         <TextBlock Text="{DynamicResource UI_Epg_Url_Note}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,4,0,24" TextWrapping="Wrap"/>
         
         <!-- Refresh Interval -->

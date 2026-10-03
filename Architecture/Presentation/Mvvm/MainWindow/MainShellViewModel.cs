@@ -831,10 +831,11 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                     return;
                 }
 
-                var epgUrl = AppSettings.Current.CustomEpgUrl;
-                if (string.IsNullOrWhiteSpace(epgUrl))
+                var epgUrls = AppSettings.Current.Epg.GetEffectiveUrls();
+                if (!string.IsNullOrWhiteSpace(loadedTvgUrl) &&
+                    !epgUrls.Contains(loadedTvgUrl.Trim(), System.StringComparer.OrdinalIgnoreCase))
                 {
-                    epgUrl = loadedTvgUrl;
+                    epgUrls.Add(loadedTvgUrl.Trim());
                 }
 
                 await System.Windows.Application.Current.Dispatcher.InvokeAsync(() =>
@@ -879,14 +880,14 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                     }
                 });
 
-                if (!string.IsNullOrEmpty(epgUrl) && _epgService != null)
+                if (epgUrls.Count > 0 && _epgService != null)
                 {
                     LibmpvIptvClient.Diagnostics.Logger.Info("正在加载节目单...");
                     _ = System.Threading.Tasks.Task.Run(async () =>
                     {
                         try
                         {
-                            await _epgService.LoadEpgAsync(epgUrl);
+                            await _epgService.LoadEpgAsync(epgUrls);
                             System.Windows.Application.Current.Dispatcher.Invoke(() =>
                             {
                                 EpgActions.SyncChannelCurrentProgramTitles(loadedChannels, ch => _epgService.GetCurrentProgram(ch.TvgId, ch.TvgName, ch.Name));

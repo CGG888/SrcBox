@@ -35,9 +35,32 @@ namespace LibmpvIptvClient
     {
         public bool Enabled { get; set; } = true;
         public string Url { get; set; } = "";
+        /// <summary>Additional EPG sources (issue #38). Every configured url is merged into one
+        /// guide, so several playlists can each bring their own EPG.</summary>
+        public List<string> Urls { get; set; } = new List<string>();
         public double RefreshIntervalHours { get; set; } = 24;
         public bool EnableSmartMatch { get; set; } = true; // Added
         public bool StrictMatchByPlaybackTime { get; set; } = true; // 灰度开关：按回放/时移的播放时刻匹配节目单
+
+        /// <summary>All configured EPG urls in priority order, without blanks or duplicates.</summary>
+        public List<string> GetEffectiveUrls()
+        {
+            var list = new List<string>();
+            add(Url);
+            if (Urls != null)
+            {
+                foreach (var u in Urls) add(u);
+            }
+            return list;
+
+            void add(string? u)
+            {
+                u = (u ?? "").Trim();
+                if (u.Length == 0) return;
+                if (list.Contains(u, StringComparer.OrdinalIgnoreCase)) return;
+                list.Add(u);
+            }
+        }
     }
 
     public class LogoConfig
