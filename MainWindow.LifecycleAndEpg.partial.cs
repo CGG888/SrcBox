@@ -193,23 +193,31 @@ namespace LibmpvIptvClient
         internal void SetDrawerCollapsed(bool collapsed)
         {
             if (_shell.IsDrawerCollapsed == collapsed) return;
-            var drawerWidth = _shell.DrawerWidth > 0 ? _shell.DrawerWidth : 380;
-            if (!collapsed)
-            {
-                Width = _baseWindowWidth + (CbEpg.IsChecked == true ? 320 : 0) + drawerWidth;
-            }
-            else
-            {
-                Width = _baseWindowWidth + (CbEpg.IsChecked == true ? 320 : 0);
-            }
             _shell.IsDrawerCollapsed = collapsed;
             DrawerPanel.Visibility = collapsed ? Visibility.Collapsed : Visibility.Visible;
+            ApplyWindowWidthForPanels();
             if (!collapsed)
             {
                 try { _shell.ApplyChannelFilter(); } catch { }
                 try { ListChannels.Items.Refresh(); } catch { }
                 try { ListGroups.Items.Refresh(); } catch { }
             }
+        }
+
+        /// <summary>
+        /// Sizes the window so the video area keeps <see cref="_baseWindowWidth"/> and the panels are
+        /// added on top. The applied width is remembered so a resize handler cannot mistake this for a
+        /// user resize -- deriving the base from the current flags after the fact used to add the
+        /// drawer width again on every open/close cycle.
+        /// </summary>
+        void ApplyWindowWidthForPanels()
+        {
+            _panelAppliedWidth = Helpers.PanelWindowLayout.WindowWidth(
+                _baseWindowWidth,
+                _shell.IsDrawerCollapsed,
+                _shell.DrawerWidth,
+                CbEpg.IsChecked == true);
+            Width = _panelAppliedWidth;
         }
         void BtnDrawerCollapse_Click(object sender, RoutedEventArgs e)
         {
@@ -227,11 +235,15 @@ namespace LibmpvIptvClient
                 var s = AppSettings.Current;
                 if (s == null || !s.RememberWindowGeometry) return;
 
-                if (s.WindowWidth is >= 640 and <= 10000 && s.WindowHeight is >= 480 and <= 10000)
+                // WindowWidth stores the video area width; the panels are added on top of it, so the
+                // playback area always comes back at the size the user chose.
+                if (s.WindowWidth is >= 640 and <= 10000)
                 {
-                    Width = s.WindowWidth.Value;
-                    Height = s.WindowHeight.Value;
+                    _baseWindowWidth = s.WindowWidth.Value;
+                    ApplyWindowWidthForPanels();
                 }
+
+                if (s.WindowHeight is >= 480 and <= 10000) Height = s.WindowHeight.Value;
 
                 if (s.WindowLeft.HasValue && s.WindowTop.HasValue &&
                     IsGeometryVisible(s.WindowLeft.Value, s.WindowTop.Value, Width, Height))
@@ -278,7 +290,9 @@ namespace LibmpvIptvClient
 
                 s.WindowLeft = bounds.Left;
                 s.WindowTop = bounds.Top;
-                s.WindowWidth = bounds.Width;
+                // Persist the video area width, not the composite window width: whether a panel
+                // happened to be open at exit must not change the next launch.
+                s.WindowWidth = _baseWindowWidth >= 640 ? _baseWindowWidth : Math.Max(640, bounds.Width);
                 s.WindowHeight = bounds.Height;
                 s.WindowMaximized = WindowState == WindowState.Maximized;
                 s.Save();
@@ -297,10 +311,13 @@ namespace LibmpvIptvClient
                 if (WindowState != WindowState.Normal) return;
                 if (_shell.WindowStateActions.IsFullscreen || _shell.IsMinimalMode) return;
 
-                var drawerWidth = _shell.IsDrawerCollapsed ? 0 : (_shell.DrawerWidth > 0 ? _shell.DrawerWidth : 380);
-                var epgWidth = CbEpg.IsChecked == true ? 320 : 0;
-                var baseWidth = Width - drawerWidth - epgWidth;
-                if (baseWidth >= 480) _baseWindowWidth = baseWidth;
+                // Ignore the width we applied for the panel layout: only a real user resize may
+                // redefine the base (video area) width.
+                if (!Helpers.PanelWindowLayout.IsUserResize(Width, _panelAppliedWidth)) return;
+
+                var baseWidth = Helpers.PanelWindowLayout.BaseWidthFromWindow(
+                    Width, _shell.IsDrawerCollapsed, _shell.DrawerWidth, CbEpg.IsChecked == true);
+                if (baseWidth >= Helpers.PanelWindowLayout.MinBaseWidth) _baseWindowWidth = baseWidth;
             }
             catch { }
         }
@@ -621,15 +638,7 @@ namespace LibmpvIptvClient
             }
             else
             {
-                var drawerWidth = _shell.DrawerWidth > 0 ? _shell.DrawerWidth : 380;
-                if (show)
-                {
-                    Width = _baseWindowWidth + 320 + (_shell.IsDrawerCollapsed ? 0 : drawerWidth);
-                }
-                else
-                {
-                    Width = _baseWindowWidth + (_shell.IsDrawerCollapsed ? 0 : drawerWidth);
-                }
+                ApplyWindowWidthForPanels();
                 _epgManager?.CbEpg_Click(sender, e);
             }
         }

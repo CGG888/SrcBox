@@ -41,6 +41,9 @@ namespace LibmpvIptvClient
         private readonly Action _epgRemindersChangedHandler;
         private DateTime _playStartTime;
         private double _baseWindowWidth = 1280;
+        // Last window width applied for the current panel layout; the resize handler uses it to tell
+        // our own panel-driven resizes apart from a real user resize.
+        private double _panelAppliedWidth = double.NaN;
 
         public MainWindow()
         {
