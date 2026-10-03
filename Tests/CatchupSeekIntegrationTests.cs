@@ -129,5 +129,44 @@ namespace LibmpvIptvClient.Tests
             StringAssert.Contains(engine.Played[0], "starttime=");
             Assert.IsTrue(shell.IsTimeshiftActive, "起播时移流后仍应处于时移模式");
         }
+
+        // 回看进度条：重发 URL 后 mpv 的 time-pos 从新起点归零，界面必须按"节目区间"显示——
+        // 左端（已播）在节目内移动，右端（总长）保持该节目总时长不变。
+        [TestMethod]
+        public void ReplayTick_ShowsProgramRelativePosition_AndKeepsProgramLength()
+        {
+            var engine = new FakeEngine();
+            var shell = MakeShell(engine, out _);
+            shell.CurrentPlayingProgram = new EpgProgram { Title = "P", Start = ProgStart, End = ProgEnd };
+            shell.PlaybackMode = PlaybackMode.Replay;
+            shell.PlaybackFocusTime = ProgStart.AddMinutes(10);   // 已 seek 到节目内第 10 分钟
+            shell.HandlePlaybackTick(120, 2400, false);           // 又播 2 分钟；mpv 报的总长只剩 40 分钟
+
+            Assert.AreEqual(3600, shell.SeekMaximum, 0.01, "右端应为整个节目的时长");
+            Assert.AreEqual(720, shell.SeekValue, 0.01, "左端应为节目内位置（10+2 分钟）");
+            Assert.AreEqual("12:00", shell.ElapsedTimeText);
+            Assert.AreEqual("1:00:00", shell.DurationText);
+        }
+
+        // seek 之后界面位置要跟着走，不能回零。
+        [TestMethod]
+        public void ReplaySeek_MovesDisplayedPositionForward()
+        {
+            var engine = new FakeEngine();
+            var shell = MakeShell(engine, out _);
+            shell.CurrentPlayingProgram = new EpgProgram { Title = "P", Start = ProgStart, End = ProgEnd };
+            shell.PlaybackMode = PlaybackMode.Replay;
+            shell.PlaybackFocusTime = ProgStart;
+            shell.HandlePlaybackTick(600, null, false);
+            Assert.AreEqual(600, shell.SeekValue, 0.01);
+
+            shell.ShortcutActions.ExecuteAction(MainWindowShortcutAction.SeekForward);
+
+            Assert.AreEqual(1, engine.Played.Count);
+            StringAssert.Contains(engine.Played[0], "starttime=" + ExpectedUtc(ProgStart.AddSeconds(610)));
+
+            shell.HandlePlaybackTick(0, null, false);   // 新流从 610s 处开始
+            Assert.AreEqual(610, shell.SeekValue, 0.01, "seek 后界面位置应前进而不是回零");
+        }
     }
 }

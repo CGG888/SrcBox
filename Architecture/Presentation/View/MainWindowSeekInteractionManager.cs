@@ -41,6 +41,13 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 _shell.ChannelPlaybackActions.PlayCatchupAt(_shell.CurrentChannel, t, keepTimeshiftMode: true);
                 _shell.TimeshiftStart = t;
             }
+            else if (_shell.PlaybackMode == PlaybackMode.Replay && _shell.CurrentChannel != null && _shell.CurrentPlayingProgram != null)
+            {
+                // The slider is program-relative in replay: convert back to a wall-clock time and
+                // re-request the archive url (these streams cannot be seeked inside mpv).
+                var target = _shell.CurrentPlayingProgram.Start.AddSeconds(Math.Max(0, v));
+                _shell.ChannelPlaybackActions.PlayCatchupAt(_shell.CurrentChannel, target);
+            }
             else
             {
                 _shell.PlayerEngine?.SeekAbsolute(v);

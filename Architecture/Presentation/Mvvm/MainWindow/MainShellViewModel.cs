@@ -186,6 +186,12 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             catch { }
         }
 
+        /// <summary>
+        /// Start instant of the currently loaded archive stream: mpv's time-pos is relative to it,
+        /// which is not necessarily the program start after a mid-program seek.
+        /// </summary>
+        public DateTime? ArchiveAnchor => PlaybackFocusTime ?? CurrentPlayingProgram?.Start;
+
         public DateTime? GetPlaybackLocalTime()
         {
             try
@@ -198,8 +204,10 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 }
                 if (CurrentPlayingProgram != null)
                 {
-                    // Use cached CurrentTimePos updated by HandlePlaybackTick
-                    return CurrentPlayingProgram.Start.AddSeconds(Math.Max(0, CurrentTimePos));
+                    // Use cached CurrentTimePos updated by HandlePlaybackTick, anchored on the start of
+                    // the loaded catchup stream (not the program start, which drifts after a seek).
+                    var anchor = ArchiveAnchor ?? CurrentPlayingProgram.Start;
+                    return anchor.AddSeconds(Math.Max(0, CurrentTimePos));
                 }
             }
             catch { }
@@ -257,6 +265,26 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                         CurrentPlayingProgram = programAtTime;
                     }
                 }
+            }
+            else if (PlaybackMode == PlaybackMode.Replay && CurrentPlayingProgram != null && ArchiveAnchor.HasValue)
+            {
+                // Replay: the loaded stream starts at the requested seek time, so mpv's time-pos is
+                // relative to that instant. The progress bar must describe the *program* interval
+                // instead: the left label moves inside the program while the right label keeps the
+                // program length (before, the right label shrank after every seek because it showed
+                // the remaining window reported by mpv).
+                var program = CurrentPlayingProgram!;
+                var total = Math.Max(1, (program.End - program.Start).TotalSeconds);
+                var pos = Math.Max(0, Math.Min(total, (ArchiveAnchor!.Value - program.Start).TotalSeconds + CurrentTimePos));
+
+                if (!IsSeeking)
+                {
+                    SeekMaximum = total;
+                    SeekValue = pos;
+                }
+                ElapsedTimeText = FormatTime(pos);
+                DurationText = FormatTime(total);
+                _overlayTimeSync?.Invoke(pos, total);
             }
             else
             {

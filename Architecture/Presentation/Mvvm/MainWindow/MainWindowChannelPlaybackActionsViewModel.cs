@@ -639,7 +639,11 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             try
             {
                 _shell.MarkTimeshiftSeeked();
-                DateTime end = DateTime.Now;
+                // Keep the surrounding program when the EPG has no entry for that instant: wiping it
+                // used to drop the EPG highlight and made the progress bar fall back to the remaining
+                // stream length after every seek.
+                var previousProgram = _shell.CurrentPlayingProgram;
+                DateTime end = previousProgram != null && previousProgram.End > start ? previousProgram.End : DateTime.Now;
                 EpgProgram? targetProgram = null;
                 try
                 {
@@ -666,7 +670,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 _shell.PlayerEngine.Play(url);
                 _shell.CurrentUrl = url;
                 LibmpvIptvClient.Diagnostics.Logger.Info($"[Replay] After Play - CurrentPlayingProgram={_shell.CurrentPlayingProgram?.Title ?? "null"}");
-                _shell.CurrentPlayingProgram = targetProgram;
+                _shell.CurrentPlayingProgram = targetProgram ?? previousProgram;
                 LibmpvIptvClient.Diagnostics.Logger.Info($"[Replay] After assignment - CurrentPlayingProgram={_shell.CurrentPlayingProgram?.Title ?? "null"}");
                 if (!keepTimeshiftMode) _shell.IsTimeshiftActive = false;
                 RequestVideoShow?.Invoke();
