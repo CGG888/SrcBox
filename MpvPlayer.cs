@@ -38,7 +38,8 @@ namespace LibmpvIptvClient
             SetString("audio-device", "auto");
             SetString("ad-lavc-threads", threads.ToString(System.Globalization.CultureInfo.InvariantCulture));
             SetString("audio-channels", "stereo");
-            SetString("ad-lavc-downmix", "yes");
+            // 注：随包 libmpv-2.dll 中没有 ad-lavc-downmix 选项（写入会静默失败），
+            // 立体声下混由上面的 audio-channels=stereo 完成。
             SetString("audio-pitch-correction", "yes");
             
             // 设置全局通用 User-Agent，解决部分源因空 UA 拒绝访问的问题
@@ -185,16 +186,10 @@ namespace LibmpvIptvClient
                 var rtspUa = string.IsNullOrWhiteSpace(headers?.RtspUserAgent) ? "VLC/3.0.18Libmpv" : headers.RtspUserAgent;
                 SetString("user-agent", rtspUa);
 
-                // RTSP 认证
+                // RTSP 认证：随包 libmpv-2.dll 没有 rtsp-user / rtsp-password 属性，写入会静默失败。
+                // 凭据改由 WithRtspCredentials 在 loadfile 前注入 URL（rtsp://user:pass@host/...）。
                 if (!string.IsNullOrWhiteSpace(headers?.RtspUser))
-                {
-                    SetString("rtsp-user", headers.RtspUser);
-                    if (!string.IsNullOrWhiteSpace(headers?.EncryptedRtspPassword))
-                    {
-                        var pwd = LibmpvIptvClient.Services.CryptoUtil.UnprotectString(headers.EncryptedRtspPassword);
-                        SetString("rtsp-password", pwd);
-                    }
-                }
+                    Logger.Debug("[mpv] RTSP 凭据将注入到播放地址");
 
                 // Enable cache for RTSP to allow smoother playback
                 SetString("cache", _settings.CacheSecs > 0 ? "yes" : "no");
@@ -216,10 +211,10 @@ namespace LibmpvIptvClient
                 SetString("demuxer-lavf-format", "mpegts");
                 SetString("demuxer-lavf-probesize", "32"); // Minimal probe for fast first frame
                 SetString("demuxer-lavf-analyzeduration", "0"); // Disable analysis duration
-                SetString("demuxer-lavf-timeout", ((int)(_settings.SourceTimeoutSec * 1000)).ToString(CultureInfo.InvariantCulture));
-                // RTP-specific: allow packet dropout and misorder within bounds
-                SetString("rtp-max-dropout", "2000"); // Allow up to 2000ms packet dropout
-                SetString("rtp-max-misorder", "1000"); // Allow up to 1000ms packet reordering buffer
+                // demuxer-lavf-timeout / rtp-max-dropout / rtp-max-misorder 在该 DLL 中都不存在（写入静默失败）：
+                // 源超时改用真实存在的 network-timeout（秒），RTP 的抗丢包与乱序交给 ffmpeg 默认值。
+                if (_settings.SourceTimeoutSec > 0)
+                    SetString("network-timeout", _settings.SourceTimeoutSec.ToString(CultureInfo.InvariantCulture));
 
                 if (_settings.EnableUdpOptimization)
                 {
@@ -305,7 +300,12 @@ namespace LibmpvIptvClient
             // 3. HLS 自适应（仅在启用时）
             if (_settings.EnableProtocolAdaptive && (u.Contains(".m3u8") || u.Contains("format=hls")))
             {
-                if (_settings.HlsStartAtLiveEdge) SetString("hls-playlist-start", "no");
+                if (_settings.HlsStartAtLiveEdge)
+                {
+                    // hls-playlist-start 在该 DLL 中不存在；贴近直播边缘用较小的预读实现。
+                    var readahead = _settings.HlsReadaheadSecs > 0 ? _settings.HlsReadaheadSecs : 3;
+                    SetString("demuxer-readahead-secs", readahead.ToString(CultureInfo.InvariantCulture));
+                }
                 if (_settings.HlsReadaheadSecs > 0)
                     SetString("demuxer-readahead-secs", _settings.HlsReadaheadSecs.ToString(CultureInfo.InvariantCulture));
             }
@@ -343,7 +343,7 @@ namespace LibmpvIptvClient
             // UnmanagedType.LPStr (system ANSI code page), which re-encodes non-ASCII
             // URLs to GBK and breaks proxies such as rtp2httpd, so use the explicit
             // UTF-8 marshalling path instead.
-            Command("loadfile", ToMpvUrl(url));
+            Command("loadfile", ToMpvUrlWithAuth(url));
             _prefetchedNextUrl = null;
             Logger.Log("mpv loadfile 调用完成");
         }
@@ -353,11 +353,11 @@ namespace LibmpvIptvClient
             var clear = new string[] { "playlist-clear", null! };
             mpv_command(_handle, clear);
             SetupProtocolOptions(url);
-            Command("loadfile", ToMpvUrl(url), "replace");
+            Command("loadfile", ToMpvUrlWithAuth(url), "replace");
             if (!string.IsNullOrWhiteSpace(nextUrl))
             {
                 SetupProtocolOptions(nextUrl!);
-                Command("loadfile", ToMpvUrl(nextUrl!), "append-play");
+                Command("loadfile", ToMpvUrlWithAuth(nextUrl!), "append-play");
                 Logger.Log("已预取下一频道");
             }
             _prefetchedNextUrl = string.IsNullOrWhiteSpace(nextUrl) ? null : nextUrl!.Trim();
@@ -369,14 +369,14 @@ namespace LibmpvIptvClient
             var clear = new string[] { "playlist-clear", null! };
             mpv_command(_handle, clear);
             SetupProtocolOptions(url);
-            Command("loadfile", ToMpvUrl(url), "replace");
+            Command("loadfile", ToMpvUrlWithAuth(url), "replace");
             string? firstNext = null;
             foreach (var n in nextUrls)
             {
                 if (string.IsNullOrWhiteSpace(n)) continue;
                 if (firstNext == null) firstNext = n.Trim();
                 SetupProtocolOptions(n);
-                Command("loadfile", ToMpvUrl(n), "append-play");
+                Command("loadfile", ToMpvUrlWithAuth(n), "append-play");
             }
             _prefetchedNextUrl = firstNext;
             Logger.Log("播放加载完成");
@@ -424,7 +424,7 @@ namespace LibmpvIptvClient
                 if (hasNext)
                 {
                     SetupProtocolOptions(nextUrl!);
-                    Command("loadfile", ToMpvUrl(nextUrl!), "append-play");
+                    Command("loadfile", ToMpvUrlWithAuth(nextUrl!), "append-play");
                 }
                 _prefetchedNextUrl = hasNext ? nextUrl!.Trim() : null;
                 Logger.Log(hasNext ? "mpv prefetch anchored: " + nextUrl : "mpv prefetch cleared");
@@ -544,6 +544,41 @@ namespace LibmpvIptvClient
                 }
             }
             return url;
+        }
+
+        /// <summary>Url handed to mpv with RTSP credentials injected when they are configured.</summary>
+        private string ToMpvUrlWithAuth(string url) => ToMpvUrl(WithRtspCredentials(url));
+
+        /// <summary>
+        /// Injects the configured RTSP credentials into the url. This build of libmpv has no
+        /// "rtsp-user"/"rtsp-password" properties (writing them fails silently), so the credentials have to
+        /// travel inside the url. Urls that already carry credentials are returned unchanged.
+        /// </summary>
+        internal string WithRtspCredentials(string url)
+        {
+            try
+            {
+                var headers = _settings?.HttpHeaders;
+                if (headers == null || string.IsNullOrWhiteSpace(headers.RtspUser)) return url;
+                if (string.IsNullOrEmpty(url) || !url.StartsWith("rtsp://", StringComparison.OrdinalIgnoreCase)) return url;
+
+                var rest = url.Substring("rtsp://".Length);
+                if (rest.Contains('@')) return url;
+
+                var userInfo = Uri.EscapeDataString(headers.RtspUser.Trim());
+                if (!string.IsNullOrWhiteSpace(headers.EncryptedRtspPassword))
+                {
+                    try
+                    {
+                        var pwd = LibmpvIptvClient.Services.CryptoUtil.UnprotectString(headers.EncryptedRtspPassword);
+                        if (!string.IsNullOrEmpty(pwd)) userInfo += ":" + Uri.EscapeDataString(pwd);
+                    }
+                    catch { }
+                }
+
+                return "rtsp://" + userInfo + "@" + rest;
+            }
+            catch { return url; }
         }
 
         public void Command(params string[] args)

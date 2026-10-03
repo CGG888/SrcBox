@@ -526,7 +526,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
         {
             // 停止录播并清理所有副作用
             try { _shell.PlayerEngine?.SetPropertyString("stream-record", ""); } catch { }
-            try { _shell.PlayerEngine?.SetPropertyString("record-file", ""); } catch { }
+            try { _shell.PlayerEngine?.SetPropertyString("stream-record", "no"); } catch { }
             try { _shell.PlayerEngine?.SetPropertyString("ab-loop-a", "no"); } catch { }
             try { _shell.PlayerEngine?.SetPropertyString("ab-loop-b", "no"); } catch { }
             
@@ -773,11 +773,10 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                         _shell.PlayerEngine?.SetPropertyString("ab-loop-b", "no"); 
                         
                         // _mpv.Command("dump-cache", ...) -> PlayerEngine does not expose generic Command yet.
-                        // Assuming Adapter exposes it or we added it?
-                        // If not, we can try record-file as fallback
-                        
-                        _shell.PlayerEngine?.SetPropertyString("record-file", path);
-                        LibmpvIptvClient.Diagnostics.Logger.Debug("[Record] 设置 record-file 属性");
+                        // stream-record is the option this libmpv build actually has (record-file does not
+                        // exist and the write failed silently, leaving no recording at all).
+                        _shell.PlayerEngine?.SetPropertyString("stream-record", path);
+                        LibmpvIptvClient.Diagnostics.Logger.Debug("[Record] 设置 stream-record 属性");
                     } 
                     catch (Exception ex)
                     {
@@ -794,7 +793,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                     {
                         LibmpvIptvClient.Diagnostics.Logger.Warn("[Record] auto-retry begin");
                         try { _shell.PlayerEngine?.SetPropertyString("stream-record", ""); } catch { }
-                        try { _shell.PlayerEngine?.SetPropertyString("record-file", ""); } catch { }
+                        try { _shell.PlayerEngine?.SetPropertyString("stream-record", "no"); } catch { }
                         try { await Task.Delay(200); } catch { }
                         try
                         {
