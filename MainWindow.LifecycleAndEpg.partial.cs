@@ -216,10 +216,100 @@ namespace LibmpvIptvClient
             try { SetDrawerCollapsed(true); } catch { }
         }
 
+        /// <summary>
+        /// Restores the saved main-window geometry (issue #40). Runs from the constructor, before
+        /// the window is shown, so WindowStartupLocation=CenterScreen cannot override it.
+        /// </summary>
+        void RestoreWindowGeometry()
+        {
+            try
+            {
+                var s = AppSettings.Current;
+                if (s == null || !s.RememberWindowGeometry) return;
+
+                if (s.WindowWidth is >= 640 and <= 10000 && s.WindowHeight is >= 480 and <= 10000)
+                {
+                    Width = s.WindowWidth.Value;
+                    Height = s.WindowHeight.Value;
+                }
+
+                if (s.WindowLeft.HasValue && s.WindowTop.HasValue &&
+                    IsGeometryVisible(s.WindowLeft.Value, s.WindowTop.Value, Width, Height))
+                {
+                    WindowStartupLocation = WindowStartupLocation.Manual;
+                    Left = s.WindowLeft.Value;
+                    Top = s.WindowTop.Value;
+                }
+
+                if (s.WindowMaximized) WindowState = WindowState.Maximized;
+            }
+            catch { }
+        }
+
+        /// <summary>True while the restored rectangle still overlaps a screen (monitor unplug guard).</summary>
+        static bool IsGeometryVisible(double left, double top, double width, double height)
+        {
+            try
+            {
+                var rect = new System.Windows.Rect(left, top, width, height);
+                rect.Intersect(new System.Windows.Rect(
+                    SystemParameters.VirtualScreenLeft,
+                    SystemParameters.VirtualScreenTop,
+                    SystemParameters.VirtualScreenWidth,
+                    SystemParameters.VirtualScreenHeight));
+                return rect.Width >= 200 && rect.Height >= 100;
+            }
+            catch { return false; }
+        }
+
+        void SaveWindowGeometry()
+        {
+            try
+            {
+                var s = AppSettings.Current;
+                if (s == null || !s.RememberWindowGeometry) return;
+                // Minimal mode shrinks the window on purpose; keep the previous geometry.
+                if (_shell.IsMinimalMode) return;
+
+                var bounds = WindowState == WindowState.Normal
+                    ? new System.Windows.Rect(Left, Top, Width, Height)
+                    : RestoreBounds;
+                if (bounds.IsEmpty || bounds.Width < 200 || bounds.Height < 150) return;
+
+                s.WindowLeft = bounds.Left;
+                s.WindowTop = bounds.Top;
+                s.WindowWidth = bounds.Width;
+                s.WindowHeight = bounds.Height;
+                s.WindowMaximized = WindowState == WindowState.Maximized;
+                s.Save();
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// Keeps the drawer/EPG expansion base in sync when the user resizes the window, so toggling
+        /// a panel does not snap back to a stale width.
+        /// </summary>
+        void OnWindowSizeChanged(object sender, System.Windows.SizeChangedEventArgs e)
+        {
+            try
+            {
+                if (WindowState != WindowState.Normal) return;
+                if (_shell.WindowStateActions.IsFullscreen || _shell.IsMinimalMode) return;
+
+                var drawerWidth = _shell.IsDrawerCollapsed ? 0 : (_shell.DrawerWidth > 0 ? _shell.DrawerWidth : 380);
+                var epgWidth = CbEpg.IsChecked == true ? 320 : 0;
+                var baseWidth = Width - drawerWidth - epgWidth;
+                if (baseWidth >= 480) _baseWindowWidth = baseWidth;
+            }
+            catch { }
+        }
+
         void OnClosed(object? sender, EventArgs e)
         {
             try
             {
+                SaveWindowGeometry();
                 _overlayManager.Close();
                 SourceHealthService.Instance.Stop();
                 try { _recordingManager?.Close(); } catch { }

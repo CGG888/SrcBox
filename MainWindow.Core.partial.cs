@@ -46,6 +46,8 @@ namespace LibmpvIptvClient
         {
             InitializeComponent();
             InitializeSourceRatioIcons();
+            RestoreWindowGeometry();
+            SizeChanged += OnWindowSizeChanged;
             this.Loaded += (s, e) => UpdateIconBrushes();
             CbM3uList.ItemsSource = AppSettings.Current.SavedSources;
             //CbM3uListGroups.ItemsSource = AppSettings.Current.SavedSources;

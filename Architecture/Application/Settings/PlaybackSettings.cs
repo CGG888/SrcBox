@@ -167,6 +167,14 @@ namespace LibmpvIptvClient
         public Dictionary<string, List<string>> ChannelGroupOrderBySource { get; set; } = new();
         public bool SkipShortcutsDialog { get; set; } = false;
 
+        // Main window geometry memory (issue #40)
+        public bool RememberWindowGeometry { get; set; } = true;
+        public double? WindowWidth { get; set; }
+        public double? WindowHeight { get; set; }
+        public double? WindowLeft { get; set; }
+        public double? WindowTop { get; set; }
+        public bool WindowMaximized { get; set; }
+
         public static PlaybackSettings Load()
         {
             try
