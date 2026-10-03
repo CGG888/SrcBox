@@ -476,6 +476,12 @@
   <sys:String x:Key="UI_HttpHeader_HeadersHint">多行文本，每行一个 Header，格式：User-Agent: xxx 或 Referer: https://xxx。适用于 HTTP/HTTPS 流。</sys:String>
   <sys:String x:Key="UI_RtspTransport">RTSP 传输模式</sys:String>
   <sys:String x:Key="UI_RtspUserAgent">RTSP User-Agent</sys:String>
+  <sys:String x:Key="UI_Rtp2httpd_Title">rtp2httpd 时区 / 无缝时移</sys:String>
+  <sys:String x:Key="UI_Rtp2httpd_Tz">在请求中携带时区标记（TZ/UTC+N，rtp2httpd 用它解释 epg/playseek 时间）</sys:String>
+  <sys:String x:Key="UI_Rtp2httpd_TzOffset">UTC 偏移（小时，默认 8）</sys:String>
+  <sys:String x:Key="UI_Rtp2httpd_Ua">自定义 User-Agent（留空 = 浏览器 UA + 时区标记）</sys:String>
+  <sys:String x:Key="UI_ExtraPlaybackQuery">附加播放查询参数</sys:String>
+  <sys:String x:Key="UI_Rtp2httpd_Hint">附加参数会拼到直播/回看地址后面，例如 r2h-seek-mode=range(UTC+8/3600)；修改时区标记后需重启程序生效。</sys:String>
   <sys:String x:Key="UI_RtspUser">RTSP 用户名</sys:String>
   <sys:String x:Key="UI_RtspPassword">RTSP 密码</sys:String>
   <sys:String x:Key="UI_TestUrl">测试 URL</sys:String>

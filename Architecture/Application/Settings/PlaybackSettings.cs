@@ -362,6 +362,13 @@ namespace LibmpvIptvClient
         public string EncryptedRtspPassword { get; set; } = "";
         // RTSP 传输模式：tcp/udp/http
         public string RtspTransport { get; set; } = "tcp";
+        // rtp2httpd：请求里带 "TZ/UTC+N" 标记时，代理按其时区解释 epg/playseek 时间（缺省按 UTC）
+        public bool Rtp2httpdTimezoneEnabled { get; set; } = false;
+        public double Rtp2httpdTimezoneOffsetHours { get; set; } = 8;
+        // rtp2httpd：自定义 User-Agent（留空=浏览器 UA，并按上面的开关追加时区标记）
+        public string Rtp2httpdUserAgent { get; set; } = "";
+        // 附加到播放/回看地址的查询参数，例如 rtp2httpd 的 r2h-seek-mode=range(UTC+8/3600)
+        public string ExtraPlaybackQuery { get; set; } = "";
     }
     
     public class ScheduledReminder

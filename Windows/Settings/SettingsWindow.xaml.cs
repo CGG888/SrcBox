@@ -173,6 +173,12 @@ namespace LibmpvIptvClient
                 }
                 TbRtspUserAgent.Text = hh.RtspUserAgent ?? "";
                 TbRtspUser.Text = hh.RtspUser ?? "";
+                // rtp2httpd timezone marker / extra playback query (issue #13)
+                if (ChkRtp2httpdTz != null) ChkRtp2httpdTz.IsChecked = hh.Rtp2httpdTimezoneEnabled;
+                if (TbRtp2httpdTzOffset != null)
+                    TbRtp2httpdTzOffset.Text = hh.Rtp2httpdTimezoneOffsetHours.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                if (TbRtp2httpdUserAgent != null) TbRtp2httpdUserAgent.Text = hh.Rtp2httpdUserAgent ?? "";
+                if (TbExtraPlaybackQuery != null) TbExtraPlaybackQuery.Text = hh.ExtraPlaybackQuery ?? "";
                 // Password is not shown for security, it stays encrypted
             }
             catch { }
@@ -344,6 +350,15 @@ namespace LibmpvIptvClient
                 config.RtspTransport = "tcp";
             config.RtspUserAgent = TbRtspUserAgent?.Text ?? "";
             config.RtspUser = TbRtspUser?.Text ?? "";
+            // rtp2httpd timezone marker / extra playback query (issue #13)
+            config.Rtp2httpdTimezoneEnabled = ChkRtp2httpdTz?.IsChecked == true;
+            if (double.TryParse(TbRtp2httpdTzOffset?.Text, System.Globalization.NumberStyles.Float,
+                    System.Globalization.CultureInfo.InvariantCulture, out var tzOffset))
+            {
+                config.Rtp2httpdTimezoneOffsetHours = tzOffset;
+            }
+            config.Rtp2httpdUserAgent = TbRtp2httpdUserAgent?.Text ?? "";
+            config.ExtraPlaybackQuery = TbExtraPlaybackQuery?.Text ?? "";
             // Password: only update if user entered a new one (not empty and different from placeholder)
             var pwd = PbRtspPassword?.Password ?? "";
             if (!string.IsNullOrWhiteSpace(pwd))

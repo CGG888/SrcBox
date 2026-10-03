@@ -460,6 +460,12 @@
   <sys:String x:Key="UI_HttpHeader_HeadersHint">Многострочный текст, по одному Header в строке. Формат: User-Agent: xxx или Referer: https://xxx. Применяется к HTTP/HTTPS потокам.</sys:String>
   <sys:String x:Key="UI_RtspTransport">Транспорт RTSP</sys:String>
   <sys:String x:Key="UI_RtspUserAgent">RTSP User-Agent</sys:String>
+  <sys:String x:Key="UI_Rtp2httpd_Title">rtp2httpd: часовой пояс / бесшовный таймшифт</sys:String>
+  <sys:String x:Key="UI_Rtp2httpd_Tz">Передавать метку часового пояса в запросе (TZ/UTC+N; rtp2httpd использует её для epg/playseek)</sys:String>
+  <sys:String x:Key="UI_Rtp2httpd_TzOffset">Смещение UTC (часы, по умолчанию 8)</sys:String>
+  <sys:String x:Key="UI_Rtp2httpd_Ua">Свой User-Agent (пусто = браузерный UA + метка часового пояса)</sys:String>
+  <sys:String x:Key="UI_ExtraPlaybackQuery">Дополнительные параметры запроса воспроизведения</sys:String>
+  <sys:String x:Key="UI_Rtp2httpd_Hint">Добавляются к адресам эфира и архива, например r2h-seek-mode=range(UTC+8/3600). После смены метки перезапустите приложение.</sys:String>
   <sys:String x:Key="UI_RtspUser">RTSP Имя пользователя</sys:String>
   <sys:String x:Key="UI_RtspPassword">RTSP Пароль</sys:String>
   <sys:String x:Key="UI_TestUrl">Тестовый URL</sys:String>

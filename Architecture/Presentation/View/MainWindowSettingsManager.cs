@@ -191,6 +191,10 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                     AppSettings.Current.HttpHeaders.RtspUser = settings.HttpHeaders.RtspUser ?? "";
                     AppSettings.Current.HttpHeaders.EncryptedRtspPassword = settings.HttpHeaders.EncryptedRtspPassword ?? "";
                     AppSettings.Current.HttpHeaders.RtspTransport = settings.HttpHeaders.RtspTransport ?? "tcp";
+                    AppSettings.Current.HttpHeaders.Rtp2httpdTimezoneEnabled = settings.HttpHeaders.Rtp2httpdTimezoneEnabled;
+                    AppSettings.Current.HttpHeaders.Rtp2httpdTimezoneOffsetHours = settings.HttpHeaders.Rtp2httpdTimezoneOffsetHours;
+                    AppSettings.Current.HttpHeaders.Rtp2httpdUserAgent = settings.HttpHeaders.Rtp2httpdUserAgent ?? "";
+                    AppSettings.Current.HttpHeaders.ExtraPlaybackQuery = settings.HttpHeaders.ExtraPlaybackQuery ?? "";
                 }
             }
             catch { }

@@ -159,7 +159,8 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                         if (isMulticastWithFcc)
                             _shell.PlayerEngine.LoadWithPrefetch(url, BuildFccNeighborUrls(ch));
                         else
-                            _shell.PlayerEngine.Play(url);
+                            url = ApplyExtraPlaybackQuery(url);
+            _shell.PlayerEngine.Play(url);
                     }
                     else
                     {
@@ -182,7 +183,8 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 }
                 else
                 {
-                    _shell.PlayerEngine.Play(url);
+                    url = ApplyExtraPlaybackQuery(url);
+            _shell.PlayerEngine.Play(url);
                 }
 
                 // Channel-scoped health probe (NO full-list scan): only the playing channel's
@@ -521,7 +523,8 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 try { url = LibmpvIptvClient.Services.UrlTimeRewriter.RewriteIfEnabled(AppSettings.Current, url, prog.Start, prog.End, false); } catch { }
 
                 LibmpvIptvClient.Diagnostics.Logger.Info($"[Replay] 开始回看: {prog.Title} ({prog.Start:HH:mm}-{prog.End:HH:mm}), URL: {url}");
-                _shell.PlayerEngine.Play(url);
+                url = ApplyExtraPlaybackQuery(url);
+            _shell.PlayerEngine.Play(url);
                 _shell.CurrentUrl = url;
                 RequestVideoShow?.Invoke();
                 
@@ -570,6 +573,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         {
             if (_shell.PlayerEngine == null) return;
             
+            url = ApplyExtraPlaybackQuery(url);
             _shell.PlayerEngine.Play(url);
             _shell.CurrentUrl = url;
 
@@ -667,7 +671,8 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 try { url = LibmpvIptvClient.Services.UrlTimeRewriter.RewriteIfEnabled(AppSettings.Current, url, start, end, keepTimeshiftMode || _shell.IsTimeshiftActive); } catch { }
                 
                 LibmpvIptvClient.Diagnostics.Logger.Info($"[Replay] Start Replay - Channel: {ch.Name}, Time: {start:yyyy-MM-dd HH:mm:ss}, URL: {url}");
-                _shell.PlayerEngine.Play(url);
+                url = ApplyExtraPlaybackQuery(url);
+            _shell.PlayerEngine.Play(url);
                 _shell.CurrentUrl = url;
                 LibmpvIptvClient.Diagnostics.Logger.Info($"[Replay] After Play - CurrentPlayingProgram={_shell.CurrentPlayingProgram?.Title ?? "null"}");
                 _shell.CurrentPlayingProgram = targetProgram ?? previousProgram;
@@ -713,6 +718,13 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             }
             catch { }
         }
+
+        /// <summary>
+        /// Appends the user's extra playback query parameters (issue #13, e.g. rtp2httpd's
+        /// "r2h-seek-mode=range(UTC+8/3600)") to a url that is about to be handed to the player.
+        /// </summary>
+        string ApplyExtraPlaybackQuery(string url)
+            => Helpers.UrlQueryHelper.AppendQuery(url, AppSettings.Current?.HttpHeaders?.ExtraPlaybackQuery);
 
         private string ProcessUrlPlaceholders(string url, DateTime start, DateTime end, bool appendEpgTime)
             => LibmpvIptvClient.Services.UrlPlaceholderExpander.Expand(url, start, end, appendEpgTime);

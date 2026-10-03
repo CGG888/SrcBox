@@ -42,7 +42,7 @@ namespace LibmpvIptvClient
             SetString("audio-pitch-correction", "yes");
             
             // 设置全局通用 User-Agent，解决部分源因空 UA 拒绝访问的问题
-            SetString("user-agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
+            SetString("user-agent", BuildUserAgent());
             // 忽略 HTTPS 证书错误，解决部分自签名源无法播放的问题
             SetString("tls-verify", "no");
             // 用户语言偏好与网络超时
@@ -135,6 +135,31 @@ namespace LibmpvIptvClient
         public void SetString(string name, string value)
         {
             mpv_set_property_string(_handle, name, value);
+        }
+
+        /// <summary>
+        /// User agent for HTTP based streams. rtp2httpd reads a "TZ/UTC+N" marker from the request to
+        /// decide which timezone its epg/playseek times are expressed in (without it UTC is assumed), so
+        /// the marker is appended to the browser user agent unless a custom one is configured.
+        /// </summary>
+        string BuildUserAgent()
+        {
+            const string browserUa = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
+            try
+            {
+                var headers = _settings?.HttpHeaders;
+                if (headers == null) return browserUa;
+                if (!string.IsNullOrWhiteSpace(headers.Rtp2httpdUserAgent)) return headers.Rtp2httpdUserAgent.Trim();
+                if (!headers.Rtp2httpdTimezoneEnabled) return browserUa;
+
+                var hours = headers.Rtp2httpdTimezoneOffsetHours;
+                var text = System.Math.Abs(hours - System.Math.Round(hours)) < 0.001
+                    ? ((int)System.Math.Round(hours)).ToString(System.Globalization.CultureInfo.InvariantCulture)
+                    : hours.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture);
+
+                return $"{browserUa} TZ/UTC{(hours < 0 ? "-" : "+")}{text}";
+            }
+            catch { return browserUa; }
         }
         public void SetOptionString(string name, string value)
         {

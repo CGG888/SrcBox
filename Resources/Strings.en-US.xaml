@@ -479,6 +479,12 @@
   <sys:String x:Key="UI_HttpHeader_HeadersHint">Multi-line text, one Header per line. Format: User-Agent: xxx or Referer: https://xxx. Applies to HTTP/HTTPS streams.</sys:String>
   <sys:String x:Key="UI_RtspTransport">RTSP Transport</sys:String>
   <sys:String x:Key="UI_RtspUserAgent">RTSP User-Agent</sys:String>
+  <sys:String x:Key="UI_Rtp2httpd_Title">rtp2httpd timezone / seamless timeshift</sys:String>
+  <sys:String x:Key="UI_Rtp2httpd_Tz">Send the timezone marker with each request (TZ/UTC+N; rtp2httpd uses it to interpret epg/playseek times)</sys:String>
+  <sys:String x:Key="UI_Rtp2httpd_TzOffset">UTC offset (hours, default 8)</sys:String>
+  <sys:String x:Key="UI_Rtp2httpd_Ua">Custom User-Agent (empty = browser UA + timezone marker)</sys:String>
+  <sys:String x:Key="UI_ExtraPlaybackQuery">Extra playback query parameters</sys:String>
+  <sys:String x:Key="UI_Rtp2httpd_Hint">Appended to live and catchup urls, for example r2h-seek-mode=range(UTC+8/3600). Restart the app after changing the timezone marker.</sys:String>
   <sys:String x:Key="UI_RtspUser">RTSP Username</sys:String>
   <sys:String x:Key="UI_RtspPassword">RTSP Password</sys:String>
   <sys:String x:Key="UI_TestUrl">Test URL</sys:String>

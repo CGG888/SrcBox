@@ -721,6 +721,39 @@
                   </StackPanel>
                 </Border>
 
+                <!-- rtp2httpd 时区 / 无缝时移 -->
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
+                  <StackPanel>
+                    <TextBlock Text="{DynamicResource UI_Rtp2httpd_Title}" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                    <Grid>
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                      </Grid.ColumnDefinitions>
+                      <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                      </Grid.RowDefinitions>
+
+                      <CheckBox x:Name="ChkRtp2httpdTz" Grid.Row="0" Grid.ColumnSpan="2" Content="{DynamicResource UI_Rtp2httpd_Tz}"/>
+
+                      <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource UI_Rtp2httpd_TzOffset}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                      <TextBox x:Name="TbRtp2httpdTzOffset" Grid.Row="1" Grid.Column="1" Width="80" Height="24" HorizontalAlignment="Left" Margin="0,8,0,0"/>
+
+                      <TextBlock Grid.Row="2" Grid.Column="0" Text="{DynamicResource UI_Rtp2httpd_Ua}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                      <TextBox x:Name="TbRtp2httpdUserAgent" Grid.Row="2" Grid.Column="1" Height="24" Margin="0,8,0,0"/>
+
+                      <TextBlock Grid.Row="3" Grid.Column="0" Text="{DynamicResource UI_ExtraPlaybackQuery}" VerticalAlignment="Center" Margin="0,8,16,0"/>
+                      <TextBox x:Name="TbExtraPlaybackQuery" Grid.Row="3" Grid.Column="1" Height="24" Margin="0,8,0,0"/>
+
+                      <TextBlock Grid.Row="4" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" Margin="0,6,0,0" TextWrapping="Wrap" Text="{DynamicResource UI_Rtp2httpd_Hint}"/>
+                    </Grid>
+                  </StackPanel>
+                </Border>
+
                 <!-- CDN/镜像 -->
                 <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
                   <StackPanel>
