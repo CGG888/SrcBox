@@ -726,4 +726,5 @@
   <sys:String x:Key="Reminder_Status_Start">Программа началась</sys:String>
   <sys:String x:Key="ScheduledRecordingList_BackCount">Фон: {0}/{1}</sys:String>
   <sys:String x:Key="ScheduledRecordingList_FrontCount">Эфир: {0}/1</sys:String>
+  <sys:String x:Key="UI_AllowInvalidCert">Разрешить недействительные сертификаты (небезопасно)</sys:String>
 </ResourceDictionary>

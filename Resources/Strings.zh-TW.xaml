@@ -724,4 +724,5 @@
   <sys:String x:Key="Reminder_Status_Start">節目開播</sys:String>
   <sys:String x:Key="ScheduledRecordingList_BackCount">後台: {0}/{1}</sys:String>
   <sys:String x:Key="ScheduledRecordingList_FrontCount">前台: {0}/1</sys:String>
+  <sys:String x:Key="UI_AllowInvalidCert">允許無效/自簽名證書（不安全）</sys:String>
 </ResourceDictionary>

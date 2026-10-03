@@ -179,6 +179,7 @@ namespace LibmpvIptvClient
                     TbRtp2httpdTzOffset.Text = hh.Rtp2httpdTimezoneOffsetHours.ToString(System.Globalization.CultureInfo.InvariantCulture);
                 if (TbRtp2httpdUserAgent != null) TbRtp2httpdUserAgent.Text = hh.Rtp2httpdUserAgent ?? "";
                 if (TbExtraPlaybackQuery != null) TbExtraPlaybackQuery.Text = hh.ExtraPlaybackQuery ?? "";
+                if (ChkAllowInvalidCert != null) ChkAllowInvalidCert.IsChecked = hh.AllowInvalidCertificates;
                 // Password is not shown for security, it stays encrypted
             }
             catch { }
@@ -359,6 +360,7 @@ namespace LibmpvIptvClient
             }
             config.Rtp2httpdUserAgent = TbRtp2httpdUserAgent?.Text ?? "";
             config.ExtraPlaybackQuery = TbExtraPlaybackQuery?.Text ?? "";
+            config.AllowInvalidCertificates = ChkAllowInvalidCert?.IsChecked == true;
             // Password: only update if user entered a new one (not empty and different from placeholder)
             var pwd = PbRtspPassword?.Password ?? "";
             if (!string.IsNullOrWhiteSpace(pwd))
@@ -467,7 +469,8 @@ namespace LibmpvIptvClient
                     Rtp2httpdTimezoneEnabled = hh.Rtp2httpdTimezoneEnabled,
                     Rtp2httpdTimezoneOffsetHours = hh.Rtp2httpdTimezoneOffsetHours,
                     Rtp2httpdUserAgent = hh.Rtp2httpdUserAgent,
-                    ExtraPlaybackQuery = hh.ExtraPlaybackQuery
+                    ExtraPlaybackQuery = hh.ExtraPlaybackQuery,
+                    AllowInvalidCertificates = hh.AllowInvalidCertificates
                 };
                 if (TbHttpHeaders != null) TbHttpHeaders.Text = hh.Headers ?? "";
                 if (CbRtspTransport != null)
@@ -490,6 +493,7 @@ namespace LibmpvIptvClient
                     TbRtp2httpdTzOffset.Text = hh.Rtp2httpdTimezoneOffsetHours.ToString(System.Globalization.CultureInfo.InvariantCulture);
                 if (TbRtp2httpdUserAgent != null) TbRtp2httpdUserAgent.Text = hh.Rtp2httpdUserAgent ?? "";
                 if (TbExtraPlaybackQuery != null) TbExtraPlaybackQuery.Text = hh.ExtraPlaybackQuery ?? "";
+                if (ChkAllowInvalidCert != null) ChkAllowInvalidCert.IsChecked = hh.AllowInvalidCertificates;
 
                 SetComboByTag(CbDeinterlaceMode, string.IsNullOrWhiteSpace(s.Deinterlace) ? "auto" : s.Deinterlace);
                 SetComboByTag(CbDeinterlaceAlgo, string.IsNullOrWhiteSpace(s.DeinterlaceAlgorithm) ? "yadif" : s.DeinterlaceAlgorithm);

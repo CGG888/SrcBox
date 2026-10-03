@@ -486,6 +486,8 @@ namespace LibmpvIptvClient
         public string Rtp2httpdUserAgent { get; set; } = "";
         // 附加到播放/回看地址的查询参数，例如 rtp2httpd 的 r2h-seek-mode=range(UTC+8/3600)
         public string ExtraPlaybackQuery { get; set; } = "";
+        // 允许无效/自签名证书（默认关闭：开启后所有 https 下载都不再校验证书）
+        public bool AllowInvalidCertificates { get; set; } = false;
     }
     
     public class ScheduledReminder

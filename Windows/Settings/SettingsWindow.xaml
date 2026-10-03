@@ -749,7 +749,9 @@
                       <TextBlock Grid.Row="3" Grid.Column="0" Text="{DynamicResource UI_ExtraPlaybackQuery}" VerticalAlignment="Center" Margin="0,8,16,0"/>
                       <TextBox x:Name="TbExtraPlaybackQuery" Grid.Row="3" Grid.Column="1" Height="24" Margin="0,8,0,0"/>
 
-                      <TextBlock Grid.Row="4" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" Margin="0,6,0,0" TextWrapping="Wrap" Text="{DynamicResource UI_Rtp2httpd_Hint}"/>
+                      <CheckBox x:Name="ChkAllowInvalidCert" Grid.Row="4" Grid.ColumnSpan="2" Margin="0,10,0,0" Content="{DynamicResource UI_AllowInvalidCert}"/>
+
+                      <TextBlock Grid.Row="5" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" Margin="0,6,0,0" TextWrapping="Wrap" Text="{DynamicResource UI_Rtp2httpd_Hint}"/>
                     </Grid>
                   </StackPanel>
                 </Border>

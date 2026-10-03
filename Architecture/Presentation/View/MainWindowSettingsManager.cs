@@ -197,6 +197,13 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                     AppSettings.Current.HttpHeaders.Rtp2httpdTimezoneOffsetHours = settings.HttpHeaders.Rtp2httpdTimezoneOffsetHours;
                     AppSettings.Current.HttpHeaders.Rtp2httpdUserAgent = settings.HttpHeaders.Rtp2httpdUserAgent ?? "";
                     AppSettings.Current.HttpHeaders.ExtraPlaybackQuery = settings.HttpHeaders.ExtraPlaybackQuery ?? "";
+                    var allowInvalidBefore = AppSettings.Current.HttpHeaders.AllowInvalidCertificates;
+                    AppSettings.Current.HttpHeaders.AllowInvalidCertificates = settings.HttpHeaders.AllowInvalidCertificates;
+                    if (allowInvalidBefore != AppSettings.Current.HttpHeaders.AllowInvalidCertificates)
+                    {
+                        // The shared http client is built once; rebuild it so the new policy applies.
+                        try { LibmpvIptvClient.Services.HttpClientService.Instance.InvalidateClient(); } catch { }
+                    }
                 }
             }
             catch { }

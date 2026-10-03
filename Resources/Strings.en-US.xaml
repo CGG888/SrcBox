@@ -724,4 +724,5 @@
   <sys:String x:Key="Reminder_Status_Start">Program started</sys:String>
   <sys:String x:Key="ScheduledRecordingList_BackCount">Back: {0}/{1}</sys:String>
   <sys:String x:Key="ScheduledRecordingList_FrontCount">Front: {0}/1</sys:String>
+  <sys:String x:Key="UI_AllowInvalidCert">Allow invalid / self-signed certificates (insecure)</sys:String>
 </ResourceDictionary>

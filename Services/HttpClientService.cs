@@ -43,12 +43,22 @@ namespace LibmpvIptvClient.Services
 
         public void InvalidateClient()
         {
-            // NO-OP or just logging.
-            // Since we are now using a dynamic RegistryProxyProvider + Short PooledConnectionLifetime,
-            // we don't strictly need to dispose the HttpClient instance anymore.
-            // The SocketsHttpHandler will query our GetProxy() method for every new connection.
-            LibmpvIptvClient.Diagnostics.Logger.Trace("[HttpClientService] Proxy change detected (Registry/Event). Future connections will adapt automatically.");
+            // Recreate on the next request so a changed certificate policy takes effect immediately.
+            lock (_lock)
+            {
+                try { _client?.Dispose(); } catch { }
+                _client = null;
+            }
+            LibmpvIptvClient.Diagnostics.Logger.Trace("[HttpClientService] 客户端已失效，将在下次请求时按当前设置重建");
         }
+
+        /// <summary>
+        /// True when the user explicitly allowed invalid certificates. It defaults to false: the client used
+        /// to accept every certificate, so a man in the middle could replace playlists, EPG or logos and read
+        /// the credentials embedded in their urls.
+        /// </summary>
+        internal static bool ShouldDisableCertificateValidation(HttpHeaderConfig? headers)
+            => headers?.AllowInvalidCertificates == true;
 
         private HttpClient CreateClient()
         {
@@ -66,7 +76,10 @@ namespace LibmpvIptvClient.Services
                 ConnectTimeout = TimeSpan.FromSeconds(10)
             };
             
-            handler.SslOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) => true;
+            if (ShouldDisableCertificateValidation(AppSettings.Current?.HttpHeaders))
+            {
+                handler.SslOptions.RemoteCertificateValidationCallback = (sender, cert, chain, errors) => true;
+            }
 
             var client = new HttpClient(handler);
             client.Timeout = TimeSpan.FromSeconds(30);
