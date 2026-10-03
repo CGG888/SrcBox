@@ -35,20 +35,7 @@ namespace LibmpvIptvClient.Services
                         if (proxyEnable == 1)
                         {
                             var proxyServer = key.GetValue("ProxyServer") as string;
-                            if (!string.IsNullOrWhiteSpace(proxyServer))
-                            {
-                                if (proxyServer.Contains("="))
-                                {
-                                    if (!proxyServer.Contains("=") && !proxyServer.Contains(";"))
-                                    {
-                                        proxy = new Uri($"http://{proxyServer}");
-                                    }
-                                }
-                                else
-                                {
-                                    proxy = new Uri($"http://{proxyServer}");
-                                }
-                            }
+                            proxy = ParseProxyServer(proxyServer);
                         }
                     }
                 }
@@ -61,6 +48,45 @@ namespace LibmpvIptvClient.Services
             // Update cache
             _cachedProxy = (proxy, DateTime.Now);
             return proxy;
+        }
+
+        /// <summary>
+        /// Parses the Windows "ProxyServer" registry value. It is either a single "host:port" or a
+        /// per-protocol list such as "http=host:port;https=host:port" (also "socks=...", "ftp=...").
+        /// The previous implementation nested "!Contains('=')" inside "Contains('=')", which can never be
+        /// true, so every per-protocol value was silently ignored and the app went direct.
+        /// </summary>
+        public static Uri? ParseProxyServer(string? proxyServer)
+        {
+            if (string.IsNullOrWhiteSpace(proxyServer)) return null;
+
+            var value = proxyServer.Trim();
+
+            if (value.Contains('='))
+            {
+                string? httpEntry = null;
+                string? firstEntry = null;
+
+                foreach (var part in value.Split(';', StringSplitOptions.RemoveEmptyEntries))
+                {
+                    var kv = part.Split('=', 2);
+                    if (kv.Length != 2) continue;
+
+                    var scheme = kv[0].Trim().ToLowerInvariant();
+                    var host = kv[1].Trim();
+                    if (host.Length == 0 || scheme.Length == 0) continue;
+
+                    firstEntry ??= host;
+                    if (scheme == "http") httpEntry ??= host;
+                }
+
+                value = httpEntry ?? firstEntry ?? "";
+            }
+
+            if (value.Length == 0) return null;
+            if (!value.Contains("://")) value = "http://" + value;
+
+            return Uri.TryCreate(value, UriKind.Absolute, out var uri) ? uri : null;
         }
 
         public bool IsBypassed(Uri host)
