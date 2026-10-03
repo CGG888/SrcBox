@@ -8,6 +8,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <AssemblyName>SrcBox</AssemblyName>
     <ApplicationIcon>srcbox.ico</ApplicationIcon>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
     <Product>SrcBox</Product>
     <AssemblyTitle>SrcBox</AssemblyTitle>
     <Version>1.1.12</Version>
