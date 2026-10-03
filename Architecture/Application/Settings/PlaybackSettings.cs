@@ -286,7 +286,11 @@ namespace LibmpvIptvClient
                 {
                     var json = File.ReadAllText(path);
                     var obj = JsonSerializer.Deserialize<PlaybackSettings>(json);
-                    if (obj != null) return obj;
+                    if (obj != null)
+                    {
+                        MigrateLegacyKeys(json, obj);
+                        return obj;
+                    }
                     throw new InvalidDataException($"{Path.GetFileName(path)} deserialized to null");
                 }
             }
@@ -304,6 +308,56 @@ namespace LibmpvIptvClient
                 catch { }
             }
             return new PlaybackSettings();
+        }
+
+        /// <summary>
+        /// Copies values that older versions stored as top level properties. Those keys are [JsonIgnore]
+        /// computed properties today, so without this an upgrade silently dropped the user's custom EPG
+        /// url, custom logo url and timeshift duration - all three are still documented in the guide.
+        /// A value from the current nested config always wins.
+        /// </summary>
+        static void MigrateLegacyKeys(string json, PlaybackSettings settings)
+        {
+            try
+            {
+                using var doc = JsonDocument.Parse(json);
+                var root = doc.RootElement;
+                if (root.ValueKind != JsonValueKind.Object) return;
+
+                // Only migrate when the current nested value is absent, so a deliberate value (including a
+                // default that happens to equal the old one) is never overridden by a stale legacy key.
+                if (!HasNestedValue(root, "Epg", "Url") && TryGetString(root, "CustomEpgUrl", out var epgUrl))
+                    settings.Epg.Url = epgUrl;
+
+                if (!HasNestedValue(root, "Logo", "Url") && TryGetString(root, "CustomLogoUrl", out var logoUrl))
+                    settings.Logo.Url = logoUrl;
+
+                if (!HasNestedValue(root, "Timeshift", "DurationHours") && TryGetInt(root, "TimeshiftHours", out var hours) && hours > 0)
+                    settings.Timeshift.DurationHours = hours;
+            }
+            catch { }
+        }
+
+        static bool HasNestedValue(JsonElement root, string section, string name)
+            => root.TryGetProperty(section, out var sec)
+               && sec.ValueKind == JsonValueKind.Object
+               && sec.TryGetProperty(name, out _);
+
+        static bool TryGetString(JsonElement root, string name, out string value)
+        {
+            value = "";
+            if (!root.TryGetProperty(name, out var el) || el.ValueKind != JsonValueKind.String) return false;
+            value = (el.GetString() ?? "").Trim();
+            return value.Length > 0;
+        }
+
+        static bool TryGetInt(JsonElement root, string name, out int value)
+        {
+            value = 0;
+            if (!root.TryGetProperty(name, out var el)) return false;
+            if (el.ValueKind == JsonValueKind.Number) return el.TryGetInt32(out value);
+            if (el.ValueKind == JsonValueKind.String) return int.TryParse(el.GetString(), out value);
+            return false;
         }
 
         public void Save() => SaveTo(DefaultPath);

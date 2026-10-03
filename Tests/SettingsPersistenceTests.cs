@@ -116,6 +116,73 @@ namespace LibmpvIptvClient.Tests
             finally { TryDeleteDir(dir); }
         }
 
+        [TestMethod]
+        public void LoadFrom_MigratesLegacyTopLevelKeys()
+        {
+            var path = NewPath(out var dir);
+            try
+            {
+                File.WriteAllText(path, """
+                {
+                  "CustomEpgUrl": "http://old/epg.xml",
+                  "CustomLogoUrl": "http://old/logo/",
+                  "TimeshiftHours": 2
+                }
+                """);
+
+                var loaded = PlaybackSettings.LoadFrom(path);
+
+                Assert.AreEqual("http://old/epg.xml", loaded.Epg.Url, "旧配置里的 CustomEpgUrl 必须迁移");
+                Assert.AreEqual("http://old/logo/", loaded.Logo.Url, "旧配置里的 CustomLogoUrl 必须迁移");
+                Assert.AreEqual(2, loaded.Timeshift.DurationHours, "旧配置里的 TimeshiftHours 必须迁移");
+            }
+            finally { TryDeleteDir(dir); }
+        }
+
+        [TestMethod]
+        public void LoadFrom_PrefersTheCurrentNestedKeysOverLegacyOnes()
+        {
+            var path = NewPath(out var dir);
+            try
+            {
+                File.WriteAllText(path, """
+                {
+                  "Epg": { "Url": "http://new/epg.xml" },
+                  "CustomEpgUrl": "http://old/epg.xml",
+                  "Timeshift": { "DurationHours": 8 },
+                  "TimeshiftHours": 2
+                }
+                """);
+
+                var loaded = PlaybackSettings.LoadFrom(path);
+
+                Assert.AreEqual("http://new/epg.xml", loaded.Epg.Url);
+                Assert.AreEqual(8, loaded.Timeshift.DurationHours);
+            }
+            finally { TryDeleteDir(dir); }
+        }
+
+        [TestMethod]
+        public void LoadFrom_ToleratesLegacyKeysWithUnexpectedTypes()
+        {
+            var path = NewPath(out var dir);
+            try
+            {
+                File.WriteAllText(path, """
+                {
+                  "CustomEpgUrl": 123,
+                  "TimeshiftHours": "3"
+                }
+                """);
+
+                var loaded = PlaybackSettings.LoadFrom(path);
+
+                Assert.AreEqual("", loaded.Epg.Url, "非字符串的旧 key 应被忽略而不是抛异常");
+                Assert.AreEqual(3, loaded.Timeshift.DurationHours, "字符串形式的数字应能迁移");
+            }
+            finally { TryDeleteDir(dir); }
+        }
+
         static void TryDeleteDir(string dir)
         {
             try { Directory.Delete(dir, true); } catch { }
