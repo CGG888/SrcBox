@@ -140,6 +140,10 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
         {
             try { _recordingsWatcher?.Dispose(); } catch { }
             try { _recordingsRefreshTimer?.Stop(); } catch { }
+            // These two keep running after the window closes otherwise, and their ticks touch the channel
+            // list and recording state of a closed window.
+            try { _recordingSizeTimer?.Stop(); _recordingSizeTimer = null; } catch { }
+            try { _frontRecordingTimer?.Stop(); _frontRecordingTimer = null; } catch { }
             try { _recordCts?.Cancel(); } catch { }
         }
 

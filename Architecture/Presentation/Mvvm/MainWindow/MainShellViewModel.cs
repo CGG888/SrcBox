@@ -142,6 +142,12 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         }
 
         public IPlayerEngine? PlayerEngine => _playerEngine;
+
+        /// <summary>
+        /// Releases the shell's reference to the player. Used on the exit path so timers and callbacks that
+        /// are still winding down cannot reach a disposed mpv handle.
+        /// </summary>
+        public void DetachPlayerEngine() => _playerEngine = null;
         public EpgService? EpgService => _epgService;
         public UserDataStore? UserDataStore => _userDataStore;
 

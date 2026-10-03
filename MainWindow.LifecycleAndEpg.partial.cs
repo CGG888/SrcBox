@@ -17,6 +17,29 @@ namespace LibmpvIptvClient
 {
     public partial class MainWindow : Window
     {
+        /// <summary>Stops every timer this window owns. A closed window used to keep ticking while the
+        /// process stayed alive for another window (e.g. the settings dialog).</summary>
+        void StopAllTimers()
+        {
+            try { _timer?.Stop(); } catch { }
+            try { _epgTimer?.Stop(); } catch { }
+            try { _minimalToolbarHideTimer?.Stop(); } catch { }
+            try { _minimalPointerWatchTimer?.Stop(); } catch { }
+        }
+
+        /// <summary>
+        /// Player teardown for application exit: stop the timers first, drop the shell's engine reference
+        /// and null the interop object. Disposing without nulling left a live object whose handle was
+        /// already zero, so late timer ticks and WebRemote callbacks could still call into mpv.
+        /// </summary>
+        void ShutdownPlaybackForExit()
+        {
+            StopAllTimers();
+            try { _shell.DetachPlayerEngine(); } catch { }
+            try { _mpv?.Dispose(); } catch { }
+            _mpv = null;
+        }
+
         protected override void OnClosing(System.ComponentModel.CancelEventArgs e)
         {
             try
@@ -26,7 +49,7 @@ namespace LibmpvIptvClient
                 {
                     if (closeMode == "exit")
                     {
-                        try { _mpv?.Dispose(); } catch { }
+                        try { ShutdownPlaybackForExit(); } catch { }
                         System.Windows.Application.Current.Shutdown();
                         return;
                     }
@@ -56,7 +79,7 @@ namespace LibmpvIptvClient
                             AppSettings.Current.CloseMode = "exit";
                             AppSettings.Current.Save();
                         }
-                        try { _mpv?.Dispose(); } catch { }
+                        try { ShutdownPlaybackForExit(); } catch { }
                         System.Windows.Application.Current.Shutdown();
                         return;
                     }
@@ -397,8 +420,7 @@ namespace LibmpvIptvClient
                 App.LanguageChanged -= OnLanguageChanged;
                 App.ThemeChanged -= OnThemeChanged;
                 try { ReminderListWindow.RemindersChanged -= _epgRemindersChangedHandler; } catch { }
-                try { _minimalToolbarHideTimer?.Stop(); } catch { }
-                try { _minimalPointerWatchTimer?.Stop(); } catch { }
+                StopAllTimers();
                 try
                 {
                     if (_minimalToolbarPanel != null && VideoPanel != null)

@@ -136,7 +136,6 @@ namespace LibmpvIptvClient.Controls
             Focus();
             StartReconnectTimer();
         }
-
         private void StartReconnectTimer()
         {
             _reconnectTimer?.Stop();
@@ -490,6 +489,14 @@ namespace LibmpvIptvClient.Controls
 
         private void CreatePlayers()
         {
+            // Loaded can fire again when the element is re-attached to the visual tree; releasing the old
+            // instances first keeps their decoder/network threads and wid windows from leaking.
+            for (int i = 0; i < _screenCount; i++)
+            {
+                try { _players[i]?.Dispose(); } catch { }
+                _players[i] = null;
+            }
+
             for (int i = 0; i < _screenCount; i++)
             {
                 var mpv = new MpvInterop();
@@ -860,6 +867,12 @@ namespace LibmpvIptvClient.Controls
 
         public void Cleanup()
         {
+            // Timers must stop with the window: the 5s reconnect timer and the 50ms mouse poll otherwise
+            // keep running (and keep this window alive) after it is closed.
+            try { _reconnectTimer?.Stop(); _reconnectTimer = null; } catch { }
+            try { _mousePollTimer?.Stop(); _mousePollTimer = null; } catch { }
+            try { _topBarTimer?.Stop(); _topBarTimer = null; } catch { }
+
             for (int i = 0; i < _screenCount; i++)
             {
                 try { _players[i]?.Dispose(); } catch { }
