@@ -124,6 +124,37 @@ namespace LibmpvIptvClient.Services
             return action.StartsWith("record", StringComparison.OrdinalIgnoreCase);
         }
 
+        /// <summary>
+        /// Resolves the logo for a notification without ever blocking on the network. The cached file is
+        /// used when it exists; otherwise a background download warms the cache for next time and the remote
+        /// url is passed through (the toast shows its fallback icon for it).
+        /// Blocking here used to freeze the UI: ProcessDue runs on the UI thread when a reminder is saved or
+        /// the app starts, and the download's continuation is posted back to that same blocked dispatcher,
+        /// so the two wait on each other forever.
+        /// </summary>
+        internal static string? ResolveLogoNonBlocking(string? channelName, string? logo)
+        {
+            if (string.IsNullOrWhiteSpace(logo)) return null;
+
+            try
+            {
+                if (System.IO.File.Exists(logo)) return logo;
+
+                var cached = LogoCacheService.Instance.GetCachedPath(logo);
+                if (!string.IsNullOrWhiteSpace(cached) && System.IO.File.Exists(cached)) return cached;
+
+                var url = logo;
+                var name = channelName ?? "";
+                _ = System.Threading.Tasks.Task.Run(async () =>
+                {
+                    try { await LogoCacheService.Instance.GetLogoPathAsync(name, url); } catch { }
+                });
+
+                return url;
+            }
+            catch { return logo; }
+        }
+
         private void FireRecordingTrigger(ScheduledReminder r, string action, DateTime local, string? logoLocal)
         {
             try
@@ -179,7 +210,7 @@ namespace LibmpvIptvClient.Services
                             if (!string.IsNullOrWhiteSpace(r.ChannelLogo))
                             {
                                 if (System.IO.File.Exists(r.ChannelLogo)) logoLocal = r.ChannelLogo;
-                                else logoLocal = LogoCacheService.Instance.GetLogoPathAsync(r.ChannelName ?? "", r.ChannelLogo).GetAwaiter().GetResult();
+                                else logoLocal = ResolveLogoNonBlocking(r.ChannelName, r.ChannelLogo);
                             }
                         }
                         catch { }
@@ -219,7 +250,7 @@ namespace LibmpvIptvClient.Services
                             if (!string.IsNullOrWhiteSpace(r.ChannelLogo))
                             {
                                 if (System.IO.File.Exists(r.ChannelLogo)) logoLocal = r.ChannelLogo;
-                                else logoLocal = LogoCacheService.Instance.GetLogoPathAsync(r.ChannelName ?? "", r.ChannelLogo).GetAwaiter().GetResult();
+                                else logoLocal = ResolveLogoNonBlocking(r.ChannelName, r.ChannelLogo);
                             }
                         }
                         catch { }
