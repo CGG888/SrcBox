@@ -143,7 +143,7 @@ namespace LibmpvIptvClient.Services
                 r.Id, action, r.ChannelId ?? "", r.ChannelName ?? "", logoLocal,
                 r.Note ?? "", r.StartAtUtc.ToLocalTime(), scheduledEnd,
                 null, r.RecordMode, r.RecordDurationMin));
-            try { LibmpvIptvClient.Diagnostics.Logger.Debug($"[Reminder] fired recording id={r.Id} ch={r.ChannelName} action={action}"); } catch { }
+            try { LibmpvIptvClient.Diagnostics.Logger.Info($"[Reminder] fired recording id={r.Id} ch={r.ChannelName} action={action}"); } catch { }
         }
 
         void Tick()
@@ -193,7 +193,7 @@ namespace LibmpvIptvClient.Services
                             }
                             catch { }
                             r.Completed = true; ok++;
-                            try { LibmpvIptvClient.Diagnostics.Logger.Debug($"[Reminder] pre-alert scheduled autoplay id={r.Id} ch={r.ChannelName} at={preAt.ToLocalTime():yyyy-MM-dd HH:mm:ss}"); } catch { }
+                            try { LibmpvIptvClient.Diagnostics.Logger.Info($"[Reminder] pre-alert scheduled autoplay id={r.Id} ch={r.ChannelName} at={preAt.ToLocalTime():yyyy-MM-dd HH:mm:ss}"); } catch { }
                         }
                         else if (isRecord)
                         {
@@ -209,7 +209,7 @@ namespace LibmpvIptvClient.Services
                 {
                     var delta = (now - triggerAt).TotalSeconds;
                     if (!includeGrace && delta > 5) continue;
-                    if (includeGrace && delta > GraceSeconds) { r.Completed = true; miss++; try { LibmpvIptvClient.Diagnostics.Logger.Debug($"[Reminder] missed id={r.Id} ch={r.ChannelName} action={r.Action} due={triggerAt.ToLocalTime():yyyy-MM-dd HH:mm:ss} delta={delta:F1}s"); } catch { } continue; }
+                    if (includeGrace && delta > GraceSeconds) { r.Completed = true; miss++; try { LibmpvIptvClient.Diagnostics.Logger.Info($"[Reminder] missed id={r.Id} ch={r.ChannelName} action={r.Action} due={triggerAt.ToLocalTime():yyyy-MM-dd HH:mm:ss} delta={delta:F1}s"); } catch { } continue; }
                     try
                     {
                         var local = r.StartAtUtc.ToLocalTime();
@@ -247,7 +247,7 @@ namespace LibmpvIptvClient.Services
                         r.Completed = true; ok++;
                         try
                         {
-                            LibmpvIptvClient.Diagnostics.Logger.Debug($"[Reminder] fired id={r.Id} ch={r.ChannelName} action={r.Action} local={local:yyyy-MM-dd HH:mm:ss}");
+                            LibmpvIptvClient.Diagnostics.Logger.Info($"[Reminder] fired id={r.Id} ch={r.ChannelName} action={r.Action} local={local:yyyy-MM-dd HH:mm:ss}");
                         }
                         catch { }
                     }

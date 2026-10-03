@@ -15,7 +15,9 @@ namespace LibmpvIptvClient.Tests
             void OnLog(string msg)
             {
                 if (msg == null) return;
-                if ((msg.Contains("[Reminder] fired") && msg.Contains("action=play")) || msg.Contains("[Reminder] pre-alert scheduled autoplay"))
+                // Logger.GetDisplayMessage strips the "[Reminder]" tag before raising OnMessage, so the
+                // assertion must look at the text after the tag.
+                if ((msg.Contains("fired") && msg.Contains("action=play")) || msg.Contains("pre-alert scheduled autoplay"))
                 {
                     Interlocked.Increment(ref fired);
                 }

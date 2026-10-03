@@ -103,6 +103,10 @@ namespace LibmpvIptvClient.Tests
         public void TimeshiftProperties_ShouldNotifyChanges()
         {
             var shell = new MainShellViewModel();
+            // Timeshift can only be enabled with a player engine and a playing url; provide both so the
+            // test exercises the real accept path instead of silently keeping the flag false.
+            shell.InjectServices(new LibmpvIptvClient.Services.EpgService(), new FakePlayerEngine(), null!);
+            shell.CurrentUrl = "http://example.com/live";
             var notifiedProps = new System.Collections.Generic.HashSet<string>();
             var oldEnabled = AppSettings.Current.Timeshift.Enabled;
             var oldFormat = AppSettings.Current.Timeshift.UrlFormat;
