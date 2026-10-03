@@ -16,6 +16,9 @@ namespace LibmpvIptvClient.Models
         }
         public string TvgId { get; set; } = "";
         public string TvgName { get; set; } = "";
+        /// <summary>Fallback logo urls (e.g. the raw channel name after the cleaned one) that are tried
+        /// when the primary logo url cannot be downloaded.</summary>
+        public System.Collections.Generic.List<string> LogoAlternates { get; set; } = new();
         public string Catchup { get; set; } = "";
         public string CatchupSource { get; set; } = "";
         
@@ -118,6 +121,7 @@ namespace LibmpvIptvClient.Models
             Name = "";
             Group = "";
             _logo = "";
+            LogoAlternates.Clear();
             TvgId = "";
             TvgName = "";
             Catchup = "";

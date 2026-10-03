@@ -13,6 +13,8 @@ namespace LibmpvIptvClient
     {
         // Thread-safe cache
         private static readonly ConcurrentDictionary<string, BitmapImage> _cache = new ConcurrentDictionary<string, BitmapImage>();
+        // Urls that already failed: without this every list scroll retried them and flooded the network.
+        private static readonly ConcurrentDictionary<string, byte> _failed = new ConcurrentDictionary<string, byte>();
         private static readonly BitmapImage _defaultImage;
         private static readonly HttpClient _http;
 
@@ -49,6 +51,11 @@ namespace LibmpvIptvClient
                 if (_cache.TryGetValue(url, out var cachedImg))
                 {
                     return cachedImg;
+                }
+
+                if (_failed.ContainsKey(url))
+                {
+                    return _defaultImage;
                 }
 
                 try
@@ -92,9 +99,12 @@ namespace LibmpvIptvClient
                         _cache[url] = img; // Cache successful load
                         return img;
                     }
+
+                    _failed[url] = 0;
                 }
                 catch (Exception ex)
                 {
+                    _failed[url] = 0;
                     LibmpvIptvClient.Diagnostics.Logger.Warn($"[Logo] 加载失败: {url} -> {ex.Message}");
                 }
             }

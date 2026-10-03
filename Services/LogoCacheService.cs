@@ -206,6 +206,19 @@ namespace LibmpvIptvClient.Services
                     try
                     {
                         var local = await GetLogoPathAsync(ch.Name, logo);
+
+                        // The templated url may use a name variant the repository does not ship; walk the
+                        // alternates (cleaned name first, raw name last) before giving up.
+                        if (string.IsNullOrWhiteSpace(local) && ch.LogoAlternates != null && ch.LogoAlternates.Count > 0)
+                        {
+                            foreach (var alt in ch.LogoAlternates.ToList())
+                            {
+                                if (string.IsNullOrWhiteSpace(alt)) continue;
+                                local = await GetLogoPathAsync(ch.Name, alt);
+                                if (!string.IsNullOrWhiteSpace(local)) break;
+                            }
+                        }
+
                         if (!string.IsNullOrWhiteSpace(local))
                         {
                             System.Threading.Interlocked.Increment(ref ok);

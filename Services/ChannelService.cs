@@ -159,7 +159,18 @@ namespace LibmpvIptvClient.Services
                 if (!string.IsNullOrWhiteSpace(ch.Logo) || string.IsNullOrWhiteSpace(ch.Name)) continue;
                 try
                 {
-                    ch.Logo = pattern.Replace("{name}", Uri.EscapeDataString(ch.Name), StringComparison.OrdinalIgnoreCase);
+                    // Try the repository's own naming first (cleaned name) and keep the raw name as a
+                    // fallback for repositories that use it verbatim.
+                    var candidates = Helpers.LogoNameCleaner.Candidates(ch.Name);
+                    if (candidates.Count == 0) continue;
+
+                    ch.Logo = pattern.Replace("{name}", Uri.EscapeDataString(candidates[0]), StringComparison.OrdinalIgnoreCase);
+
+                    ch.LogoAlternates.Clear();
+                    for (int i = 1; i < candidates.Count; i++)
+                    {
+                        ch.LogoAlternates.Add(pattern.Replace("{name}", Uri.EscapeDataString(candidates[i]), StringComparison.OrdinalIgnoreCase));
+                    }
                 }
                 catch { }
             }
