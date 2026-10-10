@@ -1,38 +1,80 @@
 /* ==========================================================================
-   SrcBox Custom Theme - Enhanced for both Dark and Light modes
+   SrcBox Custom Theme - Aurora Edition
+   Multi-hue aurora gradients, glass surfaces, light + dark parity.
+   Markup and copy are untouched; this file only restyles existing elements.
    ========================================================================== */
 
-/* ===== CSS Custom Properties - Light Mode ===== */
+/* ===== Aurora Palette + Light Mode Tokens ===== */
 :root {
-  /* Light mode base - warm white */
+  /* Aurora stops - the shared five-colour spectrum */
+  --aurora-1: #667eea;
+  --aurora-2: #764ba2;
+  --aurora-3: #f093fb;
+  --aurora-4: #f5576c;
+  --aurora-5: #4facfe;
+  --aurora-gradient: linear-gradient(
+    135deg,
+    var(--aurora-1) 0%,
+    var(--aurora-2) 25%,
+    var(--aurora-3) 50%,
+    var(--aurora-4) 75%,
+    var(--aurora-5) 100%
+  );
+  /* The hero band is the full aurora spectrum in both modes. It runs close to
+     full strength so the hue sweep is actually visible (a low-opacity band
+     collapses to one flat lavender); the text stays legible because the deep
+     headline stops sit well below the band's luminance. */
+  --aurora-hero-gradient: var(--aurora-gradient);
+  /* Deep stops stay >= 5:1 on light surfaces, used for gradient headline text */
+  --aurora-text-gradient: linear-gradient(120deg, #2f35a0 0%, #6a1d78 50%, #8a1e4e 100%);
+  /* Ambient wash behind the whole page, and the stronger hero band.
+     The wash is deliberately strong: at low opacity the 400% gradient collapses
+     to one flat lavender and the whole page loses the "aurora" read. */
+  --aurora-wash-opacity: 0.85;
+  --aurora-hero-opacity: 1;
+
+  /* Light mode base */
   --vp-c-bg: #ffffff;
-  --vp-c-bg-soft: #f6f8fa;
-  --vp-c-bg-mute: #eef1f5;
+  --vp-c-bg-alt: #f7f8fd;
+  --vp-c-bg-soft: #f4f6fd;
+  --vp-c-bg-mute: #eaedf9;
   --vp-c-bg-elv: #ffffff;
 
-  /* Brand colors - Blue primary */
-  --vp-c-brand-1: #0969da;
-  --vp-c-brand-2: #0784def5;
-  --vp-c-brand-3: #0550ae;
-  --vp-c-brand-soft: rgba(9, 105, 218, 0.12);
+  /* Brand - aurora periwinkle replaces the old flat blue (5.5:1 on white) */
+  --vp-c-brand-1: #4d5fd4;
+  --vp-c-brand-2: #667eea;
+  --vp-c-brand-3: #3f4fb5;
+  --vp-c-brand-soft: rgba(102, 126, 234, 0.14);
 
-  /* Accent - Violet */
-  --vp-c-accent: #8250df;
-  --vp-c-accent-soft: rgba(130, 80, 223, 0.12);
+  /* Accent - aurora magenta */
+  --vp-c-accent: #8e44c9;
+  --vp-c-accent-soft: rgba(142, 68, 201, 0.12);
 
-  /* Text hierarchy */
-  --vp-c-text-1: #1f2328;
-  --vp-c-text-2: #656d76;
-  --vp-c-text-3: #8b949e;
+  /* Primary CTA gradient - stays deep enough for white text in both modes */
+  --aurora-btn-gradient: linear-gradient(135deg, #5266d8 0%, #8e44c9 100%);
+  --aurora-btn-gradient-hover: linear-gradient(135deg, #5a6ade 0%, #9a4fd4 100%);
+
+  /* Text hierarchy - slightly warmed toward indigo, all AA+ on white */
+  --vp-c-text-1: #1a1c2e;
+  --vp-c-text-2: #565c78;
+  --vp-c-text-3: #6e7590;
 
   /* Borders */
-  --vp-c-border: #d0d7de;
-  --vp-c-divider: #d8dee4;
+  --vp-c-border: #dcdef0;
+  --vp-c-divider: #e6e8f5;
+
+  /* Glass surfaces */
+  --glass-bg: rgba(255, 255, 255, 0.6);
+  --glass-bg-strong: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.75);
+  --glass-edge: rgba(102, 126, 234, 0.2);
+  --glass-blur: 16px;
+  --glass-shadow: 0 8px 32px rgba(76, 86, 201, 0.1);
 
   /* Shadows */
-  --vp-shadow-1: 0 1px 3px rgba(0, 0, 0, 0.08), 0 4px 12px rgba(0, 0, 0, 0.05);
-  --glow-brand: 0 0 20px rgba(9, 105, 218, 0.25);
-  --glow-accent: 0 0 20px rgba(130, 80, 223, 0.25);
+  --vp-shadow-1: 0 1px 3px rgba(26, 28, 46, 0.07), 0 8px 28px rgba(76, 86, 201, 0.08);
+  --glow-brand: 0 0 24px rgba(102, 126, 234, 0.35);
+  --glow-accent: 0 0 24px rgba(142, 68, 201, 0.3);
 
   /* Spacing */
   --section-spacing: 80px;
@@ -40,9 +82,17 @@
   --border-radius: 12px;
 
   /* Override VitePress brand */
-  --vp-c-brand: #0969da;
-  --vp-c-brand-light: #218bff;
-  --vp-c-brand-dark: #0550ae;
+  --vp-c-brand: #4d5fd4;
+  --vp-c-brand-light: #667eea;
+  --vp-c-brand-dark: #3f4fb5;
+
+  /* Chrome (nav / sidebar / footer) surfaces. The nav sits over the hero band,
+     so it needs to be opaque enough for brand-coloured links to stay at AA. */
+  --chrome-bg: rgba(255, 255, 255, 0.88);
+  --chrome-border: rgba(102, 126, 234, 0.14);
+
+  /* Let the aurora layer show through the sidebar */
+  --vp-sidebar-bg-color: transparent;
 }
 
 /* ===== Hero Image Styling ===== */
@@ -64,100 +114,184 @@
 }
 
 .dark .VPHero .image-container img {
-  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4)) drop-shadow(0 0 20px rgba(56, 139, 253, 0.2));
+  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4))
+    drop-shadow(0 0 22px rgba(102, 126, 234, 0.35));
 }
 
 .dark .VPHero .image-container img:hover {
-  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 30px rgba(56, 139, 253, 0.3));
+  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.5))
+    drop-shadow(0 0 34px rgba(160, 130, 255, 0.45));
 }
 
-/* ===== CSS Custom Properties - Dark Mode ===== */
+/* ===== Dark Mode Tokens ===== */
 .dark {
-  /* Dark mode base - GitHub dark */
-  --vp-c-bg: #0d1117;
-  --vp-c-bg-soft: #161b22;
-  --vp-c-bg-mute: #21262d;
-  --vp-c-bg-elv: #1c2128;
+  /* Brighter gradient for headline text over the deep aurora */
+  --aurora-text-gradient: linear-gradient(120deg, #c9d0ff 0%, #eac8ff 50%, #ffc2d6 100%);
+  --aurora-wash-opacity: 0.42;
+  --aurora-hero-opacity: 1;
+  /* Dark mode keeps the full saturated aurora band behind light text */
+  --aurora-hero-gradient: var(--aurora-gradient);
 
-  /* Brand colors - Blue/Violet for dark */
-  --vp-c-brand-1: #58a6ff;
-  --vp-c-brand-2: #388bfd;
-  --vp-c-brand-3: #1f6feb;
-  --vp-c-brand-soft: rgba(56, 139, 253, 0.15);
+  /* Dark mode base - deep indigo night instead of GitHub grey */
+  --vp-c-bg: #0b0c1a;
+  --vp-c-bg-alt: #12142a;
+  --vp-c-bg-soft: #14162c;
+  --vp-c-bg-mute: #1c1f3a;
+  --vp-c-bg-elv: #181a33;
 
-  /* Accent - Violet */
-  --vp-c-accent: #a371f7;
-  --vp-c-accent-soft: rgba(163, 113, 247, 0.15);
+  /* Brand - lifted periwinkle, 8.5:1 on the dark base */
+  --vp-c-brand-1: #9aa8ff;
+  --vp-c-brand-2: #b4beff;
+  --vp-c-brand-3: #667eea;
+  --vp-c-brand-soft: rgba(154, 168, 255, 0.16);
+
+  /* Accent - lifted magenta, 9.9:1 */
+  --vp-c-accent: #d6a8ff;
+  --vp-c-accent-soft: rgba(214, 168, 255, 0.14);
+
+  /* The lifted brand/accent are too pale to carry white button text, so the
+     dark CTA keeps its own deep gradient (white text >= 4.5:1). */
+  --aurora-btn-gradient: linear-gradient(135deg, #4b5bd6 0%, #7d3fbf 100%);
+  --aurora-btn-gradient-hover: linear-gradient(135deg, #5a6ae4 0%, #9150cf 100%);
 
   /* Text hierarchy */
-  --vp-c-text-1: #e6edf3;
-  --vp-c-text-2: #8b949e;
-  --vp-c-text-3: #6e7681;
+  --vp-c-text-1: #e9eaf6;
+  --vp-c-text-2: #a6acc8;
+  --vp-c-text-3: #7d84a0;
 
   /* Borders */
-  --vp-c-border: #30363d;
-  --vp-c-divider: #21262d;
+  --vp-c-border: #282c4a;
+  --vp-c-divider: #1e2140;
+
+  /* Glass surfaces */
+  --glass-bg: rgba(20, 22, 44, 0.55);
+  --glass-bg-strong: rgba(24, 26, 52, 0.78);
+  --glass-border: rgba(154, 168, 255, 0.16);
+  --glass-edge: rgba(154, 168, 255, 0.24);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.45);
 
   /* Shadows - stronger in dark mode */
-  --vp-shadow-1: 0 1px 3px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.4);
-  --glow-brand: 0 0 30px rgba(56, 139, 253, 0.4);
-  --glow-accent: 0 0 30px rgba(163, 113, 247, 0.4);
-}
+  --vp-shadow-1: 0 1px 3px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.45);
+  --glow-brand: 0 0 32px rgba(102, 126, 234, 0.45);
+  --glow-accent: 0 0 32px rgba(214, 168, 255, 0.35);
 
-/* Dark mode hero image with glow */
-.dark .VPHero .image-container img {
-  filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.4)) drop-shadow(0 0 20px rgba(56, 139, 253, 0.3));
-}
-
-.dark .VPHero .image-container img:hover {
-  filter: drop-shadow(0 8px 24px rgba(0, 0, 0, 0.5)) drop-shadow(0 0 35px rgba(56, 139, 253, 0.4));
+  /* Chrome surfaces */
+  --chrome-bg: rgba(11, 12, 26, 0.72);
+  --chrome-border: rgba(154, 168, 255, 0.14);
 }
 
 /* ==========================================================================
-   Hero Section Enhancement - Dramatic difference between modes
+   Ambient Aurora - one fixed layer behind every page.
+   `html` keeps the opaque base colour and `body` is made transparent so the
+   negative z-index pseudo element stays visible above the canvas background.
+   ========================================================================== */
+
+html {
+  background-color: var(--vp-c-bg) !important;
+}
+
+body {
+  background-color: transparent !important;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: -25%;
+  z-index: -1;
+  background: var(--aurora-gradient);
+  /* 170% keeps roughly two thirds of the spectrum on screen, so the page tint
+     is genuinely multi-hue instead of a single drifting hue. */
+  background-size: 170% 170%;
+  animation: auroraFlow 22s ease-in-out infinite;
+  opacity: var(--aurora-wash-opacity);
+  pointer-events: none;
+}
+
+@keyframes auroraFlow {
+  0% { background-position: 0% 50%; }
+  25% { background-position: 50% 0%; }
+  50% { background-position: 100% 50%; }
+  75% { background-position: 50% 100%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ==========================================================================
+   Hero - full-strength aurora band fading into the ambient wash
    ========================================================================== */
 
 .VPHero {
   position: relative;
   overflow: hidden;
+  animation: fadeInUp 0.6s ease-out forwards;
 }
 
-/* Light mode - subtle gradient */
 .VPHero::before {
   content: '';
   position: absolute;
-  top: -50%;
-  left: -50%;
-  width: 200%;
-  height: 200%;
-  background:
-    radial-gradient(ellipse at 30% 20%, rgba(9, 105, 218, 0.08) 0%, transparent 50%),
-    radial-gradient(ellipse at 70% 80%, rgba(130, 80, 223, 0.06) 0%, transparent 50%);
-  animation: gradientShift 15s ease-in-out infinite alternate;
+  inset: 0;
+  /* Sizing this box to the hero (rather than 200% of it) keeps the mask
+     honest: it fades over the real hero height instead of off-screen. The
+     background is then scaled to 400% and panned a full tile per cycle, which
+     is what makes the hue at any given point sweep the whole spectrum - the
+     signature of the reference aurora page. A 150% background only ever
+     exposes a narrow two-stop slice, which reads as one flat colour. */
+  background: var(--aurora-hero-gradient);
+  background-size: 400% 400%;
+  background-position: 0% 50%;
+  animation: auroraDrift 15s ease-in-out infinite;
+  opacity: var(--aurora-hero-opacity);
   pointer-events: none;
   z-index: -1;
+  -webkit-mask-image: linear-gradient(to bottom, #000 0%, #000 62%, transparent 100%);
+  mask-image: linear-gradient(to bottom, #000 0%, #000 62%, transparent 100%);
 }
 
-/* Dark mode - more intense gradient */
-.dark .VPHero::before {
-  background:
-    radial-gradient(ellipse at 30% 20%, rgba(56, 139, 253, 0.2) 0%, transparent 50%),
-    radial-gradient(ellipse at 70% 80%, rgba(163, 113, 247, 0.15) 0%, transparent 50%);
+@keyframes auroraDrift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
 }
 
-@keyframes gradientShift {
-  0% { transform: translate(0, 0) rotate(0deg); }
-  100% { transform: translate(-5%, -5%) rotate(3deg); }
+/* The band runs near full strength now, so the hero copy gets a scrim between
+   the aurora and the text. The sweep stays full-bleed above and below the copy
+   (that is where the page reads as "aurora"), while the text itself sits on a
+   calm, theme-appropriate wash that keeps AA contrast deterministic. Without
+   it the dark-mode band is bright enough to drop light text to 2.0:1. */
+.VPHero::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.38) 22%,
+    rgba(255, 255, 255, 0.38) 78%,
+    rgba(255, 255, 255, 0) 100%
+  );
 }
 
-/* Hero typography - gradient text */
+.dark .VPHero::after {
+  background: linear-gradient(
+    to bottom,
+    rgba(8, 9, 22, 0) 0%,
+    rgba(8, 9, 22, 0.62) 20%,
+    rgba(8, 9, 22, 0.62) 80%,
+    rgba(8, 9, 22, 0) 100%
+  );
+}
+
+/* Hero typography - gradient text built from the aurora stops */
 .VPHero .name {
   font-size: 3.5rem;
   font-weight: 700;
-  background: linear-gradient(135deg, var(--vp-c-brand-1), var(--vp-c-accent));
+  background: var(--aurora-text-gradient);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  color: transparent;
 }
 
 .VPHero .text {
@@ -166,38 +300,79 @@
   font-weight: 600;
 }
 
+/* The tagline is body-sized (not large text), so it gets its own near-solid
+   colour instead of the softer secondary grey, which would only reach ~3.5:1
+   over the hero band. */
 .VPHero .tagline {
-  color: var(--vp-c-text-2);
+  color: #2b3050;
   font-size: 1.1rem;
   max-width: 500px;
   margin: 0 auto;
 }
 
+.dark .VPHero .tagline {
+  color: #f2f3fa;
+}
+
 /* ==========================================================================
-   Feature Cards - Dramatic hover effects
+   Home section headings - aurora gradient text
+   (scoped component styles set `color`, so text-fill-color must win)
+   ========================================================================== */
+
+.VPHome .section-title {
+  background: var(--aurora-text-gradient);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent !important;
+  color: transparent !important;
+}
+
+/* ==========================================================================
+   Feature Cards - frosted aurora glass
    ========================================================================== */
 
 .VPFeature {
-  background: var(--vp-c-bg-soft) !important;
-  border: 1px solid var(--vp-c-border) !important;
+  position: relative;
+  overflow: hidden;
+  background: var(--glass-bg) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  border: 1px solid var(--glass-border) !important;
   border-radius: var(--border-radius) !important;
+  box-shadow: var(--glass-shadow);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
 }
 
-/* Light mode hover - blue tint */
-.VPFeature:hover {
-  transform: translateY(-6px);
-  border-color: var(--vp-c-brand-1) !important;
-  box-shadow: var(--glow-brand), var(--vp-shadow-1) !important;
-  background: var(--vp-c-brand-soft) !important;
+/* Aurora gradient ring, revealed on hover */
+.VPFeature::after,
+.tech-card::after,
+.help-link::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: var(--aurora-gradient);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
 }
 
-/* Dark mode hover - more dramatic glow */
-.dark .VPFeature:hover {
+.VPFeature:hover::after,
+.tech-card:hover::after,
+.help-link:hover::after {
+  opacity: 1;
+}
+
+.VPFeature:hover {
   transform: translateY(-6px);
-  border-color: var(--vp-c-brand-1) !important;
-  box-shadow: var(--glow-brand), var(--vp-shadow-1) !important;
-  background: var(--vp-c-bg-elv) !important;
+  background: var(--glass-bg-strong) !important;
+  border-color: var(--glass-edge) !important;
+  box-shadow: var(--glow-brand), var(--glass-shadow) !important;
 }
 
 .VPFeature .icon {
@@ -219,80 +394,50 @@
 }
 
 /* ==========================================================================
-   Video Sections - Glowing container
+   Video Showcase - the existing aurora ring becomes the frame
    ========================================================================== */
 
-.video-container {
-  position: relative;
-  border-radius: var(--border-radius);
-  overflow: hidden;
-  background: var(--vp-c-bg-mute);
-  border: 1px solid var(--vp-c-border);
-  transition: all 0.3s ease;
+.video-wrapper {
+  border-color: transparent !important;
+  box-shadow: var(--glass-shadow);
 }
 
-.video-container::before {
-  content: '';
-  position: absolute;
-  inset: -1px;
-  border-radius: var(--border-radius);
-  padding: 2px;
-  background: linear-gradient(135deg, var(--vp-c-brand-1), var(--vp-c-accent), var(--vp-c-brand-1));
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-  opacity: 0.6;
-  transition: opacity 0.3s ease;
-}
-
-.video-container:hover::before {
-  opacity: 1;
-}
-
-.video-container video {
-  display: block;
-  width: 100%;
+.video-glow {
+  background: var(--aurora-gradient) !important;
+  opacity: 0.7;
 }
 
 /* ==========================================================================
-   Screenshot Gallery - Hover zoom effect
+   Screenshot Gallery - glass frames
    ========================================================================== */
 
-.screenshot-gallery {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 24px;
+.screenshot-frame {
+  background: var(--glass-bg) !important;
+  border-color: var(--glass-edge) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  box-shadow: var(--glass-shadow);
 }
 
-.screenshot-gallery img {
-  width: 100%;
-  height: auto;
-  border-radius: var(--border-radius);
-  border: 2px solid var(--vp-c-border);
-  transition: all 0.3s ease;
-}
-
-.screenshot-gallery img:hover {
-  transform: scale(1.03);
-  box-shadow: var(--glow-brand);
-  border-color: var(--vp-c-brand-1);
+.screenshot-frame:hover {
+  border-color: var(--vp-c-brand-1) !important;
+  box-shadow: var(--glow-brand), var(--glass-shadow) !important;
 }
 
 /* ==========================================================================
-   CTA Buttons - Prominent gradients
+   CTA Buttons - prominent aurora gradients
    ========================================================================== */
 
 .VPButton.brand {
-  background: linear-gradient(135deg, var(--vp-c-brand-1), var(--vp-c-brand-3)) !important;
+  background: var(--aurora-btn-gradient) !important;
   border: none !important;
   color: #ffffff !important;
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.3);
   transition: all 0.2s ease !important;
 }
 
 .VPButton.brand:hover {
-  background: linear-gradient(135deg, var(--vp-c-brand-light), var(--vp-c-brand-1)) !important;
+  background: var(--aurora-btn-gradient-hover) !important;
   box-shadow: var(--glow-brand) !important;
   transform: translateY(-2px) !important;
 }
@@ -300,6 +445,9 @@
 .VPButton.alt {
   border: 2px solid var(--vp-c-border) !important;
   color: var(--vp-c-text-1) !important;
+  background: var(--glass-bg) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  backdrop-filter: blur(var(--glass-blur));
   transition: all 0.2s ease !important;
 }
 
@@ -313,59 +461,21 @@
    Tech Stack Cards
    ========================================================================== */
 
-.tech-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: 16px;
-  margin: 24px 0;
-}
-
 .tech-card {
-  background: var(--vp-c-bg-soft);
-  border: 1px solid var(--vp-c-border);
-  border-radius: 8px;
-  padding: 16px;
-  text-align: center;
+  position: relative;
+  overflow: hidden;
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  box-shadow: var(--glass-shadow);
   transition: all 0.2s ease;
 }
 
 .tech-card:hover {
-  border-color: var(--vp-c-brand-1);
-  box-shadow: var(--glow-brand);
+  border-color: var(--glass-edge) !important;
+  box-shadow: var(--glow-brand), var(--glass-shadow);
   transform: translateY(-2px);
-}
-
-.tech-card strong {
-  color: var(--vp-c-brand-1);
-  display: block;
-  margin-bottom: 4px;
-}
-
-.tech-card span {
-  color: var(--vp-c-text-2);
-  font-size: 0.9rem;
-}
-
-/* ==========================================================================
-   Content Sections
-   ========================================================================== */
-
-.content-section {
-  padding: var(--section-spacing) 0;
-}
-
-.content-section h2 {
-  font-size: 2rem;
-  font-weight: 700;
-  color: var(--vp-c-text-1);
-  text-align: center;
-  margin-bottom: 1rem;
-}
-
-.section-subtitle {
-  color: var(--vp-c-text-2);
-  text-align: center;
-  margin-bottom: 40px;
 }
 
 /* ==========================================================================
@@ -373,23 +483,33 @@
    ========================================================================== */
 
 .help-link {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 16px 20px;
-  background: var(--vp-c-bg-soft);
-  border: 2px solid var(--vp-c-border);
-  border-radius: 12px;
-  color: var(--vp-c-text-1);
-  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+  background: var(--glass-bg) !important;
+  border: 2px solid var(--glass-border) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  box-shadow: var(--glass-shadow);
   transition: all 0.2s ease;
 }
 
 .help-link:hover {
-  border-color: var(--vp-c-brand-1);
-  background: var(--vp-c-brand-soft);
-  box-shadow: var(--glow-brand);
+  border-color: var(--glass-edge) !important;
+  background: var(--glass-bg-strong) !important;
+  box-shadow: var(--glow-brand), var(--glass-shadow);
   transform: translateY(-2px);
+}
+
+/* ==========================================================================
+   Home page disclaimer block (markup stays in index.md, glass lives here)
+   ========================================================================== */
+
+.disclaimer {
+  background: var(--glass-bg) !important;
+  border: 1px solid var(--glass-border) !important;
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  box-shadow: var(--glass-shadow);
 }
 
 /* ==========================================================================
@@ -405,10 +525,6 @@
     opacity: 1;
     transform: translateY(0);
   }
-}
-
-.VPHero {
-  animation: fadeInUp 0.6s ease-out forwards;
 }
 
 .VPFeature {
@@ -429,27 +545,47 @@
 .VPFeature:nth-child(11) { animation-delay: 0.55s; }
 .VPFeature:nth-child(12) { animation-delay: 0.6s; }
 
-.video-container {
-  animation: fadeInUp 0.5s ease-out forwards;
-  opacity: 0;
-}
-
 /* ==========================================================================
-   Sidebar Navigation - Enhanced with Dividers
+   Chrome - Navbar / Local Nav / Sidebar / Footer become frosted glass
    ========================================================================== */
 
-/* Sidebar container */
+.VPNavBar {
+  background-color: var(--chrome-bg) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+  border-bottom: 1px solid transparent;
+}
+
+.VPNavBar::after {
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--chrome-border) 15%,
+    var(--chrome-border) 85%,
+    transparent
+  ) !important;
+}
+
+.VPLocalNav {
+  background-color: var(--chrome-bg) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+  border-bottom-color: var(--chrome-border) !important;
+}
+
 .VPSidebar {
+  background-color: var(--glass-bg) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+  border-right: 1px solid var(--glass-border);
   padding: 16px 0;
 }
 
-/* Sidebar group styling */
 .VPSidebar .sidebar-group {
   margin-bottom: 8px;
   position: relative;
 }
 
-/* Add divider between sidebar groups */
 .VPSidebar .sidebar-group:not(:first-child)::before {
   content: '';
   position: absolute;
@@ -476,7 +612,6 @@
   margin: 0;
 }
 
-/* Sidebar items */
 .VPSidebar .sidebar-item {
   padding: 8px 24px;
   font-size: 0.95rem;
@@ -492,7 +627,6 @@
   border-left-color: var(--vp-c-brand-1);
 }
 
-/* Active sidebar item */
 .VPSidebar .sidebar-item.active {
   color: var(--vp-c-brand-1);
   font-weight: 600;
@@ -500,7 +634,6 @@
   border-left-color: var(--vp-c-brand-1);
 }
 
-/* Sidebar section dividers */
 .VPSidebar .sidebar-divider {
   height: 1px;
   background: linear-gradient(
@@ -513,7 +646,6 @@
   margin: 16px 24px;
 }
 
-/* Sidebar section with icon */
 .VPSidebar .sidebar-section-header {
   display: flex;
   align-items: center;
@@ -539,7 +671,6 @@
   letter-spacing: 0.08em;
 }
 
-/* Nested items */
 .VPSidebar .sidebar-items {
   border-left: 1px solid var(--vp-c-divider);
   margin-left: 12px;
@@ -551,7 +682,6 @@
   font-size: 0.9rem;
 }
 
-/* Sidebar hover card effect */
 .VPSidebar .link {
   display: block;
   padding: 8px 24px;
@@ -574,7 +704,6 @@
   border-left-color: var(--vp-c-brand-1);
 }
 
-/* Collapsible sidebar groups */
 .VPSidebar .sidebar-group.is-collapsed .sidebar-group-title {
   color: var(--vp-c-text-2);
 }
@@ -585,18 +714,81 @@
   right: 16px;
 }
 
-/* Sidebar bottom padding */
 .VPSidebar > .sidebar-content {
   padding-bottom: 24px;
 }
 
 /* ==========================================================================
-   Footer Styling
+   Long-form surfaces - frosted panel over the aurora
+   The ambient wash is deliberately strong enough to read as the reference
+   page's colour field, which leaves secondary text (#565c78 / #a6acc8) only
+   ~3:1 against it. Long-form reading therefore happens on a frosted panel:
+   the aurora stays vivid in the margins and around the panel, while the text
+   keeps its AA contrast. Same idiom the reference page uses for its cards.
+   ========================================================================== */
+
+.VPDoc .container {
+  background: var(--glass-bg-strong) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+}
+
+/* ==========================================================================
+   Footer Styling - glass with an aurora hairline
    ========================================================================== */
 
 .VPFooter {
-  background: var(--vp-c-bg-soft);
-  border-top: 1px solid var(--vp-c-border);
+  background: var(--glass-bg-strong) !important;
+  -webkit-backdrop-filter: blur(18px) saturate(160%);
+  backdrop-filter: blur(18px) saturate(160%);
+  border-top: 1px solid transparent;
+  position: relative;
+}
+
+.VPFooter::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(
+    to right,
+    transparent,
+    var(--aurora-1) 20%,
+    var(--aurora-3) 50%,
+    var(--aurora-5) 80%,
+    transparent
+  );
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* ==========================================================================
+   Scrollbar - aurora tinted
+   ========================================================================== */
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, var(--aurora-1), var(--aurora-2));
+  border-radius: 8px;
+  border: 3px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, var(--aurora-2), var(--aurora-4));
+  background-clip: padding-box;
 }
 
 /* ==========================================================================
@@ -612,18 +804,40 @@
     font-size: 1.25rem;
   }
 
-  .screenshot-gallery {
-    grid-template-columns: 1fr;
-  }
-
   :root, .dark {
     --section-spacing: 48px;
     --card-padding: 16px;
     --border-radius: 8px;
+    /* Lighter compositing on phones */
+    --glass-blur: 10px;
+  }
+}
+
+/* ==========================================================================
+   Reduced Motion - honour the OS preference
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  body::before,
+  .VPHero::before {
+    animation: none !important;
   }
 
-  .tech-grid {
-    grid-template-columns: repeat(2, 1fr);
+  .VPHero,
+  .VPFeature {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .VPFeature:hover,
+  .tech-card:hover,
+  .help-link:hover {
+    transform: none !important;
+  }
+
+  * {
+    transition: none !important;
   }
 }
 
