@@ -1,0 +1,2190 @@
+<!doctype html>
+<!--
+  源匣 SrcBox — 界面重制 v2 · Screenbox（Fluent Design / WinUI 3）风格
+  与 v1（srcbox-ui/srcbox-player-ui.html，深色影音工作台）并列的第二套方案：
+  保留 SrcBox 的全部功能与文案键值，改用 NavigationView + Mica + 播放器浮层的信息架构。
+  令牌与部件规格见 srcbox-ui/brand-spec.md「附：v2 Screenbox 方向」。
+-->
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>源匣 SrcBox · Screenbox 风格重制原型</title>
+<style>
+  /* ─── tokens（Screenbox / WinUI 3 基准，见 brand-spec.md 附表） ──────── */
+  :root {
+    --layer:      #202020;   /* Mica 基底 */
+    --layer-alt:  #272727;   /* 卡片 / 列表 */
+    --layer-2:    #2d2d2d;   /* 控件填充 */
+    --smoke:      #1c1c1c;   /* 浮层亚克力底 */
+    --fg:         #ffffff;
+    --muted:      #c5c5c5;
+    --faint:      #9a9a9a;
+    --border:     #3a3a3a;
+    --divider:    #ffffff14;
+    --card-stroke:#ffffff0f;
+    --accent:     #63c8dd;   /* Windows 11 默认强调色的低饱和取向 */
+    --accent-ink: #06232a;
+    --live:       #d95a52;
+
+    --font-ui:   'Segoe UI Variable Text', 'Segoe UI', 'Microsoft YaHei UI', system-ui, sans-serif;
+    --font-disp: 'Segoe UI Variable Display', 'Segoe UI Semibold', 'Segoe UI', system-ui, sans-serif;
+    --font-mono: 'Cascadia Mono', 'Consolas', ui-monospace, monospace;
+
+    --fs-caption: 12px; --fs-body: 14px; --fs-body-lg: 16px;
+    --fs-subtitle: 18px; --fs-title: 20px; --fs-title-lg: 24px; --fs-display: 28px;
+
+    --r-sm: 4px; --r: 6px; --r-lg: 8px; --r-win: 8px;
+    --nav: 48px; --nav-open: 288px; --titlebar: 48px;
+
+    --fill-hover: #ffffff0f;
+    --fill-press: #ffffff08;
+    --accent-dim: #63c8dd1f;
+  }
+  html[data-theme="light"] {
+    --layer:      #f3f3f3;
+    --layer-alt:  #ffffff;
+    --layer-2:    #f9f9f9;
+    --smoke:      #f9f9f9;
+    --fg:         #1b1b1b;
+    --muted:      #5c5c5c;
+    --faint:      #767676;
+    --border:     #e2e2e2;
+    --divider:    #00000014;
+    --card-stroke:#0000000f;
+    --accent:     #0f7f8f;
+    --accent-ink: #ffffff;
+    --live:       #c0332b;
+    --fill-hover: #0000000a;
+    --fill-press: #00000006;
+    --accent-dim: #0f7f8f1a;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; padding: 16px; display: grid; place-items: center;
+    background: #121212; color: var(--fg);
+    font-family: var(--font-ui); font-size: var(--fs-body); line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+  html[data-theme="light"] body { background: #dcdcdc; }
+  button, input, select { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  h1, h2, h3, h4 { margin: 0; font-family: var(--font-disp); font-weight: 600; }
+  p { margin: 0; }
+  a { color: var(--accent); }
+  ::selection { background: var(--accent-dim); }
+  :focus-visible { outline: 2px solid var(--fg); outline-offset: 2px; border-radius: var(--r-sm); }
+  .scroll { overflow: auto; scrollbar-width: thin; scrollbar-color: #ffffff26 transparent; }
+  .scroll::-webkit-scrollbar { width: 12px; height: 12px; }
+  .scroll::-webkit-scrollbar-thumb { background: #ffffff26; border: 4px solid transparent; background-clip: content-box; border-radius: 99px; }
+  .scroll::-webkit-scrollbar-thumb:hover { background: #ffffff40; background-clip: content-box; }
+  .scroll::-webkit-scrollbar-track { background: transparent; }
+
+  /* ─── 窗口外壳 ─────────────────────────────────────────────────────── */
+  .win {
+    width: min(1400px, calc(100vw - 32px)); height: min(900px, calc(100vh - 32px));
+    min-height: 620px; position: relative; overflow: hidden;
+    border-radius: var(--r-win); border: 1px solid var(--border);
+    background: var(--layer); color: var(--fg);
+    box-shadow: 0 30px 80px -30px #000000a6;
+    display: grid; grid-template-rows: var(--titlebar) minmax(0, 1fr);
+  }
+  /* Mica 用极低对比的色层近似（原型不放位图纹理） */
+  .win::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background:
+      radial-gradient(120% 80% at 12% 0%, #ffffff0a 0%, transparent 55%),
+      radial-gradient(90% 70% at 100% 100%, #ffffff06 0%, transparent 60%);
+  }
+  .titlebar {
+    position: relative; z-index: 3; display: flex; align-items: center; gap: 8px;
+    padding-left: 6px; border-bottom: 1px solid var(--divider);
+    -webkit-app-region: drag; user-select: none;
+  }
+  .hamburger {
+    width: 40px; height: 40px; flex: none; display: grid; place-items: center; border: 0; border-radius: var(--r-sm);
+    background: none; color: var(--fg); -webkit-app-region: no-drag;
+  }
+  .hamburger:hover { background: var(--fill-hover); }
+  .hamburger svg { width: 16px; height: 16px; }
+  .titlebar .app-name { flex: none; font-family: var(--font-disp); font-size: var(--fs-caption); font-weight: 600; letter-spacing: 0.02em; white-space: nowrap; }
+  .titlebar .app-name span { font-weight: 400; color: var(--faint); }
+  .titlebar .center { flex: 1 1 0; min-width: 0; display: flex; justify-content: center; -webkit-app-region: no-drag; }
+  .titlebar .center input {
+    width: 100%; max-width: 360px; min-width: 0; height: 32px; padding: 0 10px 0 30px; border-radius: var(--r);
+    border: 1px solid var(--border); background: var(--layer-2); color: var(--fg); font-size: var(--fs-caption);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23888' stroke-width='1.4'%3E%3Ccircle cx='7' cy='7' r='4.2'/%3E%3Cpath d='M10.2 10.2 14 14'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: 9px center; background-size: 14px;
+  }
+  .titlebar .center input::placeholder { color: var(--faint); }
+  .titlebar .center input:focus { outline: 1px solid var(--fg); outline-offset: -1px; }
+  .wincontrols { flex: none; display: flex; margin-left: auto; -webkit-app-region: no-drag; }
+  .wincontrols button { width: 46px; height: var(--titlebar); border: 0; background: none; display: grid; place-items: center; color: var(--fg); }
+  .wincontrols button:hover { background: var(--fill-hover); }
+  .wincontrols button.close:hover { background: var(--live); color: #fff; }
+  .wincontrols svg { width: 12px; height: 12px; }
+
+  /* ─── NavigationView ──────────────────────────────────────────────── */
+  .shell { position: relative; z-index: 1; display: grid; grid-template-columns: var(--nav) minmax(0, 1fr); min-height: 0; }
+  .win[data-nav="open"] .shell { grid-template-columns: var(--nav-open) minmax(0, 1fr); }
+  .nav { display: flex; flex-direction: column; gap: 2px; padding: 4px; min-height: 0; }
+  .nav .item {
+    display: flex; align-items: center; gap: 0; flex: 0 0 auto;
+    height: 40px; padding: 0; border: 0; border-radius: var(--r-sm); background: none; color: var(--fg);
+    position: relative; overflow: hidden; text-align: left;
+  }
+  .win[data-nav="closed"] .nav .item { flex: 0 0 40px; }
+  .win[data-nav="closed"] .nav .item .label,
+  .win[data-nav="closed"] .nav .item .count { display: none; }
+  .nav .item:hover { background: var(--fill-hover); }
+  .nav .item[aria-current="page"] { background: var(--fill-hover); }
+  .nav .item[aria-current="page"]::before {
+    content: ""; position: absolute; left: 0; top: 50%; transform: translateY(-50%);
+    width: 3px; height: 16px; border-radius: 99px; background: var(--accent);
+  }
+  .win[data-nav="closed"] .nav .item[aria-current="page"]::before { height: 20px; }
+  .nav .item .ico { flex: 0 0 40px; display: grid; place-items: center; color: var(--fg); }
+  .nav .item[aria-current="page"] .ico { color: var(--accent); }
+  .nav .item .ico svg { width: 17px; height: 17px; }
+  .nav .item .label { flex: 1 1 auto; min-width: 0; font-size: var(--fs-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .nav .item .count { flex: 0 0 auto; font-size: var(--fs-caption); color: var(--faint); font-variant-numeric: tabular-nums; padding-right: 10px; }
+  .nav .divider { height: 1px; background: var(--divider); margin: 4px 8px; }
+  .nav .spacer { flex: 1; }
+
+  /* ─── 页面容器 ─────────────────────────────────────────────────────── */
+  .host { min-width: 0; min-height: 0; display: flex; flex-direction: column; border-left: 1px solid var(--divider); }
+  .page { flex: 1; min-height: 0; display: none; flex-direction: column; }
+  .page[data-active="true"] { display: flex; }
+  .page-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; padding: 20px 28px 12px; }
+  .page-head h2 { font-size: var(--fs-display); letter-spacing: -0.01em; }
+  .page-head p { color: var(--muted); font-size: var(--fs-caption); margin-top: 4px; }
+  .page-head .actions { display: flex; align-items: center; gap: 8px; flex: none; }
+  .page-body { flex: 1; min-height: 0; padding: 0 28px 28px; }
+  .section + .section { margin-top: 26px; }
+  .section-head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+  .section-head h3 { font-size: var(--fs-title); }
+  .section-head .more { border: 0; background: none; color: var(--accent); font-size: var(--fs-caption); padding: 4px 6px; border-radius: var(--r-sm); }
+  .section-head .more:hover { background: var(--fill-hover); }
+
+  /* ─── 控件 ─────────────────────────────────────────────────────────── */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+    height: 32px; padding: 0 14px; border-radius: var(--r); border: 1px solid var(--border);
+    background: var(--layer-2); color: var(--fg); font-size: var(--fs-caption);
+  }
+  .btn:hover { background: var(--fill-hover); }
+  .btn:active { background: var(--fill-press); }
+  .btn.accent { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  .btn.accent:hover { background: color-mix(in oklch, var(--accent) 88%, white); }
+  .btn.subtle { background: none; border-color: transparent; color: var(--muted); }
+  .btn.subtle:hover { color: var(--fg); }
+  .btn svg { width: 15px; height: 15px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 6px; height: 32px; padding: 0 12px;
+    border-radius: var(--r-sm); border: 1px solid var(--border); background: none;
+    color: var(--muted); font-size: var(--fs-caption);
+  }
+  .chip:hover { background: var(--fill-hover); color: var(--fg); }
+  .chip[aria-pressed="true"], .chip[aria-selected="true"] { background: var(--accent-dim); border-color: transparent; color: var(--fg); font-weight: 600; }
+  .chip .dot { width: 6px; height: 6px; border-radius: 99px; background: currentColor; }
+  .chips { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .switch {
+    position: relative; width: 40px; height: 20px; flex: none; border-radius: 99px;
+    border: 1px solid var(--faint); background: transparent;
+  }
+  .switch::after {
+    content: ""; position: absolute; top: 3px; left: 3px; width: 12px; height: 12px; border-radius: 99px;
+    background: var(--fg); transition: transform 0.12s ease, background 0.12s ease;
+  }
+  .switch[aria-checked="true"] { background: var(--accent); border-color: var(--accent); }
+  .switch[aria-checked="true"]::after { transform: translateX(20px); background: var(--accent-ink); }
+  .select, .input {
+    height: 32px; min-width: 120px; padding: 0 10px; border-radius: var(--r);
+    border: 1px solid var(--border); background: var(--layer-2); color: var(--fg); font-size: var(--fs-caption);
+  }
+  .select:focus, .input:focus { outline: 1px solid var(--fg); outline-offset: -1px; }
+
+  /* ─── 卡片 / 网格（Screenbox 库视图） ─────────────────────────────── */
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 16px; }
+  .grid.wide { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+  .card {
+    display: block; text-align: left; padding: 0; border: 1px solid var(--card-stroke);
+    border-radius: var(--r-lg); background: var(--layer-alt); overflow: hidden; color: var(--fg);
+    transition: background 0.12s ease;
+  }
+  .card:hover { background: #ffffff0a; }
+  html[data-theme="light"] .card:hover { background: #00000008; }
+  .card .thumb {
+    position: relative; aspect-ratio: 16 / 9; display: grid; place-items: center;
+    background: linear-gradient(150deg, #2a2f3a 0%, #232833 55%, #1e222b 100%);
+    border-bottom: 1px solid var(--card-stroke);
+  }
+  html[data-theme="light"] .card .thumb { background: linear-gradient(150deg, #e3e8ef 0%, #d7dde6 100%); }
+  .card .thumb .mark {
+    font-family: var(--font-disp); font-size: 26px; font-weight: 600; letter-spacing: 0.04em;
+    color: #ffffffd9;
+  }
+  html[data-theme="light"] .card .thumb .mark { color: #000000bf; }
+  .card .thumb .badges { position: absolute; top: 8px; left: 8px; display: flex; gap: 6px; }
+  .card .thumb .play {
+    position: absolute; right: 8px; bottom: 8px; width: 32px; height: 32px; border-radius: 99px;
+    display: grid; place-items: center; background: #000000a6; color: #fff4; backdrop-filter: blur(4px);
+  }
+  .card:hover .thumb .play { background: var(--accent); color: var(--accent-ink); }
+  .card .thumb .play svg { width: 15px; height: 15px; }
+  .card .meta { padding: 10px 12px 12px; }
+  .card .meta .t { display: block; font-size: var(--fs-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .card .meta .s { display: block; font-size: var(--fs-caption); color: var(--muted); margin-top: 2px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .card[aria-current="true"] { border-color: var(--accent); }
+  .card[aria-current="true"] .meta .t { color: var(--accent); font-weight: 600; }
+
+  .badge {
+    display: inline-flex; align-items: center; gap: 5px; height: 20px; padding: 0 7px; border-radius: var(--r-sm);
+    font-size: 11px; font-weight: 600; letter-spacing: 0.02em; background: #000000a6; color: #fff;
+  }
+  .badge.live { background: var(--live); }
+  .badge.soft { background: var(--layer-2); color: var(--muted); border: 1px solid var(--border); font-weight: 400; }
+  .badge .dot { width: 5px; height: 5px; border-radius: 99px; background: currentColor; }
+
+  /* ─── 列表（紧凑行，用于详情 / 记录） ─────────────────────────────── */
+  .rows { display: flex; flex-direction: column; }
+  .row {
+    display: grid; grid-template-columns: 40px minmax(0, 1fr) auto auto; align-items: center; gap: 12px;
+    min-height: 52px; padding: 0 12px; border: 0; border-radius: var(--r); background: none; color: inherit; text-align: left; width: 100%;
+  }
+  .row + .row { box-shadow: inset 0 1px 0 var(--divider); }
+  .row:hover { background: var(--fill-hover); }
+  .row[aria-current="true"] { background: var(--accent-dim); }
+  .row .mark {
+    width: 40px; height: 28px; border-radius: var(--r-sm); display: grid; place-items: center;
+    background: var(--layer-2); border: 1px solid var(--border); font-family: var(--font-disp); font-size: 12px; color: var(--muted);
+  }
+  .row[aria-current="true"] .mark { color: var(--accent); border-color: var(--accent); }
+  .row .t { display: block; font-size: var(--fs-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row .s { display: block; font-size: var(--fs-caption); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .row .time { font-family: var(--font-mono); font-size: var(--fs-caption); color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+  /* ─── EPG 时间轴 ───────────────────────────────────────────────────── */
+  .epg-strip { display: flex; gap: 8px; align-items: center; margin-bottom: 14px; flex-wrap: wrap; }
+  .epg-now { display: flex; align-items: center; gap: 8px; font-size: var(--fs-caption); color: var(--muted); }
+  .epg-now b { font-family: var(--font-mono); color: var(--fg); font-weight: 600; }
+  .epg-list { position: relative; border-radius: var(--r-lg); border: 1px solid var(--card-stroke); background: var(--layer-alt); overflow: hidden; }
+  .epg-row {
+    display: grid; grid-template-columns: 62px minmax(0, 1fr) auto; align-items: center; gap: 14px;
+    width: 100%; min-height: 58px; padding: 8px 16px; border: 0; background: none; color: inherit; text-align: left;
+  }
+  .epg-row + .epg-row { box-shadow: inset 0 1px 0 var(--divider); }
+  .epg-row:hover { background: var(--fill-hover); }
+  .epg-row[aria-current="true"] { background: var(--accent-dim); }
+  .epg-row .t { font-family: var(--font-mono); font-size: var(--fs-caption); color: var(--muted); font-variant-numeric: tabular-nums; }
+  .epg-row .n { display: block; font-size: var(--fs-body); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .epg-row .d { display: block; font-size: var(--fs-caption); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .epg-row .act { display: flex; gap: 6px; opacity: 0; }
+  .epg-row:hover .act, .epg-row:focus-within .act { opacity: 1; }
+  .nowline { position: absolute; left: 0; right: 0; height: 2px; background: var(--accent); z-index: 2; }
+  .nowline span {
+    position: absolute; left: 12px; top: -9px; font-family: var(--font-mono); font-size: 11px; font-weight: 600;
+    background: var(--accent); color: var(--accent-ink); padding: 1px 6px; border-radius: var(--r-sm);
+  }
+
+  /* ─── 设置 ─────────────────────────────────────────────────────────── */
+  .settings-grid { display: grid; grid-template-columns: 216px minmax(0, 1fr); gap: 24px; min-height: 0; }
+  .settings-nav { display: flex; flex-direction: column; gap: 2px; }
+  .settings-nav button {
+    display: grid; grid-template-columns: 20px minmax(0, 1fr); align-items: center; gap: 10px;
+    height: 38px; padding: 0 10px; border: 0; border-radius: var(--r-sm); background: none; color: var(--muted);
+    font-size: var(--fs-caption); text-align: left;
+  }
+  .settings-nav button:hover { background: var(--fill-hover); color: var(--fg); }
+  .settings-nav button[aria-selected="true"] { background: var(--fill-hover); color: var(--fg); font-weight: 600; }
+  .settings-nav button[aria-selected="true"] svg { color: var(--accent); }
+  .settings-nav svg { width: 16px; height: 16px; }
+  .settings-pane { min-width: 0; }
+  .settings-pane h3 { font-size: var(--fs-title); margin-bottom: 2px; }
+  .settings-pane .desc { color: var(--muted); font-size: var(--fs-caption); margin-bottom: 18px; }
+  .card-group {
+    border: 1px solid var(--card-stroke); border-radius: var(--r-lg); background: var(--layer-alt);
+    padding: 4px 16px; margin-bottom: 16px;
+  }
+  .field { display: grid; grid-template-columns: minmax(0, 1fr) 220px; align-items: center; gap: 20px; min-height: 60px; }
+  .field + .field { border-top: 1px solid var(--divider); }
+  .field .label strong { display: block; font-size: var(--fs-body); font-weight: 400; }
+  .field .label span { display: block; font-size: var(--fs-caption); color: var(--muted); margin-top: 2px; }
+  .field .control { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
+  /* 整行字段（长提示、多行输入、只读预览） */
+  .field.full { grid-template-columns: minmax(0, 1fr); gap: 8px; }
+  .field.full .control { justify-content: flex-start; }
+  .field .note, .card-group > .note {
+    grid-column: 1 / -1; font-size: var(--fs-2xs); color: var(--faint); line-height: 1.65; margin: 8px 0 0;
+  }
+  .unit { font-size: var(--fs-2xs); color: var(--muted); }
+  .input.wide, .select.wide, textarea.input { width: 100%; max-width: none; }
+  textarea.input { min-height: 64px; padding: 8px 10px; line-height: 1.5; resize: vertical; font-family: var(--font-mono); }
+  .settings-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .settings-actions .btn { height: 30px; padding: 0 12px; font-size: var(--fs-2xs); }
+  .cdn-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: center; padding: 8px 0; }
+  .cdn-row + .cdn-row { border-top: 1px solid var(--divider); }
+  .cdn-tools { display: flex; gap: 6px; }
+  .settings-foot {
+    display: flex; align-items: center; justify-content: space-between; gap: 14px; flex-wrap: wrap;
+    padding: 12px 28px; border-top: 1px solid var(--divider); background: var(--layer);
+    font-size: var(--fs-caption); color: var(--muted);
+  }
+  .group-title { font-size: var(--fs-caption); color: var(--muted); margin: 18px 0 8px; }
+
+  /* ─── 主页的播放横幅：给出唯一的主入口 ─────────────────────────────── */
+  .banner {
+    display: flex; align-items: center; gap: 20px; padding: 18px 20px; margin: 4px 0 22px;
+    border: 1px solid var(--card-stroke); border-radius: var(--r-lg); background: var(--layer-alt);
+  }
+  .banner .art {
+    width: 168px; aspect-ratio: 16 / 9; flex: none; border-radius: var(--r); display: grid; place-items: center;
+    background: linear-gradient(150deg, #2a2f3a 0%, #232833 55%, #1e222b 100%);
+    font-family: var(--font-disp); font-size: 26px; font-weight: 600; letter-spacing: 0.04em; color: #ffffffd9;
+  }
+  html[data-theme="light"] .banner .art { background: linear-gradient(150deg, #e3e8ef 0%, #d7dde6 100%); color: #000000bf; }
+  .banner .info { flex: 1 1 auto; min-width: 0; }
+  .banner .info .title { font-family: var(--font-disp); font-size: var(--fs-title-lg); font-weight: 600; letter-spacing: -0.01em; }
+  .banner .info .sub { color: var(--muted); font-size: var(--fs-caption); margin-top: 6px; }
+  .banner .info .now { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: var(--fs-caption); color: var(--muted); }
+  .banner .actions { flex: none; display: flex; flex-direction: column; gap: 8px; }
+  .banner .actions .btn { height: 36px; padding: 0 18px; font-size: var(--fs-body); }
+  @media (max-width: 880px) {
+    .banner { flex-direction: column; align-items: stretch; }
+    .banner .art { width: 100%; }
+    .banner .actions { flex-direction: row; }
+    .banner .actions .btn { flex: 1 1 auto; }
+  }
+
+  /* 播放器浮层的空状态：直接给出可点的频道，避免出现"打开了却什么都没有" */
+  .p-empty { display: grid; justify-items: center; gap: 14px; max-width: 720px; padding: 24px; }
+  .p-empty .head { font-family: var(--font-disp); font-size: var(--fs-title); font-weight: 600; color: #fff; }
+  .p-empty .sub { font-size: var(--fs-caption); color: #ffffffa6; text-align: center; }
+  .p-empty .grid { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-top: 4px; }
+  .p-empty .grid button {
+    height: 34px; padding: 0 14px; border-radius: var(--r-sm); border: 1px solid #ffffff26;
+    background: #ffffff14; color: #fff; font-size: var(--fs-caption);
+  }
+  .p-empty .grid button:hover { background: #ffffff29; }
+
+  /* ─── 播放器浮层（Screenbox 的 PlayerPage） ────────────────────────── */
+  /* 开合只用 display 切换：不依赖透明度过渡。
+     有些预览环境不驱动过渡动画，元素会停在 opacity:0 上，看起来就像"点了播放没反应"。 */
+  .player {
+    position: absolute; inset: var(--titlebar) 0 0 0; z-index: 20; background: #000;
+    display: none; overflow: hidden;
+  }
+  .player[data-open="true"] { display: block; }
+  /* 未选频道时不显示演示信号卡，改显示可点的频道列表 */
+  .player[data-state="idle"] .stage-eq { display: none; }
+  .player[data-state="idle"] .stage-card { display: none; }
+  .player[data-state="playing"] .p-empty { display: none; }
+  .stage {
+    position: absolute; inset: 0; overflow: hidden;
+    background:
+      radial-gradient(70% 60% at 30% 25%, #3a4453 0%, transparent 60%),
+      radial-gradient(80% 70% at 80% 80%, #2b3340 0%, transparent 62%),
+      linear-gradient(160deg, #232a34 0%, #161a20 100%);
+  }
+  /* 播放中的画面模拟：缓慢漂移的光斑 + 扫描线 + 彩条，全部由 CSS 驱动 */
+  .stage-glow {
+    position: absolute; left: 0; top: 0; width: 52%; aspect-ratio: 4 / 3; border-radius: 50%;
+    background: radial-gradient(closest-side, #63c8dd4d 0%, #63c8dd14 55%, transparent 100%);
+    filter: blur(30px); animation: drift-a 14s ease-in-out infinite alternate;
+  }
+  .stage-glow.two {
+    position: absolute; left: auto; top: auto; right: 2%; bottom: -6%; width: 46%;
+    background: radial-gradient(closest-side, #7b6ad44d 0%, #7b6ad414 55%, transparent 100%);
+    animation: drift-b 18s ease-in-out infinite alternate;
+  }
+  .stage-lines {
+    position: absolute; left: -50%; top: -50%; width: 200%; height: 200%;
+    background: repeating-linear-gradient(115deg, transparent 0 30px, #ffffff08 30px 31px);
+    animation: drift-lines 22s linear infinite;
+  }
+  .stage-card {
+    display: grid; justify-items: center; align-content: center; gap: 10px; padding: 22px 30px;
+    border-radius: 12px; background: #00000059; border: 1px solid #ffffff14;
+  }
+  .stage-card .tag {
+    font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase;
+    color: #ffffff99; display: flex; align-items: center; gap: 8px;
+  }
+  .stage-card .pulse {
+    width: 7px; height: 7px; border-radius: 99px; background: var(--live);
+    box-shadow: 0 0 0 0 #d95a5299; animation: pulse-dot 1.6s ease-out infinite;
+  }
+  .stage-card .code { font-family: var(--font-mono); font-size: 32px; letter-spacing: 0.06em; color: #ffffffe6; font-variant-numeric: tabular-nums; }
+  .stage-card .label { font-size: 12px; color: #ffffff8c; }
+  .stage-eq { display: flex; align-items: flex-end; gap: 4px; height: 26px; }
+  .stage-eq i {
+    width: 5px; border-radius: 2px; background: var(--accent); transform-origin: bottom;
+    animation: eq 1.1s ease-in-out infinite alternate;
+  }
+  .stage-eq i:nth-child(1) { height: 40%; animation-delay: -0.1s; }
+  .stage-eq i:nth-child(2) { height: 75%; animation-delay: -0.35s; }
+  .stage-eq i:nth-child(3) { height: 55%; animation-delay: -0.6s; }
+  .stage-eq i:nth-child(4) { height: 90%; animation-delay: -0.2s; }
+  .stage-eq i:nth-child(5) { height: 45%; animation-delay: -0.75s; }
+  .stage-bars {
+    position: absolute; right: 0; bottom: 0; left: 0; height: 11%; min-height: 40px;
+    display: grid; grid-template-columns: repeat(8, 1fr); opacity: 0.5;
+  }
+  .stage-bars i:nth-child(1) { background: #b8b8b8; }
+  .stage-bars i:nth-child(2) { background: #b8b850; }
+  .stage-bars i:nth-child(3) { background: #45b8b8; }
+  .stage-bars i:nth-child(4) { background: #45b845; }
+  .stage-bars i:nth-child(5) { background: #b845b8; }
+  .stage-bars i:nth-child(6) { background: #b84545; }
+  .stage-bars i:nth-child(7) { background: #4545b8; }
+  .stage-bars i:nth-child(8) { background: #1e1e1e; }
+  /* 压暗并让底部控制条的渐变盖住下缘，彩条只在控制条上方露出一条窄边 */
+  .stage-bars::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(to top, #000000a6 0%, #0000004d 55%, #00000000 100%);
+  }
+  .stage-scan {
+    position: absolute; left: 0; right: 0; height: 22%; top: -22%;
+    background: linear-gradient(to bottom, transparent, #ffffff0d 55%, #ffffff1f, transparent);
+    animation: scan 7.5s linear infinite;
+  }
+  .player[data-play="paused"] .stage-glow,
+  .player[data-play="paused"] .stage-lines,
+  .player[data-play="paused"] .stage-card .pulse,
+  .player[data-play="paused"] .stage-eq i,
+  .player[data-play="paused"] .stage-scan { animation-play-state: paused; }
+  .player[data-chrome="hidden"] .stage-card { opacity: 0.35; }
+  @keyframes drift-a {
+    0% { transform: translate(-8%, -6%) scale(1); opacity: 0.55; }
+    100% { transform: translate(14%, 10%) scale(1.18); opacity: 0.85; }
+  }
+  @keyframes drift-b {
+    0% { transform: translate(6%, 4%) scale(1.1); opacity: 0.5; }
+    100% { transform: translate(-12%, -8%) scale(0.95); opacity: 0.8; }
+  }
+  @keyframes drift-lines {
+    0% { transform: translate3d(0, 0, 0); }
+    100% { transform: translate3d(31px, 31px, 0); }
+  }
+  @keyframes scan {
+    0% { top: -22%; }
+    100% { top: 100%; }
+  }
+  @keyframes eq {
+    0% { transform: scaleY(0.35); }
+    100% { transform: scaleY(1); }
+  }
+  @keyframes pulse-dot {
+    0% { box-shadow: 0 0 0 0 #d95a52a6; }
+    70% { box-shadow: 0 0 0 7px #d95a5200; }
+    100% { box-shadow: 0 0 0 0 #d95a5200; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .stage-glow, .stage-lines, .stage-scan, .stage-eq i, .stage-card .pulse { animation: none; }
+  }
+  .stage::after {
+    content: "演示占位画面 · 原型不包含任何频道画面素材";
+    position: absolute; right: 20px; top: 64px; font-size: 11px; color: #ffffff5c;
+    background: #00000059; border: 1px solid #ffffff1a; border-radius: var(--r-sm); padding: 6px 9px;
+  }
+  .stage-eq, .stage-card { position: relative; z-index: 1; }
+  .stage-eq { z-index: 2; }
+  .player .chrome { position: absolute; inset: 0; display: flex; flex-direction: column; transition: opacity 0.25s ease; }
+  /* 自动隐藏时保留一点点透明度：即使过渡不生效也只是"没淡出"，不会变成永远看不见 */
+  .player[data-chrome="hidden"] .chrome { opacity: 0.06; pointer-events: none; }
+  .p-top {
+    display: flex; align-items: center; gap: 12px; padding: 14px 20px;
+    background: linear-gradient(to bottom, #000000b3, transparent);
+  }
+  .p-top .title { font-family: var(--font-disp); font-size: var(--fs-subtitle); font-weight: 600; }
+  .p-top .sub { font-size: var(--fs-caption); color: #ffffffb3; }
+  .p-top .right { margin-left: auto; display: flex; gap: 4px; }
+  .p-mid { flex: 1; display: grid; place-items: center; }
+  .p-bottom {
+    display: flex; flex-direction: column; gap: 8px; padding: 18px 20px 16px;
+    background: linear-gradient(to top, #000000d9, transparent);
+  }
+  .p-seek { display: flex; align-items: center; gap: 12px; }
+  .p-seek .time { font-family: var(--font-mono); font-size: var(--fs-caption); color: #ffffffcc; font-variant-numeric: tabular-nums; }
+  .bar { position: relative; flex: 1; height: 20px; cursor: pointer; }
+  .bar::before { content: ""; position: absolute; left: 0; right: 0; top: 9px; height: 3px; border-radius: 99px; background: #ffffff40; }
+  .bar .buffered { position: absolute; top: 9px; height: 3px; border-radius: 99px; background: #ffffff59; }
+  .bar .fill { position: absolute; top: 9px; height: 3px; border-radius: 99px; background: var(--accent); }
+  .bar .knob {
+    position: absolute; top: 4px; width: 13px; height: 13px; border-radius: 99px; background: var(--accent);
+    border: 2px solid #ffffffcc; transform: translateX(-50%); opacity: 0;
+  }
+  .bar:hover .knob, .bar.dragging .knob, .bar:focus-visible .knob { opacity: 1; }
+  .bar:hover::before, .bar:hover .fill, .bar:hover .buffered { height: 5px; top: 8px; }
+  .p-controls { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 16px; }
+  .p-controls .left, .p-controls .right { display: flex; align-items: center; gap: 4px; }
+  .p-controls .right { justify-content: flex-end; }
+  .p-controls .center { display: flex; align-items: center; gap: 10px; }
+  .pbtn {
+    width: 40px; height: 40px; display: grid; place-items: center; border: 0; border-radius: var(--r-sm);
+    background: none; color: #fff;
+  }
+  .pbtn:hover { background: #ffffff1a; }
+  .pbtn[aria-pressed="true"] { color: var(--accent); background: #ffffff14; }
+  .pbtn[disabled] { color: #ffffff4d; cursor: not-allowed; }
+  .pbtn svg { width: 18px; height: 18px; }
+  .pbtn.play { width: 48px; height: 48px; border-radius: 99px; background: var(--accent); color: var(--accent-ink); }
+  .pbtn.play:hover { background: color-mix(in oklch, var(--accent) 88%, white); }
+  .pbtn.play svg { width: 22px; height: 22px; }
+  .p-meta { display: flex; align-items: center; gap: 14px; font-family: var(--font-mono); font-size: 11px; color: #ffffffb3; flex-wrap: wrap; }
+  .p-meta b { color: #fff; font-weight: 600; }
+  .vol { display: flex; align-items: center; gap: 8px; width: 130px; }
+  .vol .bar { height: 16px; }
+  .vol .bar::before, .vol .bar .fill { top: 7px; }
+  .vol .bar .knob { top: 2px; width: 12px; height: 12px; }
+
+  /* 播放页右侧信息面板（节目单 / 频道 / 录制） */
+  .p-pane {
+    position: absolute; top: 0; right: 0; bottom: 0; width: 360px; z-index: 25;
+    display: none; flex-direction: column; background: color-mix(in oklch, var(--smoke) 88%, transparent);
+    backdrop-filter: blur(18px); border-left: 1px solid var(--divider);
+  }
+  .p-pane[data-open="true"] { display: flex; }
+  .p-pane .head { display: flex; align-items: center; gap: 8px; padding: 10px 8px 10px 16px; border-bottom: 1px solid var(--divider); }
+  .p-pane .head h3 { font-size: var(--fs-body); font-weight: 600; }
+  .p-pane .head .spacer { flex: 1; }
+  .p-pane .body { flex: 1; min-height: 0; padding: 8px; }
+  .p-pane .tabs { display: flex; gap: 4px; padding: 8px 8px 0; }
+  .pane-row {
+    display: grid; grid-template-columns: 40px minmax(0, 1fr) auto; align-items: center; gap: 12px;
+    width: 100%; min-height: 48px; padding: 0 8px; border: 0; border-radius: var(--r-sm); background: none; color: inherit; text-align: left;
+  }
+  .pane-row:hover { background: #ffffff14; }
+  .pane-row[aria-current="true"] { background: var(--accent-dim); }
+  .pane-row .mark {
+    width: 40px; height: 28px; border-radius: var(--r-sm); display: grid; place-items: center;
+    background: #ffffff14; font-size: 12px; color: #ffffffcc;
+  }
+  .pane-row .t { display: block; font-size: var(--fs-caption); color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .pane-row .s { display: block; font-size: 11px; color: #ffffff99; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .toast {
+    position: absolute; left: 50%; bottom: 24px; transform: translateX(-50%) translateY(8px); z-index: 60;
+    background: var(--layer-alt); border: 1px solid var(--border); border-radius: 99px; padding: 9px 16px;
+    font-size: var(--fs-caption); opacity: 0; transition: opacity 0.18s ease, transform 0.18s ease;
+    box-shadow: 0 16px 40px -18px #000000a6;
+  }
+  .toast[data-show="true"] { opacity: 1; transform: translateX(-50%) translateY(0); }
+  .empty { padding: 40px 20px; text-align: center; color: var(--muted); font-size: var(--fs-caption); }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+
+  @media (max-width: 1100px) {
+    .win[data-nav="open"] { --nav-open: 220px; }
+    .grid { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; }
+    .settings-grid { grid-template-columns: 180px minmax(0, 1fr); }
+    .p-pane { width: 320px; }
+  }
+  @media (max-width: 1040px) {
+    .titlebar .app-name { display: none; }
+  }
+  @media (max-width: 880px) {
+    body { padding: 8px; }
+    .win { width: 100%; height: calc(100vh - 16px); }
+    .win[data-nav="open"] { --nav-open: var(--nav); }
+    .win[data-nav="open"] .nav .item { flex: 0 0 40px; }
+    .win[data-nav="open"] .nav .item .label, .win[data-nav="open"] .nav .item .count { display: none; }
+    .titlebar .center { display: none; }
+    .page-head { padding: 16px 16px 10px; flex-wrap: wrap; }
+    .page-body { padding: 0 16px 20px; }
+    .settings-grid { grid-template-columns: minmax(0, 1fr); }
+    .settings-nav { flex-direction: row; overflow-x: auto; }
+    .settings-nav button { grid-template-columns: auto; white-space: nowrap; }
+    .settings-nav svg { display: none; }
+    .field { grid-template-columns: minmax(0, 1fr); gap: 8px; padding: 12px 0; }
+    .field .control { justify-content: flex-start; }
+    .p-pane { width: 100%; }
+    .p-controls { grid-template-columns: auto 1fr; }
+    .p-controls .left { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <g id="i-menu"><path d="M2 4h14M2 9h14M2 14h14"/></g>
+    <g id="i-home"><path d="M2.5 8 9 2.5 15.5 8v7.5H2.5z"/></g>
+    <g id="i-channels"><rect x="2.5" y="4" width="13" height="10" rx="1.5"/><path d="M2.5 7.5h13M6 2.5v3M12 2.5v3"/></g>
+    <g id="i-guide"><path d="M3 4h12M3 8h12M3 12h8"/><circle cx="14" cy="12" r="1"/></g>
+    <g id="i-record"><circle cx="9" cy="9" r="4.5"/></g>
+    <g id="i-fav"><path d="M9 2.6l1.9 4 4.3.6-3.1 3 .7 4.3L9 12.4 5.2 14.5l.7-4.3-3.1-3 4.3-.6z"/></g>
+    <g id="i-history"><circle cx="9" cy="9" r="6.5"/><path d="M9 5.5V9l2.5 1.5"/></g>
+    <g id="i-settings"><circle cx="9" cy="9" r="2.4"/><path d="M9 1.8v2M9 14.2v2M1.8 9h2M14.2 9h2M4 4l1.4 1.4M12.6 12.6 14 14M14 4l-1.4 1.4M5.4 12.6 4 14"/></g>
+    <g id="i-play"><path d="M5 3.5v13l11-6.5z"/></g>
+    <g id="i-pause"><path d="M7 3.5v13M13 3.5v13"/></g>
+    <g id="i-stop"><rect x="4.5" y="4.5" width="11" height="11" rx="1.5"/></g>
+    <g id="i-back"><path d="M11 3.5 5.5 9 11 14.5"/></g>
+    <g id="i-fwd"><path d="M7 4.5 13 9l-6 4.5zM14 4.5 20 9l-6 4.5z"/></g>
+    <g id="i-rew"><path d="M11 4.5 5 9l6 4.5zM18 4.5 12 9l6 4.5z"/></g>
+    <g id="i-prev"><path d="M13 4.5 7 9l6 4.5zM5 4.5v9"/></g>
+    <g id="i-next"><path d="M5 4.5 11 9l-6 4.5zM13 4.5v9"/></g>
+    <g id="i-vol"><path d="M4 7.5h2.5L10 4.5v9L6.5 10.5H4zM13 7c1.4 1.2 1.4 2.8 0 4M15.5 5c2.4 2.2 2.4 5.8 0 8"/></g>
+    <g id="i-mute"><path d="M4 7.5h2.5L10 4.5v9L6.5 10.5H4zM13 7.5l4 4M17 7.5l-4 4"/></g>
+    <g id="i-full"><path d="M3 6.5V3h3.5M15 3h-3.5M15 11.5V15h-3.5M3 11.5V15h3.5"/></g>
+    <g id="i-cast"><path d="M3 7V4.5h12V7M3 12.5V15h12v-2.5M6 9.5c4 .5 6 2 6 2"/></g>
+    <g id="i-pip"><rect x="2.5" y="4" width="13" height="10" rx="1.5"/><rect x="9" y="9" width="5" height="4" rx="1" fill="currentColor" stroke="none"/></g>
+    <g id="i-ratio"><rect x="2.5" y="4.5" width="13" height="9" rx="1"/><path d="M6 7.5v3h4"/></g>
+    <g id="i-clock"><circle cx="9" cy="9" r="6.5"/><path d="M9 5.5V9l2.5 1.5"/></g>
+    <g id="i-grid"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="10" y="3" width="5" height="5" rx="1"/><rect x="3" y="10" width="5" height="5" rx="1"/><rect x="10" y="10" width="5" height="5" rx="1"/></g>
+    <g id="i-search"><circle cx="9" cy="9" r="5"/><path d="M12.8 12.8 17 17"/></g>
+    <g id="i-refresh"><path d="M15 5.5A6.5 6.5 0 1 0 15.2 11M15 3v3h-3"/></g>
+    <g id="i-close"><path d="M4 4l10 10M14 4 4 14"/></g>
+    <g id="i-min"><path d="M4 9h10"/></g>
+    <g id="i-max"><rect x="4" y="4" width="10" height="10" rx="1"/></g>
+    <g id="i-app"><path d="M9 2.5 4 5.6v7.8L9 16.5l5-3.1V5.6zM9 7.2l2.6 1.6v3.2L9 13.6l-2.6-1.6V8.8z"/></g>
+    <g id="i-info"><circle cx="9" cy="9" r="6.5"/><path d="M9 8v4.5M9 5.8v.2"/></g>
+    <g id="i-net"><circle cx="9" cy="9" r="6.5"/><path d="M2.5 9h13M9 2.5c3 3.5 3 9.5 0 13-3-3.5-3-9.5 0-13z"/></g>
+    <g id="i-video"><rect x="2.5" y="4.5" width="13" height="9" rx="1.5"/><path d="M7.5 7.5l3.5 1.5-3.5 1.5z"/></g>
+    <g id="i-audio"><path d="M3 7h2.5L8.5 4v10L5.5 11H3zM11.5 6.5c1.6 1.4 1.6 3.6 0 5"/></g>
+    <g id="i-theme"><circle cx="9" cy="9" r="6.2"/><path d="M9 2.8v12.4a6.2 6.2 0 0 0 0-12.4z" fill="currentColor" stroke="none"/></g>
+    <g id="i-more"><circle cx="4" cy="9" r="1.3"/><circle cx="9" cy="9" r="1.3"/><circle cx="14" cy="9" r="1.3"/></g>
+  </defs>
+</svg>
+
+<div class="win" id="win" data-nav="open" data-od-id="app-window">
+
+  <!-- ══ 标题栏（Screenbox 把标题栏和 NavigationView 合并为一条 48px 顶栏） ══ -->
+  <header class="titlebar" data-od-id="titlebar">
+    <button class="hamburger" id="btnNav" type="button" aria-label="折叠或展开导航" aria-expanded="true" data-od-id="btn-nav">
+      <svg width="16" height="16" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4"><use href="#i-menu"/></svg>
+    </button>
+    <span class="app-name">源匣 <span>SrcBox</span></span>
+    <div class="center">
+      <input type="search" id="globalSearch" placeholder="搜索频道、节目" aria-label="搜索频道或节目" />
+    </div>
+    <div class="wincontrols">
+      <button type="button" data-toggle="theme" aria-label="切换浅色或深色">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3"><use href="#i-theme"/></svg>
+      </button>
+      <button type="button" aria-label="最小化"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3"><use href="#i-min"/></svg></button>
+      <button type="button" aria-label="最大化"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3"><use href="#i-max"/></svg></button>
+      <button type="button" class="close" aria-label="关闭"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3"><use href="#i-close"/></svg></button>
+    </div>
+  </header>
+
+  <div class="shell">
+    <!-- ══ 导航栏：主页 / 频道列表 / 节目指南 / 录制 / 收藏 / 播放记录 / 设置 ══ -->
+    <nav class="nav scroll" aria-label="主导航" data-od-id="nav-rail">
+      <button class="item" type="button" data-page="home" aria-current="page" data-od-id="nav-home">
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4"><use href="#i-home"/></svg></span>
+        <span class="label">主页</span>
+      </button>
+      <button class="item" type="button" data-page="channels" data-od-id="nav-channels">
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4"><use href="#i-channels"/></svg></span>
+        <span class="label">频道列表</span><span class="count" id="navChannelCount">18</span>
+      </button>
+      <button class="item" type="button" data-page="guide" data-od-id="nav-guide">
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4"><use href="#i-guide"/></svg></span>
+        <span class="label">节目指南</span>
+      </button>
+      <button class="item" type="button" data-page="recordings" data-od-id="nav-recordings">
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4"><use href="#i-record"/></svg></span>
+        <span class="label">录制</span><span class="count" id="navRecCount">2</span>
+      </button>
+      <div class="divider"></div>
+      <button class="item" type="button" data-page="favorites" data-od-id="nav-favorites">
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4"><use href="#i-fav"/></svg></span>
+        <span class="label">收藏</span>
+      </button>
+      <button class="item" type="button" data-page="history" data-od-id="nav-history">
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4"><use href="#i-history"/></svg></span>
+        <span class="label">播放记录</span>
+      </button>
+      <div class="spacer"></div>
+      <div class="divider"></div>
+      <button class="item" type="button" data-page="settings" data-od-id="nav-settings">
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4"><use href="#i-settings"/></svg></span>
+        <span class="label">设置</span>
+      </button>
+      <button class="item" type="button" data-page="about" data-od-id="nav-about">
+        <span class="ico"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4"><use href="#i-info"/></svg></span>
+        <span class="label">关于</span>
+      </button>
+    </nav>
+
+    <div class="host">
+      <!-- ── 主页 ── -->
+      <section class="page" data-page-body="home" data-active="true" data-od-id="page-home">
+        <div class="page-body scroll" style="padding-top:20px">
+          <div class="banner" data-od-id="home-banner">
+            <span class="art" id="bannerMark">粤新</span>
+            <div class="info">
+              <div class="title" id="bannerTitle">广东新闻</div>
+              <div class="sub" id="bannerSub">新闻资讯 · H.265 · 1920×1080 · 4.2 Mbps</div>
+              <div class="now"><i class="dot" style="width:6px;height:6px;border-radius:99px;background:var(--live);display:inline-block"></i>正在播出 · <span id="bannerNow">今日焦点</span></div>
+            </div>
+            <div class="actions">
+              <button class="btn accent" type="button" id="btnPlayNow" data-od-id="btn-play-now">开始播放</button>
+              <button class="btn" type="button" id="btnPlayLast">继续上次频道</button>
+            </div>
+          </div>
+          <div class="section">
+            <div class="section-head"><h3>继续观看</h3><button class="more" type="button" data-goto="history">播放记录</button></div>
+            <div class="grid wide" id="recentGrid"></div>
+          </div>
+          <div class="section">
+            <div class="section-head"><h3>全部频道</h3><button class="more" type="button" data-goto="channels">查看全部 18 个频道</button></div>
+            <div class="grid" id="homeGrid"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ── 频道列表 ── -->
+      <section class="page" data-page-body="channels" data-od-id="page-channels">
+        <div class="page-head">
+          <div>
+            <h2>频道列表</h2>
+            <p id="channelsSub">播放列表「广东电信」· 共 18 个频道</p>
+          </div>
+          <div class="actions">
+            <button class="chip" type="button" id="btnSource">切换播放列表</button>
+            <button class="chip" type="button" id="btnRefreshCh"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4"><use href="#i-refresh"/></svg>刷新</button>
+          </div>
+        </div>
+        <div class="page-body scroll">
+          <div class="chips" style="margin-bottom:16px" role="group" aria-label="频道分组">
+            <button class="chip" type="button" data-filter="all" aria-pressed="true">所有频道</button>
+            <button class="chip" type="button" data-filter="news" aria-pressed="false">新闻资讯</button>
+            <button class="chip" type="button" data-filter="hd" aria-pressed="false">高清综合</button>
+            <button class="chip" type="button" data-filter="sport" aria-pressed="false">体育赛事</button>
+            <button class="chip" type="button" data-filter="doc" aria-pressed="false">纪实科教</button>
+          </div>
+          <div class="grid" id="channelGrid"></div>
+          <div class="empty" id="channelEmpty" hidden>没有匹配的频道</div>
+        </div>
+      </section>
+
+      <!-- ── 节目指南 ── -->
+      <section class="page" data-page-body="guide" data-od-id="page-guide">
+        <div class="page-head">
+          <div>
+            <h2>节目指南</h2>
+            <p id="guideSub">广东新闻 · 节目单</p>
+          </div>
+          <div class="actions">
+            <button class="chip" type="button" data-channel-pick aria-label="选择频道">选择频道</button>
+            <button class="chip" type="button" data-day="-1">前一天</button>
+            <button class="chip" type="button" data-day="0" aria-pressed="true" id="chipToday">今天</button>
+            <button class="chip" type="button" data-day="1">后一天</button>
+          </div>
+        </div>
+        <div class="page-body scroll">
+          <div class="epg-strip">
+            <span class="epg-now"><span class="dot" style="width:6px;height:6px;border-radius:99px;background:var(--live);display:inline-block"></span>正在播出<b id="nowClock">--:--</b></span>
+            <span style="color:var(--muted);font-size:var(--fs-caption)">点击节目可定位进度；悬停可预约或回放</span>
+          </div>
+          <div class="epg-list" id="epgList"></div>
+        </div>
+      </section>
+
+      <!-- ── 录制 ── -->
+      <section class="page" data-page-body="recordings" data-od-id="page-recordings">
+        <div class="page-head">
+          <div><h2>录制</h2><p>本地 2 个文件 · 网络 0 个 · 支持前台与后台录制</p></div>
+          <div class="actions">
+            <button class="chip" type="button" id="btnRecordNow">开始实时录制</button>
+            <button class="chip" type="button">加载本地分组</button>
+          </div>
+        </div>
+        <div class="page-body scroll">
+          <div class="card-group" id="recList"></div>
+        </div>
+      </section>
+
+      <!-- ── 收藏 ── -->
+      <section class="page" data-page-body="favorites" data-od-id="page-favorites">
+        <div class="page-head">
+          <div><h2>收藏</h2><p>已收藏 <span id="favCount">4</span> 个频道</p></div>
+          <div class="actions"><button class="chip" type="button" data-goto="channels">在频道列表中管理</button></div>
+        </div>
+        <div class="page-body scroll"><div class="grid" id="favGrid"></div></div>
+      </section>
+
+      <!-- ── 播放记录 ── -->
+      <section class="page" data-page-body="history" data-od-id="page-history">
+        <div class="page-head">
+          <div><h2>播放记录</h2><p>最近播放的频道，双击可继续播放</p></div>
+          <div class="actions">
+            <button class="chip" type="button" id="btnClearHistory">清空记录</button>
+          </div>
+        </div>
+        <div class="page-body scroll"><div class="rows" id="historyRows" style="border:1px solid var(--card-stroke);border-radius:var(--r-lg);background:var(--layer-alt);overflow:hidden"></div></div>
+      </section>
+
+      <!-- ── 设置 ── -->
+      <section class="page" data-page-body="settings" data-od-id="page-settings">
+        <div class="page-head"><div><h2>设置</h2><p>所有配置、播放列表与 EPG 缓存均存储于本机</p></div></div>
+        <div class="page-body scroll">
+          <div class="settings-grid">
+            <nav class="settings-nav" role="tablist" aria-label="设置分类">
+              <button role="tab" aria-selected="true" data-set="app"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4"><use href="#i-app"/></svg>应用</button>
+              <button role="tab" aria-selected="false" data-set="video"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4"><use href="#i-video"/></svg>视频</button>
+              <button role="tab" aria-selected="false" data-set="audio"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4"><use href="#i-audio"/></svg>声音</button>
+              <button role="tab" aria-selected="false" data-set="playback"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4"><use href="#i-play"/></svg>播放</button>
+              <button role="tab" aria-selected="false" data-set="channel"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4"><use href="#i-guide"/></svg>频道</button>
+              <button role="tab" aria-selected="false" data-set="recording"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4"><use href="#i-record"/></svg>录制</button>
+              <button role="tab" aria-selected="false" data-set="network"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4"><use href="#i-net"/></svg>网络</button>
+            </nav>
+
+            <div class="settings-pane scroll">
+              <!-- ══ 应用 ══ -->
+              <div data-set-body="app">
+                <h3>应用</h3>
+                <p class="desc">语言、外观与应用信息。</p>
+                <div class="card-group">
+                  <div class="field">
+                    <div class="label"><strong>语言</strong></div>
+                    <div class="control">
+                      <select class="select" aria-label="语言">
+                        <option>跟随系统</option><option selected>简体中文</option><option>繁体中文</option><option>English</option><option>俄语</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>外观</strong></div>
+                    <div class="control">
+                      <div class="chips" role="group" aria-label="外观">
+                        <button class="chip" type="button" data-theme-set="system" aria-pressed="false">跟随系统</button>
+                        <button class="chip" type="button" data-theme-set="light" aria-pressed="false">浅色</button>
+                        <button class="chip" type="button" data-theme-set="dark" aria-pressed="true">深色</button>
+                      </div>
+                    </div>
+                  </div>
+                  <p class="note">语言与外观修改需点击保存后生效。</p>
+                </div>
+
+                <p class="group-title">关于</p>
+                <div class="card-group">
+                  <div class="field">
+                    <div class="label">
+                      <strong style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">源匣 (SrcBox) <span class="badge soft">新版本</span></strong>
+                      <span>基于 libmpv 开发的高性能 Windows IPTV 播放器。支持 M3U 播放列表、EPG 节目指南、回看等功能。</span>
+                    </div>
+                    <div class="control"><button class="btn" type="button" id="btnCheckUpdate">检查更新</button></div>
+                  </div>
+                  <p class="group-title" style="margin:14px 0 6px">项目与支持</p>
+                  <div class="settings-actions">
+                    <button class="btn" type="button">GitHub 项目主页</button>
+                    <button class="btn" type="button">问题反馈</button>
+                    <button class="btn" type="button">开源许可证</button>
+                    <button class="btn" type="button">第三方声明</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ══ 视频 ══ -->
+              <div data-set-body="video" hidden>
+                <h3>视频</h3>
+                <p class="desc">解码与反交错参数。</p>
+                <div class="card-group">
+                  <div class="field">
+                    <div class="label"><strong>解码器</strong></div>
+                    <div class="control">
+                      <select class="select" aria-label="解码器">
+                        <option>自动</option><option>D3D11VA (硬件)</option><option>DXVA2 (硬件)</option><option>NVDEC (硬件)</option><option>软件解码</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                <p class="group-title">反交错 (针对 1080i/720i 隔行流)</p>
+                <div class="card-group">
+                  <div class="field">
+                    <div class="label"><strong>反交错模式</strong></div>
+                    <div class="control">
+                      <select class="select" aria-label="反交错模式">
+                        <option selected>自动</option><option>强制开启</option><option>关闭</option>
+                      </select>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>去隔行算法</strong></div>
+                    <div class="control">
+                      <select class="select" aria-label="去隔行算法"><option selected>yadif</option><option>bwdif</option><option>none</option></select>
+                    </div>
+                  </div>
+                  <p class="note">Auto 仅对真正隔行的流启用（推荐，零副作用）。Force On 强制开启（可能影响逐行流）。Off 关闭。算法推荐 yadif。</p>
+                </div>
+              </div>
+
+              <!-- ══ 声音 ══ -->
+              <div data-set-body="audio" hidden>
+                <h3>声音</h3>
+                <p class="desc">音频与字幕语言、音量与延迟。</p>
+                <p class="group-title">音频设置</p>
+                <div class="card-group">
+                  <div class="field">
+                    <div class="label"><strong>首选音轨语言 (alang)</strong><span>例如：zh,en。仅在多音轨/字幕流生效；未命中会回退自动选择。</span></div>
+                    <div class="control"><input class="input" type="text" value="zh" aria-label="首选音轨语言" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>首选字幕语言 (slang)</strong></div>
+                    <div class="control"><input class="input" type="text" value="zh" aria-label="首选字幕语言" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>音量增益</strong><span>补偿片源之间的音量差异</span></div>
+                    <div class="control"><input class="input" type="text" value="+6" aria-label="音量增益" style="max-width:90px" /><span class="unit">dB</span></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>最大音量</strong></div>
+                    <div class="control"><input class="input" type="text" value="100" aria-label="最大音量" style="max-width:90px" /><span class="unit">%</span></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>音频延迟</strong></div>
+                    <div class="control"><input class="input" type="text" value="0" aria-label="音频延迟" style="max-width:90px" /><span class="unit">ms</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ══ 播放 ══ -->
+              <div data-set-body="playback" hidden>
+                <h3>播放</h3>
+                <p class="desc">时间覆盖、回看与时移参数。</p>
+                <p class="group-title">时间覆盖</p>
+                <div class="card-group">
+                  <div class="field">
+                    <div class="label"><strong>启用覆盖（仅替换时间片段）</strong></div>
+                    <div class="control"><button class="switch" type="button" role="switch" aria-checked="false" aria-label="启用覆盖"></button></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>覆盖模式</strong></div>
+                    <div class="control">
+                      <select class="select" aria-label="覆盖模式"><option selected>仅改时间</option><option>完全替换</option></select>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>时间布局</strong><span>选择时间参数布局：start+end / start+duration / playseek(begin-end)</span></div>
+                    <div class="control">
+                      <select class="select" aria-label="时间布局"><option selected>start+end</option><option>playseek(begin-end)</option><option>start+duration</option></select>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>时间编码</strong><span>本地：yyyyMMddHHmmss；UTC：同上但以 UTC 格式化；Unix 秒：10 位；Unix 毫秒：13 位</span></div>
+                    <div class="control">
+                      <select class="select" aria-label="时间编码"><option selected>本地 yyyyMMddHHmmss</option><option>UTC yyyyMMddHHmmss</option><option>Unix 秒 (10位)</option><option>Unix 毫秒 (13位)</option></select>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>start 键名</strong><span>常见键名：start/starttime/begin、end/endtime/finish、duration、playseek（可自定义）</span></div>
+                    <div class="control"><input class="input" type="text" value="start" aria-label="start 键名" style="max-width:140px" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>end 键名</strong></div>
+                    <div class="control"><input class="input" type="text" value="end" aria-label="end 键名" style="max-width:140px" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>duration 键名</strong></div>
+                    <div class="control"><input class="input" type="text" value="duration" aria-label="duration 键名" style="max-width:140px" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>playseek 键名</strong></div>
+                    <div class="control"><input class="input" type="text" value="playseek" aria-label="playseek 键名" style="max-width:140px" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>URL 编码</strong></div>
+                    <div class="control"><button class="switch" type="button" role="switch" aria-checked="false" aria-label="URL 编码"></button></div>
+                  </div>
+                  <p class="note">【重要】这是全局层面的时间片段标准化：只替换“时间参数”，用于统一不同频道或模板的时间表达（start/end、playseek、UTC/Unix 等）。请保持关闭作为默认，调试通过后再启用。</p>
+                  <div class="settings-actions" style="padding-bottom:12px">
+                    <button class="btn" type="button">查看文档</button>
+                    <button class="btn" type="button">Issues</button>
+                  </div>
+                </div>
+
+                <p class="group-title">高级选项（预览）</p>
+                <div class="card-group">
+                  <p class="note" style="margin:12px 0 4px">以下为预览项，后续版本将提供 ISO‑8601 预设、日期/时间拆分与路径占位替换的完整能力。</p>
+                  <div class="field">
+                    <div class="label"><strong>ISO‑8601 预设</strong></div>
+                    <div class="control"><button class="switch" type="button" role="switch" aria-checked="false" aria-label="ISO‑8601 预设"></button></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>启用日期/时间拆分（begin_date/begin_time…）</strong></div>
+                    <div class="control"><button class="switch" type="button" role="switch" aria-checked="false" aria-label="启用日期时间拆分"></button></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>启用路径式时间占位替换（如 {utc:…}）</strong></div>
+                    <div class="control"><button class="switch" type="button" role="switch" aria-checked="false" aria-label="启用路径式时间占位替换"></button></div>
+                  </div>
+                </div>
+
+                <p class="group-title">预览（仅拼接基础地址 + 时间片段）</p>
+                <div class="card-group">
+                  <div class="field">
+                    <div class="label"><strong>基础地址（可选，不填则仅显示时间片段）</strong></div>
+                    <div class="control"><input class="input" type="text" value="" placeholder="http://host/live/101.m3u8" aria-label="基础地址" style="max-width:280px" /></div>
+                  </div>
+                  <div class="field full">
+                    <div class="label"><strong>预览回放</strong></div>
+                    <div class="control"><input class="input wide" type="text" readonly value="?start=20261011013000&end=20261011023000" aria-label="预览回放" /></div>
+                  </div>
+                  <div class="field full">
+                    <div class="label"><strong>预览时移</strong></div>
+                    <div class="control"><input class="input wide" type="text" readonly value="?starttime=20261011013000&endtime=20261011023000" aria-label="预览时移" /></div>
+                  </div>
+                  <div class="field full" style="padding-bottom:14px">
+                    <div class="label"><strong>时间占位符样式（模板示例，仅用于查看）</strong></div>
+                    <div class="control"><input class="input wide" type="text" readonly value="${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss} · {utc:yyyyMMddHHmmss} · {utcend:yyyyMMddHHmmss}" aria-label="时间占位符样式" /></div>
+                  </div>
+                </div>
+
+                <p class="group-title">回看 / 时移</p>
+                <div class="card-group">
+                  <div class="field">
+                    <div class="label"><strong>启用时移</strong><span>直播时移与回看共用频道模板，可在频道编辑里单独覆盖</span></div>
+                    <div class="control"><button class="switch" type="button" role="switch" aria-checked="true" aria-label="启用时移"></button></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>时移范围 (小时)</strong><span>设置支持时移的时间跨度</span></div>
+                    <div class="control"><input class="input" type="text" value="6" aria-label="时移范围" style="max-width:90px" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>回看范围 (小时)</strong></div>
+                    <div class="control"><input class="input" type="text" value="72" aria-label="回看范围" style="max-width:90px" /></div>
+                  </div>
+                  <div class="field full">
+                    <div class="label"><strong>回看地址格式</strong><span>{id} 代表频道 ID；可填完整 URL 或仅参数段</span></div>
+                    <div class="control"><input class="input wide" type="text" value="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}" aria-label="回看地址格式" /></div>
+                  </div>
+                  <div class="field full">
+                    <div class="label"><strong>时移地址格式</strong><span>支持占位符 ${(b)...} / ${(e)...} / {utc:...} / {utcend:...}</span></div>
+                    <div class="control"><input class="input wide" type="text" value="?starttime=${(b)yyyyMMddHHmmss}&endtime=${(e)yyyyMMddHHmmss}" aria-label="时移地址格式" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>追加 epg_time 参数</strong><span>启用后会在回放/时移 URL 后追加 epg_time；部分播放源不支持该参数会影响播放，默认关闭。</span></div>
+                    <div class="control"><button class="switch" type="button" role="switch" aria-checked="false" aria-label="追加 epg_time 参数"></button></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- ══ 频道 ══ -->
+              <div data-set-body="channel" hidden>
+                <h3>频道</h3>
+                <p class="desc">EPG 数据源、频道快照预览与台标。</p>
+                <p class="group-title">EPG 设置</p>
+                <div class="card-group">
+                  <div class="field">
+                    <div class="label"><strong>启用</strong></div>
+                    <div class="control"><button class="switch" type="button" role="switch" aria-checked="true" aria-label="启用 EPG"></button></div>
+                  </div>
+                  <div class="field full">
+                    <div class="label"><strong>EPG 地址</strong><span>支持 .xml, .gz 格式，一行一个地址</span></div>
+                    <div class="control"><textarea class="input wide" rows="3" aria-label="EPG 地址">http://epg.example.com/epg.xml.gz</textarea></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>刷新间隔 (小时)</strong><span>建议设置为 24 小时</span></div>
+                    <div class="control"><input class="input" type="text" value="24" aria-label="刷新间隔" style="max-width:90px" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>启用智能模糊匹配</strong><span>尝试自动匹配名称不完全一致的频道 (例如 CCTV-1 匹配 CCTV1)。</span></div>
+                    <div class="control"><button class="switch" type="button" role="switch" aria-checked="true" aria-label="启用智能模糊匹配"></button></div>
+                  </div>
+                  <p class="note">匹配规则与占位符说明 —— 匹配顺序（从高到低）：1）tvg-id 精准匹配；2）tvg-id 清洗后匹配（去除 -_ 空格等特殊字符）；3）tvg-name 清洗后匹配；4）频道名与 EPG display-name 清洗后匹配；5）智能模糊匹配（CCTV 数字严格一致、卫视/台等后缀视作同义）。M3U 中建议填写 tvg-id 和 tvg-name 可提高匹配成功率。命中结果会缓存以提升速度。</p>
+                  <p class="note">当频道暂无 EPG 数据时，节目单将显示每小时一条“精彩节目”的占位项，仅用于显示占位，不影响直播、回放和时移功能。</p>
+                  <div class="settings-actions" style="padding-bottom:12px"><button class="btn" type="button" id="btnEpgDoc">查看 EPG 文档 (VitePress)</button></div>
+                </div>
+
+                <p class="group-title">频道快照预览</p>
+                <div class="card-group">
+                  <div class="field">
+                    <div class="label"><strong>频道快照预览</strong><span>需要 rtp2httpd 开启 X-Request-Snapshot 支持，鼠标悬停频道时显示预览</span></div>
+                    <div class="control"><button class="switch" type="button" role="switch" aria-checked="false" aria-label="频道快照预览"></button></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>宽度 / 高度</strong><span>推荐 16:9 比例，如 214×120 / 320×180</span></div>
+                    <div class="control">
+                      <input class="input" type="text" value="214" aria-label="预览宽度" style="max-width:70px" /><span class="unit">×</span>
+                      <input class="input" type="text" value="120" aria-label="预览高度" style="max-width:70px" /><span class="unit">px</span>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>预览并发数</strong><span>同时请求快照的最大数量（1~16，默认 2）；数值越大占用的光猫线路越多</span></div>
+                    <div class="control"><input class="input" type="text" value="2" aria-label="预览并发数" style="max-width:90px" /></div>
+                  </div>
+                </div>
+
+                <p class="group-title">台标设置</p>
+                <div class="card-group">
+                  <div class="field">
+                    <div class="label"><strong>启用</strong></div>
+                    <div class="control"><button class="switch" type="button" role="switch" aria-checked="true" aria-label="启用台标"></button></div>
+                  </div>
+                  <div class="field full">
+                    <div class="label"><strong>台标库地址</strong><span>支持占位符 {name}，例如 http://site.com/{name}.png</span></div>
+                    <div class="control"><input class="input wide" type="text" value="http://site.com/{name}.png" aria-label="台标库地址" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>启用台标本地缓存</strong></div>
+                    <div class="control"><button class="switch" type="button" role="switch" aria-checked="true" aria-label="启用台标本地缓存"></button></div>
+                  </div>
+                  <div class="field full">
+                    <div class="label"><strong>缓存目录</strong></div>
+                    <div class="control"><input class="input wide" type="text" value="%LocalAppData%\SrcBox\logos" aria-label="缓存目录" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>缓存有效期 (小时)</strong></div>
+                    <div class="control"><input class="input" type="text" value="168" aria-label="缓存有效期" style="max-width:90px" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>缓存上限 (MiB)</strong></div>
+                    <div class="control"><input class="input" type="text" value="256" aria-label="缓存上限" style="max-width:90px" /></div>
+                  </div>
+                  <div class="settings-actions" style="padding-bottom:12px"><button class="btn" type="button" id="btnClearLogo">清空缓存</button></div>
+                </div>
+              </div>
+
+              <!-- ══ 录制 ══ -->
+              <div data-set-body="recording" hidden>
+                <h3>录制</h3>
+                <p class="desc">录播开关、保存方式、可靠性、上传与断点续传。</p>
+                <div class="card-group">
+                  <div class="field">
+                    <div class="label"><strong>启用录播</strong></div>
+                    <div class="control"><button class="switch" type="button" role="switch" aria-checked="true" aria-label="启用录播"></button></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>默认播放选择</strong></div>
+                    <div class="control">
+                      <select class="select" aria-label="默认播放选择"><option selected>每次询问</option><option>优先本地</option><option>优先网络</option><option>记住上次</option></select>
+                    </div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>保存方式</strong></div>
+                    <div class="control">
+                      <select class="select" aria-label="保存方式"><option selected>仅本地</option><option>仅网络（结束后上传）</option><option>本地+结束后上传</option><option>同时保存（实验）</option></select>
+                    </div>
+                  </div>
+                  <div class="field full">
+                    <div class="label"><strong>本地目录模板</strong></div>
+                    <div class="control"><input class="input wide" type="text" value="{channel}\{date}" aria-label="本地目录模板" /></div>
+                  </div>
+                  <div class="field full">
+                    <div class="label"><strong>文件名模板</strong></div>
+                    <div class="control"><input class="input wide" type="text" value="{channel}_{title}_{start:yyyyMMdd_HHmmss}" aria-label="文件名模板" /></div>
+                  </div>
+                </div>
+
+                <p class="group-title">可靠性</p>
+                <div class="card-group">
+                  <div class="field">
+                    <div class="label"><strong>录制前验证目录可写</strong></div>
+                    <div class="control"><button class="switch" type="button" role="switch" aria-checked="true" aria-label="录制前验证目录可写"></button></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>首字节超时(秒)</strong></div>
+                    <div class="control"><input class="input" type="text" value="15" aria-label="首字节超时" style="max-width:90px" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>自动重试次数</strong></div>
+                    <div class="control"><input class="input" type="text" value="3" aria-label="自动重试次数" style="max-width:90px" /></div>
+                  </div>
+                </div>
+
+                <p class="group-title">上传</p>
+                <div class="card-group">
+                  <div class="field">
+                    <div class="label"><strong>并发数</strong></div>
+                    <div class="control"><input class="input" type="text" value="2" aria-label="上传并发数" style="max-width:90px" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>重试次数</strong></div>
+                    <div class="control"><input class="input" type="text" value="3" aria-label="上传重试次数" style="max-width:90px" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>限速(KB/s)</strong></div>
+                    <div class="control"><input class="input" type="text" value="0" aria-label="上传限速" style="max-width:90px" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>实时上传间隔(秒)</strong></div>
+                    <div class="control"><input class="input" type="text" value="30" aria-label="实时上传间隔" style="max-width:90px" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>临时后缀</strong></div>
+                    <div class="control"><input class="input" type="text" value=".part" aria-label="临时后缀" style="max-width:120px" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>停止后延迟转正（PUT）</strong></div>
+                    <div class="control"><button class="switch" type="button" role="switch" aria-checked="false" aria-label="停止后延迟转正"></button></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>延迟(秒)</strong></div>
+                    <div class="control"><input class="input" type="text" value="5" aria-label="转正延迟" style="max-width:90px" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>转正限速(KB/s)</strong></div>
+                    <div class="control"><input class="input" type="text" value="0" aria-label="转正限速" style="max-width:90px" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>启用断点续传（实验）</strong></div>
+                    <div class="control"><button class="switch" type="button" role="switch" aria-checked="false" aria-label="启用断点续传"></button></div>
+                  </div>
+                  <div class="settings-actions" style="padding-bottom:12px"><button class="btn" type="button" id="btnUploadQueue">查看上传队列</button></div>
+                </div>
+              </div>
+
+              <!-- ══ 网络 ══ -->
+              <div data-set-body="network" hidden>
+                <h3>网络</h3>
+                <p class="desc">遥控器、网络播放、RTSP、时区、CDN 线路与 WebDAV。</p>
+                <p class="group-title">遥控器</p>
+                <div class="card-group">
+                  <div class="field">
+                    <div class="label"><strong>启用 Web 遥控器</strong><span>启用后，在同一局域网内可通过手机浏览器访问 http://电脑IP:端口 来控制播放器。</span></div>
+                    <div class="control"><button class="switch" type="button" role="switch" aria-checked="false" aria-label="启用 Web 遥控器"></button></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>端口</strong></div>
+                    <div class="control"><input class="input" type="text" value="8080" aria-label="遥控器端口" style="max-width:90px" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>需要访问密码</strong></div>
+                    <div class="control"><button class="switch" type="button" role="switch" aria-checked="false" aria-label="需要访问密码"></button></div>
+                  </div>
+                  <div class="field full">
+                    <div class="label"><strong>访问密码</strong></div>
+                    <div class="control"><input class="input wide" type="text" value="" placeholder="留空表示不校验" aria-label="访问密码" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>显示频道列表</strong></div>
+                    <div class="control"><button class="switch" type="button" role="switch" aria-checked="true" aria-label="显示频道列表"></button></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>显示节目单</strong></div>
+                    <div class="control"><button class="switch" type="button" role="switch" aria-checked="true" aria-label="显示节目单"></button></div>
+                  </div>
+                </div>
+
+                <p class="group-title">网络播放</p>
+                <div class="card-group">
+                  <div class="field">
+                    <div class="label"><strong>缓存秒数</strong></div>
+                    <div class="control"><input class="input" type="text" value="3" aria-label="缓存秒数" style="max-width:90px" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>demuxer-max-bytes (MiB)</strong></div>
+                    <div class="control"><input class="input" type="text" value="64" aria-label="demuxer-max-bytes" style="max-width:90px" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>demuxer-max-back-bytes (MiB)</strong></div>
+                    <div class="control"><input class="input" type="text" value="16" aria-label="demuxer-max-back-bytes" style="max-width:90px" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>FCC 预取数量</strong></div>
+                    <div class="control"><input class="input" type="text" value="2" aria-label="FCC 预取数量" style="max-width:90px" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>超时换源 (秒)</strong></div>
+                    <div class="control"><input class="input" type="text" value="8" aria-label="超时换源" style="max-width:90px" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>协议自适应优化</strong><span>按协议自动选择更快的探测与缓存参数；关闭则使用通用参数。</span></div>
+                    <div class="control"><button class="switch" type="button" role="switch" aria-checked="true" aria-label="协议自适应优化"></button></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>HLS 从直播边缘开始</strong></div>
+                    <div class="control"><button class="switch" type="button" role="switch" aria-checked="true" aria-label="HLS 从直播边缘开始"></button></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>HLS 预读秒数</strong><span>将 HLS 直接跳到直播点；预读秒过小可降低起播延迟，但弱网可能更易卡顿。</span></div>
+                    <div class="control"><input class="input" type="text" value="3" aria-label="HLS 预读秒数" style="max-width:90px" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>mpv 网络超时 (秒)</strong><span>仅影响 mpv 层网络超时；业务层“超时换源(秒)”保持不变。</span></div>
+                    <div class="control"><input class="input" type="text" value="15" aria-label="mpv 网络超时" style="max-width:90px" /></div>
+                  </div>
+                </div>
+
+                <p class="group-title">源健康检查</p>
+                <div class="card-group">
+                  <div class="field">
+                    <div class="label"><strong>启用自动源健康检查</strong><span>默认关闭。开启后仅探测当前播放频道的源，不再全量扫描所有频道；成功起播的源会自动标记为健康，不产生额外探测流量。</span></div>
+                    <div class="control"><button class="switch" type="button" role="switch" aria-checked="false" aria-label="启用自动源健康检查"></button></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>单次探测并发数</strong><span>同时探测的源数量（1~100，默认 5）。受光猫/运营商线路限制时请调低；播放本身占 1 路。</span></div>
+                    <div class="control"><input class="input" type="text" value="5" aria-label="单次探测并发数" style="max-width:90px" /></div>
+                  </div>
+                </div>
+
+                <p class="group-title">HTTP/RTSP Header 设置</p>
+                <div class="card-group">
+                  <div class="field full">
+                    <div class="label"><strong>HTTP Headers</strong><span>多行文本，每行一个 Header，格式：User-Agent: xxx 或 Referer: https://xxx。适用于 HTTP/HTTPS 流。</span></div>
+                    <div class="control"><textarea class="input wide" rows="3" aria-label="HTTP Headers" placeholder="User-Agent: SrcBox/1.1.14">Referer: http://provider.example.com/</textarea></div>
+                  </div>
+                </div>
+
+                <p class="group-title">RTSP 设置</p>
+                <div class="card-group">
+                  <div class="field">
+                    <div class="label"><strong>RTSP 传输模式</strong></div>
+                    <div class="control">
+                      <select class="select" aria-label="RTSP 传输模式"><option selected>TCP</option><option>UDP</option><option>HTTP Tunnel</option></select>
+                    </div>
+                  </div>
+                  <div class="field full">
+                    <div class="label"><strong>RTSP User-Agent</strong></div>
+                    <div class="control"><input class="input wide" type="text" value="" placeholder="留空使用默认 UA" aria-label="RTSP User-Agent" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>RTSP 用户名</strong></div>
+                    <div class="control"><input class="input" type="text" value="" aria-label="RTSP 用户名" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>RTSP 密码</strong></div>
+                    <div class="control"><input class="input" type="text" value="" aria-label="RTSP 密码" /></div>
+                  </div>
+                  <div class="field full">
+                    <div class="label"><strong>测试 URL</strong></div>
+                    <div class="control"><input class="input wide" type="text" value="rtsp://192.168.1.1:554/live/101" aria-label="测试 URL" /></div>
+                  </div>
+                  <div class="settings-actions" style="padding-bottom:12px">
+                    <button class="btn" type="button">测试 HTTP</button>
+                    <button class="btn" type="button">测试 RTSP</button>
+                  </div>
+                </div>
+
+                <p class="group-title">rtp2httpd 时区 / 无缝时移</p>
+                <div class="card-group">
+                  <div class="field">
+                    <div class="label"><strong>在请求中携带时区标记（TZ/UTC+N，rtp2httpd 用它解释 epg/playseek 时间）</strong></div>
+                    <div class="control"><button class="switch" type="button" role="switch" aria-checked="false" aria-label="携带时区标记"></button></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>UTC 偏移（小时，默认 8）</strong></div>
+                    <div class="control"><input class="input" type="text" value="8" aria-label="UTC 偏移" style="max-width:90px" /></div>
+                  </div>
+                  <div class="field full">
+                    <div class="label"><strong>自定义 User-Agent（留空 = 浏览器 UA + 时区标记）</strong></div>
+                    <div class="control"><input class="input wide" type="text" value="" aria-label="自定义 User-Agent" /></div>
+                  </div>
+                  <div class="field full">
+                    <div class="label"><strong>附加播放查询参数</strong></div>
+                    <div class="control"><input class="input wide" type="text" value="" placeholder="例如 r2h-seek-mode=range" aria-label="附加播放查询参数" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>允许无效/自签名证书（不安全）</strong><span>附加参数会拼到直播/回看地址后面，例如 r2h-seek-mode=range(UTC+8/3600)；修改时区标记后需重启程序生效。</span></div>
+                    <div class="control"><button class="switch" type="button" role="switch" aria-checked="false" aria-label="允许无效自签名证书"></button></div>
+                  </div>
+                </div>
+
+                <p class="group-title">CDN线路</p>
+                <div class="card-group">
+                  <p class="note" style="margin:12px 0 4px">CDN（内容分发网络）用于加速 GitHub 文件的下载。如果检查更新或下载失败，请尝试切换或添加新的镜像线路。</p>
+                  <div class="cdn-row"><input class="input wide" type="text" value="https://gh-proxy.org" aria-label="CDN 线路 1" /><div class="cdn-tools"><button class="btn" type="button">上移</button><button class="btn" type="button">下移</button><button class="btn" type="button">删除</button></div></div>
+                  <div class="cdn-row"><input class="input wide" type="text" value="https://ghfast.top" aria-label="CDN 线路 2" /><div class="cdn-tools"><button class="btn" type="button">上移</button><button class="btn" type="button">下移</button><button class="btn" type="button">删除</button></div></div>
+                  <div class="cdn-row"><input class="input wide" type="text" value="" placeholder="例如 https://gh-proxy.org" aria-label="新增 CDN 线路" /><div class="cdn-tools"><button class="btn" type="button" id="btnCdnAdd">添加</button></div></div>
+                  <div class="settings-actions" style="padding-bottom:12px"><button class="btn" type="button" id="btnCdnSort">测速排序</button></div>
+                </div>
+
+                <p class="group-title">WebDAV</p>
+                <div class="card-group">
+                  <div class="field">
+                    <div class="label"><strong>启用 WebDAV</strong></div>
+                    <div class="control"><button class="switch" type="button" role="switch" aria-checked="false" aria-label="启用 WebDAV"></button></div>
+                  </div>
+                  <div class="field full">
+                    <div class="label"><strong>基地址</strong><span>请填写完整的 WebDAV 基地址（包含服务端路径）。示例：Nextcloud https://host/remote.php/dav/files/&lt;user&gt;/；Cloudreve https://host/dav/；AList https://host/dav/&lt;path&gt;/</span></div>
+                    <div class="control"><input class="input wide" type="text" value="" placeholder="https://host/dav/" aria-label="WebDAV 基地址" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>用户名</strong></div>
+                    <div class="control"><input class="input" type="text" value="" aria-label="WebDAV 用户名" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>令牌/密码</strong></div>
+                    <div class="control"><input class="input" type="text" value="" aria-label="WebDAV 令牌" /></div>
+                  </div>
+                  <div class="field">
+                    <div class="label"><strong>允许自签证书</strong></div>
+                    <div class="control"><button class="switch" type="button" role="switch" aria-checked="false" aria-label="允许自签证书"></button></div>
+                  </div>
+                  <div class="field full">
+                    <div class="label"><strong>根目录</strong></div>
+                    <div class="control"><input class="input wide" type="text" value="/SrcBox" aria-label="WebDAV 根目录" /></div>
+                  </div>
+                  <div class="field full">
+                    <div class="label"><strong>录播目录</strong></div>
+                    <div class="control"><input class="input wide" type="text" value="/SrcBox/recordings" aria-label="WebDAV 录播目录" /></div>
+                  </div>
+                  <div class="field full">
+                    <div class="label"><strong>用户数据目录</strong></div>
+                    <div class="control"><input class="input wide" type="text" value="/SrcBox/userdata" aria-label="WebDAV 用户数据目录" /></div>
+                  </div>
+                  <div class="settings-actions" style="padding-bottom:12px">
+                    <button class="btn" type="button">测试连接</button>
+                    <button class="btn" type="button">备份用户数据</button>
+                    <button class="btn" type="button">恢复用户数据</button>
+                    <button class="btn" type="button">录播目录写入测试</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <footer class="settings-foot">
+          <span>所有配置、播放列表与 EPG 缓存均存储于本机</span>
+          <div class="settings-actions">
+            <button class="btn" type="button" id="btnDebugLog">调试日志</button>
+            <button class="btn" type="button" id="btnCancelSettings">取消</button>
+            <button class="btn accent" type="button" id="btnSaveSettings">保存</button>
+          </div>
+        </footer>
+      </section>
+
+      <!-- ── 关于 ── -->
+      <section class="page" data-page-body="about" data-od-id="page-about">
+        <div class="page-body scroll" style="padding-top:24px">
+          <div style="display:flex;align-items:center;gap:16px;margin-bottom:20px">
+            <span style="width:56px;height:56px;border-radius:var(--r-lg);display:grid;place-items:center;background:var(--accent-dim);color:var(--accent)">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3" style="width:26px;height:26px"><use href="#i-app"/></svg>
+            </span>
+            <div>
+              <h2 style="font-size:var(--fs-title-lg)">源匣 (SrcBox)</h2>
+              <p style="color:var(--muted);font-size:var(--fs-caption)">基于 libmpv 播放内核的 Windows IPTV 播放器 · 版本 v1.1.14</p>
+            </div>
+          </div>
+          <div class="card-group">
+            <div class="field">
+              <div class="label"><strong>更新</strong><span>当前已是最新版本</span></div>
+              <div class="control"><button class="btn accent" type="button">检查更新</button></div>
+            </div>
+            <div class="field">
+              <div class="label"><strong>官方文档</strong><span>简体中文 / 繁體中文 / English / Русский</span></div>
+              <div class="control"><button class="btn" type="button">查看 EPG 文档</button></div>
+            </div>
+            <div class="field">
+              <div class="label"><strong>开源许可</strong><span>MIT License</span></div>
+              <div class="control"><button class="btn" type="button">查看许可</button></div>
+            </div>
+          </div>
+          <p style="color:var(--faint);font-size:var(--fs-caption);line-height:1.7">
+            本原型仅作外观演示：频道名、节目名与录制条目均为自拟的占位数据，界面中不包含任何频道画面素材或真实电视台台标。
+          </p>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <!-- ══ 播放器浮层（Screenbox PlayerPage：画面全幅 + 底部控制条 + 右侧信息面板） ══ -->
+  <div class="player" id="player" data-open="false" data-chrome="shown" data-play="paused" data-od-id="player-overlay">
+    <div class="stage" aria-hidden="true">
+      <span class="stage-glow"></span>
+      <span class="stage-glow two"></span>
+      <span class="stage-lines"></span>
+      <span class="stage-bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+      <span class="stage-scan"></span>
+    </div>
+    <div class="chrome">
+      <div class="p-top">
+        <button class="pbtn" type="button" id="btnPlayerBack" aria-label="返回" data-od-id="btn-player-back">
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><use href="#i-back"/></svg>
+        </button>
+        <div>
+          <div class="title" id="pTitle">广东新闻</div>
+          <div class="sub" id="pSub">正在播出 · 今日焦点 · 直播</div>
+        </div>
+        <div class="right">
+          <button class="pbtn" type="button" data-pane-toggle="guide" aria-label="节目单" aria-pressed="false"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4"><use href="#i-guide"/></svg></button>
+          <button class="pbtn" type="button" data-pane-toggle="channels" aria-label="频道列表" aria-pressed="false"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4"><use href="#i-channels"/></svg></button>
+          <button class="pbtn" type="button" aria-label="画中画"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4"><use href="#i-pip"/></svg></button>
+          <button class="pbtn" type="button" aria-label="更多"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4"><use href="#i-more"/></svg></button>
+        </div>
+      </div>
+
+      <div class="p-mid">
+        <div class="p-empty" id="pEmpty">
+          <span class="head">选择一个频道开始播放</span>
+          <span class="sub">源匣的直播、回放、时移与录制都在播放页里；下面的按钮可以直接起播。</span>
+          <div class="grid" id="pEmptyGrid"></div>
+        </div>
+        <div class="stage-card" id="pStageCard">
+          <span class="tag"><i class="pulse"></i>演示信号 · 无真实画面</span>
+          <span class="code" id="pTimecode">00:00</span>
+          <span class="label" id="pStageLabel">广东新闻 · H.265 · 1920×1080</span>
+        </div>
+        <div class="stage-eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
+
+      <div class="p-bottom">
+        <div class="p-meta">
+          <span>分辨率 <b id="pRes">1920×1080</b></span>
+          <span>解码器 <b id="pDec">D3D11VA</b></span>
+          <span>码率 <b id="pRate">4.2 Mbps</b></span>
+          <span>帧率 <b id="pFps">50 fps</b></span>
+          <span id="pCodec">H.265 · MP3</span>
+        </div>
+        <div class="p-seek">
+          <span class="time" id="pElapsed">00:00</span>
+          <div class="bar" id="pSeek" role="slider" tabindex="0" aria-label="播放进度" aria-valuemin="0" aria-valuemax="8100" aria-valuenow="0">
+            <span class="buffered" id="pBuffered"></span><span class="fill" id="pFill"></span><span class="knob" id="pKnob"></span>
+          </div>
+          <span class="time" id="pDuration">2:15:00</span>
+        </div>
+        <div class="p-controls">
+          <div class="left">
+            <button class="pbtn" type="button" id="pPrev" aria-label="上一频道"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><use href="#i-prev"/></svg></button>
+            <button class="pbtn" type="button" id="pNext" aria-label="下一频道"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><use href="#i-next"/></svg></button>
+            <button class="pbtn" type="button" id="pSpeed" aria-label="播放速度" style="font-family:var(--font-mono);font-size:12px">1.0×</button>
+          </div>
+          <div class="center">
+            <button class="pbtn" type="button" id="pStop" aria-label="停止"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3"><use href="#i-stop"/></svg></button>
+            <button class="pbtn" type="button" id="pRew" aria-label="快退 30 秒"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><use href="#i-rew"/></svg></button>
+            <button class="pbtn play" type="button" id="pPlay" aria-label="播放或暂停" aria-pressed="false">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" id="pPlayIcon"><use href="#i-play"/></svg>
+            </button>
+            <button class="pbtn" type="button" id="pFwd" aria-label="快进 30 秒"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><use href="#i-fwd"/></svg></button>
+            <button class="pbtn" type="button" id="pRecord" aria-label="实时录制" aria-pressed="false"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3"><use href="#i-record"/></svg></button>
+          </div>
+          <div class="right">
+            <button class="pbtn" type="button" id="pTimeshift" aria-label="时移" aria-pressed="false"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3"><use href="#i-clock"/></svg></button>
+            <button class="pbtn" type="button" id="pRatio" aria-label="画面比例"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><use href="#i-ratio"/></svg></button>
+            <button class="pbtn" type="button" id="pMulti" aria-label="多屏播放"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><use href="#i-grid"/></svg></button>
+            <button class="pbtn" type="button" id="pCast" aria-label="投射"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><use href="#i-cast"/></svg></button>
+            <div class="vol">
+              <button class="pbtn" type="button" id="pMute" aria-label="静音" aria-pressed="false" style="width:34px;height:34px"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><use href="#i-vol"/></svg></button>
+              <div class="bar" id="pVol" role="slider" tabindex="0" aria-label="音量" aria-valuemin="0" aria-valuemax="100" aria-valuenow="72">
+                <span class="fill" id="pVolFill"></span><span class="knob" id="pVolKnob"></span>
+              </div>
+            </div>
+            <button class="pbtn" type="button" id="pFull" aria-label="全屏"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><use href="#i-full"/></svg></button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 播放中的信息面板：节目单 / 频道列表（贴合 Screenbox 的右侧 Now Playing 抽屉） -->
+    <aside class="p-pane" id="pPane" data-open="false" data-pane="guide" aria-label="播放信息面板">
+      <div class="head">
+        <h3 id="pPaneTitle">节目单</h3>
+        <span class="spacer"></span>
+        <button class="pbtn" type="button" id="pPaneClose" aria-label="关闭面板" style="width:32px;height:32px"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4"><use href="#i-close"/></svg></button>
+      </div>
+      <div class="tabs chips" style="padding:8px">
+        <button class="chip" type="button" data-pane-tab="guide" aria-pressed="true">节目单</button>
+        <button class="chip" type="button" data-pane-tab="channels" aria-pressed="false">频道</button>
+      </div>
+      <div class="body scroll" id="pPaneBody"></div>
+    </aside>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <p class="sr" id="srStatus" aria-live="polite"></p>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  var root = document.documentElement;
+  var store = {
+    get: function (k, d) { try { var v = localStorage.getItem('srcbox2.' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set: function (k, v) { try { localStorage.setItem('srcbox2.' + k, JSON.stringify(v)); } catch (e) {} }
+  };
+  var toastTimer = null;
+  function toast(msg) {
+    var t = $('#toast');
+    t.textContent = msg; t.setAttribute('data-show', 'true');
+    if (toastTimer) window.clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(function () { t.setAttribute('data-show', 'false'); }, 1900);
+  }
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function fmt(sec) {
+    sec = Math.max(0, Math.floor(sec));
+    var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+    return h > 0 ? h + ':' + pad(m) + ':' + pad(s) : pad(m) + ':' + pad(s);
+  }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); }
+
+  /* ── 演示数据（自拟频道名，不使用真实电视台标识） ── */
+  var GROUPS = [
+    { id: 'news', name: '新闻资讯' }, { id: 'hd', name: '高清综合' },
+    { id: 'sport', name: '体育赛事' }, { id: 'doc', name: '纪实科教' }
+  ];
+  var CH = [
+    { name: '广东新闻', mark: '粤新', g: 'news', res: '1920×1080', dec: 'D3D11VA', rate: '4.2 Mbps', fps: '50 fps', codec: 'H.265', audio: 'MP3', now: '今日焦点', next: '广视新闻联播' },
+    { name: '珠江综合', mark: '珠江', g: 'hd', res: '1920×1080', dec: 'D3D11VA', rate: '5.1 Mbps', fps: '50 fps', codec: 'H.264', audio: 'AAC', now: '湾区一线', next: '今日关注' },
+    { name: '南方影视', mark: '南方', g: 'hd', res: '1920×1080', dec: 'DXVA2', rate: '6.4 Mbps', fps: '25 fps', codec: 'H.264', audio: 'AC3', now: '午间剧场', next: '黄金剧场' },
+    { name: '民生频道', mark: '民生', g: 'news', res: '1280×720', dec: 'D3D11VA', rate: '3.0 Mbps', fps: '50 fps', codec: 'H.264', audio: 'AAC', now: '正点播报', next: '今日一线' },
+    { name: '体育赛事', mark: '体育', g: 'sport', res: '1920×1080', dec: 'NVDEC', rate: '8.2 Mbps', fps: '50 fps', codec: 'H.265', audio: 'AC3', now: '联赛集锦', next: '赛事直播' },
+    { name: '足球频道', mark: '足球', g: 'sport', res: '1920×1080', dec: 'NVDEC', rate: '7.6 Mbps', fps: '50 fps', codec: 'H.265', audio: 'AAC', now: '赛前分析', next: '焦点战直播' },
+    { name: '经济科教', mark: '经科', g: 'news', res: '1280×720', dec: 'D3D11VA', rate: '2.8 Mbps', fps: '25 fps', codec: 'H.264', audio: 'MP3', now: '股市午评', next: '科创对话' },
+    { name: '纪实频道', mark: '纪实', g: 'doc', res: '1920×1080', dec: 'D3D11VA', rate: '4.9 Mbps', fps: '25 fps', codec: 'H.265', audio: 'AAC', now: '山河纪行', next: '文明密码' },
+    { name: '科教高清', mark: '科教', g: 'doc', res: '1920×1080', dec: 'D3D11VA', rate: '4.4 Mbps', fps: '25 fps', codec: 'H.265', audio: 'AAC', now: '科学公开课', next: '自然探索' },
+    { name: '少儿频道', mark: '少儿', g: 'hd', res: '1280×720', dec: '软件', rate: '2.2 Mbps', fps: '25 fps', codec: 'H.264', audio: 'AAC', now: '动画剧场', next: '益智时间' },
+    { name: '大湾区卫视', mark: '湾区', g: 'hd', res: '1920×1080', dec: 'D3D11VA', rate: '5.6 Mbps', fps: '50 fps', codec: 'H.265', audio: 'AC3', now: '湾区连线', next: '晚间新闻' },
+    { name: '戏曲频道', mark: '戏曲', g: 'hd', res: '1280×720', dec: '软件', rate: '2.6 Mbps', fps: '25 fps', codec: 'H.264', audio: 'MP3', now: '名段欣赏', next: '梨园周刊' },
+    { name: '音乐现场', mark: '音乐', g: 'hd', res: '1920×1080', dec: 'D3D11VA', rate: '5.0 Mbps', fps: '50 fps', codec: 'H.265', audio: 'AAC', now: '现场精选', next: '新歌首播' },
+    { name: '交通频道', mark: '交通', g: 'news', res: '1280×720', dec: 'D3D11VA', rate: '2.4 Mbps', fps: '50 fps', codec: 'H.264', audio: 'MP3', now: '路况直播', next: '出行提示' },
+    { name: '生活家居', mark: '生活', g: 'hd', res: '1280×720', dec: '软件', rate: '2.1 Mbps', fps: '25 fps', codec: 'H.264', audio: 'AAC', now: '家居改造', next: '美食地图' },
+    { name: '中英双语', mark: '双语', g: 'doc', res: '1920×1080', dec: 'D3D11VA', rate: '4.1 Mbps', fps: '25 fps', codec: 'H.265', audio: 'AAC', now: '双语新闻', next: '环球观察' },
+    { name: '戏曲电影', mark: '影戏', g: 'hd', res: '1920×1080', dec: 'D3D11VA', rate: '5.8 Mbps', fps: '25 fps', codec: 'H.264', audio: 'AC3', now: '经典重映', next: '影迷时间' },
+    { name: '高尔夫网球', mark: '高网', g: 'sport', res: '1920×1080', dec: 'NVDEC', rate: '7.1 Mbps', fps: '50 fps', codec: 'H.265', audio: 'AAC', now: '巡回赛集锦', next: '大满贯回顾' }
+  ];
+  CH.forEach(function (c, i) { c.id = i; c.fav = i < 3 || i === 6; });
+
+  var EPG_POOL = ['正点播报', '今日焦点', '午间剧场', '民生直击', '专题节目', '经济半小时', '城市现场',
+    '晚间新闻', '天气预报', '黄金剧场', '深度报道', '人文地理', '科技前线', '纪录时间', '生活服务', '环球观察'];
+  function buildEpg() {
+    var now = new Date(), nowMin = now.getHours() * 60 + now.getMinutes();
+    var cursor = Math.floor(nowMin / 30) * 30, limit = Math.min(nowMin + 420, 1440);
+    for (var back = 0; back < 4 && cursor - 30 >= 0; back++) { cursor -= 30; }
+    var out = [], i = 0;
+    for (; cursor < limit; i++) {
+      var dur = (i % 3 === 2) ? 60 : 30;
+      if (cursor + dur > 1440) { dur = 1440 - cursor; }
+      if (dur <= 0) { break; }
+      out.push({
+        t: pad(Math.floor(cursor / 60)) + ':' + pad(cursor % 60), start: cursor, end: cursor + dur,
+        live: (nowMin >= cursor && nowMin < cursor + dur),
+        name: EPG_POOL[i % EPG_POOL.length],
+        sub: (nowMin >= cursor && nowMin < cursor + dur) ? '正在播出 · 直播'
+            : (i % 4 === 1 ? '回放可用 · 时移 6 小时' : (i % 5 === 3 ? '支持预约录制' : '高清 1080i')),
+        replay: i % 4 === 1, booked: i % 5 === 3
+      });
+      cursor += dur;
+    }
+    return out;
+  }
+  var EPG = buildEpg();
+
+  var state = {
+    theme: store.get('theme', 'dark'),
+    nav: store.get('nav', 'open'),
+    page: store.get('page', 'home'),
+    filter: 'all',
+    channel: store.get('channel', null),
+    favOnly: false,
+    playing: false,
+    muted: false,
+    volume: store.get('volume', 72),
+    elapsed: store.get('elapsed', 0),
+    duration: 8100,
+    speed: store.get('speed', 1),
+    history: store.get('history', [0, 1, 3])
+  };
+
+  /* ── 主题 ── */
+  function applyTheme(mode) {
+    var resolved = mode === 'system'
+      ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : mode;
+    root.setAttribute('data-theme', resolved);
+    $$('[data-theme-set]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.themeSet === mode)); });
+    state.theme = mode; store.set('theme', mode);
+  }
+
+  /* ── 导航 ── */
+  function setNav(open) {
+    state.nav = open ? 'open' : 'closed'; store.set('nav', state.nav);
+    $('#win').setAttribute('data-nav', state.nav);
+    $('#btnNav').setAttribute('aria-expanded', String(open));
+    $$('.nav .item').forEach(function (b) {
+      var l = b.querySelector('.label');
+      if (l) { b.title = l.textContent; }
+    });
+  }
+  function setPage(id) {
+    state.page = id; store.set('page', id);
+    $$('.page').forEach(function (p) { p.setAttribute('data-active', String(p.dataset.pageBody === id)); });
+    $$('.nav .item').forEach(function (b) { b.setAttribute('aria-current', b.dataset.page === id ? 'page' : 'false'); });
+    if (id === 'guide') renderGuide();
+    $('#srStatus').textContent = '已切换到 ' + ({ home: '主页', channels: '频道列表', guide: '节目指南', recordings: '录制', favorites: '收藏', history: '播放记录', settings: '设置', about: '关于' }[id] || id);
+  }
+
+  /* ── 卡片 ── */
+  function cardHTML(c) {
+    return '<span class="thumb"><span class="badges">' +
+      '<span class="badge' + (state.channel === c.id ? ' live' : ' soft') + '">' + (state.channel === c.id ? '正在播放' : groupName(c.g)) + '</span>' +
+      '</span><span class="mark">' + esc(c.mark) + '</span>' +
+      '<span class="play"><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><use href="#i-play"/></svg></span></span>' +
+      '<span class="meta"><span class="t">' + esc(c.name) + '</span>' +
+      '<span class="s">' + esc(c.now) + ' · ' + esc(c.codec) + ' · ' + esc(c.rate) + '</span></span>';
+  }
+  function groupName(id) { var g = GROUPS.filter(function (x) { return x.id === id; })[0]; return g ? g.name : ''; }
+  function makeCard(c) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'card';
+    b.setAttribute('aria-current', String(state.channel === c.id));
+    b.setAttribute('data-od-id', 'channel-card-' + c.id);
+    /* data-channel-id 同时供事件委托使用：即使某个卡片上的监听器没绑上，点击依然能起播 */
+    b.setAttribute('data-channel-id', String(c.id));
+    b.innerHTML = cardHTML(c);
+    return b;
+  }
+
+  function renderChannels() {
+    var q = $('#globalSearch').value.trim().toLowerCase();
+    var items = CH.filter(function (c) {
+      var okFilter = state.filter === 'all' || c.g === state.filter;
+      var okQuery = !q || c.name.toLowerCase().indexOf(q) > -1 || c.now.toLowerCase().indexOf(q) > -1;
+      return okFilter && okQuery;
+    });
+    var grid = $('#channelGrid');
+    grid.innerHTML = '';
+    items.forEach(function (c) { grid.appendChild(makeCard(c)); });
+    $('#channelEmpty').hidden = items.length > 0;
+    $('#channelEmpty').textContent = '没有匹配「' + $('#globalSearch').value + '」的频道';
+    $('#channelsSub').textContent = '播放列表「广东电信」· ' + (q ? '筛选到 ' + items.length + ' / ' + CH.length : '共 ' + items.length + ' 个频道');
+    $('#navChannelCount').textContent = String(CH.length);
+
+    var favGrid = $('#favGrid'); favGrid.innerHTML = '';
+    var favs = CH.filter(function (c) { return c.fav; });
+    favs.forEach(function (c) { favGrid.appendChild(makeCard(c)); });
+    $('#favCount').textContent = String(favs.length);
+
+    var homeGrid = $('#homeGrid'); homeGrid.innerHTML = '';
+    CH.slice(0, 8).forEach(function (c) { homeGrid.appendChild(makeCard(c)); });
+
+    var recent = $('#recentGrid'); recent.innerHTML = '';
+    state.history.slice(0, 3).forEach(function (id) {
+      var c = CH[id]; if (c) recent.appendChild(makeCard(c));
+    });
+    window.__cards = true;
+    return items;
+  }
+
+  function renderHistory() {
+    var wrap = $('#historyRows'); wrap.innerHTML = '';
+    state.history.slice(0, 8).forEach(function (id) {
+      var c = CH[id]; if (!c) return;
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'row'; b.setAttribute('data-od-id', 'history-row-' + id);
+      b.innerHTML = '<span class="mark">' + esc(c.mark) + '</span>' +
+        '<span><span class="t">' + esc(c.name) + '</span><span class="s">' + groupName(c.g) + ' · ' + esc(c.now) + '</span></span>' +
+        '<span class="time">' + esc(c.res) + '</span>' +
+        '<span class="badge soft">继续观看</span>';
+      b.addEventListener('click', function () { play(id); });
+      wrap.appendChild(b);
+    });
+    if (!wrap.children.length) { wrap.innerHTML = '<div class="empty">还没有播放记录</div>'; }
+  }
+
+  /* ── EPG ── */
+  function renderGuide() {
+    var list = $('#epgList');
+    $$('.epg-row, .nowline', list).forEach(function (n) { n.remove(); });
+    var now = new Date(), nowMin = now.getHours() * 60 + now.getMinutes();
+    var firstMin = EPG[0].start, span = (EPG[EPG.length - 1].end - firstMin) || 1;
+    EPG.forEach(function (p) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'epg-row';
+      b.setAttribute('aria-current', String(p.live === true));
+      b.innerHTML = '<span class="t">' + p.t + '</span>' +
+        '<span><span class="n">' + esc(p.name) + '</span><span class="d">' + esc(p.sub) + '</span></span>' +
+        (p.live ? '<span class="badge live"><i class="dot"></i>直播</span>'
+                : '<span class="act">' + (p.booked ? '<span class="badge soft">已预约</span>' : '') +
+                  '<span class="btn subtle" data-epg="' + (p.replay ? 'replay' : 'book') + '">' + (p.replay ? '回放' : '预约') + '</span></span>');
+      b.addEventListener('click', function (ev) {
+        var act = ev.target.closest('[data-epg]');
+        if (act) { toast((act.dataset.epg === 'replay' ? '已开始回放：' : '已预约：') + p.name); return; }
+        state.elapsed = Math.max(0, (p.start - firstMin) * 60);
+        paint(false);
+        toast('已定位到节目：' + p.name);
+      });
+      list.appendChild(b);
+    });
+    var liveIdx = 0;
+    EPG.forEach(function (p, i) { if (p.live) liveIdx = i; });
+    var anchor = $$('.epg-row', list)[liveIdx];
+    var offset = (nowMin >= firstMin && nowMin <= EPG[EPG.length - 1].end)
+      ? (nowMin - firstMin) / span * list.scrollHeight
+      : (anchor ? anchor.offsetTop + anchor.offsetHeight / 2 : 0);
+    var line = document.createElement('span');
+    line.className = 'nowline';
+    line.style.top = Math.round(Math.max(2, Math.min(offset, list.scrollHeight - 2))) + 'px';
+    line.innerHTML = '<span>' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + '</span>';
+    list.appendChild(line);
+    $('#nowClock').textContent = pad(now.getHours()) + ':' + pad(now.getMinutes());
+    var c = state.channel === null ? null : CH[state.channel];
+    $('#guideSub').textContent = (c ? c.name : '广东新闻') + ' · 节目单';
+  }
+
+  function renderRecordings() {
+    var wrap = $('#recList'); wrap.innerHTML = '';
+    [
+      { n: '广东新闻 · 午间剧场', s: '今天 12:30 · 60 分 · 812 MB · MP4 · 本地', local: true },
+      { n: '体育赛事 · 联赛集锦', s: '昨天 20:00 · 92 分 · 1.2 GB · TS · 网络', local: false }
+    ].forEach(function (r, i) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'row'; b.setAttribute('data-od-id', 'recording-row-' + i);
+      b.innerHTML = '<span class="mark">' + (i + 1) + '</span>' +
+        '<span><span class="t">' + esc(r.n) + '</span><span class="s">' + esc(r.s) + '</span></span>' +
+        '<span class="badge soft">' + (r.local ? '本地存取' : '网络存取') + '</span>' +
+        '<span class="btn subtle">播放</span>';
+      b.addEventListener('click', function (ev) {
+        if (ev.target.closest('.btn')) { toast('已开始播放录播：' + r.n); return; }
+        openPlayer(0);
+      });
+      wrap.appendChild(b);
+    });
+  }
+
+  /* ── 播放器 ── */
+  var chrTimer = null;
+  function showChrome() {
+    var p = $('#player');
+    p.setAttribute('data-chrome', 'shown');
+    if (chrTimer) window.clearTimeout(chrTimer);
+    if (state.playing) chrTimer = window.setTimeout(function () { p.setAttribute('data-chrome', 'hidden'); }, 4500);
+  }
+  function openPlayer(id) {
+    var c = CH[id];
+    if (!c) return;
+    state.channel = id; store.set('channel', id);
+    state.elapsed = 0; store.set('elapsed', 0);
+    state.history = [id].concat(state.history.filter(function (x) { return x !== id; })).slice(0, 8);
+    store.set('history', state.history);
+    $('#pTitle').textContent = c.name;
+    $('#pSub').textContent = '正在播出 · ' + c.now + ' · 直播';
+    $('#pRes').textContent = c.res; $('#pDec').textContent = c.dec;
+    $('#pRate').textContent = c.rate; $('#pFps').textContent = c.fps;
+    $('#pCodec').textContent = c.codec + ' · ' + c.audio;
+    $('#pStageLabel').textContent = c.name + ' · ' + c.codec + ' · ' + c.res;
+    $('#pTimecode').textContent = '00:00';
+    $('#srStatus').textContent = '正在播放 ' + c.name;
+    $('#player').setAttribute('data-open', 'true');
+    $('#player').setAttribute('data-state', 'playing');
+    setPlaying(true);
+    showChrome();
+    renderChannels(); renderHistory(); renderGuide(); syncBanner();
+    if ($('#pPane').getAttribute('data-open') === 'true') { renderPane(); }
+    paint(true);
+  }
+  /* 已选频道但还没点播放（或从库视图点控制条的播放键）时，先给一个可直接选台的播放页 */
+  function openPlayerIdle() {
+    $('#player').setAttribute('data-open', 'true');
+    $('#player').setAttribute('data-state', 'idle');
+    setPlaying(false);
+    showChrome();
+    renderEmptyGrid();
+  }
+  function closePlayer() {
+    $('#player').setAttribute('data-open', 'false');
+    setPlaying(false);
+  }
+  /* 播放页空状态里的快速选台 */
+  function renderEmptyGrid() {
+    var grid = $('#pEmptyGrid');
+    if (!grid) return;
+    grid.innerHTML = '';
+    CH.slice(0, 6).forEach(function (c) {
+      var b = document.createElement('button');
+      b.type = 'button';
+      b.setAttribute('data-channel-id', String(c.id));
+      b.textContent = c.name;
+      grid.appendChild(b);
+    });
+  }
+  /* 主页横幅跟随当前频道 */
+  function syncBanner() {
+    var idx = state.channel === null ? 0 : state.channel;
+    var c = CH[idx];
+    if (!c) return;
+    $('#bannerMark').textContent = c.mark;
+    $('#bannerTitle').textContent = c.name;
+    $('#bannerSub').textContent = groupName(c.g) + ' · ' + c.codec + ' · ' + c.res + ' · ' + c.rate;
+    $('#bannerNow').textContent = c.now;
+  }
+  function setPlaying(on) {
+    state.playing = on;
+    $('#pPlayIcon').innerHTML = '<use href="#' + (on ? 'i-pause' : 'i-play') + '"/>';
+    $('#pPlay').setAttribute('aria-pressed', String(on));
+    $('#pPlay').setAttribute('aria-label', on ? '暂停' : '播放');
+    /* 画面动效随播放状态暂停/恢复，模拟真实播放器的画面行为 */
+    $('#player').setAttribute('data-play', on ? 'playing' : 'paused');
+    tick(); showChrome();
+  }
+  var timer = null;
+  function tick() {
+    if (timer) { window.clearInterval(timer); timer = null; }
+    if (!state.playing) return;
+    timer = window.setInterval(function () {
+      state.elapsed += state.speed;
+      if (state.elapsed >= state.duration) { state.elapsed = state.duration; setPlaying(false); toast('播放结束'); }
+      paint(false);
+    }, 1000);
+  }
+  function paint(silent) {
+    var pct = state.duration ? (state.elapsed / state.duration) * 100 : 0;
+    $('#pFill').style.width = pct + '%';
+    $('#pKnob').style.left = pct + '%';
+    $('#pBuffered').style.width = Math.min(100, pct + 6) + '%';
+    $('#pElapsed').textContent = fmt(state.elapsed);
+    $('#pDuration').textContent = fmt(state.duration);
+    $('#pTimecode').textContent = fmt(state.elapsed);
+    $('#pSeek').setAttribute('aria-valuenow', String(Math.floor(state.elapsed)));
+    if (!silent) store.set('elapsed', Math.floor(state.elapsed));
+    var v = state.muted ? 0 : state.volume;
+    $('#pVolFill').style.width = v + '%';
+    $('#pVolKnob').style.left = v + '%';
+    $('#pVol').setAttribute('aria-valuenow', String(v));
+    $('#pMute').setAttribute('aria-pressed', String(state.muted));
+    $('#pMute').innerHTML = '<svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><use href="#' + (state.muted ? 'i-mute' : 'i-vol') + '"/></svg>';
+  }
+
+  /* ── 播放器内信息面板 ── */
+  function renderPane() {
+    var pane = $('#pPane'), kind = pane.dataset.pane, body = $('#pPaneBody');
+    $('#pPaneTitle').textContent = kind === 'guide' ? '节目单' : '频道列表';
+    body.innerHTML = '';
+    if (kind === 'guide') {
+      var now = new Date(), nowMin = now.getHours() * 60 + now.getMinutes();
+      EPG.slice(0, 14).forEach(function (p) {
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 'pane-row';
+        b.setAttribute('aria-current', String(p.live === true));
+        b.innerHTML = '<span class="mark">' + p.t + '</span>' +
+          '<span><span class="t">' + esc(p.name) + '</span><span class="s">' + esc(p.sub) + '</span></span>' +
+          (p.live ? '<span class="badge live"><i class="dot"></i>直播</span>' : '<span class="badge soft">' + (p.replay ? '回放' : '预约') + '</span>');
+        b.addEventListener('click', function () { toast('已定位到节目：' + p.name); });
+        body.appendChild(b);
+      });
+      void nowMin;
+    } else {
+      CH.forEach(function (c) {
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 'pane-row';
+        b.setAttribute('aria-current', String(state.channel === c.id));
+        b.innerHTML = '<span class="mark">' + esc(c.mark) + '</span>' +
+          '<span><span class="t">' + esc(c.name) + '</span><span class="s">' + groupName(c.g) + ' · ' + esc(c.now) + '</span></span>' +
+          '<span class="badge soft">' + esc(c.codec) + '</span>';
+        b.addEventListener('click', function () { openPlayer(c.id); });
+        body.appendChild(b);
+      });
+    }
+  }
+  function paneToggle(kind) {
+    var pane = $('#pPane');
+    var open = pane.getAttribute('data-open') === 'true' && pane.dataset.pane === kind;
+    pane.dataset.pane = kind;
+    pane.setAttribute('data-open', String(!open));
+    $$('[data-pane-toggle]').forEach(function (b) {
+      b.setAttribute('aria-pressed', String(!open && b.dataset.paneToggle === kind));
+    });
+    $$('[data-pane-tab]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.paneTab === kind)); });
+    if (!open) renderPane();
+  }
+
+  /* ── 拖动 ── */
+  function draggable(track, ratioOf, onChange) {
+    function pos(ev) {
+      var r = track.getBoundingClientRect();
+      var x = (ev.touches ? ev.touches[0].clientX : ev.clientX) - r.left;
+      return Math.max(0, Math.min(1, x / r.width));
+    }
+    function down(ev) {
+      track.classList.add('dragging'); onChange(pos(ev));
+      function move(e) { onChange(pos(e)); }
+      function up() { track.classList.remove('dragging'); window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); }
+      window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
+      ev.preventDefault();
+    }
+    track.addEventListener('pointerdown', down);
+    track.addEventListener('keydown', function (ev) {
+      var step = ev.shiftKey ? 0.1 : 0.02;
+      if (ev.key === 'ArrowRight' || ev.key === 'ArrowUp') { onChange(Math.min(1, ratioOf() + step)); ev.preventDefault(); }
+      if (ev.key === 'ArrowLeft' || ev.key === 'ArrowDown') { onChange(Math.max(0, ratioOf() - step)); ev.preventDefault(); }
+    });
+  }
+
+  /* ── 事件 ── */
+  $('#btnNav').addEventListener('click', function () { setNav(state.nav !== 'open'); });
+  $$('.nav .item').forEach(function (b) {
+    b.addEventListener('click', function () { setPage(b.dataset.page); });
+  });
+  $$('[data-goto]').forEach(function (b) { b.addEventListener('click', function () { setPage(b.dataset.goto); }); });
+  $$('[data-filter]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      state.filter = b.dataset.filter;
+      $$('[data-filter]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+      renderChannels();
+    });
+  });
+  $('#globalSearch').addEventListener('input', function () {
+    renderChannels();
+    if (state.page !== 'channels') { setPage('channels'); }
+  });
+  $('#btnRefreshCh').addEventListener('click', function () { toast('已刷新播放列表：广东电信'); });
+  $('#btnSource').addEventListener('click', function () { toast('播放列表：广东电信（原型仅演示一个列表）'); });
+  $('#btnRecordNow').addEventListener('click', function () { toast('已开始实时录制'); });
+  $('#btnClearHistory').addEventListener('click', function () {
+    state.history = []; store.set('history', state.history); renderHistory(); renderChannels(); toast('已清空播放记录');
+  });
+  $$('[data-day]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      $$('[data-day]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+      toast(b.dataset.day === '0' ? '节目单：今天' : (b.dataset.day === '-1' ? '节目单：前一天' : '节目单：后一天'));
+    });
+  });
+  $('[data-channel-pick]').addEventListener('click', function () { setPage('channels'); toast('在频道列表中选择要查看节目单的频道'); });
+
+  $$('[data-set]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      $$('[data-set]').forEach(function (x) { x.setAttribute('aria-selected', String(x === b)); });
+      $$('[data-set-body]').forEach(function (p) { p.hidden = p.dataset.setBody !== b.dataset.set; });
+    });
+  });
+  /* 事件委托：任何带 data-channel-id 的卡片/按钮都能起播，避免单个监听器没绑上就点不动 */
+  document.addEventListener('click', function (ev) {
+    var t = ev.target.closest ? ev.target.closest('[data-channel-id]') : null;
+    if (!t) return;
+    var id = Number(t.getAttribute('data-channel-id'));
+    if (isNaN(id)) return;
+    openPlayer(id);
+  });
+  $$('.switch').forEach(function (s) {
+    s.addEventListener('click', function () { s.setAttribute('aria-checked', String(s.getAttribute('aria-checked') !== 'true')); });
+  });
+  $$('[data-theme-set]').forEach(function (b) {
+    b.addEventListener('click', function () { applyTheme(b.dataset.themeSet); toast('外观：' + b.textContent.trim()); });
+  });
+  $$('[data-toggle="theme"]').forEach(function (b) {
+    b.addEventListener('click', function () { applyTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'); });
+  });
+
+  /* 主页横幅：两个播放入口 */
+  $('#btnPlayNow').addEventListener('click', function () {
+    openPlayer(state.channel === null ? 0 : state.channel);
+  });
+  $('#btnPlayLast').addEventListener('click', function () {
+    var last = state.history.length ? state.history[0] : 0;
+    openPlayer(last);
+  });
+
+  /* 设置页底部与信息类按钮 */
+  $('#btnSaveSettings').addEventListener('click', function () { toast('设置已保存'); });
+  $('#btnCancelSettings').addEventListener('click', function () { toast('已取消本次修改'); });
+  $('#btnDebugLog').addEventListener('click', function () { toast('打开调试日志窗口'); });
+  $('#btnCheckUpdate').addEventListener('click', function () { toast('检查更新：当前已是最新版本'); });
+  $('#btnEpgDoc').addEventListener('click', function () { toast('打开 EPG 文档（srcbox.top/guide/epg）'); });
+  $('#btnClearLogo').addEventListener('click', function () { toast('已清空台标缓存'); });
+  $('#btnUploadQueue').addEventListener('click', function () { toast('打开上传队列'); });
+  $('#btnCdnAdd').addEventListener('click', function () { toast('已添加 CDN 线路'); });
+  $('#btnCdnSort').addEventListener('click', function () { toast('正在测速排序…'); });
+
+  /* 播放器控制 */
+  $('#btnPlayerBack').addEventListener('click', closePlayer);
+  $('#pPlay').addEventListener('click', function () {
+    if (state.channel === null) { openPlayer(state.history.length ? state.history[0] : 0); return; }
+    setPlaying(!state.playing);
+  });
+  $('#pStop').addEventListener('click', function () { setPlaying(false); state.elapsed = 0; paint(false); toast('已停止播放'); });
+  $('#pRew').addEventListener('click', function () { state.elapsed = Math.max(0, state.elapsed - 30); paint(false); toast('快退 30 秒'); showChrome(); });
+  $('#pFwd').addEventListener('click', function () { state.elapsed = Math.min(state.duration, state.elapsed + 30); paint(false); toast('快进 30 秒'); showChrome(); });
+  $('#pPrev').addEventListener('click', function () { step(-1); });
+  $('#pNext').addEventListener('click', function () { step(1); });
+  function step(d) {
+    var i = (state.channel === null ? 0 : state.channel + d + CH.length) % CH.length;
+    openPlayer(i);
+  }
+  var speeds = [1, 1.25, 1.5, 2];
+  $('#pSpeed').addEventListener('click', function () {
+    state.speed = speeds[(speeds.indexOf(state.speed) + 1) % speeds.length];
+    store.set('speed', state.speed);
+    this.textContent = state.speed.toFixed(state.speed % 1 ? 2 : 1) + '×';
+    toast('播放速度 ' + this.textContent);
+  });
+  $('#pMute').addEventListener('click', function () { state.muted = !state.muted; paint(false); });
+  $('#pRecord').addEventListener('click', function () {
+    var on = this.getAttribute('aria-pressed') !== 'true';
+    this.setAttribute('aria-pressed', String(on));
+    toast(on ? '已开始实时录制' : '已停止录制');
+  });
+  $('#pTimeshift').addEventListener('click', function () {
+    var on = this.getAttribute('aria-pressed') !== 'true';
+    this.setAttribute('aria-pressed', String(on));
+    toast(on ? '已开启时移' : '已关闭时移');
+  });
+  $('#pRatio').addEventListener('click', function () { toast('画面比例：自动 → 16:9 → 4:3'); });
+  $('#pMulti').addEventListener('click', function () { toast('多屏播放：4 / 6 / 9 屏（数字键 1–9 切换）'); });
+  $('#pCast').addEventListener('click', function () { toast('投射到客厅电视'); });
+  $('#pFull').addEventListener('click', function () { toast('全屏（原型不模拟窗口全屏）'); });
+  $$('[data-pane-toggle]').forEach(function (b) {
+    b.addEventListener('click', function () { paneToggle(b.dataset.paneToggle); });
+  });
+  $('#pPaneClose').addEventListener('click', function () {
+    $('#pPane').setAttribute('data-open', 'false');
+    $$('[data-pane-toggle]').forEach(function (b) { b.setAttribute('aria-pressed', 'false'); });
+  });
+  $$('[data-pane-tab]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      $('#pPane').dataset.pane = b.dataset.paneTab;
+      $$('[data-pane-tab]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+      renderPane();
+    });
+  });
+
+  draggable($('#pSeek'), function () { return state.elapsed / state.duration; }, function (r) {
+    state.elapsed = r * state.duration; paint(false); showChrome();
+  });
+  draggable($('#pVol'), function () { return (state.muted ? 0 : state.volume) / 100; }, function (r) {
+    state.volume = Math.round(r * 100); state.muted = false; store.set('volume', state.volume); paint(false); showChrome();
+  });
+
+  /* 播放器鼠标移动唤出控制条 */
+  var playerEl = $('#player');
+  playerEl.addEventListener('pointermove', showChrome);
+  playerEl.addEventListener('pointerdown', showChrome);
+
+  /* 键盘：沿用 SrcBox 现有键位 */
+  document.addEventListener('keydown', function (ev) {
+    if (ev.defaultPrevented) return;
+    if (ev.repeat && ev.key === ' ') return;
+    if (/INPUT|SELECT|TEXTAREA/.test(ev.target.tagName)) return;
+    if (ev.target.closest && ev.target.closest('[role="slider"]')) return;
+    var k = ev.key.toLowerCase();
+    if (k === 'escape') { if ($('#pPane').getAttribute('data-open') === 'true') { $('#pPaneClose').click(); } else if (playerEl.getAttribute('data-open') === 'true') { closePlayer(); } return; }
+    if (k === ' ') { ev.preventDefault(); $('#pPlay').click(); }
+    if (k === 'arrowup') { step(-1); }
+    if (k === 'arrowdown') { step(1); }
+    if (k === 'e') { toast('节目指南'); setPage('guide'); }
+    if (k === 'l') { toast('频道列表'); setPage('channels'); }
+    if (k === 'r') { $('#pRecord').click(); }
+    if (k === 'enter') { toast('全屏（原型不模拟窗口全屏）'); }
+  });
+
+  window.matchMedia('(prefers-color-scheme: light)').addEventListener('change', function () {
+    if (state.theme === 'system') applyTheme('system');
+  });
+
+  /* ── 初始化 ── */
+  applyTheme(state.theme);
+  setNav(state.nav === 'open');
+  renderChannels();
+  renderHistory();
+  renderRecordings();
+  renderEmptyGrid();
+  syncBanner();
+  paint(true);
+  $('#pSpeed').textContent = state.speed.toFixed(1) + '×';
+  var PAGES = ['home', 'channels', 'guide', 'recordings', 'favorites', 'history', 'settings', 'about'];
+  setPage(PAGES.indexOf(state.page) > -1 ? state.page : 'home');
+  if (state.channel === null) {
+    $('#player').setAttribute('data-state', 'idle');
+  } else {
+    var c0 = CH[state.channel];
+    $('#player').setAttribute('data-state', 'playing');
+    $('#pTitle').textContent = c0.name;
+    $('#pSub').textContent = '正在播出 · ' + c0.now + ' · 直播';
+    $('#pRes').textContent = c0.res; $('#pDec').textContent = c0.dec;
+    $('#pRate').textContent = c0.rate; $('#pFps').textContent = c0.fps;
+    $('#pCodec').textContent = c0.codec + ' · ' + c0.audio;
+    $('#pStageLabel').textContent = c0.name + ' · ' + c0.codec + ' · ' + c0.res;
+  }
+  window.setTimeout(function () { toast('原型：Screenbox 风格重制演示，功能与 v1 一致'); }, 700);
+  /* 任何运行期错误都直接弹出来，避免"点了没反应"却查不到原因 */
+  window.addEventListener('error', function (e) {
+    toast('脚本错误：' + (e.message || '未知'));
+  });
+  window.__srcbox2 = { play: openPlayer, idle: openPlayerIdle, state: state, page: setPage };
+})();
+</script>
+</body>
+</html>

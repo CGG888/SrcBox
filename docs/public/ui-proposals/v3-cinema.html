@@ -1,0 +1,1589 @@
+<!doctype html>
+<!--
+  源匣 SrcBox — 界面重制 v3 · Cinema First（影院优先）
+  方向：OD directions / modern-minimal（Linear / Vercel 的克制、精准、软件原生观感）
+        —— 浅色主题的六令牌逐字取自该方向规范，深色为其同色相的电影院暗色推导。
+  与前两版的差别：v1 三栏工作台、v2 NavigationView 库视图；v3 取消一切常驻框架，
+  画面即界面：悬浮缎带 + 悬浮控制坞（播放中收成一条进度轨）+ 覆盖式面板。
+  功能集合、文案与快捷键与 v1/v2 完全一致，仅位置重排。
+-->
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>源匣 SrcBox · Cinema First 外观</title>
+<style>
+  /* ─── tokens ───────────────────────────────────────────────────────── */
+  :root {
+    /* 浅色 = modern-minimal 规范原值 */
+    --bg:      oklch(99% 0.002 240);
+    --surface: oklch(100% 0 0);
+    --fg:      oklch(18% 0.012 250);
+    --muted:   oklch(54% 0.012 250);
+    --border:  oklch(92% 0.005 250);
+    --accent:  oklch(58% 0.18 255);
+    --accent-ink: oklch(100% 0 0);
+    --live:    oklch(58% 0.19 25);
+    --glass:   oklch(100% 0 0 / 0.72);
+    --hairline: oklch(18% 0.012 250 / 0.08);
+    --hover:   oklch(18% 0.012 250 / 0.05);
+    --press:   oklch(18% 0.012 250 / 0.09);
+    --shadow:  0 24px 60px -24px oklch(18% 0.012 250 / 0.28);
+  }
+  html[data-theme="dark"] {
+    /* 同色相的电影院暗色层：色相 250 不变，只推 L 与 C */
+    --bg:      oklch(13% 0.010 250);
+    --surface: oklch(18% 0.012 250);
+    --fg:      oklch(97% 0.003 250);
+    --muted:   oklch(72% 0.012 250);
+    --border:  oklch(100% 0 0 / 0.10);
+    --accent:  oklch(72% 0.15 255);
+    --accent-ink: oklch(16% 0.02 255);
+    --live:    oklch(66% 0.19 25);
+    --glass:   oklch(18% 0.012 250 / 0.66);
+    --hairline: oklch(100% 0 0 / 0.07);
+    --hover:   oklch(100% 0 0 / 0.07);
+    --press:   oklch(100% 0 0 / 0.12);
+    --shadow:  0 30px 70px -28px oklch(0% 0 0 / 0.7);
+  }
+  :root {
+    --font-display: 'Segoe UI Variable Display', 'Segoe UI Semibold', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    --font-body: 'Segoe UI Variable Text', 'Segoe UI', 'Microsoft YaHei UI', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    --font-mono: 'Cascadia Mono', 'Consolas', ui-monospace, 'SF Mono', monospace;
+    --fs-xs: 11px; --fs-sm: 12px; --fs-md: 13px; --fs-lg: 15px; --fs-xl: 18px; --fs-2xl: 24px; --fs-3xl: 34px;
+    --r-sm: 8px; --r: 12px; --r-lg: 18px; --r-xl: 24px;
+  }
+
+  *, *::before, *::after { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; padding: 18px; display: grid; place-items: center;
+    background: oklch(8% 0.008 250); color: var(--fg);
+    font-family: var(--font-body); font-size: var(--fs-md); line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+  html[data-theme="light"] body { background: oklch(94% 0.004 240); }
+  button, input, select, textarea { font: inherit; color: inherit; }
+  button { cursor: pointer; }
+  h1, h2, h3, h4 { margin: 0; font-family: var(--font-display); font-weight: 600; letter-spacing: -0.02em; }
+  p { margin: 0; }
+  ::selection { background: color-mix(in oklch, var(--accent) 30%, transparent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 6px; }
+  .scroll { overflow: auto; scrollbar-width: thin; scrollbar-color: var(--hairline) transparent; }
+  .scroll::-webkit-scrollbar { width: 10px; height: 10px; }
+  .scroll::-webkit-scrollbar-thumb { background: var(--hairline); border: 3px solid transparent; background-clip: content-box; border-radius: 99px; }
+  .mono { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+
+  /* ─── 窗口：画面即界面 ─────────────────────────────────────────────── */
+  .win {
+    position: relative; width: min(1440px, calc(100vw - 36px)); height: min(880px, calc(100vh - 36px));
+    min-height: 600px; overflow: hidden; border-radius: var(--r-xl);
+    background: oklch(10% 0.008 250); border: 1px solid var(--border); box-shadow: var(--shadow);
+  }
+  html[data-theme="light"] .win { background: oklch(96% 0.003 240); }
+  /* 画面区永远暗色：它代表视频本身，不随外观切换（浅色下只有悬浮外壳变亮） */
+  .stage { position: absolute; inset: 0; overflow: hidden; background: oklch(11% 0.012 250); }
+  .stage-glow {
+    position: absolute; left: 4%; top: 6%; width: 46%; aspect-ratio: 4 / 3; border-radius: 50%;
+    background: radial-gradient(closest-side, oklch(72% 0.15 255 / 0.34), transparent 100%);
+    filter: blur(38px); animation: drift-a 16s ease-in-out infinite alternate;
+  }
+  .stage-glow.two {
+    left: auto; right: 2%; top: auto; bottom: -8%; width: 40%;
+    background: radial-gradient(closest-side, oklch(64% 0.12 300 / 0.28), transparent 100%);
+    animation: drift-b 21s ease-in-out infinite alternate;
+  }
+  .stage-lines {
+    position: absolute; left: -50%; top: -50%; width: 200%; height: 200%;
+    background: repeating-linear-gradient(112deg, transparent 0 34px, oklch(100% 0 0 / 0.035) 34px 35px);
+    animation: drift-lines 26s linear infinite;
+  }
+  .stage-bars {
+    position: absolute; left: 0; right: 0; bottom: 0; height: 7%; min-height: 26px;
+    display: grid; grid-template-columns: repeat(8, 1fr); opacity: 0.26;
+    -webkit-mask-image: linear-gradient(to top, #000 0%, transparent 100%);
+    mask-image: linear-gradient(to top, #000 0%, transparent 100%);
+  }
+  .stage-bars i:nth-child(1) { background: #c9c9c9; } .stage-bars i:nth-child(2) { background: #c9c94f; }
+  .stage-bars i:nth-child(3) { background: #45c9c9; } .stage-bars i:nth-child(4) { background: #45c945; }
+  .stage-bars i:nth-child(5) { background: #c945c9; } .stage-bars i:nth-child(6) { background: #c94545; }
+  .stage-bars i:nth-child(7) { background: #4545c9; } .stage-bars i:nth-child(8) { background: #1b1b1b; }
+  .stage-scan {
+    position: absolute; left: 0; right: 0; height: 26%; top: -26%;
+    background: linear-gradient(to bottom, transparent, oklch(100% 0 0 / 0.05), transparent);
+    animation: scan 9s linear infinite;
+  }
+  .win[data-play="paused"] .stage-glow, .win[data-play="paused"] .stage-lines,
+  .win[data-play="paused"] .stage-scan { animation-play-state: paused; }
+  @keyframes drift-a { from { transform: translate(-6%, -4%) scale(1); } to { transform: translate(12%, 8%) scale(1.16); } }
+  @keyframes drift-b { from { transform: translate(5%, 3%) scale(1.08); } to { transform: translate(-10%, -7%) scale(0.94); } }
+  @keyframes drift-lines { from { transform: translate3d(0,0,0); } to { transform: translate3d(35px,35px,0); } }
+  @keyframes scan { from { top: -26%; } to { top: 100%; } }
+
+  /* 中央演示信号（播放中的画面示意） */
+  .signal {
+    position: absolute; left: 50%; top: 48%; transform: translate(-50%, -50%);
+    display: grid; justify-items: center; gap: 10px; padding: 20px 30px; text-align: center;
+    border-radius: var(--r-lg); border: 1px solid var(--border); background: var(--glass);
+    backdrop-filter: blur(18px); box-shadow: var(--shadow);
+  }
+  .signal .tag { display: flex; align-items: center; gap: 8px; font-size: var(--fs-xs); letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-family: var(--font-mono); }
+  .signal .pulse { width: 7px; height: 7px; border-radius: 99px; background: var(--live); animation: pulse 1.7s ease-out infinite; }
+  .signal .code { font-family: var(--font-mono); font-size: 32px; font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
+  .signal .sub { font-size: var(--fs-sm); color: var(--muted); }
+  .eq { display: flex; align-items: flex-end; gap: 4px; height: 22px; }
+  .eq i { width: 4px; border-radius: 2px; background: var(--accent); transform-origin: bottom; animation: eq 1.15s ease-in-out infinite alternate; }
+  .eq i:nth-child(1) { height: 42%; animation-delay: -0.1s; } .eq i:nth-child(2) { height: 78%; animation-delay: -0.34s; }
+  .eq i:nth-child(3) { height: 56%; animation-delay: -0.62s; } .eq i:nth-child(4) { height: 92%; animation-delay: -0.2s; }
+  .eq i:nth-child(5) { height: 48%; animation-delay: -0.76s; }
+  .win[data-play="paused"] .eq i, .win[data-play="paused"] .signal .pulse { animation-play-state: paused; }
+  @keyframes eq { from { transform: scaleY(0.34); } to { transform: scaleY(1); } }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 oklch(66% 0.19 25 / 0.6); } 70% { box-shadow: 0 0 0 7px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+  @media (prefers-reduced-motion: reduce) {
+    .stage-glow, .stage-lines, .stage-scan, .eq i, .signal .pulse { animation: none; }
+  }
+  .win-note {
+    position: absolute; right: 20px; top: 74px; max-width: 26ch; text-align: right;
+    font-size: var(--fs-xs); color: var(--muted);
+    background: var(--glass); backdrop-filter: blur(14px); border: 1px solid var(--border);
+    border-radius: var(--r); padding: 8px 11px;
+  }
+
+  /* ─── 悬浮缎带 ─────────────────────────────────────────────────────── */
+  .ribbon {
+    position: absolute; left: 18px; right: 18px; top: 18px; z-index: 5;
+    display: flex; align-items: center; gap: 14px; padding: 10px 12px 10px 16px;
+    border-radius: var(--r-lg); border: 1px solid var(--border); background: var(--glass);
+    backdrop-filter: blur(26px) saturate(1.3); box-shadow: var(--shadow);
+    -webkit-app-region: drag; user-select: none;
+  }
+  .ribbon .mark { display: flex; align-items: center; gap: 9px; font-family: var(--font-display); font-size: var(--fs-lg); font-weight: 600; }
+  .ribbon .mark i {
+    width: 26px; height: 26px; border-radius: 9px; display: grid; place-items: center;
+    background: color-mix(in oklch, var(--accent) 18%, transparent); color: var(--accent);
+  }
+  .ribbon .mark svg { width: 15px; height: 15px; }
+  .ribbon .now {
+    display: flex; align-items: center; gap: 8px; min-width: 0; padding-left: 14px;
+    border-left: 1px solid var(--hairline); font-size: var(--fs-sm); color: var(--muted);
+  }
+  .ribbon .now b { color: var(--fg); font-weight: 600; }
+  .ribbon .now .dot { width: 6px; height: 6px; border-radius: 99px; background: var(--live); flex: none; }
+  .ribbon .spacer { flex: 1 1 auto; }
+  .pills { display: flex; align-items: center; gap: 4px; -webkit-app-region: no-drag; }
+  .pill {
+    height: 32px; padding: 0 13px; border-radius: 99px; border: 1px solid transparent;
+    background: none; color: var(--muted); font-size: var(--fs-sm); white-space: nowrap;
+    transition: background 0.12s ease, color 0.12s ease;
+  }
+  .pill:hover { background: var(--hover); color: var(--fg); }
+  .pill[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  .cdot { width: 4px; height: 4px; border-radius: 99px; background: var(--hairline); }
+  /* 窗口按钮：置顶 / 最小化 / 最大化 / 关闭 */
+  .wctl { display: flex; align-items: center; gap: 2px; margin-left: 4px; padding-left: 8px; border-left: 1px solid var(--hairline); -webkit-app-region: no-drag; }
+  .wctl button {
+    width: 34px; height: 34px; display: grid; place-items: center; border: 0; border-radius: var(--r-sm);
+    background: none; color: var(--fg); transition: background 0.12s ease, color 0.12s ease;
+  }
+  .wctl button:hover { background: var(--hover); }
+  .wctl button[aria-pressed="true"] { color: var(--accent); background: color-mix(in oklch, var(--accent) 16%, transparent); }
+  .wctl button.close:hover { background: var(--live); color: oklch(100% 0 0); }
+  .wctl svg { width: 14px; height: 14px; }
+
+  /* 最小化：窗口收成一条标题条并靠上停靠；最大化：铺满可用区域 */
+  body[data-min="true"] { place-items: start center; }
+  body[data-min="true"] .win { height: 74px; min-height: 0; }
+  body[data-min="true"] .win .stage, body[data-min="true"] .win .signal, body[data-min="true"] .win .dock,
+  body[data-min="true"] .win .win-note, body[data-min="true"] .win .sheet, body[data-min="true"] .win .scrim { display: none; }
+  body[data-min="true"] .ribbon { top: 14px; cursor: pointer; }
+  .win[data-max="true"] { width: calc(100vw - 24px); height: calc(100vh - 24px); border-radius: var(--r); }
+  .win[data-max="true"] .sheet { top: 56px; bottom: 56px; }
+
+  /* 关闭确认（演示真实设置里的「关闭行为」） */
+  .dialog {
+    position: absolute; z-index: 30; left: 50%; top: 50%; transform: translate(-50%, -50%);
+    width: min(420px, calc(100% - 40px)); padding: 20px; border-radius: var(--r-lg);
+    border: 1px solid var(--border); background: var(--surface); box-shadow: var(--shadow);
+    animation: sheet-in 0.2s ease-out;
+  }
+  .dialog[hidden] { display: none; }
+  .dialog h3 { font-size: var(--fs-xl); margin-bottom: 6px; }
+  .dialog p { font-size: var(--fs-sm); color: var(--muted); margin-bottom: 14px; line-height: 1.6; }
+  .dialog .opts { display: flex; flex-direction: column; gap: 8px; }
+  .dialog .opts button {
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    min-height: 44px; padding: 0 14px; border-radius: var(--r-sm); border: 1px solid var(--border);
+    background: var(--bg); color: var(--fg); font-size: var(--fs-md); text-align: left;
+  }
+  .dialog .opts button:hover { background: var(--hover); border-color: color-mix(in oklch, var(--accent) 45%, var(--border)); }
+  .dialog .opts button .chip { flex: none; }
+
+  /* ─── 悬浮控制坞 ───────────────────────────────────────────────────── */
+  .dock {
+    position: absolute; left: 50%; transform: translateX(-50%); bottom: 18px; z-index: 6;
+    width: min(1080px, calc(100% - 36px));
+    border-radius: var(--r-lg); border: 1px solid var(--border); background: var(--glass);
+    backdrop-filter: blur(26px) saturate(1.3); box-shadow: var(--shadow);
+    padding: 10px 14px 12px; animation: dock-in 0.28s ease-out;
+  }
+  @keyframes dock-in { from { transform: translateX(-50%) translateY(14px); } to { transform: translateX(-50%) translateY(0); } }
+  /* 播放中把控制坞收成一条进度轨：细、常驻、不挡画面，鼠标一动就展开 */
+  .dock[data-collapsed="true"] { padding: 5px 14px; }
+  .dock[data-collapsed="true"] .dock-row, .dock[data-collapsed="true"] .dock-info { display: none; }
+  .rail { position: relative; height: 16px; cursor: pointer; }
+  .rail::before { content: ""; position: absolute; left: 0; right: 0; top: 7px; height: 2px; border-radius: 99px; background: var(--hairline); }
+  .rail .buffered { position: absolute; top: 7px; height: 2px; border-radius: 99px; background: color-mix(in oklch, var(--fg) 22%, transparent); }
+  .rail .fill { position: absolute; top: 7px; height: 2px; border-radius: 99px; background: var(--accent); }
+  .rail .fill::after {
+    content: ""; position: absolute; right: -1px; top: 50%; width: 11px; height: 11px; margin-top: -5.5px;
+    border-radius: 99px; background: var(--accent); box-shadow: 0 0 0 4px color-mix(in oklch, var(--accent) 22%, transparent);
+  }
+  .rail:hover::before, .rail:hover .fill, .rail:hover .buffered { height: 4px; top: 6px; }
+  .rail:hover .fill::after { transform: scale(1.15); }
+  .rail .hint {
+    position: absolute; right: 0; top: -2px; font-size: 10px; color: var(--muted); font-family: var(--font-mono);
+    display: none;
+  }
+  .dock[data-collapsed="true"]:hover .rail .hint { display: block; }
+  .dock-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; flex-wrap: nowrap; }
+  .dock-row .grp { display: flex; align-items: center; gap: 3px; }
+  .dock-row .spacer { flex: 1 1 auto; }
+  .ibtn {
+    width: 34px; height: 34px; display: grid; place-items: center; border: 0; border-radius: var(--r-sm);
+    background: none; color: var(--fg); transition: background 0.12s ease;
+  }
+  .ibtn:hover { background: var(--hover); }
+  .ibtn:active { background: var(--press); }
+  .ibtn[aria-pressed="true"] { color: var(--accent); background: color-mix(in oklch, var(--accent) 16%, transparent); }
+  .ibtn svg { width: 17px; height: 17px; }
+  .ibtn.play { width: 40px; height: 40px; border-radius: 99px; background: var(--fg); color: var(--bg); }
+  .ibtn.play:hover { background: color-mix(in oklch, var(--fg) 88%, var(--bg)); }
+  .ibtn.play svg { width: 19px; height: 19px; }
+  .ibtn.wide { width: auto; min-width: 34px; padding: 0 9px; font-family: var(--font-mono); font-size: var(--fs-xs); }
+  .dock-info {
+    display: flex; align-items: center; gap: 8px; margin-left: 4px; flex: 0 0 auto;
+    font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--muted); white-space: nowrap;
+  }
+  .dock-info b { color: var(--fg); font-weight: 600; }
+  .vol { display: flex; align-items: center; gap: 6px; width: 88px; }
+  .vol .rail { height: 14px; flex: 1; }
+  .vol .rail::before, .vol .rail .fill { top: 6px; }
+  .vol .rail .fill::after { width: 9px; height: 9px; margin-top: -4.5px; box-shadow: none; }
+  .vol .rail:hover::before, .vol .rail:hover .fill { height: 3px; top: 5.5px; }
+
+  /* ─── 覆盖面板 ─────────────────────────────────────────────────────── */
+  .scrim {
+    position: absolute; inset: 0; z-index: 10; background: oklch(8% 0.01 250 / 0.42);
+    backdrop-filter: blur(6px); animation: fade-in 0.2s ease-out;
+  }
+  html[data-theme="light"] .scrim { background: oklch(60% 0.01 250 / 0.28); }
+  .scrim[hidden] { display: none; }
+  @keyframes fade-in { from { opacity: 0.4; } to { opacity: 1; } }
+  .sheet {
+    position: absolute; z-index: 12; display: none; flex-direction: column; overflow: hidden;
+    left: 50%; transform: translateX(-50%); top: 58px; bottom: 58px; width: min(1180px, calc(100% - 52px));
+    border-radius: var(--r-xl); border: 1px solid var(--border); background: var(--glass);
+    backdrop-filter: blur(30px) saturate(1.35); box-shadow: var(--shadow);
+    animation: sheet-in 0.26s ease-out;
+  }
+  @keyframes sheet-in { from { transform: translateX(-50%) translateY(16px) scale(0.99); } to { transform: translateX(-50%) translateY(0) scale(1); } }
+  .sheet[data-open="true"] { display: flex; }
+  .sheet-head { display: flex; align-items: center; gap: 12px; padding: 16px 20px 14px; border-bottom: 1px solid var(--hairline); flex-wrap: wrap; }
+  .sheet-head h2 { font-size: var(--fs-2xl); }
+  .sheet-head .sub { font-size: var(--fs-sm); color: var(--muted); }
+  .sheet-head .spacer { flex: 1 1 auto; }
+  .sheet-body { flex: 1; min-height: 0; padding: 18px 20px 22px; }
+  .xbtn { width: 34px; height: 34px; display: grid; place-items: center; border: 1px solid var(--border); border-radius: 99px; background: none; color: var(--muted); }
+  .xbtn:hover { background: var(--hover); color: var(--fg); }
+  .xbtn svg { width: 14px; height: 14px; }
+
+  .seg { display: inline-flex; padding: 3px; gap: 2px; border-radius: 99px; border: 1px solid var(--border); background: var(--hover); }
+  .seg button { border: 0; background: none; color: var(--muted); font-size: var(--fs-sm); height: 28px; padding: 0 12px; border-radius: 99px; white-space: nowrap; }
+  .seg button:hover { color: var(--fg); }
+  .seg button[aria-pressed="true"] { background: var(--surface); color: var(--fg); font-weight: 600; box-shadow: 0 1px 2px oklch(0% 0 0 / 0.12); }
+  .field-search {
+    display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 12px; min-width: 190px;
+    border-radius: 99px; border: 1px solid var(--border); background: var(--surface);
+  }
+  .field-search svg { width: 14px; height: 14px; color: var(--muted); flex: none; }
+  .field-search input { border: 0; background: none; outline: none; width: 100%; font-size: var(--fs-sm); }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 7px; height: 32px; padding: 0 13px;
+    border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--surface); color: var(--fg); font-size: var(--fs-sm);
+  }
+  .btn:hover { background: var(--hover); }
+  .btn.accent { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+  .btn.accent:hover { background: color-mix(in oklch, var(--accent) 88%, white); }
+  .btn.ghost { background: none; border-color: transparent; color: var(--muted); }
+  .btn.ghost:hover { color: var(--fg); }
+  .btn svg { width: 14px; height: 14px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border-radius: 99px;
+    border: 1px solid var(--border); background: var(--surface); font-size: var(--fs-xs); color: var(--muted);
+  }
+  .chip.live { border-color: transparent; background: var(--live); color: oklch(100% 0 0); font-weight: 600; }
+  .chip.accent { border-color: transparent; background: color-mix(in oklch, var(--accent) 20%, transparent); color: var(--accent); font-weight: 600; }
+
+  /* ─── 浏览面板：聚光 + 卡片墙 ──────────────────────────────────────── */
+  .spotlight { display: grid; grid-template-columns: 1.55fr 1fr; gap: 16px; margin-bottom: 20px; }
+  .hero {
+    position: relative; display: grid; align-content: end; min-height: 232px; padding: 18px;
+    border-radius: var(--r-lg); border: 1px solid var(--border); overflow: hidden;
+    background:
+      radial-gradient(90% 120% at 12% 0%, color-mix(in oklch, var(--accent) 26%, transparent), transparent 62%),
+      linear-gradient(140deg, oklch(30% 0.03 250), oklch(18% 0.02 250));
+  }
+  html[data-theme="light"] .hero { background: radial-gradient(90% 120% at 12% 0%, color-mix(in oklch, var(--accent) 18%, transparent), transparent 62%), linear-gradient(140deg, oklch(93% 0.01 250), oklch(88% 0.02 250)); }
+  .hero .mark-big {
+    position: absolute; right: 18px; top: 16px; font-family: var(--font-display); font-size: 62px; font-weight: 600;
+    letter-spacing: 0.02em; color: color-mix(in oklch, var(--fg) 16%, transparent);
+  }
+  .hero .hero-title { font-size: var(--fs-3xl); letter-spacing: -0.03em; }
+  .hero .hero-sub { margin-top: 6px; font-size: var(--fs-md); color: var(--muted); }
+  .hero .hero-rail { position: relative; height: 3px; margin: 14px 0 12px; border-radius: 99px; background: var(--hairline); overflow: hidden; }
+  .hero .hero-rail i { position: absolute; inset: 0 auto 0 0; background: var(--accent); }
+  .hero .hero-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .side { display: flex; flex-direction: column; gap: 10px; }
+  .side h4 { font-size: var(--fs-md); color: var(--muted); font-weight: 500; }
+  .mini {
+    display: grid; grid-template-columns: 58px minmax(0, 1fr) auto; align-items: center; gap: 10px;
+    padding: 8px; border-radius: var(--r); border: 1px solid var(--hairline); background: var(--surface);
+    text-align: left; width: 100%;
+  }
+  .mini:hover { background: var(--hover); border-color: var(--border); }
+  .mini .mark { width: 58px; height: 34px; border-radius: var(--r-sm); display: grid; place-items: center; background: var(--hover); font-family: var(--font-display); font-size: var(--fs-sm); color: var(--muted); }
+  .mini .t { display: block; font-size: var(--fs-md); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .mini .s { display: block; font-size: var(--fs-xs); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .wall-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(196px, 1fr)); gap: 14px; }
+  .cgroup { grid-column: 1 / -1; display: flex; align-items: baseline; gap: 10px; margin: 10px 0 2px; font-size: var(--fs-sm); color: var(--muted); }
+  .ccard {
+    display: block; text-align: left; padding: 0; overflow: hidden; border-radius: var(--r);
+    border: 1px solid var(--border); background: var(--surface);
+    transition: transform 0.14s ease, border-color 0.14s ease;
+  }
+  .ccard:hover { transform: translateY(-2px); border-color: color-mix(in oklch, var(--accent) 45%, var(--border)); }
+  .ccard .thumb {
+    position: relative; aspect-ratio: 16 / 9; display: grid; place-items: center;
+    background: linear-gradient(150deg, oklch(32% 0.03 250), oklch(20% 0.02 250));
+    border-bottom: 1px solid var(--hairline);
+  }
+  html[data-theme="light"] .ccard .thumb { background: linear-gradient(150deg, oklch(92% 0.01 250), oklch(86% 0.02 250)); }
+  .ccard .thumb .mk { font-family: var(--font-display); font-size: 26px; font-weight: 600; color: color-mix(in oklch, var(--fg) 72%, transparent); }
+  .ccard .thumb .badges { position: absolute; left: 8px; top: 8px; display: flex; gap: 6px; }
+  .ccard .thumb .sp { position: absolute; right: 8px; bottom: 8px; width: 30px; height: 30px; border-radius: 99px; display: grid; place-items: center; background: var(--surface); border: 1px solid var(--border); color: var(--fg); }
+  .ccard:hover .thumb .sp { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); }
+  .ccard .thumb .sp svg { width: 13px; height: 13px; }
+  .ccard .meta { padding: 10px 12px 12px; }
+  .ccard .meta .t { display: block; font-size: var(--fs-md); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ccard .meta .s { display: block; margin-top: 2px; font-size: var(--fs-xs); color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ccard[aria-current="true"] { border-color: var(--accent); }
+  .ccard[aria-current="true"] .meta .t { color: var(--accent); }
+
+  .rows { display: flex; flex-direction: column; gap: 8px; }
+  .row {
+    display: grid; grid-template-columns: 40px minmax(0, 1fr) auto auto; align-items: center; gap: 12px;
+    padding: 10px 12px; border-radius: var(--r); border: 1px solid var(--hairline); background: var(--surface);
+    text-align: left; width: 100%;
+  }
+  .row:hover { background: var(--hover); }
+  .row .n { width: 40px; height: 34px; border-radius: var(--r-sm); display: grid; place-items: center; background: var(--hover); font-size: var(--fs-xs); color: var(--muted); font-family: var(--font-mono); }
+  .row .t { display: block; font-size: var(--fs-md); }
+  .row .s { display: block; font-size: var(--fs-xs); color: var(--muted); }
+  .empty { padding: 40px; text-align: center; color: var(--muted); font-size: var(--fs-md); }
+
+  /* ─── EPG：多频道横向时间轴 ───────────────────────────────────────── */
+  .grid-wrap { border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; background: var(--surface); display: flex; }
+  .grid-scroll { overflow: auto; flex: 1; min-height: 0; max-height: 100%; }
+  .sheet[data-sheet-body="epg"] .sheet-body { display: flex; flex-direction: column; min-height: 0; }
+  .sheet[data-sheet-body="epg"] .grid-wrap { flex: 1; min-height: 260px; }
+  .grid-inner { position: relative; min-width: max-content; }
+  .ruler { display: flex; position: sticky; top: 0; z-index: 3; background: var(--surface); border-bottom: 1px solid var(--border); }
+  .ruler .lane { position: sticky; left: 0; z-index: 4; width: 116px; flex: none; background: var(--surface); border-right: 1px solid var(--border); }
+  .ruler .ticks { display: flex; }
+  .ruler .tick { width: 192px; flex: none; padding: 8px 10px; font-family: var(--font-mono); font-size: var(--fs-xs); color: var(--muted); border-right: 1px solid var(--hairline); }
+  .lane-row { display: flex; border-bottom: 1px solid var(--hairline); }
+  .lane-row:last-child { border-bottom: 0; }
+  .lane-row .lane {
+    position: sticky; left: 0; z-index: 2; width: 116px; flex: none; padding: 10px;
+    background: var(--surface); border-right: 1px solid var(--border);
+    display: flex; align-items: center; gap: 8px; min-height: 58px;
+  }
+  .lane-row .lane .mk { width: 30px; height: 24px; border-radius: 6px; display: grid; place-items: center; background: var(--hover); font-size: 10px; color: var(--muted); flex: none; }
+  .lane-row .lane .nm { font-size: var(--fs-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .lane-row[aria-current="true"] .lane { background: color-mix(in oklch, var(--accent) 12%, var(--surface)); }
+  .lane-row[aria-current="true"] .lane .mk { color: var(--accent); }
+  .track { position: relative; flex: 1; min-height: 58px; }
+  .blk {
+    position: absolute; top: 6px; bottom: 6px; padding: 7px 9px; overflow: hidden; text-align: left;
+    border-radius: var(--r-sm); border: 1px solid var(--border); background: var(--surface); color: var(--fg);
+    display: grid; align-content: center; gap: 2px;
+  }
+  .blk:hover { background: var(--hover); border-color: color-mix(in oklch, var(--accent) 40%, var(--border)); }
+  .blk .bt { font-size: var(--fs-sm); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .blk .bs { font-size: 10px; color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: var(--font-mono); }
+  .blk.live { border-color: var(--accent); background: color-mix(in oklch, var(--accent) 14%, var(--surface)); }
+  .blk.live .bs { color: var(--accent); }
+  .nowline { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--live); z-index: 2; }
+  .nowline::before {
+    content: ""; position: absolute; left: -4px; top: -1px; width: 10px; height: 10px; border-radius: 99px; background: var(--live);
+  }
+  .epg-actions { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-size: var(--fs-sm); color: var(--muted); }
+
+  /* ─── 设置面板：分段 + 双列卡片 ───────────────────────────────────── */
+  /* 设置/关于用瀑布流列布局，卡片高度不一也不会留下大片空白 */
+  .cards { columns: 3 330px; column-gap: 12px; }
+  .card { break-inside: avoid; margin-bottom: 12px; }
+  .card { border: 1px solid var(--border); border-radius: var(--r); background: var(--surface); padding: 14px; }
+  .card > h4 { display: flex; align-items: center; gap: 8px; font-size: var(--fs-md); margin-bottom: 10px; }
+  .card > h4 .chip { font-weight: 400; }
+  .fld { display: grid; gap: 7px; padding: 9px 0; }
+  .fld + .fld { border-top: 1px solid var(--hairline); }
+  .fld .lb { display: flex; align-items: center; gap: 8px; font-size: var(--fs-md); }
+  .fld .hint { font-size: var(--fs-xs); color: var(--muted); line-height: 1.6; }
+  .fld .ctl { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .fld .ctl.end { justify-content: flex-end; }
+  .fld.row { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+  .inp, .sel, .txa {
+    height: 32px; padding: 0 10px; width: 100%; border-radius: var(--r-sm);
+    border: 1px solid var(--border); background: var(--bg); color: var(--fg); font-size: var(--fs-sm);
+  }
+  .txa { height: auto; min-height: 62px; padding: 8px 10px; font-family: var(--font-mono); line-height: 1.55; resize: vertical; }
+  .inp:focus, .sel:focus, .txa:focus { outline: none; border-color: var(--accent); }
+  .inp[readonly] { color: var(--muted); font-family: var(--font-mono); }
+  .sw { position: relative; width: 38px; height: 20px; flex: none; border-radius: 99px; border: 1px solid var(--muted); background: none; }
+  .sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 14px; height: 14px; border-radius: 99px; background: var(--muted); transition: transform 0.12s ease, background 0.12s ease; }
+  .sw[aria-checked="true"] { background: var(--accent); border-color: var(--accent); }
+  .sw[aria-checked="true"]::after { transform: translateX(18px); background: var(--accent-ink); }
+  .unit { font-size: var(--fs-xs); color: var(--muted); }
+  .kv { display: flex; align-items: center; justify-content: space-between; gap: 10px; font-size: var(--fs-sm); padding: 7px 0; }
+  .kv + .kv { border-top: 1px solid var(--hairline); }
+  .w110 { width: 110px; } .w90 { width: 90px; } .w70 { width: 70px; }
+  .rowacts { display: flex; gap: 8px; flex-wrap: wrap; padding-top: 10px; }
+  .sheet-foot { display: flex; align-items: center; gap: 10px; padding: 12px 20px; border-top: 1px solid var(--hairline); font-size: var(--fs-sm); color: var(--muted); }
+
+  .toast {
+    position: absolute; left: 50%; bottom: 118px; z-index: 40; transform: translateX(-50%);
+    padding: 9px 16px; border-radius: 99px; background: var(--surface); border: 1px solid var(--border);
+    box-shadow: var(--shadow); font-size: var(--fs-sm); display: none;
+  }
+  .toast[data-show="true"] { display: block; }
+  .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); }
+
+  @media (max-width: 1240px) {
+    .dock-info { display: none; }
+    .spotlight { grid-template-columns: minmax(0, 1fr); }
+    .ribbon .now { display: none; }
+  }
+  @media (max-width: 1080px) {
+    .ribbon .mark span { display: none; }
+    .pill { padding: 0 10px; }
+  }
+  @media (max-width: 880px) {
+    body { padding: 8px; }
+    .win { width: 100%; height: calc(100vh - 16px); border-radius: var(--r-lg); }
+    .sheet { top: 8px; bottom: 8px; width: calc(100% - 16px); }
+    .ribbon { left: 10px; right: 10px; top: 10px; padding-left: 12px; }
+    .ribbon .mark span { display: none; }
+    .dock { bottom: 10px; width: calc(100% - 20px); }
+    .dock .vol, .dock-info { display: none; }
+    .cards { grid-template-columns: minmax(0, 1fr); }
+    .win-note { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <g id="i-app"><path d="M9 2.5 4 5.6v7.8L9 16.5l5-3.1V5.6zM9 7.2l2.6 1.6v3.2L9 13.6l-2.6-1.6V8.8z"/></g>
+    <g id="i-browse"><rect x="2.5" y="3.5" width="6" height="6" rx="1.4"/><rect x="9.5" y="3.5" width="6" height="6" rx="1.4"/><rect x="2.5" y="10.5" width="6" height="4" rx="1.4"/><rect x="9.5" y="10.5" width="6" height="4" rx="1.4"/></g>
+    <g id="i-guide"><rect x="2.5" y="3.5" width="13" height="11" rx="1.6"/><path d="M2.5 7.5h13M6 2.5v3M12 2.5v3"/></g>
+    <g id="i-record"><circle cx="9" cy="9" r="4.6"/></g>
+    <g id="i-settings"><circle cx="9" cy="9" r="2.3"/><path d="M9 1.9v2M9 14.1v2M1.9 9h2M14.1 9h2M4.1 4.1l1.4 1.4M12.5 12.5l1.4 1.4M13.9 4.1l-1.4 1.4M5.5 12.5l-1.4 1.4"/></g>
+    <g id="i-info"><circle cx="9" cy="9" r="6.4"/><path d="M9 8.2v4.4M9 5.9v.2"/></g>
+    <g id="i-search"><circle cx="8" cy="8" r="4.6"/><path d="M11.4 11.4 15 15"/></g>
+    <g id="i-theme"><circle cx="9" cy="9" r="6.2"/><path d="M9 2.8v12.4a6.2 6.2 0 0 0 0-12.4z" fill="currentColor" stroke="none"/></g>
+    <g id="i-play"><path d="M5.5 3.8v10.4L15 9z"/></g>
+    <g id="i-pause"><path d="M7 3.8v10.4M12 3.8v10.4"/></g>
+    <g id="i-stop"><rect x="5" y="5" width="8" height="8" rx="1.4"/></g>
+    <g id="i-prev"><path d="M13 4.5 7.5 9 13 13.5zM5.5 4.5v9"/></g>
+    <g id="i-next"><path d="M5 4.5 10.5 9 5 13.5zM12.5 4.5v9"/></g>
+    <g id="i-rew"><path d="M10.5 4.8 5 9l5.5 4.2zM16 4.8 10.5 9 16 13.2z"/></g>
+    <g id="i-fwd"><path d="M7.5 4.8 13 9l-5.5 4.2zM2 4.8 7.5 9 2 13.2z"/></g>
+    <g id="i-vol"><path d="M4 7.4h2.4L9.6 4.6v8.8L6.4 10.6H4zM12.6 7c1.3 1.15 1.3 2.85 0 4M15 5c2.3 2.1 2.3 5.9 0 8"/></g>
+    <g id="i-mute"><path d="M4 7.4h2.4L9.6 4.6v8.8L6.4 10.6H4zM12.8 7.4l3.6 3.6M16.4 7.4l-3.6 3.6"/></g>
+    <g id="i-clock"><circle cx="9" cy="9" r="6.3"/><path d="M9 5.6V9l2.4 1.5"/></g>
+    <g id="i-ratio"><rect x="2.5" y="4.4" width="13" height="9.2" rx="1.4"/><path d="M6 7.6v3h4"/></g>
+    <g id="i-grid"><rect x="3" y="3" width="5" height="5" rx="1"/><rect x="10" y="3" width="5" height="5" rx="1"/><rect x="3" y="10" width="5" height="5" rx="1"/><rect x="10" y="10" width="5" height="5" rx="1"/></g>
+    <g id="i-cast"><path d="M3 7V4.4h12V7M3 12.6V15h12v-2.4M6 9.4c4 .5 6 2 6 2"/></g>
+    <g id="i-pip"><rect x="2.5" y="4" width="13" height="10" rx="1.6"/><rect x="9.2" y="9.2" width="5" height="3.6" rx="1" fill="currentColor" stroke="none"/></g>
+    <g id="i-full"><path d="M3 6.6V3h3.6M15 3h-3.6M15 11.4V15h-3.6M3 11.4V15h3.6"/></g>
+    <g id="i-close"><path d="M4.6 4.6l8.8 8.8M13.4 4.6l-8.8 8.8"/></g>
+    <g id="i-pin"><path d="M9 2.6 15.2 8.8l-2.4 1-.6 3.3L9 9.9 5.7 13.2 3.4 10.9 6.7 7.6 3.6 4.5z"/></g>
+    <g id="i-min"><path d="M4.2 9h9.6"/></g>
+    <g id="i-max"><rect x="4.2" y="4.2" width="9.6" height="9.6" rx="1.2"/></g>
+    <g id="i-restore"><rect x="3.4" y="6.2" width="8.4" height="8.4" rx="1.2"/><path d="M6.4 6V3.6h8.2v8.2h-2.4"/></g>
+    <g id="i-refresh"><path d="M14.6 5.6A6.2 6.2 0 1 0 14.8 11M14.6 3v3.2h-3.2"/></g>
+    <g id="i-star"><path d="M9 2.8l1.9 4 4.3.6-3.1 3 .7 4.3L9 12.5l-3.8 2.2.7-4.3-3.1-3 4.3-.6z"/></g>
+    <g id="i-check"><path d="M4 9.4 7.4 13 14 4.6"/></g>
+  </defs>
+</svg>
+
+<div class="win" id="win" data-play="paused" data-od-id="app-window">
+
+  <!-- 底层：画面 -->
+  <div class="stage" aria-hidden="true">
+    <span class="stage-glow"></span><span class="stage-glow two"></span>
+    <span class="stage-lines"></span>
+    <span class="stage-bars"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+    <span class="stage-scan"></span>
+  </div>
+
+  <div class="signal" id="signal" data-od-id="signal-card">
+    <span class="tag"><i class="pulse"></i>演示信号 · 无真实画面</span>
+    <span class="code" id="sigTime">00:00</span>
+    <span class="sub" id="sigLabel">选择一个频道开始播放</span>
+    <span class="eq" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></span>
+  </div>
+  <div class="win-note">演示用的占位画面：原型不包含任何频道画面素材或真实电视台台标。</div>
+
+  <!-- 悬浮缎带 -->
+  <header class="ribbon" data-od-id="ribbon">
+    <div class="mark"><i><svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><use href="#i-app"/></svg></i><span>源匣</span></div>
+    <div class="now">
+      <span class="dot"></span>
+      <b id="ribCh">未选择频道</b>
+      <span id="ribProg">· 选择频道后可播放</span>
+    </div>
+    <span class="spacer"></span>
+    <nav class="pills" aria-label="主要分区">
+      <button class="pill" type="button" data-sheet-open="wall" data-od-id="nav-wall"><svg width="15" height="15" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" style="vertical-align:-2px;margin-right:5px"><use href="#i-browse"/></svg>浏览</button>
+      <button class="pill" type="button" data-sheet-open="epg" data-od-id="nav-epg"><svg width="15" height="15" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" style="vertical-align:-2px;margin-right:5px"><use href="#i-guide"/></svg>节目单</button>
+      <button class="pill" type="button" data-sheet-open="recordings" data-od-id="nav-recordings"><svg width="15" height="15" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" style="vertical-align:-2px;margin-right:5px"><use href="#i-record"/></svg>录制</button>
+      <span class="cdot"></span>
+      <button class="pill" type="button" data-sheet-open="settings" data-od-id="nav-settings"><svg width="15" height="15" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" style="vertical-align:-2px;margin-right:5px"><use href="#i-settings"/></svg>设置</button>
+      <button class="pill" type="button" data-sheet-open="about" aria-label="关于"><svg width="15" height="15" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4"><use href="#i-info"/></svg></button>
+      <button class="pill" type="button" data-toggle-theme aria-label="切换浅色或深色"><svg width="15" height="15" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3"><use href="#i-theme"/></svg></button>
+    </nav>
+    <div class="wctl" data-od-id="window-controls">
+      <button type="button" id="btnPin" aria-pressed="false" aria-label="窗口置顶" title="窗口置顶"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><use href="#i-pin"/></svg></button>
+      <button type="button" id="btnMin" aria-label="最小化" title="最小化"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4"><use href="#i-min"/></svg></button>
+      <button type="button" id="btnMax" aria-label="最大化" title="最大化"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" id="maxIcon"><use href="#i-max"/></svg></button>
+      <button type="button" id="btnClose" class="close" aria-label="关闭" title="关闭"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><use href="#i-close"/></svg></button>
+    </div>
+  </header>
+
+  <!-- 悬浮控制坞 -->
+  <div class="dock" id="dock" data-collapsed="false" data-od-id="dock">
+    <div class="rail" id="rail" role="slider" tabindex="0" aria-label="播放进度" aria-valuemin="0" aria-valuemax="8100" aria-valuenow="0">
+      <span class="buffered" id="buffered"></span>
+      <span class="fill" id="fill"></span>
+      <span class="hint">收起状态 · 移动鼠标展开控制</span>
+    </div>
+    <div class="dock-row">
+      <div class="grp">
+        <button class="ibtn" type="button" id="btnPrev" aria-label="上一频道"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><use href="#i-prev"/></svg></button>
+        <button class="ibtn" type="button" id="btnNext" aria-label="下一频道"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><use href="#i-next"/></svg></button>
+      </div>
+      <div class="grp">
+        <button class="ibtn" type="button" id="btnRew" aria-label="快退 30 秒"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><use href="#i-rew"/></svg></button>
+        <button class="ibtn play" type="button" id="btnPlay" aria-label="播放或暂停" aria-pressed="false" data-od-id="btn-play"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" id="playIcon"><use href="#i-play"/></svg></button>
+        <button class="ibtn" type="button" id="btnFwd" aria-label="快进 30 秒"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><use href="#i-fwd"/></svg></button>
+        <button class="ibtn" type="button" id="btnStop" aria-label="停止"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4"><use href="#i-stop"/></svg></button>
+      </div>
+      <div class="dock-info">
+        <span id="tElapsed">00:00</span><span>/</span><span id="tTotal">2:15:00</span>
+        <span class="cdot"></span>
+        <span id="dockMeta">1920×1080 · D3D11VA · 4.2 Mbps · H.265</span>
+      </div>
+      <span class="spacer"></span>
+      <div class="grp">
+        <button class="ibtn" type="button" id="btnRecord" aria-label="实时录制" aria-pressed="false"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4"><use href="#i-record"/></svg></button>
+        <button class="ibtn" type="button" id="btnTimeshift" aria-label="时移" aria-pressed="false"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4"><use href="#i-clock"/></svg></button>
+        <button class="ibtn" type="button" id="btnRatio" aria-label="画面比例"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><use href="#i-ratio"/></svg></button>
+        <button class="ibtn" type="button" id="btnMulti" aria-label="多屏播放"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><use href="#i-grid"/></svg></button>
+        <button class="ibtn" type="button" id="btnPip" aria-label="画中画"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4"><use href="#i-pip"/></svg></button>
+        <button class="ibtn" type="button" id="btnCast" aria-label="投射"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"><use href="#i-cast"/></svg></button>
+        <button class="ibtn wide" type="button" id="btnSpeed" aria-label="播放速度">1.0×</button>
+        <button class="ibtn" type="button" id="btnMute" aria-label="静音" aria-pressed="false"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><use href="#i-vol"/></svg></button>
+        <div class="vol"><div class="rail" id="vol" role="slider" tabindex="0" aria-label="音量" aria-valuemin="0" aria-valuemax="100" aria-valuenow="72"><span class="fill" id="volFill"></span></div></div>
+        <button class="ibtn" type="button" id="btnFull" aria-label="全屏"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><use href="#i-full"/></svg></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 覆盖面板 -->
+  <div class="scrim" id="scrim" hidden></div>
+
+  <!-- 浏览 -->
+  <section class="sheet" data-sheet-body="wall" data-od-id="sheet-wall">
+    <div class="sheet-head">
+      <h2>浏览</h2>
+      <span class="sub" id="wallSub">播放列表「广东电信」· 18 个频道</span>
+      <span class="spacer"></span>
+      <div class="seg" role="group" aria-label="浏览筛选">
+        <button type="button" data-wall-filter="all" aria-pressed="true">全部</button>
+        <button type="button" data-wall-filter="groups" aria-pressed="false">分组</button>
+        <button type="button" data-wall-filter="favorites" aria-pressed="false">收藏</button>
+        <button type="button" data-wall-filter="history" aria-pressed="false">播放记录</button>
+        <button type="button" data-wall-filter="recordings" aria-pressed="false">录制</button>
+      </div>
+      <label class="field-search">
+        <svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4"><use href="#i-search"/></svg>
+        <input type="search" id="wallSearch" placeholder="搜索频道或节目" aria-label="搜索频道或节目" />
+      </label>
+      <button class="btn ghost" type="button" id="btnRefreshList"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.4"><use href="#i-refresh"/></svg>刷新</button>
+      <button class="xbtn" type="button" data-sheet-close aria-label="关闭"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><use href="#i-close"/></svg></button>
+    </div>
+    <div class="sheet-body scroll">
+      <div class="spotlight" id="spotlight"></div>
+      <div class="wall-grid" id="wallGrid"></div>
+      <div class="empty" id="wallEmpty" hidden></div>
+    </div>
+  </section>
+
+  <!-- 节目单 -->
+  <section class="sheet" data-sheet-body="epg" data-od-id="sheet-epg">
+    <div class="sheet-head">
+      <h2>节目指南</h2>
+      <span class="sub" id="epgSub">6 个频道 · 现在前后各两小时</span>
+      <span class="spacer"></span>
+      <div class="seg" role="group" aria-label="日期">
+        <button type="button" data-day="-1">前一天</button>
+        <button type="button" data-day="0" aria-pressed="true">今天</button>
+        <button type="button" data-day="1">后一天</button>
+      </div>
+      <button class="btn ghost" type="button" id="btnEpgChannel">选择频道</button>
+      <button class="xbtn" type="button" data-sheet-close aria-label="关闭"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><use href="#i-close"/></svg></button>
+    </div>
+    <div class="sheet-body">
+      <div class="grid-wrap" style="max-height:100%">
+        <div class="grid-scroll scroll" id="epgScroll"></div>
+      </div>
+      <div class="epg-actions">
+        <span>点击节目块可定位进度；直播块右侧显示状态</span>
+        <span class="cdot"></span>
+        <span id="epgSel">未选择节目</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 录制 -->
+  <section class="sheet" data-sheet-body="recordings" data-od-id="sheet-recordings">
+    <div class="sheet-head">
+      <h2>录制</h2>
+      <span class="sub">本地 2 个文件 · 网络 0 个 · 支持前台与后台录制</span>
+      <span class="spacer"></span>
+      <button class="btn" type="button" id="btnRecNow">开始实时录制</button>
+      <button class="btn ghost" type="button" id="btnRecLoad">加载本地分组</button>
+      <button class="xbtn" type="button" data-sheet-close aria-label="关闭"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><use href="#i-close"/></svg></button>
+    </div>
+    <div class="sheet-body scroll">
+      <div class="cards">
+        <div class="card"><h4>本地录制</h4><div class="rows" id="recRows"></div></div>
+        <div class="card">
+          <h4>上传队列 <span class="chip">WebDAV</span></h4>
+          <div class="rows" id="uploadRows"></div>
+          <div class="rowacts"><button class="btn" type="button" id="btnUploadQueue">查看上传队列</button></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- 设置 -->
+  <section class="sheet" data-sheet-body="settings" data-od-id="sheet-settings">
+    <div class="sheet-head">
+      <h2>设置</h2>
+      <span class="sub">所有配置、播放列表与 EPG 缓存均存储于本机</span>
+      <span class="spacer"></span>
+      <div class="seg" role="group" aria-label="设置分类" id="setSeg"></div>
+      <button class="xbtn" type="button" data-sheet-close aria-label="关闭"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><use href="#i-close"/></svg></button>
+    </div>
+    <div class="sheet-body scroll"><div class="cards" id="settingsCards"></div></div>
+    <footer class="sheet-foot">
+      <span>语言与外观修改需点击保存后生效</span>
+      <span class="spacer" style="flex:1"></span>
+      <button class="btn" type="button" id="btnDebug">调试日志</button>
+      <button class="btn" type="button" id="btnCancel">取消</button>
+      <button class="btn accent" type="button" id="btnSave">保存</button>
+    </footer>
+  </section>
+
+  <!-- 关于 -->
+  <section class="sheet" data-sheet-body="about" data-od-id="sheet-about">
+    <div class="sheet-head">
+      <h2>关于源匣</h2>
+      <span class="spacer"></span>
+      <button class="xbtn" type="button" data-sheet-close aria-label="关闭"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5"><use href="#i-close"/></svg></button>
+    </div>
+    <div class="sheet-body scroll">
+      <div class="cards">
+        <div class="card">
+          <h4>源匣 (SrcBox) <span class="chip accent">v1.1.14</span></h4>
+          <p class="hint" style="color:var(--muted);font-size:var(--fs-sm);line-height:1.7">基于 libmpv 开发的高性能 Windows IPTV 播放器。支持 M3U 播放列表、EPG 节目指南、回看、时移、预约录制、多屏播放与 Web 遥控器。</p>
+          <div class="rowacts">
+            <button class="btn accent" type="button" id="btnUpdate">检查更新</button>
+            <span class="chip">当前已是最新版本</span>
+          </div>
+        </div>
+        <div class="card">
+          <h4>项目与支持</h4>
+          <div class="rowacts">
+            <button class="btn" type="button">GitHub 项目主页</button>
+            <button class="btn" type="button">问题反馈</button>
+            <button class="btn" type="button">开源许可证</button>
+            <button class="btn" type="button">第三方声明</button>
+            <button class="btn" type="button" id="btnEpgDoc">EPG 文档</button>
+          </div>
+          <p class="hint" style="color:var(--muted);font-size:var(--fs-xs);margin-top:12px;line-height:1.7">本原型仅作外观演示：频道名、节目名与录制条目均为自拟的占位数据，界面中不包含任何频道画面素材或真实电视台台标。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <!-- 关闭确认：对应设置里的「关闭行为」 -->
+  <div class="dialog" id="closeDialog" role="dialog" aria-modal="true" aria-labelledby="closeTitle" hidden data-od-id="close-dialog">
+    <h3 id="closeTitle">关闭主窗口</h3>
+    <p>设置里的「关闭行为」决定这一步做什么。选择一个动作继续（原型只做演示，不会真的退出）。</p>
+    <div class="opts">
+      <button type="button" data-close-act="tray">最小化到托盘 <span class="chip">推荐</span></button>
+      <button type="button" data-close-act="exit">直接退出</button>
+      <button type="button" data-close-act="ask">每次询问</button>
+      <button type="button" data-close-act="cancel">取消</button>
+    </div>
+  </div>
+  <p class="sr" id="sr" aria-live="polite"></p>
+</div>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  var root = document.documentElement;
+  var store = {
+    get: function (k, d) { try { var v = localStorage.getItem('srcbox3.' + k); return v === null ? d : JSON.parse(v); } catch (e) { return d; } },
+    set: function (k, v) { try { localStorage.setItem('srcbox3.' + k, JSON.stringify(v)); } catch (e) {} }
+  };
+  var toastTimer = null;
+  function toast(msg) {
+    var t = $('#toast');
+    t.textContent = msg; t.setAttribute('data-show', 'true');
+    if (toastTimer) window.clearTimeout(toastTimer);
+    toastTimer = window.setTimeout(function () { t.setAttribute('data-show', 'false'); }, 1900);
+  }
+  function pad(n) { return (n < 10 ? '0' : '') + n; }
+  function fmt(sec) {
+    sec = Math.max(0, Math.floor(sec));
+    var h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = sec % 60;
+    return h > 0 ? h + ':' + pad(m) + ':' + pad(s) : pad(m) + ':' + pad(s);
+  }
+  function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]; }); }
+
+  /* ── 演示数据（自拟频道名，不含真实电视台标识） ── */
+  var GROUPS = [{ id: 'news', name: '新闻资讯' }, { id: 'hd', name: '高清综合' }, { id: 'sport', name: '体育赛事' }, { id: 'doc', name: '纪实科教' }];
+  var CH = [
+    { n: '广东新闻', mark: '粤新', g: 'news',  res: '1920×1080', dec: 'D3D11VA', rate: '4.2 Mbps', fps: '50 fps', codec: 'H.265', audio: 'MP3', now: '今日焦点' },
+    { n: '珠江综合', mark: '珠江', g: 'hd',    res: '1920×1080', dec: 'D3D11VA', rate: '5.1 Mbps', fps: '50 fps', codec: 'H.264', audio: 'AAC', now: '湾区一线' },
+    { n: '南方影视', mark: '南方', g: 'hd',    res: '1920×1080', dec: 'DXVA2',   rate: '6.4 Mbps', fps: '25 fps', codec: 'H.264', audio: 'AC3', now: '午间剧场' },
+    { n: '民生频道', mark: '民生', g: 'news',  res: '1280×720',  dec: 'D3D11VA', rate: '3.0 Mbps', fps: '50 fps', codec: 'H.264', audio: 'AAC', now: '正点播报' },
+    { n: '体育赛事', mark: '体育', g: 'sport', res: '1920×1080', dec: 'NVDEC',   rate: '8.2 Mbps', fps: '50 fps', codec: 'H.265', audio: 'AC3', now: '联赛集锦' },
+    { n: '足球频道', mark: '足球', g: 'sport', res: '1920×1080', dec: 'NVDEC',   rate: '7.6 Mbps', fps: '50 fps', codec: 'H.265', audio: 'AAC', now: '赛前分析' },
+    { n: '经济科教', mark: '经科', g: 'news',  res: '1280×720',  dec: 'D3D11VA', rate: '2.8 Mbps', fps: '25 fps', codec: 'H.264', audio: 'MP3', now: '股市午评' },
+    { n: '纪实频道', mark: '纪实', g: 'doc',   res: '1920×1080', dec: 'D3D11VA', rate: '4.9 Mbps', fps: '25 fps', codec: 'H.265', audio: 'AAC', now: '山河纪行' },
+    { n: '科教高清', mark: '科教', g: 'doc',   res: '1920×1080', dec: 'D3D11VA', rate: '4.4 Mbps', fps: '25 fps', codec: 'H.265', audio: 'AAC', now: '科学公开课' },
+    { n: '少儿频道', mark: '少儿', g: 'hd',    res: '1280×720',  dec: '软件',    rate: '2.2 Mbps', fps: '25 fps', codec: 'H.264', audio: 'AAC', now: '动画剧场' },
+    { n: '大湾区卫视', mark: '湾区', g: 'hd',  res: '1920×1080', dec: 'D3D11VA', rate: '5.6 Mbps', fps: '50 fps', codec: 'H.265', audio: 'AC3', now: '湾区连线' },
+    { n: '戏曲频道', mark: '戏曲', g: 'hd',    res: '1280×720',  dec: '软件',    rate: '2.6 Mbps', fps: '25 fps', codec: 'H.264', audio: 'MP3', now: '名段欣赏' },
+    { n: '音乐现场', mark: '音乐', g: 'hd',    res: '1920×1080', dec: 'D3D11VA', rate: '5.0 Mbps', fps: '50 fps', codec: 'H.265', audio: 'AAC', now: '现场精选' },
+    { n: '交通频道', mark: '交通', g: 'news',  res: '1280×720',  dec: 'D3D11VA', rate: '2.4 Mbps', fps: '50 fps', codec: 'H.264', audio: 'MP3', now: '路况直播' },
+    { n: '生活家居', mark: '生活', g: 'hd',    res: '1280×720',  dec: '软件',    rate: '2.1 Mbps', fps: '25 fps', codec: 'H.264', audio: 'AAC', now: '家居改造' },
+    { n: '中英双语', mark: '双语', g: 'doc',   res: '1920×1080', dec: 'D3D11VA', rate: '4.1 Mbps', fps: '25 fps', codec: 'H.265', audio: 'AAC', now: '双语新闻' },
+    { n: '戏曲电影', mark: '影戏', g: 'hd',    res: '1920×1080', dec: 'D3D11VA', rate: '5.8 Mbps', fps: '25 fps', codec: 'H.264', audio: 'AC3', now: '经典重映' },
+    { n: '高尔夫网球', mark: '高网', g: 'sport', res: '1920×1080', dec: 'NVDEC', rate: '7.1 Mbps', fps: '50 fps', codec: 'H.265', audio: 'AAC', now: '巡回赛集锦' }
+  ];
+  CH.forEach(function (c, i) { c.id = i; c.fav = i < 3 || i === 6; });
+  function groupName(id) { var g = GROUPS.filter(function (x) { return x.id === id; })[0]; return g ? g.name : ''; }
+
+  var POOL = ['正点播报', '今日焦点', '午间剧场', '民生直击', '专题节目', '经济半小时', '城市现场', '晚间新闻', '天气预报', '黄金剧场', '深度报道', '人文地理', '科技前线', '纪录时间', '生活服务', '环球观察'];
+  /* 每个频道一条节目单：起点错开，保证多频道时间轴看起来像真实 EPG */
+  function buildLanes() {
+    var now = new Date(), nowMin = now.getHours() * 60 + now.getMinutes();
+    var base = nowMin - 120;                       // 时间轴从两小时前开始
+    if (base < 0) { base = 0; }
+    return CH.map(function (c, ci) {
+      var cur = base - (ci % 3) * 30, out = [], i = 0, guard = 0;
+      while (cur < base + 360 && guard++ < 40) {
+        var dur = [30, 30, 60][(i + ci) % 3];
+        if (cur + dur > base + 360) { dur = base + 360 - cur; }
+        if (dur <= 0) { break; }
+        out.push({
+          ch: c, name: POOL[(i * 3 + ci) % POOL.length], start: cur, end: cur + dur, dur: dur,
+          live: (nowMin >= cur && nowMin < cur + dur)
+        });
+        cur += dur; i++;
+      }
+      return { ch: c, progs: out };
+    });
+    void nowMin;
+  }
+  var LANES = buildLanes();
+  var MIN_PX = 3.2;                                 // 1 分钟 = 3.2px → 30 分钟块 = 96px
+
+  var state = {
+    theme: store.get('theme', 'dark'),
+    channel: store.get('channel', null),
+    playing: false, muted: false,
+    volume: store.get('volume', 72),
+    elapsed: store.get('elapsed', 0), duration: 8100, speed: store.get('speed', 1),
+    history: store.get('history', [0, 1, 3]),
+    wallFilter: 'all', sheet: null, collapsed: false
+  };
+
+  /* ── 主题 ── */
+  function applyTheme(mode) {
+    var resolved = mode === 'system' ? (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark') : mode;
+    root.setAttribute('data-theme', resolved);
+    state.theme = mode; store.set('theme', mode);
+  }
+
+  /* ── 面板 ── */
+  function openSheet(name) {
+    state.sheet = name;
+    $$('[data-sheet-body]').forEach(function (s) { s.setAttribute('data-open', String(s.dataset.sheetBody === name)); });
+    $$('[data-sheet-open]').forEach(function (b) { b.setAttribute('aria-pressed', String(b.dataset.sheetOpen === name)); });
+    var open = !!name;
+    $('#scrim').hidden = !open;
+    if (name === 'settings') renderSettings();
+    if (name === 'recordingfs') {}
+    if (name === 'recordings') renderRecordings();
+    if (name === 'wall') renderWall();
+    if (name === 'epg') renderEpgGrid();
+    $('#sr').textContent = open ? '已打开' + ({ wall: '浏览', epg: '节目指南', recordings: '录制', settings: '设置', about: '关于' }[name] || '') : '已关闭面板';
+  }
+  function closeSheet() { openSheet(null); }
+
+  /* ── 浏览：聚光 + 卡片墙 ── */
+  function cardHTML(c) {
+    var cur = state.channel === c.id;
+    return '<span class="thumb"><span class="badges">' +
+      '<span class="chip' + (cur ? ' live' : '') + '">' + (cur ? '正在播放' : groupName(c.g)) + '</span>' +
+      (c.fav ? '<span class="chip accent">收藏</span>' : '') +
+      '</span><span class="mk">' + esc(c.mark) + '</span>' +
+      '<span class="sp"><svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.6"><use href="#i-play"/></svg></span></span>' +
+      '<span class="meta"><span class="t">' + esc(c.n) + '</span>' +
+      '<span class="s">' + esc(c.now) + ' · ' + esc(c.codec) + ' · ' + esc(c.rate) + '</span></span>';
+  }
+  function makeCard(c) {
+    var b = document.createElement('button');
+    b.type = 'button'; b.className = 'ccard';
+    b.setAttribute('aria-current', String(state.channel === c.id));
+    b.setAttribute('data-channel-id', String(c.id));
+    b.setAttribute('data-od-id', 'channel-card-' + c.id);
+    b.innerHTML = cardHTML(c);
+    return b;
+  }
+  function renderWall() {
+    var q = ($('#wallSearch').value || '').trim().toLowerCase();
+    var f = state.wallFilter;
+    var items = CH.filter(function (c) {
+      var okQ = !q || c.n.toLowerCase().indexOf(q) > -1 || c.now.toLowerCase().indexOf(q) > -1;
+      return okQ;
+    });
+    /* 聚光：当前频道，否则第一个 */
+    var hero = state.channel === null ? CH[0] : CH[state.channel];
+    var pct = state.duration ? Math.min(100, state.elapsed / state.duration * 100) : 0;
+    var sp = $('#spotlight');
+    sp.innerHTML =
+      '<div class="hero">' +
+        '<span class="mark-big">' + esc(hero.mark) + '</span>' +
+        '<div class="hero-title">' + esc(hero.n) + '</div>' +
+        '<div class="hero-sub">' + groupName(hero.g) + ' · 正在播出 ' + esc(hero.now) + ' · ' + esc(hero.codec) + ' · ' + esc(hero.res) + '</div>' +
+        '<div class="hero-rail"><i style="width:' + pct.toFixed(1) + '%"></i></div>' +
+        '<div class="hero-actions">' +
+          '<button class="btn accent" type="button" data-channel-id="' + hero.id + '">' + (state.channel === hero.id && state.playing ? '正在播放' : '开始播放') + '</button>' +
+          '<button class="btn" type="button" data-hero-open="epg">查看节目单</button>' +
+          '<button class="btn ghost" type="button" data-hero-fav="' + hero.id + '">' + (hero.fav ? '取消收藏' : '收藏') + '</button>' +
+          '<span class="chip">' + esc(hero.fps) + '</span><span class="chip">' + esc(hero.audio) + '</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="side"><h4>继续观看</h4><div class="rows" id="recentRows"></div></div>';
+
+    var recent = $('#recentRows');
+    state.history.slice(0, 3).forEach(function (id) {
+      var c = CH[id]; if (!c) return;
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'mini'; b.setAttribute('data-channel-id', String(c.id));
+      b.innerHTML = '<span class="mark">' + esc(c.mark) + '</span>' +
+        '<span><span class="t">' + esc(c.n) + '</span><span class="s">' + esc(c.now) + '</span></span>' +
+        '<span class="chip">继续</span>';
+      recent.appendChild(b);
+    });
+    if (!recent.children.length) { recent.innerHTML = '<div class="empty" style="padding:16px">还没有播放记录</div>'; }
+
+    var grid = $('#wallGrid');
+    grid.innerHTML = '';
+    var shown = 0;
+    if (f === 'recordings') {
+      grid.innerHTML = '<div class="cgroup"><span>录播列表</span><span>本地 2 个文件</span></div>';
+      RECORDINGS.forEach(function (r, i) {
+        var row = document.createElement('button');
+        row.type = 'button'; row.className = 'row'; row.style.gridColumn = '1 / -1';
+        row.setAttribute('data-od-id', 'wall-recording-' + i);
+        row.innerHTML = '<span class="n">' + (i + 1) + '</span>' +
+          '<span><span class="t">' + esc(r.n) + '</span><span class="s">' + esc(r.s) + '</span></span>' +
+          '<span class="chip">' + esc(r.mode) + '</span><span class="btn">播放</span>';
+        row.addEventListener('click', function (ev) {
+          if (ev.target.closest('.btn')) { toast('已开始播放录播：' + r.n); return; }
+          openSheet('recordings');
+        });
+        grid.appendChild(row);
+      });
+      shown = RECORDINGS.length;
+    } else {
+      if (f === 'favorites') { items = items.filter(function (c) { return c.fav; }); }
+      if (f === 'history') { items = state.history.map(function (id) { return CH[id]; }).filter(Boolean); }
+      if (f === 'groups') {
+        GROUPS.forEach(function (g) {
+          var inG = items.filter(function (c) { return c.g === g.id; });
+          if (!inG.length) return;
+          var h = document.createElement('div');
+          h.className = 'cgroup';
+          h.innerHTML = '<span>' + g.name + '</span><span>' + inG.length + ' 个频道</span>';
+          grid.appendChild(h);
+          inG.forEach(function (c) { grid.appendChild(makeCard(c)); shown++; });
+        });
+      } else {
+        items.forEach(function (c) { grid.appendChild(makeCard(c)); shown++; });
+      }
+    }
+    $('#wallEmpty').hidden = shown > 0;
+    $('#wallEmpty').textContent = '没有匹配「' + ($('#wallSearch').value || '') + '」的频道';
+    $('#wallSub').textContent = '播放列表「广东电信」· ' + (q ? '筛选到 ' + shown + ' / ' + CH.length : '共 ' + shown + ' 个频道');
+  }
+  var RECORDINGS = [
+    { n: '广东新闻 · 午间剧场', s: '今天 12:30 · 60 分 · 812 MB · MP4', mode: '本地存取' },
+    { n: '体育赛事 · 联赛集锦', s: '昨天 20:00 · 92 分 · 1.2 GB · TS', mode: '网络存取' }
+  ];
+  function renderRecordings() {
+    var rows = $('#recRows'); rows.innerHTML = '';
+    RECORDINGS.forEach(function (r, i) {
+      var b = document.createElement('button');
+      b.type = 'button'; b.className = 'row'; b.setAttribute('data-od-id', 'recording-row-' + i);
+      b.innerHTML = '<span class="n">' + (i + 1) + '</span>' +
+        '<span><span class="t">' + esc(r.n) + '</span><span class="s">' + esc(r.s) + '</span></span>' +
+        '<span class="chip">' + esc(r.mode) + '</span><span class="btn">播放</span>';
+      b.addEventListener('click', function (ev) {
+        if (ev.target.closest('.btn')) { toast('已开始播放录播：' + r.n); return; }
+        toast('展开录播详情');
+      });
+      rows.appendChild(b);
+    });
+    $('#uploadRows').innerHTML =
+      '<div class="row"><span class="n">↑</span><span><span class="t">广东新闻 · 午间剧场.mp4</span><span class="s">已上传 68% · 512 KB/s · 剩余 00:12</span></span><span class="chip">上传中</span><span class="btn ghost">暂停</span></div>' +
+      '<div class="row"><span class="n">✓</span><span><span class="t">体育赛事 · 联赛集锦.ts</span><span class="s">昨天 21:42 完成 · 1.2 GB</span></span><span class="chip accent">已完成</span><span class="btn ghost">打开</span></div>';
+  }
+
+  /* ── EPG 时间轴 ── */
+  function renderEpgGrid() {
+    var base = LANES[0].progs[0] ? LANES[0].progs[0].start : 0;
+    var span = 360;
+    var now = new Date(), nowMin = now.getHours() * 60 + now.getMinutes();
+    var wrap = $('#epgScroll');
+    var h = '<div class="grid-inner">';
+    h += '<div class="ruler"><span class="lane"></span><span class="ticks">';
+    for (var t = 0; t < span; t += 60) {
+      h += '<span class="tick">' + pad(Math.floor((base + t) / 60) % 24) + ':' + pad((base + t) % 60) + '</span>';
+    }
+    h += '</span></div>';
+    LANES.forEach(function (lane) {
+      h += '<div class="lane-row"' + (state.channel === lane.ch.id ? ' aria-current="true"' : '') + '>';
+      h += '<span class="lane"><span class="mk">' + esc(lane.ch.mark) + '</span><span class="nm">' + esc(lane.ch.n) + '</span></span>';
+      h += '<span class="track">';
+      lane.progs.forEach(function (p) {
+        var left = (p.start - base) * MIN_PX, w = p.dur * MIN_PX;
+        var st = pad(Math.floor(p.start / 60) % 24) + ':' + pad(p.start % 60);
+        var en = pad(Math.floor(p.end / 60) % 24) + ':' + pad(p.end % 60);
+        h += '<button class="blk' + (p.live ? ' live' : '') + '" type="button" style="left:' + left + 'px;width:' + Math.max(60, w - 4) + 'px"'
+          + ' data-prog="' + esc(p.name) + '" data-ch="' + lane.ch.id + '" data-live="' + (p.live ? '1' : '0') + '">'
+          + '<span class="bt">' + esc(p.name) + '</span><span class="bs">' + st + '–' + en + (p.live ? ' · 直播' : '') + '</span></button>';
+      });
+      h += '<span class="nowline" style="left:' + ((nowMin - base) * MIN_PX) + 'px"></span>';
+      h += '</span></div>';
+    });
+    h += '</div>';
+    wrap.innerHTML = h;
+    $('#epgSub').textContent = LANES.length + ' 个频道 · ' + pad(Math.floor(base / 60) % 24) + ':' + pad(base % 60)
+      + ' 起 ' + Math.round(span / 60) + ' 小时 · 现在 ' + pad(now.getHours()) + ':' + pad(now.getMinutes());
+  }
+
+  /* ── 设置：数据驱动生成（7 个分类 / 全部原有设置项） ── */
+  var SETTINGS = [
+    { id: 'app', name: '应用', groups: [
+      { title: '界面', fields: [
+        { k: '语言', t: 'select', v: ['跟随系统', '简体中文', '繁体中文', 'English', '俄语'], d: 1 },
+        { k: '外观', t: 'seg', v: ['跟随系统', '浅色', '深色'], d: 2, hint: '语言与外观修改需点击保存后生效。' }
+      ]},
+      { title: '启动', fields: [
+        { k: '启动时自动播放上次频道', t: 'switch', on: true },
+        { k: '关闭行为', t: 'select', v: ['最小化到托盘', '直接退出', '每次询问'] }
+      ]}
+    ]},
+    { id: 'video', name: '视频', groups: [
+      { title: '解码', fields: [
+        { k: '解码器', t: 'select', v: ['自动', 'D3D11VA (硬件)', 'DXVA2 (硬件)', 'NVDEC (硬件)', '软件解码'] }
+      ]},
+      { title: '反交错 (针对 1080i/720i 隔行流)', fields: [
+        { k: '反交错模式', t: 'select', v: ['自动', '强制开启', '关闭'] },
+        { k: '去隔行算法', t: 'select', v: ['yadif', 'bwdif', 'none'] },
+        { k: '', t: 'note', text: 'Auto 仅对真正隔行的流启用（推荐，零副作用）。Force On 强制开启（可能影响逐行流）。Off 关闭。算法推荐 yadif。' }
+      ]}
+    ]},
+    { id: 'audio', name: '声音', groups: [
+      { title: '音频设置', fields: [
+        { k: '首选音轨语言 (alang)', t: 'input', v: 'zh', hint: '例如：zh,en。仅在多音轨/字幕流生效；未命中会回退自动选择。' },
+        { k: '首选字幕语言 (slang)', t: 'input', v: 'zh' },
+        { k: '音量增益', t: 'input', v: '+6', unit: 'dB' },
+        { k: '最大音量', t: 'input', v: '100', unit: '%' },
+        { k: '音频延迟', t: 'input', v: '0', unit: 'ms' }
+      ]}
+    ]},
+    { id: 'playback', name: '播放', groups: [
+      { title: '时间覆盖', fields: [
+        { k: '启用覆盖（仅替换时间片段）', t: 'switch' },
+        { k: '覆盖模式', t: 'select', v: ['仅改时间', '完全替换'] },
+        { k: '时间布局', t: 'select', v: ['start+end', 'playseek(begin-end)', 'start+duration'], hint: '选择时间参数布局：start+end / start+duration / playseek(begin-end)' },
+        { k: '时间编码', t: 'select', v: ['本地 yyyyMMddHHmmss', 'UTC yyyyMMddHHmmss', 'Unix 秒 (10位)', 'Unix 毫秒 (13位)'], hint: '本地：yyyyMMddHHmmss；UTC：同上但以 UTC 格式化；Unix 秒：10 位；Unix 毫秒：13 位' },
+        { k: 'start 键名', t: 'input', v: 'start', hint: '常见键名：start/starttime/begin、end/endtime/finish、duration、playseek（可自定义）' },
+        { k: 'end 键名', t: 'input', v: 'end' },
+        { k: 'duration 键名', t: 'input', v: 'duration' },
+        { k: 'playseek 键名', t: 'input', v: 'playseek' },
+        { k: 'URL 编码', t: 'switch' },
+        { k: '', t: 'note', text: '【重要】这是全局层面的时间片段标准化：只替换“时间参数”，用于统一不同频道或模板的时间表达（start/end、playseek、UTC/Unix 等）。请保持关闭作为默认，调试通过后再启用。' },
+        { k: '', t: 'buttons', v: ['查看文档', 'Issues'] }
+      ]},
+      { title: '高级选项（预览）', fields: [
+        { k: '', t: 'note', text: '以下为预览项，后续版本将提供 ISO‑8601 预设、日期/时间拆分与路径占位替换的完整能力。' },
+        { k: 'ISO‑8601 预设', t: 'switch' },
+        { k: '启用日期/时间拆分（begin_date/begin_time…）', t: 'switch' },
+        { k: '启用路径式时间占位替换（如 {utc:…}）', t: 'switch' }
+      ]},
+      { title: '预览（仅拼接基础地址 + 时间片段）', fields: [
+        { k: '基础地址（可选，不填则仅显示时间片段）', t: 'input', v: '', ph: 'http://host/live/101.m3u8' },
+        { k: '预览回放', t: 'ro', v: '?start=20261011013000&end=20261011023000' },
+        { k: '预览时移', t: 'ro', v: '?starttime=20261011013000&endtime=20261011023000' },
+        { k: '时间占位符样式（模板示例，仅用于查看）', t: 'ro', v: '${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss} · {utc:yyyyMMddHHmmss}' }
+      ]},
+      { title: '回看 / 时移', fields: [
+        { k: '启用时移', t: 'switch', on: true, hint: '直播时移与回看共用频道模板，可在频道编辑里单独覆盖' },
+        { k: '时移范围 (小时)', t: 'input', v: '6', hint: '设置支持时移的时间跨度' },
+        { k: '回看范围 (小时)', t: 'input', v: '72' },
+        { k: '回看地址格式', t: 'input', v: '?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}', hint: '{id} 代表频道 ID；可填完整 URL 或仅参数段' },
+        { k: '时移地址格式', t: 'input', v: '?starttime=${(b)yyyyMMddHHmmss}&endtime=${(e)yyyyMMddHHmmss}', hint: '支持占位符 ${(b)...} / ${(e)...} / {utc:...} / {utcend:...}' },
+        { k: '追加 epg_time 参数', t: 'switch', hint: '启用后会在回放/时移 URL 后追加 epg_time；部分播放源不支持该参数会影响播放，默认关闭。' }
+      ]}
+    ]},
+    { id: 'channel', name: '频道', groups: [
+      { title: 'EPG 设置', fields: [
+        { k: '启用', t: 'switch', on: true },
+        { k: 'EPG 地址', t: 'textarea', v: 'http://epg.example.com/epg.xml.gz', hint: '支持 .xml, .gz 格式，一行一个地址' },
+        { k: '刷新间隔 (小时)', t: 'input', v: '24', hint: '建议设置为 24 小时' },
+        { k: '启用智能模糊匹配', t: 'switch', on: true, hint: '尝试自动匹配名称不完全一致的频道 (例如 CCTV-1 匹配 CCTV1)。' },
+        { k: '', t: 'note', text: '匹配规则与占位符说明 —— 匹配顺序（从高到低）：1）tvg-id 精准匹配；2）tvg-id 清洗后匹配；3）tvg-name 清洗后匹配；4）频道名与 EPG display-name 清洗后匹配；5）智能模糊匹配。M3U 中建议填写 tvg-id 和 tvg-name 可提高匹配成功率。命中结果会缓存以提升速度。' },
+        { k: '', t: 'note', text: '当频道暂无 EPG 数据时，节目单将显示每小时一条“精彩节目”的占位项，仅用于显示占位，不影响直播、回放和时移功能。' },
+        { k: '', t: 'buttons', v: ['查看 EPG 文档 (VitePress)'] }
+      ]},
+      { title: '频道快照预览', fields: [
+        { k: '频道快照预览', t: 'switch', hint: '需要 rtp2httpd 开启 X-Request-Snapshot 支持，鼠标悬停频道时显示预览' },
+        { k: '宽度 / 高度', t: 'inputs', v: ['214', '120'], unit: ['px', 'px'], hint: '推荐 16:9 比例，如 214×120 / 320×180' },
+        { k: '预览并发数', t: 'input', v: '2', hint: '同时请求快照的最大数量（1~16，默认 2）；数值越大占用的光猫线路越多' }
+      ]},
+      { title: '台标设置', fields: [
+        { k: '启用', t: 'switch', on: true },
+        { k: '台标库地址', t: 'input', v: 'http://site.com/{name}.png', hint: '支持占位符 {name}' },
+        { k: '启用台标本地缓存', t: 'switch', on: true },
+        { k: '缓存目录', t: 'input', v: '%LocalAppData%\\SrcBox\\logos' },
+        { k: '缓存有效期 (小时)', t: 'input', v: '168' },
+        { k: '缓存上限 (MiB)', t: 'input', v: '256' },
+        { k: '', t: 'buttons', v: ['清空缓存'], act: 'logo' }
+      ]}
+    ]},
+    { id: 'recording', name: '录制', groups: [
+      { title: '录制', fields: [
+        { k: '启用录播', t: 'switch', on: true },
+        { k: '默认播放选择', t: 'select', v: ['每次询问', '优先本地', '优先网络', '记住上次'] },
+        { k: '保存方式', t: 'select', v: ['仅本地', '仅网络（结束后上传）', '本地+结束后上传', '同时保存（实验）'] },
+        { k: '本地目录模板', t: 'input', v: '{channel}\\{date}' },
+        { k: '文件名模板', t: 'input', v: '{channel}_{title}_{start:yyyyMMdd_HHmmss}' }
+      ]},
+      { title: '可靠性', fields: [
+        { k: '录制前验证目录可写', t: 'switch', on: true },
+        { k: '首字节超时(秒)', t: 'input', v: '15' },
+        { k: '自动重试次数', t: 'input', v: '3' }
+      ]},
+      { title: '上传', fields: [
+        { k: '并发数', t: 'input', v: '2' },
+        { k: '重试次数', t: 'input', v: '3' },
+        { k: '限速(KB/s)', t: 'input', v: '0' },
+        { k: '实时上传间隔(秒)', t: 'input', v: '30' },
+        { k: '临时后缀', t: 'input', v: '.part' },
+        { k: '停止后延迟转正（PUT）', t: 'switch' },
+        { k: '延迟(秒)', t: 'input', v: '5' },
+        { k: '转正限速(KB/s)', t: 'input', v: '0' },
+        { k: '启用断点续传（实验）', t: 'switch' },
+        { k: '', t: 'buttons', v: ['查看上传队列'], act: 'queue' }
+      ]}
+    ]},
+    { id: 'network', name: '网络', groups: [
+      { title: '遥控器', fields: [
+        { k: '启用 Web 遥控器', t: 'switch', hint: '启用后，在同一局域网内可通过手机浏览器访问 http://电脑IP:端口 来控制播放器。' },
+        { k: '端口', t: 'input', v: '8080' },
+        { k: '需要访问密码', t: 'switch' },
+        { k: '访问密码', t: 'input', v: '', ph: '留空表示不校验' },
+        { k: '显示频道列表', t: 'switch', on: true },
+        { k: '显示节目单', t: 'switch', on: true }
+      ]},
+      { title: '网络播放', fields: [
+        { k: '缓存秒数', t: 'input', v: '3' },
+        { k: 'demuxer-max-bytes (MiB)', t: 'input', v: '64' },
+        { k: 'demuxer-max-back-bytes (MiB)', t: 'input', v: '16' },
+        { k: 'FCC 预取数量', t: 'input', v: '2' },
+        { k: '超时换源 (秒)', t: 'input', v: '8' },
+        { k: '协议自适应优化', t: 'switch', on: true, hint: '按协议自动选择更快的探测与缓存参数；关闭则使用通用参数。' },
+        { k: 'HLS 从直播边缘开始', t: 'switch', on: true },
+        { k: 'HLS 预读秒数', t: 'input', v: '3', hint: '将 HLS 直接跳到直播点；预读秒过小可降低起播延迟，但弱网可能更易卡顿。' },
+        { k: 'mpv 网络超时 (秒)', t: 'input', v: '15', hint: '仅影响 mpv 层网络超时；业务层“超时换源(秒)”保持不变。' }
+      ]},
+      { title: '源健康检查', fields: [
+        { k: '启用自动源健康检查', t: 'switch', hint: '默认关闭。开启后仅探测当前播放频道的源，不再全量扫描所有频道；成功起播的源会自动标记为健康，不产生额外探测流量。' },
+        { k: '单次探测并发数', t: 'input', v: '5', hint: '同时探测的源数量（1~100，默认 5）。受光猫/运营商线路限制时请调低；播放本身占 1 路。' }
+      ]},
+      { title: 'HTTP/RTSP Header 设置', fields: [
+        { k: 'HTTP Headers', t: 'textarea', v: 'Referer: http://provider.example.com/', hint: '多行文本，每行一个 Header，格式：User-Agent: xxx 或 Referer: https://xxx。适用于 HTTP/HTTPS 流。' },
+        { k: 'RTSP 传输模式', t: 'select', v: ['TCP', 'UDP', 'HTTP Tunnel'] },
+        { k: 'RTSP User-Agent', t: 'input', v: '', ph: '留空使用默认 UA' },
+        { k: 'RTSP 用户名', t: 'input', v: '' },
+        { k: 'RTSP 密码', t: 'input', v: '' },
+        { k: '测试 URL', t: 'input', v: 'rtsp://192.168.1.1:554/live/101' },
+        { k: '', t: 'buttons', v: ['测试 HTTP', '测试 RTSP'] }
+      ]},
+      { title: 'rtp2httpd 时区 / 无缝时移', fields: [
+        { k: '在请求中携带时区标记（TZ/UTC+N）', t: 'switch', hint: '附加参数会拼到直播/回看地址后面，例如 r2h-seek-mode=range(UTC+8/3600)；修改时区标记后需重启程序生效。' },
+        { k: 'UTC 偏移（小时，默认 8）', t: 'input', v: '8' },
+        { k: '自定义 User-Agent（留空 = 浏览器 UA + 时区标记）', t: 'input', v: '' },
+        { k: '附加播放查询参数', t: 'input', v: '', ph: '例如 r2h-seek-mode=range' },
+        { k: '允许无效/自签名证书（不安全）', t: 'switch' }
+      ]},
+      { title: 'CDN线路', fields: [
+        { k: '', t: 'note', text: 'CDN（内容分发网络）用于加速 GitHub 文件的下载。如果检查更新或下载失败，请尝试切换或添加新的镜像线路。' },
+        { k: '线路 1', t: 'input', v: 'https://gh-proxy.org', btns: ['上移', '下移', '删除'] },
+        { k: '线路 2', t: 'input', v: 'https://ghfast.top', btns: ['上移', '下移', '删除'] },
+        { k: '新增线路', t: 'input', v: '', ph: '例如 https://gh-proxy.org', btns: ['添加'] },
+        { k: '', t: 'buttons', v: ['测速排序'] }
+      ]},
+      { title: 'WebDAV', fields: [
+        { k: '启用 WebDAV', t: 'switch' },
+        { k: '基地址', t: 'input', v: '', ph: 'https://host/dav/', hint: '请填写完整的 WebDAV 基地址（包含服务端路径）。示例：Nextcloud https://host/remote.php/dav/files/<user>/；Cloudreve https://host/dav/；AList https://host/dav/<path>/' },
+        { k: '用户名', t: 'input', v: '' },
+        { k: '令牌/密码', t: 'input', v: '' },
+        { k: '允许自签证书', t: 'switch' },
+        { k: '根目录', t: 'input', v: '/SrcBox' },
+        { k: '录播目录', t: 'input', v: '/SrcBox/recordings' },
+        { k: '用户数据目录', t: 'input', v: '/SrcBox/userdata' },
+        { k: '', t: 'buttons', v: ['测试连接', '备份用户数据', '恢复用户数据', '录播目录写入测试'] }
+      ]}
+    ]}
+  ];
+  var setSeg = $('#setSeg');
+  var setIndex = 0;
+  function renderSettings() {
+    if (!setSeg.children.length) {
+      SETTINGS.forEach(function (s, i) {
+        var b = document.createElement('button');
+        b.type = 'button'; b.textContent = s.name;
+        b.setAttribute('aria-pressed', String(i === setIndex));
+        b.addEventListener('click', function () {
+          setIndex = i;
+          $$('button', setSeg).forEach(function (x, xi) { x.setAttribute('aria-pressed', String(xi === i)); });
+          renderSettings();
+        });
+        setSeg.appendChild(b);
+      });
+    }
+    var sec = SETTINGS[setIndex], host = $('#settingsCards');
+    host.innerHTML = '';
+    sec.groups.forEach(function (g) {
+      var card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = '<h4>' + esc(g.title) + '</h4>';
+      g.fields.forEach(function (f) { card.appendChild(fieldEl(f)); });
+      host.appendChild(card);
+    });
+  }
+  function fieldEl(f) {
+    var wrap = document.createElement('div');
+    wrap.className = 'fld';
+    if (f.t === 'note') {
+      wrap.innerHTML = '<span class="hint">' + esc(f.text) + '</span>';
+      return wrap;
+    }
+    if (f.t === 'buttons') {
+      var acts = document.createElement('div');
+      acts.className = 'rowacts';
+      f.v.forEach(function (label) {
+        var b = document.createElement('button');
+        b.type = 'button'; b.className = 'btn'; b.textContent = label;
+        b.addEventListener('click', function () { toast(label); });
+        acts.appendChild(b);
+      });
+      wrap.appendChild(acts);
+      return wrap;
+    }
+    if (f.t === 'switch') {
+      wrap.className = 'fld row';
+      var lb = document.createElement('div');
+      lb.innerHTML = '<span class="lb">' + esc(f.k) + '</span>' + (f.hint ? '<span class="hint">' + esc(f.hint) + '</span>' : '');
+      var sw = document.createElement('button');
+      sw.type = 'button'; sw.className = 'sw'; sw.setAttribute('role', 'switch');
+      sw.setAttribute('aria-checked', String(!!f.on)); sw.setAttribute('aria-label', f.k);
+      sw.addEventListener('click', function () { sw.setAttribute('aria-checked', String(sw.getAttribute('aria-checked') !== 'true')); });
+      wrap.appendChild(lb); wrap.appendChild(sw);
+      return wrap;
+    }
+    wrap.innerHTML = (f.k ? '<span class="lb">' + esc(f.k) + '</span>' : '') + (f.hint ? '<span class="hint">' + esc(f.hint) + '</span>' : '');
+    var ctl = document.createElement('div');
+    ctl.className = 'ctl';
+    if (f.t === 'select') {
+      var sel = document.createElement('select');
+      sel.className = 'sel'; sel.setAttribute('aria-label', f.k);
+      f.v.forEach(function (o, i) {
+        var op = document.createElement('option');
+        op.textContent = o;
+        if (f.d !== undefined ? i === f.d : i === 0) { op.selected = true; }
+        sel.appendChild(op);
+      });
+      ctl.appendChild(sel);
+    } else if (f.t === 'seg') {
+      var seg = document.createElement('div');
+      seg.className = 'seg';
+      f.v.forEach(function (o, i) {
+        var b = document.createElement('button');
+        b.type = 'button'; b.textContent = o;
+        b.setAttribute('aria-pressed', String(f.d !== undefined ? i === f.d : i === 0));
+        b.addEventListener('click', function () {
+          $$('button', seg).forEach(function (x, xi) { x.setAttribute('aria-pressed', String(xi === i)); });
+          if (['跟随系统', '浅色', '深色'].indexOf(o) > -1) { applyTheme(o === '跟随系统' ? 'system' : (o === '浅色' ? 'light' : 'dark')); }
+        });
+        seg.appendChild(b);
+      });
+      ctl.appendChild(seg);
+    } else if (f.t === 'input' || f.t === 'ro') {
+      var inp = document.createElement('input');
+      inp.className = 'inp' + (f.unit ? ' w110' : '');
+      inp.type = 'text'; inp.value = f.v || '';
+      if (f.ph) { inp.placeholder = f.ph; }
+      if (f.t === 'ro') { inp.readOnly = true; }
+      inp.setAttribute('aria-label', f.k);
+      ctl.appendChild(inp);
+      if (f.unit) { var u = document.createElement('span'); u.className = 'unit'; u.textContent = f.unit; ctl.appendChild(u); }
+    } else if (f.t === 'inputs') {
+      f.v.forEach(function (val, i) {
+        var inp2 = document.createElement('input');
+        inp2.className = 'inp w90'; inp2.type = 'text'; inp2.value = val;
+        inp2.setAttribute('aria-label', f.k + ' ' + (i + 1));
+        ctl.appendChild(inp2);
+        var u2 = document.createElement('span'); u2.className = 'unit'; u2.textContent = f.unit ? f.unit[i] : '';
+        ctl.appendChild(u2);
+      });
+    } else if (f.t === 'textarea') {
+      var ta = document.createElement('textarea');
+      ta.className = 'txa'; ta.value = f.v || ''; ta.setAttribute('aria-label', f.k);
+      ctl.appendChild(ta);
+    }
+    if (f.btns) {
+      f.btns.forEach(function (label) {
+        var b2 = document.createElement('button');
+        b2.type = 'button'; b2.className = 'btn ghost'; b2.textContent = label;
+        b2.addEventListener('click', function () { toast(label); });
+        ctl.appendChild(b2);
+      });
+    }
+    wrap.appendChild(ctl);
+    return wrap;
+  }
+
+  /* ── 播放 ── */
+  var chrTimer = null;
+  function expand() {
+    if (state.collapsed) { state.collapsed = false; $('#dock').setAttribute('data-collapsed', 'false'); }
+    if (chrTimer) { window.clearTimeout(chrTimer); chrTimer = null; }
+    if (state.playing) { chrTimer = window.setTimeout(collapse, 5000); }
+  }
+  function collapse() { state.collapsed = true; $('#dock').setAttribute('data-collapsed', 'true'); }
+  function openChannel(id) {
+    var c = CH[id]; if (!c) return;
+    state.channel = id; store.set('channel', id);
+    state.elapsed = 0; store.set('elapsed', 0);
+    state.history = [id].concat(state.history.filter(function (x) { return x !== id; })).slice(0, 8);
+    store.set('history', state.history);
+    $('#ribCh').textContent = c.n;
+    $('#ribProg').textContent = '· 正在播出 ' + c.now;
+    $('#sigLabel').textContent = c.n + ' · ' + c.codec + ' · ' + c.res;
+    $('#dockMeta').textContent = c.res + ' · ' + c.dec + ' · ' + c.rate + ' · ' + c.codec;
+    $('#sr').textContent = '正在播放 ' + c.n;
+    openSheet(null);
+    setPlaying(true); paint(true); expand();
+  }
+  function setPlaying(on) {
+    state.playing = on;
+    $('#win').setAttribute('data-play', on ? 'playing' : 'paused');
+    $('#playIcon').innerHTML = '<use href="#' + (on ? 'i-pause' : 'i-play') + '"/>';
+    $('#btnPlay').setAttribute('aria-pressed', String(on));
+    $('#btnPlay').setAttribute('aria-label', on ? '暂停' : '播放');
+    tick(); expand();
+  }
+  var timer = null;
+  function tick() {
+    if (timer) { window.clearInterval(timer); timer = null; }
+    if (!state.playing) return;
+    timer = window.setInterval(function () {
+      state.elapsed += state.speed;
+      if (state.elapsed >= state.duration) { state.elapsed = state.duration; setPlaying(false); toast('播放结束'); }
+      paint(false);
+    }, 1000);
+  }
+  function paint(silent) {
+    var pct = state.duration ? state.elapsed / state.duration * 100 : 0;
+    $('#fill').style.width = pct + '%';
+    $('#buffered').style.width = Math.min(100, pct + 6) + '%';
+    $('#tElapsed').textContent = fmt(state.elapsed);
+    $('#tTotal').textContent = fmt(state.duration);
+    $('#sigTime').textContent = fmt(state.elapsed);
+    $('#rail').setAttribute('aria-valuenow', String(Math.floor(state.elapsed)));
+    var v = state.muted ? 0 : state.volume;
+    $('#volFill').style.width = v + '%';
+    $('#vol').setAttribute('aria-valuenow', String(v));
+    $('#btnMute').setAttribute('aria-pressed', String(state.muted));
+    $('#btnMute').innerHTML = '<svg viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"><use href="#' + (state.muted ? 'i-mute' : 'i-vol') + '"/></svg>';
+    if (!silent) store.set('elapsed', Math.floor(state.elapsed));
+  }
+  function step(d) { openChannel((state.channel === null ? 0 : state.channel + d + CH.length) % CH.length); }
+
+  /* ── 拖动 ── */
+  function draggable(track, ratioOf, onChange) {
+    function pos(ev) {
+      var r = track.getBoundingClientRect();
+      var x = (ev.touches ? ev.touches[0].clientX : ev.clientX) - r.left;
+      return Math.max(0, Math.min(1, x / r.width));
+    }
+    function down(ev) {
+      onChange(pos(ev));
+      function move(e) { onChange(pos(e)); }
+      function up() { window.removeEventListener('pointermove', move); window.removeEventListener('pointerup', up); }
+      window.addEventListener('pointermove', move); window.addEventListener('pointerup', up);
+      ev.preventDefault();
+    }
+    track.addEventListener('pointerdown', down);
+    track.addEventListener('keydown', function (ev) {
+      var st = ev.shiftKey ? 0.1 : 0.02;
+      if (ev.key === 'ArrowRight' || ev.key === 'ArrowUp') { onChange(Math.min(1, ratioOf() + st)); ev.preventDefault(); }
+      if (ev.key === 'ArrowLeft' || ev.key === 'ArrowDown') { onChange(Math.max(0, ratioOf() - st)); ev.preventDefault(); }
+    });
+  }
+
+  /* ── 事件 ── */
+  document.addEventListener('click', function (ev) {
+    var t = ev.target.closest ? ev.target.closest('[data-channel-id]') : null;
+    if (!t) return;
+    var id = Number(t.getAttribute('data-channel-id'));
+    if (!isNaN(id)) { openChannel(id); }
+  });
+  $$('[data-sheet-open]').forEach(function (b) {
+    b.addEventListener('click', function () { openSheet(state.sheet === b.dataset.sheetOpen ? null : b.dataset.sheetOpen); });
+  });
+  $$('[data-sheet-close]').forEach(function (b) { b.addEventListener('click', closeSheet); });
+  $('#scrim').addEventListener('click', closeSheet);
+  $$('[data-wall-filter]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      state.wallFilter = b.dataset.wallFilter;
+      $$('[data-wall-filter]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+      renderWall();
+    });
+  });
+  $('#wallSearch').addEventListener('input', renderWall);
+  $('#btnRefreshList').addEventListener('click', function () { toast('已刷新播放列表：广东电信'); });
+  $('#wallGrid').addEventListener('click', function (ev) {
+    var h = ev.target.closest('[data-hero-open]');
+    if (h) { openSheet(h.dataset.heroOpen); return; }
+    var f = ev.target.closest('[data-hero-fav]');
+    if (f) {
+      var c = CH[Number(f.dataset.heroFav)];
+      c.fav = !c.fav;
+      toast(c.fav ? '已加入收藏：' + c.n : '已取消收藏：' + c.n);
+      renderWall();
+    }
+  });
+  $('#spotlight').addEventListener('click', function (ev) {
+    var h = ev.target.closest('[data-hero-open]');
+    if (h) { openSheet(h.dataset.heroOpen); return; }
+    var f = ev.target.closest('[data-hero-fav]');
+    if (f) {
+      var c = CH[Number(f.dataset.heroFav)];
+      c.fav = !c.fav;
+      toast(c.fav ? '已加入收藏：' + c.n : '已取消收藏：' + c.n);
+      renderWall();
+    }
+  });
+  $('#epgScroll').addEventListener('click', function (ev) {
+    var b = ev.target.closest('[data-prog]');
+    if (!b) return;
+    var isLive = b.dataset.live === '1';
+    if (!isLive) {
+      toast('已预约：' + b.dataset.prog + '（回放可用）');
+      return;
+    }
+    var cid = Number(b.dataset.ch);
+    openChannel(cid);
+    state.elapsed = state.duration * 0.08; paint(false);
+    toast('已切到 ' + CH[cid].n + ' · ' + b.dataset.prog);
+  });
+  $$('[data-day]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      $$('[data-day]').forEach(function (x) { x.setAttribute('aria-pressed', String(x === b)); });
+      toast(b.dataset.day === '0' ? '节目单：今天' : (b.dataset.day === '-1' ? '节目单：前一天' : '节目单：后一天'));
+    });
+  });
+  $('#btnEpgChannel').addEventListener('click', function () { openSheet('wall'); toast('在浏览里选择要查看节目单的频道'); });
+  $('#btnRecNow').addEventListener('click', function () { toast('已开始实时录制'); });
+  $('#btnRecLoad').addEventListener('click', function () { toast('已加载本地分组'); });
+  $('#btnUploadQueue').addEventListener('click', function () { toast('打开上传队列'); });
+  $('#btnSave').addEventListener('click', function () { toast('设置已保存'); });
+  $('#btnCancel').addEventListener('click', function () { toast('已取消本次修改'); });
+  $('#btnDebug').addEventListener('click', function () { toast('打开调试日志窗口'); });
+  $('#btnUpdate').addEventListener('click', function () { toast('检查更新：当前已是最新版本'); });
+  $('#btnEpgDoc').addEventListener('click', function () { toast('打开 EPG 文档（srcbox.top/guide/epg）'); });
+  $$('[data-toggle-theme]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      applyTheme(next); toast('外观：' + (next === 'dark' ? '深色' : '浅色'));
+    });
+  });
+
+  /* ── 窗口按钮：置顶 / 最小化 / 最大化 / 关闭 ── */
+  var pinned = false;
+  $('#btnPin').addEventListener('click', function () {
+    pinned = !pinned;
+    this.setAttribute('aria-pressed', String(pinned));
+    toast(pinned ? '已置顶：播放时始终显示在其他窗口之上' : '已取消置顶');
+  });
+  $('#btnMin').addEventListener('click', function () {
+    document.body.setAttribute('data-min', 'true');
+    toast('已最小化 — 点击标题条还原');
+  });
+  $('#btnMax').addEventListener('click', function () {
+    var on = $('#win').getAttribute('data-max') !== 'true';
+    $('#win').setAttribute('data-max', String(on));
+    this.setAttribute('aria-label', on ? '还原' : '最大化');
+    this.title = on ? '还原' : '最大化';
+    $('#maxIcon').innerHTML = '<use href="#' + (on ? 'i-restore' : 'i-max') + '"/>';
+    toast(on ? '已最大化（原型里铺满可用区域）' : '已还原窗口大小');
+  });
+  $('#win').addEventListener('click', function (ev) {
+    /* 关闭确认：点对话框外面收起（点 ✕ 打开它的那一下不算） */
+    if (!$('#closeDialog').hidden && !ev.target.closest('#closeDialog') && !ev.target.closest('#btnClose')) {
+      $('#closeDialog').hidden = true;
+      return;
+    }
+    if (document.body.getAttribute('data-min') === 'true' && !ev.target.closest('.wctl')) {
+      document.body.setAttribute('data-min', 'false');
+      toast('已还原窗口');
+    }
+  });
+  $('#btnClose').addEventListener('click', function () { $('#closeDialog').hidden = false; });
+  $$('[data-close-act]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var act = b.dataset.closeAct;
+      $('#closeDialog').hidden = true;
+      if (act === 'cancel') { return; }
+      if (act === 'tray') { document.body.setAttribute('data-min', 'true'); toast('已按「最小化到托盘」处理 — 点击标题条还原'); return; }
+      if (act === 'exit') { toast('已按「直接退出」处理（原型不真正退出）'); return; }
+      toast('已按「每次询问」处理：下次关闭仍会弹出这个对话框');
+    });
+  });
+  $('#btnPlay').addEventListener('click', function () {
+    if (state.channel === null) { openChannel(state.history.length ? state.history[0] : 0); return; }
+    setPlaying(!state.playing);
+  });
+  $('#btnStop').addEventListener('click', function () { setPlaying(false); state.elapsed = 0; paint(false); toast('已停止播放'); });
+  $('#btnRew').addEventListener('click', function () { state.elapsed = Math.max(0, state.elapsed - 30); paint(false); toast('快退 30 秒'); });
+  $('#btnFwd').addEventListener('click', function () { state.elapsed = Math.min(state.duration, state.elapsed + 30); paint(false); toast('快进 30 秒'); });
+  $('#btnPrev').addEventListener('click', function () { step(-1); });
+  $('#btnNext').addEventListener('click', function () { step(1); });
+  var speeds = [1, 1.25, 1.5, 2];
+  $('#btnSpeed').addEventListener('click', function () {
+    state.speed = speeds[(speeds.indexOf(state.speed) + 1) % speeds.length];
+    store.set('speed', state.speed);
+    this.textContent = state.speed.toFixed(state.speed % 1 ? 2 : 1) + '×';
+    toast('播放速度 ' + this.textContent);
+  });
+  $('#btnRecord').addEventListener('click', function () {
+    var on = this.getAttribute('aria-pressed') !== 'true';
+    this.setAttribute('aria-pressed', String(on));
+    toast(on ? '已开始实时录制' : '已停止录制');
+  });
+  $('#btnTimeshift').addEventListener('click', function () {
+    var on = this.getAttribute('aria-pressed') !== 'true';
+    this.setAttribute('aria-pressed', String(on));
+    toast(on ? '已开启时移' : '已关闭时移');
+  });
+  $('#btnRatio').addEventListener('click', function () { toast('画面比例：自动 → 16:9 → 4:3'); });
+  $('#btnMulti').addEventListener('click', function () { toast('多屏播放：4 / 6 / 9 屏（数字键 1–9 切换）'); });
+  $('#btnPip').addEventListener('click', function () { toast('画中画窗口'); });
+  $('#btnCast').addEventListener('click', function () { toast('投射到客厅电视'); });
+  $('#btnFull').addEventListener('click', function () { toast('全屏（原型不模拟窗口全屏）'); });
+  $('#btnMute').addEventListener('click', function () { state.muted = !state.muted; paint(false); });
+  draggable($('#rail'), function () { return state.elapsed / state.duration; }, function (r) { state.elapsed = r * state.duration; paint(false); expand(); });
+  draggable($('#vol'), function () { return (state.muted ? 0 : state.volume) / 100; }, function (r) { state.volume = Math.round(r * 100); state.muted = false; store.set('volume', state.volume); paint(false); });
+
+  /* 鼠标/焦点在窗口内活动就展开控制坞 */
+  ['pointermove', 'pointerdown', 'focusin'].forEach(function (evt) { $('#win').addEventListener(evt, expand); });
+  window.addEventListener('keydown', function (ev) {
+    if (/INPUT|SELECT|TEXTAREA/.test(ev.target.tagName)) return;
+    if (ev.target.closest && ev.target.closest('[role="slider"]')) return;
+    if (ev.repeat && ev.key === ' ') return;
+    var k = ev.key.toLowerCase();
+    if (k === 'escape') {
+      if (!$('#closeDialog').hidden) { $('#closeDialog').hidden = true; return; }
+      closeSheet(); return;
+    }
+    if (k === ' ') { ev.preventDefault(); $('#btnPlay').click(); }
+    if (k === 'arrowup') { step(-1); }
+    if (k === 'arrowdown') { step(1); }
+    if (k === 'e') { openSheet('epg'); }
+    if (k === 'l') { openSheet('wall'); }
+    if (k === 'r') { $('#btnRecord').click(); }
+    if (k === 'enter') { toast('全屏（原型不模拟窗口全屏）'); }
+  });
+
+  /* ── 初始化 ── */
+  applyTheme(state.theme);
+  if (state.channel !== null) {
+    var c0 = CH[state.channel];
+    $('#ribCh').textContent = c0.n;
+    $('#ribProg').textContent = '· 正在播出 ' + c0.now;
+    $('#sigLabel').textContent = c0.n + ' · ' + c0.codec + ' · ' + c0.res;
+    $('#dockMeta').textContent = c0.res + ' · ' + c0.dec + ' · ' + c0.rate + ' · ' + c0.codec;
+  }
+  $('#btnSpeed').textContent = state.speed.toFixed(1) + '×';
+  renderWall(); renderRecordings(); renderEpgGrid(); renderSettings();
+  paint(true);
+  window.addEventListener('error', function (e) { toast('脚本错误：' + (e.message || '未知')); });
+  window.setTimeout(function () { toast('原型：Cinema First 外观，功能与 v1 / v2 一致'); }, 700);
+  window.__srcbox3 = { play: openChannel, open: openSheet, state: state };
+})();
+</script>
+</body>
+</html>
