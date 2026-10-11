@@ -28,6 +28,10 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
         private const double ChannelNumberMarginX = 38;
         private const double ChannelNumberMarginY = 32;
 
+        /// <summary>Transparent room the overlay window keeps around the badge so its drop shadow is not
+        /// clipped; it is subtracted from the margins above when the window is anchored.</summary>
+        private const double ChannelNumberShadowRoom = 16;
+
         /// <summary>How long the channel number badge stays on screen.</summary>
         private static readonly TimeSpan ChannelNumberVisibleTime = TimeSpan.FromSeconds(3);
 
@@ -451,13 +455,13 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 var m = source.CompositionTarget.TransformFromDevice;
                 var pt1 = m.Transform(new System.Windows.Point(rect.Left, rect.Top));
                 var pt2 = m.Transform(new System.Windows.Point(rect.Right, rect.Bottom));
-                _channelNumberWpf.Left = Math.Max(pt1.X, pt2.X - width - ChannelNumberMarginX);
-                _channelNumberWpf.Top = pt1.Y + ChannelNumberMarginY;
+                _channelNumberWpf.Left = Math.Max(pt1.X, pt2.X - width - ChannelNumberMarginX + ChannelNumberShadowRoom);
+                _channelNumberWpf.Top = pt1.Y + ChannelNumberMarginY - ChannelNumberShadowRoom;
                 return;
             }
 
-            _channelNumberWpf.Left = Math.Max(rect.Left, rect.Right - width - ChannelNumberMarginX);
-            _channelNumberWpf.Top = rect.Top + ChannelNumberMarginY;
+            _channelNumberWpf.Left = Math.Max(rect.Left, rect.Right - width - ChannelNumberMarginX + ChannelNumberShadowRoom);
+            _channelNumberWpf.Top = rect.Top + ChannelNumberMarginY - ChannelNumberShadowRoom;
         }
 
         /// <summary>Shows or hides the floating overlays depending on where the pointer is. Windowed mode keeps
