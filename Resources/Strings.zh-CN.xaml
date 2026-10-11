@@ -331,6 +331,14 @@
   <sys:String x:Key="UI_WebRemote_ShowChannels">显示频道列表</sys:String>
   <sys:String x:Key="UI_WebRemote_ShowEpg">显示节目单</sys:String>
   <sys:String x:Key="UI_WebRemote_Hint">启用后，在同一局域网内可通过手机浏览器访问 http://电脑IP:端口 来控制播放器。</sys:String>
+  <sys:String x:Key="UI_TabWebRemote">遥控器</sys:String>
+  <sys:String x:Key="UI_WebRemote_Access">扫码访问</sys:String>
+  <sys:String x:Key="UI_WebRemote_Url">访问地址</sys:String>
+  <sys:String x:Key="UI_WebRemote_Copy">复制链接</sys:String>
+  <sys:String x:Key="UI_WebRemote_Copied">已复制</sys:String>
+  <sys:String x:Key="UI_WebRemote_ScanHint">用手机相机或浏览器扫描二维码即可打开遥控器。二维码与链接会随端口自动更新。</sys:String>
+  <sys:String x:Key="UI_WebRemote_NotEnabled">开启遥控器后可在此扫码访问。</sys:String>
+  <sys:String x:Key="UI_WebRemote_NoAddress">未找到局域网地址，请检查网络连接。</sys:String>
   <sys:String x:Key="UI_UploadQueue_Tab">上传队列</sys:String>
   <sys:String x:Key="UI_UploadQueue_View">查看上传队列</sys:String>
 

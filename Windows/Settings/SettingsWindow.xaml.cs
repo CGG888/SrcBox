@@ -15,6 +15,8 @@ using LibmpvIptvClient.Architecture.Application.Settings;
 using LibmpvIptvClient.Architecture.Application.Shared;
 using LibmpvIptvClient.Architecture.Core;
 using LibmpvIptvClient.Architecture.Presentation.Mvvm.Settings;
+using LibmpvIptvClient.Diagnostics;
+using LibmpvIptvClient.Services.WebRemote;
 namespace LibmpvIptvClient
 {
     public partial class SettingsWindow : Window
@@ -251,6 +253,8 @@ namespace LibmpvIptvClient
                     if (CbWebRemoteShowEpg != null) CbWebRemoteShowEpg.IsChecked = wr.ShowEpgList;
                 }
                 catch { }
+
+                RefreshWebRemoteAccessPanel();
 
                 // 频道快照预览
                 try
@@ -519,6 +523,8 @@ namespace LibmpvIptvClient
                 if (CbWebRemoteShowChannels != null) CbWebRemoteShowChannels.IsChecked = wr.ShowChannelList;
                 if (CbWebRemoteShowEpg != null) CbWebRemoteShowEpg.IsChecked = wr.ShowEpgList;
 
+                RefreshWebRemoteAccessPanel();
+
                 if (CbChannelPreview != null) CbChannelPreview.IsChecked = s.EnableChannelPreview;
                 if (TbChannelPreviewWidth != null) TbChannelPreviewWidth.Text = s.ChannelPreviewWidth.ToString();
                 if (TbChannelPreviewHeight != null) TbChannelPreviewHeight.Text = s.ChannelPreviewHeight.ToString();
@@ -628,15 +634,7 @@ namespace LibmpvIptvClient
             // Web Remote settings
             try
             {
-                s.WebRemote = new WebRemoteConfig
-                {
-                    Enabled = CbWebRemoteEnabled?.IsChecked == true,
-                    HttpPort = int.TryParse(TbWebRemotePort?.Text, out var port) ? port : 8899,
-                    RequirePassword = CbWebRemotePassword?.IsChecked == true,
-                    Password = TbWebRemotePassword?.Text ?? "",
-                    ShowChannelList = CbWebRemoteShowChannels?.IsChecked == true,
-                    ShowEpgList = CbWebRemoteShowEpg?.IsChecked == true
-                };
+                s.WebRemote = BuildWebRemoteConfigFromUi();
             }
             catch { }
 
@@ -1131,6 +1129,122 @@ namespace LibmpvIptvClient
                 }
             }
             catch { }
+        }
+
+        // ---- Web Remote (遥控器) 设置 ----
+
+        /// <summary>Applies the Web Remote switch immediately so the QR code and link always match reality.</summary>
+        private void CbWebRemoteEnabled_Changed(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var desired = CbWebRemoteEnabled?.IsChecked == true;
+                var current = AppSettings.Current.WebRemote ?? new WebRemoteConfig();
+                if (current.Enabled != desired)
+                {
+                    ApplyWebRemoteSettingsNow();
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug($"[WebRemote] toggle handler failed: {ex.Message}");
+            }
+
+            RefreshWebRemoteAccessPanel();
+        }
+
+        /// <summary>Refreshes the QR code preview while the port is being edited.</summary>
+        private void TbWebRemotePort_TextChanged(object sender, System.Windows.Controls.TextChangedEventArgs e)
+        {
+            try
+            {
+                RefreshWebRemoteAccessPanel();
+            }
+            catch { }
+        }
+
+        private void BtnCopyWebRemoteUrl_Click(object sender, RoutedEventArgs e)
+        {
+            try
+            {
+                var url = TbWebRemoteUrl?.Text ?? string.Empty;
+                if (string.IsNullOrWhiteSpace(url)) return;
+
+                System.Windows.Clipboard.SetText(url);
+                if (TbWebRemoteCopied == null) return;
+
+                TbWebRemoteCopied.Visibility = Visibility.Visible;
+                var timer = new System.Windows.Threading.DispatcherTimer { Interval = TimeSpan.FromSeconds(2) };
+                timer.Tick += (_, _) =>
+                {
+                    timer.Stop();
+                    if (TbWebRemoteCopied != null) TbWebRemoteCopied.Visibility = Visibility.Collapsed;
+                };
+                timer.Start();
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug($"[WebRemote] copy link failed: {ex.Message}");
+            }
+        }
+
+        private WebRemoteConfig BuildWebRemoteConfigFromUi()
+        {
+            var port = 8899;
+            if (int.TryParse(TbWebRemotePort?.Text?.Trim(), out var parsed) && parsed > 0 && parsed <= 65535) port = parsed;
+
+            return new WebRemoteConfig
+            {
+                Enabled = CbWebRemoteEnabled?.IsChecked == true,
+                HttpPort = port,
+                RequirePassword = CbWebRemotePassword?.IsChecked == true,
+                Password = TbWebRemotePassword?.Text ?? "",
+                ShowChannelList = CbWebRemoteShowChannels?.IsChecked == true,
+                ShowEpgList = CbWebRemoteShowEpg?.IsChecked == true
+            };
+        }
+
+        /// <summary>Saves and applies the current Web Remote UI state (used when the switch is toggled).</summary>
+        private void ApplyWebRemoteSettingsNow()
+        {
+            var config = BuildWebRemoteConfigFromUi();
+            AppSettings.Current.WebRemote = config;
+            AppSettings.Current.Save();
+            WebRemoteManager.RestartIfNeeded();
+            RefreshWebRemoteAccessPanel();
+        }
+
+        /// <summary>Rebuilds the access link and QR code from the current switch/port state.</summary>
+        private void RefreshWebRemoteAccessPanel()
+        {
+            try
+            {
+                var enabled = CbWebRemoteEnabled?.IsChecked == true;
+                var port = 8899;
+                if (int.TryParse(TbWebRemotePort?.Text?.Trim(), out var parsed) && parsed > 0 && parsed <= 65535) port = parsed;
+
+                var host = enabled ? WebRemoteAddressHelper.GetPreferredLocalIPv4() : null;
+                var url = enabled ? WebRemoteAddressHelper.BuildUrl(host, port) : string.Empty;
+                var hasUrl = !string.IsNullOrEmpty(url);
+
+                if (TbWebRemoteUrl != null) TbWebRemoteUrl.Text = url;
+                if (ImgWebRemoteQr != null) ImgWebRemoteQr.Source = hasUrl ? WebRemoteQrCode.Create(url) : null;
+                if (GridWebRemoteAccess != null) GridWebRemoteAccess.Visibility = hasUrl ? Visibility.Visible : Visibility.Collapsed;
+                if (TbWebRemoteCopied != null) TbWebRemoteCopied.Visibility = Visibility.Collapsed;
+
+                if (TbWebRemoteNotEnabled != null)
+                {
+                    TbWebRemoteNotEnabled.Visibility = hasUrl ? Visibility.Collapsed : Visibility.Visible;
+                    TbWebRemoteNotEnabled.Text = enabled
+                        ? Helpers.Localizer.S("UI_WebRemote_NoAddress", "未找到局域网地址，请检查网络连接")
+                        : Helpers.Localizer.S("UI_WebRemote_NotEnabled", "开启后可在同一局域网内扫码访问");
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug($"[WebRemote] refresh access panel failed: {ex.Message}");
+            }
         }
 
         // ---- Deinterlace (反交错) 设置 ----

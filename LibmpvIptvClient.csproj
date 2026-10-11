@@ -26,6 +26,7 @@
     <PackageReference Include="Microsoft.Xaml.Behaviors.Wpf" Version="1.1.122" />
     <PackageReference Include="Fleck" Version="1.2.0" />
     <PackageReference Include="ModernWpfUI" Version="0.9.6" />
+    <PackageReference Include="QRCoder" Version="1.8.0" />
     <PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />
     <PackageReference Include="Downloader" Version="4.1.1" />
   </ItemGroup>

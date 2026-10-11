@@ -510,6 +510,14 @@
   <sys:String x:Key="UI_WebRemote_ShowChannels">顯示頻道列表</sys:String>
   <sys:String x:Key="UI_WebRemote_ShowEpg">顯示節目單</sys:String>
   <sys:String x:Key="UI_WebRemote_Hint">啟用後，在同一區域網內可透過手機瀏覽器存取 http://電腦IP:埠 來控制播放器。</sys:String>
+  <sys:String x:Key="UI_TabWebRemote">遙控器</sys:String>
+  <sys:String x:Key="UI_WebRemote_Access">掃碼存取</sys:String>
+  <sys:String x:Key="UI_WebRemote_Url">存取位址</sys:String>
+  <sys:String x:Key="UI_WebRemote_Copy">複製連結</sys:String>
+  <sys:String x:Key="UI_WebRemote_Copied">已複製</sys:String>
+  <sys:String x:Key="UI_WebRemote_ScanHint">用手機相機或瀏覽器掃描二維碼即可開啟遙控器。二維碼與連結會隨連接埠自動更新。</sys:String>
+  <sys:String x:Key="UI_WebRemote_NotEnabled">開啟遙控器後可在此掃碼存取。</sys:String>
+  <sys:String x:Key="UI_WebRemote_NoAddress">未找到區域網路位址，請檢查網路連線。</sys:String>
 
   <!-- Shortcuts Window -->
   <sys:String x:Key="Shortcuts_Title">快捷鍵</sys:String>

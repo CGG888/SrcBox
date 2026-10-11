@@ -572,44 +572,6 @@
           <TabItem x:Name="TabNetwork" Header="{DynamicResource UI_TabNetwork}">
             <ScrollViewer x:Name="NetworkScrollViewer" VerticalScrollBarVisibility="Auto" Background="Transparent">
               <StackPanel Margin="16,8,24,8">
-                <!-- Web远程控制 -->
-                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
-                  <StackPanel>
-                    <TextBlock Text="{DynamicResource UI_WebRemote_Tab}" FontWeight="SemiBold" Margin="0,0,0,12"/>
-                    <Grid>
-                      <Grid.RowDefinitions>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                        <RowDefinition Height="Auto"/>
-                      </Grid.RowDefinitions>
-                      <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="Auto"/>
-                        <ColumnDefinition Width="*"/>
-                      </Grid.ColumnDefinitions>
-
-                      <CheckBox x:Name="CbWebRemoteEnabled" Grid.Row="0" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebRemote_Enable}" Margin="0,0,0,16"/>
-
-                      <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource UI_WebRemote_Port}" VerticalAlignment="Center" Margin="0,0,16,8"/>
-                      <TextBox x:Name="TbWebRemotePort" Grid.Row="1" Grid.Column="1" Width="100" Height="24" HorizontalAlignment="Left" Margin="0,0,0,8"/>
-
-                      <CheckBox x:Name="CbWebRemotePassword" Grid.Row="2" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebRemote_RequirePassword}" Margin="0,16,0,8"/>
-                      <TextBox x:Name="TbWebRemotePassword" Grid.Row="3" Grid.ColumnSpan="2" Height="24" Margin="0,0,0,16"/>
-
-                      <CheckBox x:Name="CbWebRemoteShowChannels" Grid.Row="4" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebRemote_ShowChannels}" IsChecked="True" Margin="0,0,0,8"/>
-
-                      <CheckBox x:Name="CbWebRemoteShowEpg" Grid.Row="5" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebRemote_ShowEpg}" IsChecked="True" Margin="0,0,0,16"/>
-
-                      <TextBlock Grid.Row="6" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" TextWrapping="Wrap">
-                        <Run Text="{DynamicResource UI_WebRemote_Hint}"/>
-                      </TextBlock>
-                    </Grid>
-                  </StackPanel>
-                </Border>
-
                 <!-- 网络播放设置 -->
                 <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
                   <StackPanel>
@@ -854,6 +816,75 @@
                         <Button x:Name="BtnWebDavRestore" Content="{DynamicResource UI_WebDAV_RestoreUserData}" MinWidth="120" Height="30" Margin="12,0,0,0" Click="BtnWebDavRestore_Click" Style="{StaticResource ChipButton}"/>
                         <Button x:Name="BtnWebDavTestRecWrite" Content="{DynamicResource UI_WebDAV_TestRecordingsWrite}" MinWidth="150" Height="30" Margin="12,0,0,0" Click="BtnWebDavTestRecordingsWrite_Click" Style="{StaticResource ChipButton}"/>
                       </WrapPanel>
+                    </Grid>
+                  </StackPanel>
+                </Border>
+              </StackPanel>
+            </ScrollViewer>
+          </TabItem>
+
+          <!-- 遥控器 -->
+          <TabItem x:Name="TabWebRemote" Header="{DynamicResource UI_TabWebRemote}">
+            <ScrollViewer x:Name="WebRemoteScrollViewer" VerticalScrollBarVisibility="Auto" Background="Transparent">
+              <StackPanel Margin="16,8,24,8">
+                <!-- Web远程控制 -->
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
+                  <StackPanel>
+                    <TextBlock Text="{DynamicResource UI_WebRemote_Tab}" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                    <Grid>
+                      <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                      </Grid.RowDefinitions>
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                      </Grid.ColumnDefinitions>
+
+                      <CheckBox x:Name="CbWebRemoteEnabled" Grid.Row="0" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebRemote_Enable}" Margin="0,0,0,16" Checked="CbWebRemoteEnabled_Changed" Unchecked="CbWebRemoteEnabled_Changed"/>
+
+                      <TextBlock Grid.Row="1" Grid.Column="0" Text="{DynamicResource UI_WebRemote_Port}" VerticalAlignment="Center" Margin="0,0,16,8"/>
+                      <TextBox x:Name="TbWebRemotePort" Grid.Row="1" Grid.Column="1" Width="100" Height="24" HorizontalAlignment="Left" Margin="0,0,0,8" TextChanged="TbWebRemotePort_TextChanged"/>
+
+                      <CheckBox x:Name="CbWebRemotePassword" Grid.Row="2" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebRemote_RequirePassword}" Margin="0,16,0,8"/>
+                      <TextBox x:Name="TbWebRemotePassword" Grid.Row="3" Grid.ColumnSpan="2" Height="24" Margin="0,0,0,16"/>
+
+                      <CheckBox x:Name="CbWebRemoteShowChannels" Grid.Row="4" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebRemote_ShowChannels}" IsChecked="True" Margin="0,0,0,8"/>
+
+                      <CheckBox x:Name="CbWebRemoteShowEpg" Grid.Row="5" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebRemote_ShowEpg}" IsChecked="True" Margin="0,0,0,16"/>
+
+                      <TextBlock Grid.Row="6" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" TextWrapping="Wrap">
+                        <Run Text="{DynamicResource UI_WebRemote_Hint}"/>
+                      </TextBlock>
+                    </Grid>
+                  </StackPanel>
+                </Border>
+
+                <!-- 扫码访问 -->
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16">
+                  <StackPanel>
+                    <TextBlock Text="{DynamicResource UI_WebRemote_Access}" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                    <TextBlock x:Name="TbWebRemoteNotEnabled" Text="{DynamicResource UI_WebRemote_NotEnabled}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" TextWrapping="Wrap"/>
+                    <Grid x:Name="GridWebRemoteAccess" Visibility="Collapsed">
+                      <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                      </Grid.ColumnDefinitions>
+                      <Border Grid.Column="0" Background="White" CornerRadius="8" Padding="6" VerticalAlignment="Top">
+                        <Image x:Name="ImgWebRemoteQr" Width="168" Height="168" RenderOptions.BitmapScalingMode="NearestNeighbor"/>
+                      </Border>
+                      <StackPanel Grid.Column="1" Margin="16,0,0,0">
+                        <TextBlock Text="{DynamicResource UI_WebRemote_Url}" Margin="0,0,0,6"/>
+                        <TextBox x:Name="TbWebRemoteUrl" IsReadOnly="True" Height="26" Margin="0,0,0,10"/>
+                        <Button x:Name="BtnCopyWebRemoteUrl" Content="{DynamicResource UI_WebRemote_Copy}" MinWidth="96" Height="30" HorizontalAlignment="Left" Click="BtnCopyWebRemoteUrl_Click" Style="{StaticResource ChipButton}"/>
+                        <TextBlock x:Name="TbWebRemoteCopied" Text="{DynamicResource UI_WebRemote_Copied}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="11" Margin="0,8,0,0" Visibility="Collapsed"/>
+                        <TextBlock Text="{DynamicResource UI_WebRemote_ScanHint}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" TextWrapping="Wrap" Margin="0,10,0,0"/>
+                      </StackPanel>
                     </Grid>
                   </StackPanel>
                 </Border>
