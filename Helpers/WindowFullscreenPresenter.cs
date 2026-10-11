@@ -1,8 +1,10 @@
 using System;
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Shell;
+using System.Windows.Threading;
 
 namespace LibmpvIptvClient.Helpers
 {
@@ -93,9 +95,15 @@ namespace LibmpvIptvClient.Helpers
             try
             {
                 window.Topmost = state.Topmost;
-                WindowChrome.SetWindowChrome(window, state.Chrome!);
-                window.ResizeMode = state.ResizeMode;
+
+                // The style and the resize mode are restored *before* the chrome, never after: changing
+                // them makes Windows repaint the non-client frame, and only the chrome set afterwards
+                // hides the system caption buttons again. With the chrome set first, Windows draws its own
+                // minimize/maximize/close buttons (and the caption bottom border) on top of the app's own
+                // title bar as soon as the window returns from fullscreen.
                 window.WindowStyle = state.Style;
+                window.ResizeMode = state.ResizeMode;
+                WindowChrome.SetWindowChrome(window, state.Chrome!);
 
                 if (state.State == WindowState.Maximized)
                 {
@@ -116,12 +124,45 @@ namespace LibmpvIptvClient.Helpers
                     window.Height = state.Height;
                 }
 
+                // Recalculate the non-client frame once the restored geometry has settled: this is what
+                // makes Windows drop the system caption buttons for good.
+                RefreshWindowFrame(window);
+
                 log?.Invoke("[Fullscreen] exit: window form restored");
             }
             catch (Exception ex)
             {
                 log?.Invoke($"[Fullscreen] exit failed: {ex.Message}");
             }
+        }
+
+        private const uint SwpNoSize = 0x0001;
+        private const uint SwpNoMove = 0x0002;
+        private const uint SwpNoZOrder = 0x0004;
+        private const uint SwpNoActivate = 0x0010;
+        private const uint SwpFrameChanged = 0x0020;
+
+        [DllImport("user32.dll")]
+        private static extern bool SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int x, int y, int cx, int cy, uint flags);
+
+        /// <summary>Forces one non-client frame recalculation of <paramref name="window"/> without touching its
+        /// geometry. It runs after the layout pass so the restored bounds are already applied.</summary>
+        private static void RefreshWindowFrame(Window window)
+        {
+            window.Dispatcher.BeginInvoke(new Action(() =>
+            {
+                try
+                {
+                    var handle = new WindowInteropHelper(window).Handle;
+                    if (handle == IntPtr.Zero) return;
+                    SetWindowPos(handle, IntPtr.Zero, 0, 0, 0, 0,
+                        SwpNoMove | SwpNoSize | SwpNoZOrder | SwpNoActivate | SwpFrameChanged);
+                }
+                catch
+                {
+                    // A missed frame refresh only leaves the window usable but slightly miss-styled.
+                }
+            }), DispatcherPriority.Loaded);
         }
     }
 }
