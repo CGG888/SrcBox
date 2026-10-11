@@ -3,9 +3,8 @@ using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Interop;
-using System.Windows.Forms;
 using LibmpvIptvClient.Architecture.Presentation.Mvvm;
+using LibmpvIptvClient.Helpers;
 
 namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 {
@@ -28,6 +27,10 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         public Action CreateTopOverlay { get; set; } = delegate { };
         public RoutedEventHandler OnLoaded { get; set; } = delegate { };
         public Action SyncEpgVisibility { get; set; } = delegate { };
+        /// <summary>While fullscreen the detached drawer / EPG must not reserve grid space.</summary>
+        public Action CollapsePanelColumns { get; set; } = delegate { };
+        /// <summary>Gives the drawer / EPG columns back to the windowed layout.</summary>
+        public Action RestorePanelColumns { get; set; } = delegate { };
         public Func<Key, ModifierKeys, bool>? HandleShortcutKey { get; set; }
     }
 
@@ -51,6 +54,15 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         private System.Windows.Controls.Panel? _originalEpgParent;
         private int _originalEpgIndex;
 
+        // Fullscreen now happens on the main window itself; these keep what is needed to undo it.
+        private Window? _fullscreenOwner;
+        private WindowFullscreenState? _fullscreenState;
+        private EventHandler? _fsActivated;
+        private EventHandler? _fsDeactivated;
+        private SizeChangedEventHandler? _fsSizeChanged;
+        private EventHandler? _fsLocationChanged;
+        private System.Windows.Input.MouseEventHandler? _fsMouseMove;
+
         [StructLayout(LayoutKind.Sequential)]
         public struct POINT
         {
@@ -60,12 +72,15 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 
         public double GetTopOverlayOffset()
         {
-            if (FullscreenWindow == null) return 40;
-            if (TopOverlay == null) return 40;
-            var height = TopOverlay.ActualHeight;
-            if (height <= 0) height = TopOverlay.Height;
-            if (height <= 0) height = 40;
-            var offset = (TopOverlay.Top + height) - FullscreenWindow.Top;
+            // Height of the floating top bar: below it the drawer / EPG panels start.
+            var height = 40.0;
+            if (TopOverlay != null)
+            {
+                height = TopOverlay.ActualHeight > 0 ? TopOverlay.ActualHeight : TopOverlay.Height;
+                if (double.IsNaN(height) || double.IsInfinity(height) || height <= 0) height = 40;
+            }
+            if (FullscreenWindow == null) return height;
+            var offset = (TopOverlay!.Top + height) - FullscreenWindow.Top;
             if (double.IsNaN(offset) || double.IsInfinity(offset) || offset <= 0) offset = height;
             return offset;
         }
@@ -85,11 +100,61 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         void RollBackFullscreenEntry(FullscreenContext ctx)
         {
             try { IsFullscreen = false; } catch { }
+            try { DetachFullscreenWindowEvents(); } catch { }
+            try { LibmpvIptvClient.Helpers.WindowFullscreenPresenter.Exit(ctx.MainWindow, _fullscreenState); } catch { }
+            _fullscreenState = null;
             try { FullscreenWindow?.Close(); } catch { }
             FullscreenWindow = null;
             FullscreenPanel = null;
-            try { ctx.MainWindow.Show(); } catch { }
-            try { ctx.MainWindow.Activate(); } catch { }
+            try { ctx.MainWindow?.Show(); } catch { }
+            try { ctx.MainWindow?.Activate(); } catch { }
+        }
+
+        void AttachFullscreenWindowEvents(FullscreenContext ctx)
+        {
+            var window = ctx.MainWindow;
+            if (window == null) return;
+
+            _fullscreenOwner = window;
+            _fsActivated = (s, e) => EnsureTopmostZOrder();
+            _fsDeactivated = (s, e) =>
+            {
+                // A deactivated topmost window can end up behind another topmost window; re-assert it.
+                try { if (!window.Topmost) window.Topmost = true; } catch { }
+            };
+            _fsSizeChanged = (s, e) => ctx.PositionOverlay();
+            _fsLocationChanged = (s, e) => ctx.PositionOverlay();
+            _fsMouseMove = (s, e) => ctx.ShowOverlayWithDelay();
+
+            window.Activated += _fsActivated;
+            window.Deactivated += _fsDeactivated;
+            window.SizeChanged += _fsSizeChanged;
+            window.LocationChanged += _fsLocationChanged;
+            window.MouseMove += _fsMouseMove;
+        }
+
+        void DetachFullscreenWindowEvents()
+        {
+            var window = _fullscreenOwner;
+            if (window != null)
+            {
+                try
+                {
+                    if (_fsActivated != null) window.Activated -= _fsActivated;
+                    if (_fsDeactivated != null) window.Deactivated -= _fsDeactivated;
+                    if (_fsSizeChanged != null) window.SizeChanged -= _fsSizeChanged;
+                    if (_fsLocationChanged != null) window.LocationChanged -= _fsLocationChanged;
+                    if (_fsMouseMove != null) window.MouseMove -= _fsMouseMove;
+                }
+                catch { }
+            }
+
+            _fsActivated = null;
+            _fsDeactivated = null;
+            _fsSizeChanged = null;
+            _fsLocationChanged = null;
+            _fsMouseMove = null;
+            _fullscreenOwner = null;
         }
 
         public void ToggleFullscreen(bool on, FullscreenContext ctx)
@@ -99,95 +164,23 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             if (on)
             {
                 IsFullscreen = true;
-                // updateUiState(true); // Removed, handled by binding
 
-                // 获取主窗口所在的屏幕，覆盖该屏幕的分辨率
-                var mainHandle = new WindowInteropHelper(ctx.MainWindow).Handle;
-                var screen = Screen.FromHandle(mainHandle);
-                var screenBounds = screen.Bounds;
-
-                // DPI 转换：Screen.Bounds 是设备像素，WPF 使用 DIP
-                var hwndSource = System.Windows.Interop.HwndSource.FromHwnd(mainHandle);
-                double dpiScaleX = 1.0, dpiScaleY = 1.0;
-                if (hwndSource != null)
+                // The main window becomes the fullscreen window: no second HWND is created and the mpv
+                // 'wid' (VideoPanel.Handle) never changes, so the player is not reinitialised (I1/I3).
+                _fullscreenState = LibmpvIptvClient.Helpers.WindowFullscreenPresenter.Enter(
+                    ctx.MainWindow, message => LibmpvIptvClient.Diagnostics.Logger.Info(message));
+                if (_fullscreenState == null)
                 {
-                    dpiScaleX = hwndSource.CompositionTarget.TransformToDevice.M11;
-                    dpiScaleY = hwndSource.CompositionTarget.TransformToDevice.M22;
-                }
-
-                // 全屏窗口：位置使用屏幕原点(0,0)，大小使用屏幕分辨率
-                FullscreenWindow = new FullscreenWindow();
-                FullscreenWindow.Topmost = true;
-                FullscreenWindow.Left = screenBounds.Left / dpiScaleX;
-                FullscreenWindow.Top = screenBounds.Top / dpiScaleY;
-                FullscreenWindow.Width = screenBounds.Width / dpiScaleX;
-                FullscreenWindow.Height = screenBounds.Height / dpiScaleY;
-                // 不设置 Owner，避免窗口跳到主屏幕
-                FullscreenWindow.Loaded += ctx.OnLoaded;
-                FullscreenPanel = FullscreenWindow.VideoPanel;
-
-                // 隐藏主窗口
-                ctx.MainWindow.Hide();
-
-                if (ctx.Mpv != null && FullscreenPanel != null)
-                {
-                    try
-                    {
-                        LibmpvIptvClient.Diagnostics.Logger.Info("进入全屏");
-                        ctx.Mpv.SetWid(FullscreenPanel.Handle);
-                    }
-                    catch (Exception ex)
-                    {
-                        LibmpvIptvClient.Diagnostics.Logger.Error($"[Fullscreen] Failed to set mpv parent: {ex}");
-                    }
-                }
-
-                // Event binding
-                FullscreenWindow.ExitRequested += () => ToggleFullscreen(false, ctx);
-                FullscreenWindow.PlayPauseRequested += ctx.TogglePlayPause;
-                FullscreenWindow.SeekRequested += ctx.TryArrowSeek;
-                FullscreenWindow.ShortcutKeyPressed += (key, modifiers) => ctx.HandleShortcutKey?.Invoke(key, modifiers) ?? false;
-
-                if (FullscreenPanel != null)
-                {
-                    FullscreenPanel.DoubleClick += (s, e) => ctx.FsPanelDoubleClick();
-                    FullscreenPanel.MouseWheel += (s, e) => ctx.FsPanelMouseWheel(e);
-                    FullscreenPanel.MouseUp += (s, e) => ctx.FsPanelMouseUp(e);
-                    FullscreenPanel.MouseMove += (s, e) => ctx.ShowOverlayWithDelay();
-                    FullscreenPanel.MouseEnter += (s, e) => ctx.ShowOverlayWithDelay();
-                }
-
-                FullscreenWindow.Host.PreviewMouseWheel += (s, e) => ctx.FsHostPreviewMouseWheel(e);
-                FullscreenWindow.Host.MouseMove += (s, e) => ctx.ShowOverlayWithDelay();
-                FullscreenWindow.Host.PreviewMouseMove += (s, e) => ctx.ShowOverlayWithDelay();
-
-                FullscreenWindow.Activated += (s, e) => EnsureTopmostZOrder();
-                FullscreenWindow.Deactivated += (s, e) =>
-                {
-                    try { if (FullscreenWindow != null && !FullscreenWindow.Topmost) FullscreenWindow.Topmost = true; } catch { }
-                };
-                FullscreenWindow.SizeChanged += (s, e) => ctx.PositionOverlay();
-                FullscreenWindow.LocationChanged += (s, e) => ctx.PositionOverlay();
-                FullscreenWindow.MouseMove += (s, e) => ctx.ShowOverlayWithDelay();
-
-                try
-                {
-                    FullscreenWindow.Show();
-                    FullscreenWindow.Focus();
-
-                    // Show() 后再次设置位置和大小，确保覆盖整个屏幕
-                    FullscreenWindow.Left = screenBounds.Left / dpiScaleX;
-                    FullscreenWindow.Top = screenBounds.Top / dpiScaleY;
-                    FullscreenWindow.Width = screenBounds.Width / dpiScaleX;
-                    FullscreenWindow.Height = screenBounds.Height / dpiScaleY;
-                }
-                catch (Exception ex)
-                {
-                    // Roll back instead of leaving the main window hidden with no fullscreen window shown.
-                    LibmpvIptvClient.Diagnostics.Logger.Error($"[Fullscreen] 进入全屏失败，正在回滚: {ex}");
+                    LibmpvIptvClient.Diagnostics.Logger.Error("[Fullscreen] 进入全屏失败，正在回滚");
                     RollBackFullscreenEntry(ctx);
                     return;
                 }
+
+                // The drawer / EPG are detached into their own windows while fullscreen: their columns
+                // must not keep reserving space, otherwise the video is squeezed by an empty column.
+                TryRun(() => ctx.CollapsePanelColumns(), "CollapsePanelColumns");
+
+                AttachFullscreenWindowEvents(ctx);
 
                 // Overlay work is decorative: a failure here must not take the whole switch down.
                 TryRun(() => ctx.CreateTopOverlay(), "CreateTopOverlay");
@@ -198,7 +191,6 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             else
             {
                 IsFullscreen = false;
-                // updateUiState(false); // Removed, handled by binding
 
                 try
                 {
@@ -217,24 +209,6 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                         TopOverlay.Close();
                         TopOverlay = null;
                     }
-
-                    if (ctx.Mpv != null && ctx.WindowedPanel != null)
-                    {
-                        try
-                        {
-                            LibmpvIptvClient.Diagnostics.Logger.Info("退出全屏");
-                            ctx.Mpv.SetWid(ctx.WindowedPanel.Handle);
-                        }
-                        catch (Exception ex)
-                        {
-                            LibmpvIptvClient.Diagnostics.Logger.Error($"[Fullscreen] Failed to restore mpv parent: {ex}");
-                        }
-                    }
-
-                    if (FullscreenWindow != null)
-                    {
-                        FullscreenWindow.Close();
-                    }
                 }
                 catch (Exception ex)
                 {
@@ -242,14 +216,24 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 }
                 finally
                 {
-                    // The main window has to become visible again whatever happened above, otherwise the
-                    // application keeps running with no visible window at all.
-                    try { FullscreenWindow?.Close(); } catch { }
+                    // The window form has to come back whatever happened above, otherwise the app keeps
+                    // running as a fullscreen window with a broken layout.
+                    DetachFullscreenWindowEvents();
+                    try
+                    {
+                        LibmpvIptvClient.Helpers.WindowFullscreenPresenter.Exit(
+                            ctx.MainWindow, _fullscreenState, message => LibmpvIptvClient.Diagnostics.Logger.Info(message));
+                    }
+                    catch (Exception ex)
+                    {
+                        LibmpvIptvClient.Diagnostics.Logger.Error($"[Fullscreen] 还原窗口形态失败: {ex}");
+                    }
+                    _fullscreenState = null;
                     FullscreenWindow = null;
                     FullscreenPanel = null;
-                    try { ctx.MainWindow.Show(); } catch { }
                 }
 
+                TryRun(() => ctx.RestorePanelColumns(), "RestorePanelColumns");
                 TryRun(() => ctx.ResetOverlayForOwner(), "ResetOverlayForOwner");
                 TryRun(() => ctx.SyncTimeshiftUi(), "SyncTimeshiftUi");
 
@@ -257,7 +241,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 TryRun(() => ctx.SyncEpgVisibility?.Invoke(), "SyncEpgVisibility");
 
                 // Ensure focus returns to main window
-                try { ctx.MainWindow.Focus(); } catch { }
+                try { ctx.MainWindow?.Focus(); } catch { }
             }
         }
 
@@ -266,12 +250,12 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 
         private void EnsureTopmostZOrder()
         {
-            // Logic remains same but simplified if possible
-            if (FullscreenWindow == null) return;
+            var window = FullscreenWindow ?? _fullscreenOwner;
+            if (window == null) return;
             try
             {
-                FullscreenWindow.Topmost = false;
-                FullscreenWindow.Topmost = true;
+                window.Topmost = false;
+                window.Topmost = true;
             }
             catch { }
         }
@@ -296,18 +280,16 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 Width = width > 0 ? width : 380,
                 ResizeMode = ResizeMode.NoResize,
                 Content = drawerPanel,
-                Owner = FullscreenWindow ?? mainWindow,
+                Owner = mainWindow,
                 DataContext = mainWindow.DataContext
             };
             
             FullscreenDrawer.SetResourceReference(Window.BackgroundProperty, "CardBackgroundBrush");
-            if (FullscreenWindow != null)
-            {
-                var topOffset = GetTopOverlayOffset();
-                FullscreenDrawer.Left = FullscreenWindow.Left + FullscreenWindow.ActualWidth - FullscreenDrawer.Width;
-                FullscreenDrawer.Top = FullscreenWindow.Top + topOffset;
-                FullscreenDrawer.Height = Math.Max(0, FullscreenWindow.ActualHeight - topOffset);
-            }
+            // The drawer floats over the fullscreen video: align it with the main window itself.
+            var drawerTopOffset = GetTopOverlayOffset();
+            FullscreenDrawer.Left = mainWindow.Left + mainWindow.ActualWidth - FullscreenDrawer.Width;
+            FullscreenDrawer.Top = mainWindow.Top + drawerTopOffset;
+            FullscreenDrawer.Height = Math.Max(0, mainWindow.ActualHeight - drawerTopOffset);
             
             try 
             { 
@@ -381,18 +363,16 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 Width = 320,
                 ResizeMode = ResizeMode.NoResize,
                 Content = epgPanel,
-                Owner = FullscreenWindow ?? mainWindow,
+                Owner = mainWindow,
                 DataContext = mainWindow.DataContext
             };
             
             FullscreenEpg.SetResourceReference(Window.BackgroundProperty, "CardBackgroundBrush");
-            if (FullscreenWindow != null)
-            {
-                var topOffset = GetTopOverlayOffset();
-                FullscreenEpg.Left = FullscreenWindow.Left;
-                FullscreenEpg.Top = FullscreenWindow.Top + topOffset;
-                FullscreenEpg.Height = Math.Max(0, FullscreenWindow.ActualHeight - topOffset);
-            }
+            // The EPG floats over the fullscreen video: align it with the main window itself.
+            var epgTopOffset = GetTopOverlayOffset();
+            FullscreenEpg.Left = mainWindow.Left;
+            FullscreenEpg.Top = mainWindow.Top + epgTopOffset;
+            FullscreenEpg.Height = Math.Max(0, mainWindow.ActualHeight - epgTopOffset);
             
             try 
             { 

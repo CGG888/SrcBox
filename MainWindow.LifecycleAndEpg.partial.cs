@@ -246,6 +246,14 @@ namespace LibmpvIptvClient
             // must not widen the window.
             if (_shell.IsMinimalMode) return;
 
+            // Fullscreen keeps the window at screen size; the detached drawer / EPG must not reserve any
+            // column space there either, so re-assert the collapsed columns instead of resizing.
+            if (_shell.WindowStateActions.IsFullscreen)
+            {
+                CollapsePanelColumnsForFullscreen();
+                return;
+            }
+
             _panelAppliedWidth = Helpers.PanelWindowLayout.WindowWidth(
                 _baseWindowWidth,
                 _shell.IsDrawerCollapsed,

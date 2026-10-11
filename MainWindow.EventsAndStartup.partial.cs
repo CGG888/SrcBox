@@ -46,6 +46,9 @@ namespace LibmpvIptvClient
         const int HTBOTTOMRIGHT = 17;
         const int HTCLIENT = 1;
         const int WM_NCHITTEST = 0x0084;
+        const int WM_KEYDOWN = 0x0100;
+        const int WM_SYSKEYDOWN = 0x0104;
+        const int VK_SPACE = 0x20;
         const int MinimalResizeGrip = 8;
         HwndSourceHook? _mainWndHook;
 
@@ -72,6 +75,17 @@ namespace LibmpvIptvClient
 
         IntPtr MainWindowWndProc(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
         {
+            // While fullscreen the video host fills the whole window and can swallow Space before WPF sees
+            // it, so play/pause is handled at message level (the old fullscreen window did the same).
+            if (_shell.WindowStateActions.IsFullscreen
+                && (msg == WM_KEYDOWN || msg == WM_SYSKEYDOWN)
+                && wParam.ToInt32() == VK_SPACE)
+            {
+                try { _shell.ShortcutActions.ExecuteAction(MainWindowShortcutAction.TogglePlayPause); } catch { }
+                handled = true;
+                return IntPtr.Zero;
+            }
+
             if (msg != WM_NCHITTEST) return IntPtr.Zero;
             try
             {
@@ -203,6 +217,14 @@ namespace LibmpvIptvClient
                 if (_shell.IsMinimalMode && key == Key.Escape)
                 {
                     _shell.IsMinimalMode = false;
+                    e.Handled = true;
+                    return;
+                }
+
+                // Fullscreen used to be left through the (now removed) fullscreen window's Escape handling.
+                if (_shell.WindowStateActions.IsFullscreen && key == Key.Escape)
+                {
+                    ToggleFullscreenFromManager(false);
                     e.Handled = true;
                     return;
                 }

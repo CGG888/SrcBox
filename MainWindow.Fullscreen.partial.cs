@@ -39,9 +39,11 @@ namespace LibmpvIptvClient
                 FsPanelMouseUp = (e) => FsPanel_MouseUp(null, e),
                 FsPanelDoubleClick = () => ToggleFullscreen(false),
                 OnLoaded = OnFullscreenLoaded,
+                CollapsePanelColumns = CollapsePanelColumnsForFullscreen,
+                RestorePanelColumns = RestorePanelColumnsForWindowed,
                 CreateTopOverlay = () =>
                 {
-                    if (_shell.WindowStateActions.FullscreenWindow != null)
+                    if (_shell.WindowStateActions.IsFullscreen)
                     {
                         try
                         {
@@ -53,7 +55,7 @@ namespace LibmpvIptvClient
                         }
                         catch { }
                         var topOverlay = new TopOverlay();
-                        topOverlay.Owner = _shell.WindowStateActions.FullscreenWindow;
+                        topOverlay.Owner = this;
                         _shell.WindowStateActions.TopOverlay = topOverlay;
 
                         _shell.OverlayBindingActions.BindTopOverlay(topOverlay, new TopOverlayBindingContext(
@@ -78,7 +80,6 @@ namespace LibmpvIptvClient
                             TopmostChanged: (val) =>
                             {
                                 Topmost = val;
-                                if (_shell.WindowStateActions.FullscreenWindow != null) _shell.WindowStateActions.FullscreenWindow.Topmost = val;
                                 if (_shell.WindowStateActions.TopOverlay != null) _shell.WindowStateActions.TopOverlay.Topmost = true;
                             },
                             IsUdpEnabled: () => AppSettings.Current.EnableUdpOptimization,
@@ -138,20 +139,14 @@ namespace LibmpvIptvClient
                 }
             };
 
-            if (on)
-            {
-                _timer.Stop();
-                _overlayManager.StopTimers();
-            }
-
+            // The playback / overlay timers keep running across the switch: the main window (and with it the
+            // player host) is no longer hidden or rebuilt, so there is nothing to pause while fullscreen (I4).
             _shell.WindowStateActions.ToggleFullscreen(on, ctx);
             DispatchWindowFormChanged();
 
             if (!on)
             {
                 RestoreDrawerEpgLayoutForWindow();
-                _timer.Start();
-                _overlayManager.StartTimers();
                 // 延迟刷新，等 layout 完成后再刷新频道列表
                 Dispatcher.InvokeAsync(() =>
                 {
@@ -179,6 +174,22 @@ namespace LibmpvIptvClient
                 Grid.SetRowSpan(EpgPanel, 1);
             }
             catch { }
+        }
+
+        /// <summary>Fullscreen means the video fills the whole window, so the (detached) drawer and EPG must
+        /// not keep their columns reserved. The drawer column is data bound, so it is set through
+        /// SetCurrentValue to keep the binding alive for the windowed layout.</summary>
+        void CollapsePanelColumnsForFullscreen()
+        {
+            try { EpgColumn.Width = new GridLength(0); } catch { }
+            try { DrawerColumn.SetCurrentValue(ColumnDefinition.WidthProperty, new GridLength(0)); } catch { }
+        }
+
+        /// <summary>Gives the drawer / EPG columns back to the windowed layout after leaving fullscreen.</summary>
+        void RestorePanelColumnsForWindowed()
+        {
+            try { EpgColumn.Width = new GridLength(CbEpg.IsChecked == true ? 320 : 0); } catch { }
+            try { DrawerColumn.SetCurrentValue(ColumnDefinition.WidthProperty, _shell.DrawerGridLength); } catch { }
         }
 
         void FsHost_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
@@ -266,6 +277,9 @@ namespace LibmpvIptvClient
         internal void AdjustVolumeByWheelFromManager(int delta) => AdjustVolumeByWheel(delta);
         internal void ShowOverlayWithDelayFromManager() => _overlayManager.ShowOverlayWithDelay();
         internal void ToggleFullscreenFromManager(bool on) => ToggleFullscreen(on);
+        /// <summary>Toggles whichever way the window currently is: the video panel double click must leave
+        /// fullscreen as well as enter it.</summary>
+        internal void ToggleFullscreenSwitchFromManager() => ToggleFullscreen(!_shell.WindowStateActions.IsFullscreen);
         internal MpvInterop? PlayerInterop => _mpv;
         internal System.Windows.Controls.Slider SeekSliderForManager => SliderSeek;
         internal LibmpvIptvClient.Architecture.Presentation.View.MainWindowEpgManager? EpgManagerForManager => _epgManager;

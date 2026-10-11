@@ -13,7 +13,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
 
         public void MainPanel_DoubleClick(object? sender, EventArgs e)
         {
-            _window.ToggleFullscreenFromManager(true);
+            _window.ToggleFullscreenSwitchFromManager();
         }
 
         public void VideoHost_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
