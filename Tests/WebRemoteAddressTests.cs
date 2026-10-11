@@ -105,6 +105,25 @@ namespace LibmpvIptvClient.Tests
         }
 
         [TestMethod]
+        public void WebRemoteStrings_ExposeTheSameKeysInAllFourLanguages()
+        {
+            var reference = WebRemoteStrings.Get("zh-CN").Keys.OrderBy(k => k, StringComparer.Ordinal).ToList();
+            Assert.IsTrue(reference.Count > 0);
+
+            foreach (var lang in new[] { "zh-CN", "en-US", "zh-TW", "ru-RU" })
+            {
+                var strings = WebRemoteStrings.Get(lang);
+                var keys = strings.Keys.OrderBy(k => k, StringComparer.Ordinal).ToList();
+                CollectionAssert.AreEqual(reference, keys, $"{lang} does not expose the same keys as zh-CN");
+
+                foreach (var pair in strings)
+                {
+                    Assert.IsFalse(string.IsNullOrWhiteSpace(pair.Value), $"{lang}.{pair.Key} is empty");
+                }
+            }
+        }
+
+        [TestMethod]
         public void RemoteHtml_LeavesNoPlaceholderBehind()
         {
             var html = WebRemoteServer.GetRemoteHtml("zh-CN");

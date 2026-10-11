@@ -14,13 +14,16 @@ Web Remote is based on WebSocket and HTTP protocols, supporting the following fe
 - **Scheduling**: Reminder alerts, Scheduled recording (front/back)
 - **Source Management**: Add, select, remove playback sources
 - **Status View**: Current playback status, Program info, EPG guide
-- **Multi-language Support**: Chinese, English, Russian, Turkish
+- **Multi-language Support**: Chinese, English, Russian, Traditional Chinese
+- **Interface Switching**: One-click switch between the standard remote interface and the full interface, the choice is remembered automatically
+- **Number Key Tuning**: The standard remote interface lets you enter a channel number directly to switch channels, and the channel list shows the matching numbers
+- **QR Code Access**: Settings shows the access QR code and link; scan with your phone or copy the link to open
 
 ## Enable Remote Control
 
 1. Open SrcBox Settings window
-2. Switch to **Web Remote** tab
-3. Check **Enable Web Remote Control**
+2. Switch to **Web Remote** tab (it is its own tab in Settings)
+3. Check **Enable Web Remote Control**; it takes effect immediately, no restart required
 4. (Optional) Set access port (default 8899)
 5. (Optional) Enable password protection, set access password
 6. Click **Save** button
@@ -39,11 +42,41 @@ For local access, use `localhost`. For LAN remote access, replace `localhost` wi
 http://192.168.1.100:8899
 ```
 
+### Scan to Open
+
+After enabling, the **Web Remote** tab in the Settings window shows the current access address and QR code:
+
+- Scan the QR code with your phone camera or browser to open the remote
+- Click **Copy Link** to copy the access address
+- The QR code and link update automatically when the port changes; if no LAN address is found, check your network connection
+
 ## Screenshot
 
 ![Web Remote Control](../../screenshots/web.jpeg)
 
 ## Interface Description
+
+The button in the top-right corner switches between two interfaces, and the choice is remembered in the browser:
+
+- **Standard Remote**: A phone-portrait-friendly remote layout (direction keys, number keys, volume keys, switch-source/mute)
+- **Full Interface**: The full page with status display, playback control, channel list, EPG and source management (default)
+
+### Standard Remote Pad
+
+| Button | Function |
+|--------|----------|
+| ▲ Previous Channel | Switch to the previous channel |
+| ▼ Next Channel | Switch to the next channel |
+| ◀ Previous Source | Switch to the previous source |
+| ▶ Next Source | Switch to the next source |
+| OK | Toggle play/pause |
+| Volume − / Volume + | Decrease / increase volume by 5 |
+| Number keys 0-9 | Enter a channel number, up to 3 digits, auto-tunes 1.2 s after you stop typing |
+| ⌫ | Clear the entered number |
+| ✓ | Tune immediately |
+| Switch Source / Mute | Switch playback source / toggle mute |
+
+The interface uses a Neumorphism style: it is light by default, and the 🌙 / ☀️ button in the top-right corner switches to the dark neumorphism style.
 
 ### Status Display Area
 
@@ -87,6 +120,7 @@ http://192.168.1.100:8899
 - Display all available channels and favorites
 - Click channel name to switch playback
 - Favorite channels displayed at top with star icon
+- Each channel shows its channel number, matching the number keys of the standard remote pad one-to-one (favorites reuse the same number)
 
 ### EPG Program Guide
 
