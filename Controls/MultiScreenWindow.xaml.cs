@@ -784,6 +784,8 @@ namespace LibmpvIptvClient.Controls
             _isFullscreen = true;
             _previousWindowState = WindowState;
             _previousRestoreBounds = new System.Windows.Rect(Left, Top, Width, Height);
+            _previousWindowStyle = WindowStyle;
+            _previousResizeMode = ResizeMode;
             WindowStyle = WindowStyle.None;
             ResizeMode = ResizeMode.NoResize;
             var screen = WF.Screen.FromHandle(new System.Windows.Interop.WindowInteropHelper(this).Handle);
@@ -835,8 +837,12 @@ namespace LibmpvIptvClient.Controls
         {
             _isFullscreen = false;
             StopMousePoll();
-            WindowStyle = WindowStyle.SingleBorderWindow;
-            ResizeMode = ResizeMode.CanResize;
+            // Restore the style the window had before the switch: the window is chromeless by design
+            // (WindowStyle="None" + its own title bar), and giving it SingleBorderWindow here would make
+            // Windows draw its own caption - a second set of minimize/maximize/close buttons plus the
+            // caption border - on top of that title bar.
+            WindowStyle = _previousWindowStyle;
+            ResizeMode = _previousResizeMode;
             WindowState = _previousWindowState;
             Left = _previousRestoreBounds.Left;
             Top = _previousRestoreBounds.Top;
@@ -848,6 +854,8 @@ namespace LibmpvIptvClient.Controls
 
         private System.Windows.WindowState _previousWindowState = System.Windows.WindowState.Normal;
         private System.Windows.Rect _previousRestoreBounds;
+        private WindowStyle _previousWindowStyle = System.Windows.WindowStyle.None;
+        private ResizeMode _previousResizeMode = System.Windows.ResizeMode.CanResize;
 
         [DllImport("user32.dll")]
         private static extern int SetWindowPos(IntPtr hWnd, IntPtr hWndInsertAfter, int X, int Y, int cx, int cy, uint uFlags);
