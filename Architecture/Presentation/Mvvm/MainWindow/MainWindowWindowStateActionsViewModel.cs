@@ -24,6 +24,8 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         public Action CollapsePanelColumns { get; set; } = delegate { };
         /// <summary>Gives the drawer / EPG columns back to the windowed layout.</summary>
         public Action RestorePanelColumns { get; set; } = delegate { };
+        /// <summary>Height of the floating bottom navigation bar, so the fullscreen panels can stop above it.</summary>
+        public Func<double>? GetNavigationHeight { get; set; }
         public Func<Key, ModifierKeys, bool>? HandleShortcutKey { get; set; }
     }
 
@@ -53,6 +55,8 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 
         // Fullscreen now happens on the main window itself; these keep what is needed to undo it.
         private Window? _fullscreenOwner;
+        // Context of the running fullscreen session (null while windowed); panel geometry reads it.
+        private FullscreenContext? _activeContext;
         private WindowFullscreenState? _fullscreenState;
         private EventHandler? _fsActivated;
         private EventHandler? _fsDeactivated;
@@ -107,6 +111,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             if (window == null) return;
 
             _fullscreenOwner = window;
+            _activeContext = ctx;
             _fsActivated = (s, e) => EnsureTopmostZOrder();
             _fsDeactivated = (s, e) =>
             {
@@ -146,6 +151,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             _fsLocationChanged = null;
             _fsMouseMove = null;
             _fullscreenOwner = null;
+            _activeContext = null;
         }
 
         public void ToggleFullscreen(bool on, FullscreenContext ctx)
@@ -250,6 +256,38 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             catch { }
         }
 
+        /// <summary>
+        /// Aligns the fullscreen EPG / drawer with the main window: they start below the auto-hiding top
+        /// bar and stop above the floating bottom navigation bar, which overlays the bottom of the video.
+        /// </summary>
+        public void PositionFullscreenPanels() => PositionFullscreenPanelsFor(_fullscreenOwner);
+
+        void PositionFullscreenPanelsFor(Window? window)
+        {
+            if (window == null) return;
+            try
+            {
+                var topOffset = GetTopOverlayOffset();
+                var navReserve = _activeContext?.GetNavigationHeight?.Invoke() ?? 0;
+                var height = Math.Max(0, window.ActualHeight - topOffset - navReserve);
+
+                if (FullscreenEpg != null)
+                {
+                    FullscreenEpg.Left = window.Left;
+                    FullscreenEpg.Top = window.Top + topOffset;
+                    FullscreenEpg.Height = height;
+                }
+
+                if (FullscreenDrawer != null)
+                {
+                    FullscreenDrawer.Left = window.Left + window.ActualWidth - FullscreenDrawer.Width;
+                    FullscreenDrawer.Top = window.Top + topOffset;
+                    FullscreenDrawer.Height = height;
+                }
+            }
+            catch { }
+        }
+
         public void ShowFullscreenDrawer(Window mainWindow, FrameworkElement drawerPanel, double width)
         {
             if (FullscreenDrawer != null) return;
@@ -274,12 +312,11 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 DataContext = mainWindow.DataContext
             };
             
-            FullscreenDrawer.SetResourceReference(Window.BackgroundProperty, "CardBackgroundBrush");
-            // The drawer floats over the fullscreen video: align it with the main window itself.
-            var drawerTopOffset = GetTopOverlayOffset();
-            FullscreenDrawer.Left = mainWindow.Left + mainWindow.ActualWidth - FullscreenDrawer.Width;
-            FullscreenDrawer.Top = mainWindow.Top + drawerTopOffset;
-            FullscreenDrawer.Height = Math.Max(0, mainWindow.ActualHeight - drawerTopOffset);
+            // Same translucent scrim as the floating bottom navigation bar, so the video keeps showing
+            // through the panel instead of the opaque card colour used by the windowed layout.
+            FullscreenDrawer.SetResourceReference(Window.BackgroundProperty, "TopOverlayScrimBrush");
+            FullscreenDrawer.Resources["CardBackgroundBrush"] = System.Windows.Media.Brushes.Transparent;
+            PositionFullscreenPanelsFor(mainWindow);
             
             try 
             { 
@@ -357,12 +394,11 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 DataContext = mainWindow.DataContext
             };
             
-            FullscreenEpg.SetResourceReference(Window.BackgroundProperty, "CardBackgroundBrush");
-            // The EPG floats over the fullscreen video: align it with the main window itself.
-            var epgTopOffset = GetTopOverlayOffset();
-            FullscreenEpg.Left = mainWindow.Left;
-            FullscreenEpg.Top = mainWindow.Top + epgTopOffset;
-            FullscreenEpg.Height = Math.Max(0, mainWindow.ActualHeight - epgTopOffset);
+            // Same translucent scrim as the floating bottom navigation bar, so the video keeps showing
+            // through the panel instead of the opaque card colour used by the windowed layout.
+            FullscreenEpg.SetResourceReference(Window.BackgroundProperty, "TopOverlayScrimBrush");
+            FullscreenEpg.Resources["CardBackgroundBrush"] = System.Windows.Media.Brushes.Transparent;
+            PositionFullscreenPanelsFor(mainWindow);
             
             try 
             { 

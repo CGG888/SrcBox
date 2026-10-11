@@ -32,6 +32,8 @@ namespace LibmpvIptvClient
                 TogglePlayPause = () => BtnPlayPause_Click(this, new RoutedEventArgs()),
                 PositionOverlay = () => { _overlayManager.PositionOverlay(); _overlayManager.PositionTopOverlay(); },
                 ShowOverlayWithDelay = _overlayManager.ShowOverlayWithDelay,
+                // The fullscreen panels stop above the floating bottom navigation bar.
+                GetNavigationHeight = () => _overlayManager.BottomBarHeight,
                 CollapsePanelColumns = CollapsePanelColumnsForFullscreen,
                 RestorePanelColumns = RestorePanelColumnsForWindowed,
                 CreateTopOverlay = () =>

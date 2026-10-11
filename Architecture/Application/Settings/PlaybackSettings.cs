@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -205,8 +206,8 @@ namespace LibmpvIptvClient
             public double VolumeGain { get; set; } = 0;
             // 最大音量 (%): 100 ~ 1000，默认 130
             public int VolumeMax { get; set; } = 130;
-            // 初始音量 (0~100): 默认 50
-            public double Volume { get; set; } = 50;
+            // 初始音量 (0~100): 默认 100（mpv 音量曲线是立方，50 只等于约 -18 dB）
+            public double Volume { get; set; } = 100;
             // 音频延迟 (秒): -100 ~ 100，默认 0
             public double AudioDelay { get; set; } = 0;
 
@@ -272,6 +273,13 @@ namespace LibmpvIptvClient
         /// <summary>Name of the settings file, kept next to the executable.</summary>
         public const string FileName = "user_settings.json";
 
+        /// <summary>Schema version written with every save. Bump it when a built-in default changes
+        /// so an old file can be migrated exactly once (see MigrateChangedDefaults).</summary>
+        public const int CurrentSchemaVersion = 1;
+
+        /// <summary>Schema version the loaded file was written with. 0 = the file predates tracking.</summary>
+        public int SettingsSchemaVersion { get; set; }
+
         static readonly object _saveLock = new object();
 
         static string DefaultPath => Path.Combine(AppDomain.CurrentDomain.BaseDirectory, FileName);
@@ -289,6 +297,7 @@ namespace LibmpvIptvClient
                     if (obj != null)
                     {
                         MigrateLegacyKeys(json, obj);
+                        MigrateChangedDefaults(json, obj);
                         return obj;
                     }
                     throw new InvalidDataException($"{Path.GetFileName(path)} deserialized to null");
@@ -360,6 +369,43 @@ namespace LibmpvIptvClient
             return false;
         }
 
+        static bool TryGetDouble(JsonElement root, string name, out double value)
+        {
+            value = 0;
+            if (!root.TryGetProperty(name, out var el)) return false;
+            if (el.ValueKind == JsonValueKind.Number) return el.TryGetDouble(out value);
+            if (el.ValueKind == JsonValueKind.String)
+                return double.TryParse(el.GetString(), NumberStyles.Float, CultureInfo.InvariantCulture, out value);
+            return false;
+        }
+
+        /// <summary>
+        /// One-time migrations for built-in defaults that changed value. A file is only rewritten when
+        /// it is older than CurrentSchemaVersion and still carries the old default, so a volume the user
+        /// set themselves is never overridden. A deliberate value that equals the old default cannot be
+        /// told apart from it - the schema version exists to resolve exactly that case, and v1 therefore
+        /// adopts the new default once.
+        /// </summary>
+        static void MigrateChangedDefaults(string json, PlaybackSettings settings)
+        {
+            try
+            {
+                if (settings.SettingsSchemaVersion >= CurrentSchemaVersion) return;
+
+                using var doc = JsonDocument.Parse(json);
+                var root = doc.RootElement;
+                if (root.ValueKind != JsonValueKind.Object) return;
+
+                // v0 -> v1: the initial volume used to be 50, which the cubic mpv volume curve turned into
+                // roughly -18 dB. 100 is unity gain, so files still sitting on the old default move to it.
+                if (TryGetDouble(root, "Volume", out var savedVolume) && Math.Abs(savedVolume - 50) < 0.001)
+                    settings.Volume = 100;
+
+                settings.SettingsSchemaVersion = CurrentSchemaVersion;
+            }
+            catch { }
+        }
+
         public void Save() => SaveTo(DefaultPath);
 
         internal void SaveTo(string path)
@@ -369,6 +415,8 @@ namespace LibmpvIptvClient
                 var tmp = path + ".tmp";
                 try
                 {
+                    // Stamp the schema on every save so a future default change only migrates older files once.
+                    SettingsSchemaVersion = CurrentSchemaVersion;
                     var json = JsonSerializer.Serialize(this, new JsonSerializerOptions { WriteIndented = true });
 
                     // Write a scratch file and swap it in: a crash mid-write used to leave a truncated

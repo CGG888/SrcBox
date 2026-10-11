@@ -183,6 +183,65 @@ namespace LibmpvIptvClient.Tests
             finally { TryDeleteDir(dir); }
         }
 
+        [TestMethod]
+        public void LoadFrom_MigratesTheLegacyDefaultVolumeOnce()
+        {
+            var path = NewPath(out var dir);
+            try
+            {
+                File.WriteAllText(path, """
+                {
+                  "Volume": 50
+                }
+                """);
+
+                var loaded = PlaybackSettings.LoadFrom(path);
+
+                Assert.AreEqual(100, loaded.Volume, 0.001, "旧默认音量 50 应一次性迁移到 100（立方曲线下约为 -18 dB）");
+                Assert.AreEqual(PlaybackSettings.CurrentSchemaVersion, loaded.SettingsSchemaVersion);
+            }
+            finally { TryDeleteDir(dir); }
+        }
+
+        [TestMethod]
+        public void LoadFrom_KeepsAVolumeTheUserChose()
+        {
+            var path = NewPath(out var dir);
+            try
+            {
+                File.WriteAllText(path, """
+                {
+                  "Volume": 30
+                }
+                """);
+
+                var loaded = PlaybackSettings.LoadFrom(path);
+
+                Assert.AreEqual(30, loaded.Volume, 0.001, "用户自己调过的音量不能被迁移覆盖");
+            }
+            finally { TryDeleteDir(dir); }
+        }
+
+        [TestMethod]
+        public void LoadFrom_DoesNotRemigrateAFileSavedByTheCurrentSchema()
+        {
+            var path = NewPath(out var dir);
+            try
+            {
+                File.WriteAllText(path, """
+                {
+                  "SettingsSchemaVersion": 1,
+                  "Volume": 50
+                }
+                """);
+
+                var loaded = PlaybackSettings.LoadFrom(path);
+
+                Assert.AreEqual(50, loaded.Volume, 0.001, "当前 schema 下用户故意设的 50 必须保留");
+            }
+            finally { TryDeleteDir(dir); }
+        }
+
         static void TryDeleteDir(string dir)
         {
             try { Directory.Delete(dir, true); } catch { }

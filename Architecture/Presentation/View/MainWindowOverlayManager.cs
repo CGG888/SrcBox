@@ -24,6 +24,20 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
 
         public OverlayControls? OverlayWpf => _overlayWpf;
 
+        /// <summary>
+        /// Height (in DIPs) of the floating bottom navigation bar. The fullscreen EPG / drawer stop above
+        /// it so it never covers them; falls back to the design height while the bar is not laid out yet.
+        /// </summary>
+        public double BottomBarHeight
+        {
+            get
+            {
+                var h = _overlayWpf?.ActualHeight ?? 0;
+                if (h <= 0 || double.IsNaN(h)) h = _overlayWpf?.Height ?? 0;
+                return h > 0 && !double.IsNaN(h) ? h : 80;
+            }
+        }
+
         public MainWindowOverlayManager(MainWindow window, MainShellViewModel shell)
         {
             _window = window;
@@ -648,10 +662,8 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                                 _shell.WindowStateActions.FullscreenEpg.Topmost = !preferTopOverlay;
                                 if (!preferTopOverlay) _shell.WindowStateActions.FullscreenEpg.Activate();
                                 
-                                var topOffset = _shell.WindowStateActions.GetTopOverlayOffset();
-                                _shell.WindowStateActions.FullscreenEpg.Left = _window.Left;
-                                _shell.WindowStateActions.FullscreenEpg.Top = _window.Top + topOffset;
-                                _shell.WindowStateActions.FullscreenEpg.Height = Math.Max(0, _window.ActualHeight - topOffset);
+                                // Geometry (top overlay offset + bottom navigation reserve) lives in one place.
+                                _shell.WindowStateActions.PositionFullscreenPanels();
                             }
                         }
                         else 
@@ -695,10 +707,8 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                                 _shell.WindowStateActions.FullscreenDrawer.Topmost = !preferTopOverlay;
                                 if (!preferTopOverlay) _shell.WindowStateActions.FullscreenDrawer.Activate();
                                 
-                                var topOffset = _shell.WindowStateActions.GetTopOverlayOffset();
-                                _shell.WindowStateActions.FullscreenDrawer.Left = _window.Left + _window.ActualWidth - w;
-                                _shell.WindowStateActions.FullscreenDrawer.Top = _window.Top + topOffset;
-                                _shell.WindowStateActions.FullscreenDrawer.Height = Math.Max(0, _window.ActualHeight - topOffset);
+                                // Geometry (top overlay offset + bottom navigation reserve) lives in one place.
+                                _shell.WindowStateActions.PositionFullscreenPanels();
                             }
                         }
                         else
