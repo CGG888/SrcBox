@@ -69,7 +69,10 @@ namespace LibmpvIptvClient.Models
         /// <summary>
         /// Computed health color brush. Gray=single/untested, Green=tag healthy,
         /// Yellow=tag unhealthy with fallback, Red=all unreachable.
+        /// Not serialized: it is a computed UI value, and walking a WPF brush into
+        /// JSON hits the Transform.Inverse self-reference chain (cache save used to fail).
         /// </summary>
+        [System.Text.Json.Serialization.JsonIgnore]
         public System.Windows.Media.SolidColorBrush HealthColorBrush
         {
             get
