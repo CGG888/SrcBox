@@ -357,21 +357,9 @@
             <ColumnDefinition x:Name="DrawerColumn" Width="{Binding DrawerGridLength}"/>
         </Grid.ColumnDefinitions>
         <Grid.RowDefinitions>
-            <RowDefinition Height="Auto">
-                <RowDefinition.Style>
-                    <Style TargetType="RowDefinition">
-                        <Setter Property="Height" Value="Auto"/>
-                        <Style.Triggers>
-                            <DataTrigger Binding="{Binding WindowStateActions.IsFullscreen}" Value="True">
-                                <Setter Property="Height" Value="0"/>
-                            </DataTrigger>
-                            <DataTrigger Binding="{Binding IsMinimalMode}" Value="True">
-                                <Setter Property="Height" Value="0"/>
-                            </DataTrigger>
-                        </Style.Triggers>
-                    </Style>
-                </RowDefinition.Style>
-            </RowDefinition>
+            <!-- Auto row sized by the custom title bar below: collapsing that Border collapses the row.
+                 A RowDefinition.Style trigger cannot do this (the inline Height is a local value and wins). -->
+            <RowDefinition Height="Auto"/>
             <RowDefinition Height="*"/>    <!-- 视频区 -->
             <RowDefinition Height="Auto"/> <!-- 底部控制栏 -->
         </Grid.RowDefinitions>
@@ -382,6 +370,10 @@
                 <Style TargetType="Border">
                     <Setter Property="Visibility" Value="Visible"/>
                     <Style.Triggers>
+                        <!-- Fullscreen has no room for a static title bar: the auto-hiding TopOverlay owns it. -->
+                        <DataTrigger Binding="{Binding WindowStateActions.IsFullscreen}" Value="True">
+                            <Setter Property="Visibility" Value="Collapsed"/>
+                        </DataTrigger>
                         <DataTrigger Binding="{Binding IsMinimalMode}" Value="True">
                             <Setter Property="Visibility" Value="Collapsed"/>
                         </DataTrigger>
