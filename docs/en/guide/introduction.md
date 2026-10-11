@@ -26,7 +26,7 @@ Optimized for IPTV scenarios with millisecond-level channel switching, eliminati
 - WebDAV cloud sync
 
 ### Web Remote Control
-Control the player from any browser, supporting playback control, volume adjustment, and channel switching.
+Control the player from any browser, supporting playback control, volume adjustment, and channel switching. The same port serves both HTTP and HTTPS (open `https://<PC-IP>:<port>` once the certificate is installed), and the page can be installed to the phone's home screen as a PWA — see [HTTPS and Certificates](./web-remote#https-and-certificates).
 
 ## Technical Architecture
 

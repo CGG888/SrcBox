@@ -96,6 +96,8 @@ A: Enable Web Remote Control in settings, follow prompts to set port and passwor
 **Q: How to access Web Remote Control?**
 A: Enter `http://playerPC_IP:port` in a browser on the same local network.
 
+The same port also serves HTTPS, so once the certificate is installed you can open `https://<PC-IP>:<port>`; the page can also be installed to the phone's home screen as a PWA. See [HTTPS and Certificates](./web-remote#https-and-certificates).
+
 ## Keyboard Shortcuts
 
 **Q: What are the common shortcuts?**

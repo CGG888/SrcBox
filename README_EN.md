@@ -27,7 +27,8 @@
 | ⏪ **Timeshift & Catchup** | Real-time seeking in live streams |
 | 🎬 **Scheduled Recording** | Foreground/background modes, WebDAV sync |
 | 🖥️ **Multi-Screen** | 4/6/9 screen simultaneous viewing |
-| 📱 **Web Remote** | Control player from browser, anywhere |
+| 📱 **Web Remote** | Scan and control the player from your phone: standard remote pad + full interface |
+| 🔒 **HTTPS & PWA** | One port serves both http and https, built-in certificate, installable to the home screen |
 | 🔧 **Hardware Decoding** | D3D11VA/DXVA2/NVDEC/Software auto-switch |
 | 📋 **Channel Management** | Groups, search, favorites, history |
 
@@ -48,15 +49,27 @@
 | `L` | Channel List |
 | `R` | Start/Stop Recording |
 
-## Recent Updates (v1.1.9)
+## Web Remote (Phone Remote)
 
-- 🖥️ **Multi-Screen** - 4/6/9 screen viewing, 1-9 keys quick select
-- 🎬 **Scheduled Recording** - Foreground/background modes, toast notification
-- 🔧 **Decoder Selection** - Auto/D3D11VA/DXVA2/NVDEC/Software
-- ⌨️ **Shortcuts Help** - New ShortcutsWindow for keyboard reference
-- ⚡ **Timeshift Enhancement** - Seek limited within program boundaries
+Once enabled, scan the QR code in Settings and the remote opens in your phone browser — no app to install:
 
-[View All Updates →](https://github.com/CGG888/SrcBox/releases)
+- **Two layouts**: a standard remote pad (D-pad, number keys, volume, source switch/mute, fullscreen) and the full interface (status, playback controls, channel list, EPG, sources, reminders and recordings); the choice is remembered
+- **HTTP + HTTPS on one port**: the same port serves both `http://` and `https://`; the built-in self-signed certificate can be downloaded from Settings or the remote page (install it as a CA certificate on Android, install the profile and enable full trust on iPhone)
+- **Install to the home screen (PWA)**: "Install app" on Android Chrome/Edge, or Share → "Add to Home Screen" on iOS Safari; it then runs full screen in its own window
+- **Tuning feedback**: when you switch channels from the phone, the player shows the same channel number you entered
+
+See the [Web Remote documentation](https://srcbox.top/en/guide/web-remote) for the full steps.
+
+## Recent Updates (v1.1.15)
+
+- 🖥️ **Fullscreen rework** - the main window goes fullscreen itself, overlays are owned by it; window geometry and caption buttons are restored on exit
+- 📱 **Phone remote without an app** - single-port HTTP + HTTPS, downloadable self-signed certificate, installable to the home screen (PWA)
+- 🎨 **Consistent fullscreen look** - light theme uses the dark top/bottom bars and panels in fullscreen; panels take 72% of the available height, vertically centred
+- ⚡ **Progressive EPG** - the programme list appears per source instead of waiting for every source to finish
+- 🧠 **Memory** - remembers the last channel per M3U source and the last source per channel (switchable in Settings)
+- 🔊 **Unity volume** - default volume is 1.0, and the max-volume setting can boost above 1.0
+
+[v1.1.15 release notes →](https://srcbox.top/releases/v1.1.15) | [View All Updates →](https://github.com/CGG888/SrcBox/releases)
 
 ## Architecture
 
@@ -104,6 +117,10 @@ dotnet test .\Tests\LibmpvIptvClient.Tests.csproj
 
 - Settings  
   ![settings](docs/screenshots/settings.png)
+
+- Web Remote (standard pad · dark / full interface · dark)  
+  ![remote-pad-dark](docs/screenshots/web-remote-pad-dark.png)
+  ![remote-full-dark](docs/screenshots/web-remote-full-dark.png)
 
 ---
 

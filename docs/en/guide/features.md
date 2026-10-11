@@ -26,7 +26,7 @@ Supports XMLTV (gz) format, automatic day switching, smart `tvg-id` matching.
 [View configuration guide](./epg)
 
 ### Catchup
-Template-based catchup URL generation (e.g., `{utc:yyyyMMddHHmmss}`), never miss精彩的节目.
+Template-based catchup URL generation (e.g., `{utc:yyyyMMddHHmmss}`), never miss a great programme.
 [View usage guide](./catchup-timeshift)
 
 <video controls width="100%">
@@ -67,6 +67,7 @@ Remotely control the player through a browser, control your TV from anywhere.
 - Playback control, volume adjustment, channel switching
 - Real-time status view, program info display
 - Optional password protection
+- One port serves both HTTP and HTTPS (open `https://<PC-IP>:<port>` once the certificate is installed), and the page can be installed to the phone's home screen as a PWA — see [HTTPS and Certificates](./web-remote#https-and-certificates)
 
 [View detailed guide](./web-remote)
 

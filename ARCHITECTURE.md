@@ -251,9 +251,14 @@ Tooling/
 | `RegistryProxyProvider.cs` | 注册表代理 |
 | `TsDurationEstimator.cs` | TS 时长估算 |
 | **Web 远程** | |
-| `WebRemote/WebRemoteManager.cs` | 远程控制管理器 |
-| `WebRemote/WebRemoteServer.cs` | 远程控制服务器 |
-| `WebRemote/WebRemoteStrings.cs` | 远程控制字符串 |
+| `WebRemote/WebRemoteManager.cs` | 远程控制管理器（与主窗口 VM 的回调接线） |
+| `WebRemote/WebRemoteServer.cs` | 远程控制服务器（单端口 HTTP/HTTPS + 内嵌遥控器页面） |
+| `WebRemote/WebRemoteStrings.cs` | 遥控器页面文案（四语言） |
+| `WebRemote/WebRemoteCertificateService.cs` | 自签根证书与服务器证书的生成/续签/重新生成 |
+| `WebRemote/WebRemoteAddressHelper.cs` | 局域网地址发现与访问 URL 构造 |
+| `WebRemote/WebRemoteQrCode.cs` | 访问二维码生成（QRCoder） |
+| `WebRemote/WebRemoteIconProvider.cs` | PWA 图标（优先内嵌资源，回退磁盘） |
+| `WebRemote/WebRemoteChannelNumbering.cs` | 频道编号（按播放列表分组顺序连续编号） |
 
 ---
 

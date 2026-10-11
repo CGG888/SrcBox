@@ -27,7 +27,7 @@
 - [鍵盤快捷鍵](./keyboard-shortcuts) - 快速操作指南
 
 ### 🌐 遠程控制
-- [Web 遠程控制](./web-remote) - 瀏覽器遠程操控
+- [Web 遠程控制](./web-remote) - 瀏覽器遠程操控，同一埠同時支援 HTTP 與 HTTPS，可安裝到手機主畫面（PWA）
 - [HTTP/RTSP Header](./http-headers) - 自訂播放參數
 
 ### 🔧 開發參考

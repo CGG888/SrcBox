@@ -45,7 +45,7 @@
 
 ### 遠程與同步
 
-<span style="color:#22c55e">✔</span> **Web 遠程控制** - 瀏覽器遠程操控，支援完整播放控制、回看、預約、錄製<br>
+<span style="color:#22c55e">✔</span> **Web 遠程控制** - 瀏覽器遠程操控，支援完整播放控制、回看、預約、錄製；同一埠同時支援 HTTP 與 HTTPS，可安裝到手機主畫面（PWA）[HTTPS 與憑證](./web-remote#https-與憑證)<br>
 <span style="color:#22c55e">✔</span> **節目預約提醒** - 節目到點通知，支援自動播放策略<br>
 <span style="color:#22c55e">✔</span> **多語言** - 簡體中文、繁體中文、English、Русский
 

@@ -45,7 +45,7 @@
 
 ### 远程与同步
 
-<span style="color:#22c55e">✔</span> **Web 远程控制** - 浏览器远程操控，支持完整播放控制、回看、预约、录制<br>
+<span style="color:#22c55e">✔</span> **Web 远程控制** - 浏览器远程操控，支持完整播放控制、回看、预约、录制；同一端口同时支持 HTTP 与 HTTPS，可安装到手机主屏幕（PWA）[HTTPS 与证书](./web-remote#https-与证书)<br>
 <span style="color:#22c55e">✔</span> **预约提醒** - 节目到点通知，支持自动播放策略<br>
 <span style="color:#22c55e">✔</span> **多语言** - 简体中文、繁体中文、English、Русский
 

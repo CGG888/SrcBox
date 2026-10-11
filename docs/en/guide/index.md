@@ -27,7 +27,7 @@ Welcome to **SrcBox** documentation! This guide will help you get started quickl
 - [Keyboard Shortcuts](./keyboard-shortcuts) - Quick operation guide
 
 ### 🌐 Remote Control
-- [Web Remote](./web-remote) - Browser-based remote control
+- [Web Remote](./web-remote) - Browser-based remote control; one port serves both HTTP and HTTPS, and the page installs to the phone's home screen as a PWA ([HTTPS and Certificates](./web-remote#https-and-certificates))
 - [HTTP/RTSP Headers](./http-headers) - Custom playback parameters
 
 ### 🔧 Development

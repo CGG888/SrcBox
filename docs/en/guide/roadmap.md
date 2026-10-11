@@ -45,7 +45,7 @@ We are committed to continuously improving the IPTV viewing experience.
 
 ### Remote & Sync
 
-<span style="color:#22c55e">✔</span> **Web Remote Control** - Browser-based player control, full playback, replay, reminders, recording<br>
+<span style="color:#22c55e">✔</span> **Web Remote Control** - Browser-based player control, full playback, replay, reminders, recording; one port serves both HTTP and HTTPS and the page installs to the phone's home screen as a PWA ([HTTPS and Certificates](./web-remote#https-and-certificates))<br>
 <span style="color:#22c55e">✔</span> **Program Reminders** - Scheduled notifications with auto-play option<br>
 <span style="color:#22c55e">✔</span> **Multi-language** - Simplified Chinese, Traditional Chinese, English, Русский
 

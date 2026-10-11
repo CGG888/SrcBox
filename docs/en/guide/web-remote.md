@@ -18,6 +18,8 @@ Web Remote is based on WebSocket and HTTP protocols, supporting the following fe
 - **Interface Switching**: One-click switch between the standard remote interface and the full interface, the choice is remembered automatically
 - **Number Key Tuning**: The standard remote interface lets you enter a channel number directly to switch channels, and the channel list shows the matching numbers
 - **QR Code Access**: Settings shows the access QR code and link; scan with your phone or copy the link to open
+- **HTTPS Access**: One port serves both http and https, with a built-in self-signed certificate to install on your phone
+- **Install to Home Screen**: Install the remote as a PWA and open it full screen in its own window
 
 ## Enable Remote Control
 
@@ -42,13 +44,55 @@ For local access, use `localhost`. For LAN remote access, replace `localhost` wi
 http://192.168.1.100:8899
 ```
 
+The same port also serves HTTPS (the server tells the protocols apart from the first byte), so once the certificate is installed you can open `https://192.168.1.100:8899`; see [HTTPS and Certificates](#https-and-certificates) below.
+
 ### Scan to Open
 
 After enabling, the **Web Remote** tab in the Settings window shows the current access address and QR code:
 
 - Scan the QR code with your phone camera or browser to open the remote
 - Click **Copy Link** to copy the access address
+- When the certificate is ready, the QR code and link point to the **HTTPS address** (`https://<PC-IP>:<port>`; the phone must install the certificate before opening it for the first time); only when the certificate is unavailable do they fall back to the HTTP address
+- The tab also shows the **certificate installation address**, the certificate status (including its expiry date) and the **Regenerate Certificate** button
 - The QR code and link update automatically when the port changes; if no LAN address is found, check your network connection
+
+### HTTPS and Certificates
+
+Web Remote serves **HTTP and HTTPS on one port**: the same port accepts both `http://` and `https://` requests (the server looks at the first byte to tell whether the connection starts with a TLS handshake), so there is no separate HTTPS port to configure.
+
+Why HTTPS:
+
+- The browser only offers "Install app" (PWA) and service workers in a secure context (`https://` or `localhost`); opening the page as `http://192.168.x.x` on a phone cannot install the remote as an app
+- Plain HTTP on the LAN can be read by other devices on the same network; HTTPS encrypts the traffic
+
+On first use SrcBox **generates** a self-signed root certificate and a server certificate under `%LOCALAPPDATA%\SrcBox\webremote-certs` (the root is valid for 10 years; the server certificate for 397 days and renews 30 days before it expires). Nothing has to be created by hand.
+
+When a phone opens `http://192.168.1.100:8899`, the **Install** button on the page reports the plain-http situation and offers the certificate downloads:
+
+| Address | Download | Use |
+|:---|:---|:---|
+| `/cert` | `srcbox-ca.crt` (DER) | Install as a trusted CA certificate on Android and Windows |
+| `/cert.pem` | `srcbox-ca.pem` | Text format fallback for Android builds that reject the `.crt` file |
+| `/cert.mobileconfig` | `srcbox-ca.mobileconfig` | One-step configuration profile for iPhone |
+
+**Installing the certificate on Android**: Settings → Security → Encryption & credentials → Install a certificate → CA certificate → pick the downloaded `srcbox-ca.crt` (use `.pem` when it cannot be read).
+
+**Installing the certificate on iOS**: install the downloaded profile, then turn on full trust for the SrcBox certificate under Settings → General → About → Certificate Trust Settings.
+
+Once the certificate is installed, use **Open over HTTPS** in the dialog (it goes to `https://192.168.1.100:8899/`), or simply edit the address bar to `https://`.
+
+Skipping the certificate is fine too: on Android use the browser menu → "Add to Home screen" and then tap the fullscreen button (⛶) in the header; on iOS use Safari → Share → "Add to Home Screen" and the page opens full screen (iOS asks for no certificate). The only difference is that such a shortcut is not a real PWA install.
+
+**Uninstalling the certificate**: on iPhone, remove the SrcBox profile under Settings → General → VPN & Device Management and then turn off full trust in Certificate Trust Settings; on Android, remove the SrcBox certificate under Settings → Security → Encryption & credentials → Trusted credentials → User; on Windows, delete SrcBox under Trusted Root Certification Authorities → Certificates in `certmgr.msc`. After uninstalling, switch back to `http://` or install the certificate again. The **Regenerate** button in the settings page issues a new root and server certificate, which immediately invalidates the old ones, so the phone has to install the certificate again.
+
+### Install to Home Screen (PWA)
+
+The remote page is a PWA (`manifest.json` + service worker), so it can be installed to the phone's home screen and opened full screen like a native app:
+
+- **Android (Chrome / Edge)**: in a secure context (https or localhost) the page shows an **Install** button; tap it and choose "Install app". If the browser offers no prompt, open the browser menu → "Install app" or "Add to Home screen"
+- **iOS (Safari)**: tap Share → "Add to Home Screen"; that is the only install path on iOS
+- The install entry disappears once the page runs in standalone mode, and stays hidden after "Don't show again"
+- Installed, it opens in its own window without an address bar; the fullscreen button (⛶) in the header works on plain http as well
 
 ## Screenshot
 
@@ -108,12 +152,9 @@ The interface uses a Neumorphism style: it is light by default, and the 🌙 / �
 
 | Button | Function |
 |--------|----------|
-| Timeshift | Toggle timeshift mode |
 | -10s | Rewind 10 seconds |
 | +10s | Forward 10 seconds |
-| 0.5x | 0.5x playback speed |
-| 1x | Normal speed |
-| 2x | 2x playback speed |
+| Timeshift | Toggle timeshift mode on the current channel; the button state follows the player's `timeshiftEnabled` status |
 
 ### Volume Control Area
 
@@ -132,24 +173,22 @@ The interface uses a Neumorphism style: it is light by default, and the 🌙 / �
 - Display program list for current channel (shows today's programs by default)
 - Click program to enter replay mode
 - Three action buttons supported:
-  - **Replay** (Purple): Replay aired program
-  - **Timeshift** (Blue): Timeshift current program
-  - **Reminder** (Green): Schedule reminder for future program
-  - **Record** (Orange): Schedule front recording
+  - **Watch** (Red): Jump straight to that channel and watch the live programme
+  - **Replay** (Purple): Replay a past program on a channel that supports catch-up (catch-up source) or timeshift
+  - **Reminder** (Blue): Schedule a reminder for the programme
 
-### Program Badge说明
+### Program Badge Legend
 
 | Badge | Color | Meaning |
 |-------|-------|---------|
 | LIVE | Red | Currently live |
 | Replay | Purple | Currently replaying |
-| Reminder | Green | Reminder set |
-| Next | Orange | Next program |
+| Reminder | Blue `#1e90ff` | Reminder set |
 
 ### Source Management (expandable)
 
 - Display all saved playback sources
-- Show source health status (Green=OK, Red=Failed)
+- The currently selected source is highlighted
 - Support select, add, remove sources
 
 ### Reminder Management (expandable)
@@ -178,10 +217,14 @@ Access requires password to use remote control functionality.
 
 ### Notes
 
-- By default, remote control only allows local access (localhost)
+- Once enabled, the service listens on **all network interfaces** (`0.0.0.0`), so any device on the same LAN can access it as long as it knows the address and port; **no password is set by default**, so it is recommended to tick "Require Password"
 - For LAN access, ensure firewall allows the corresponding port
 - It is recommended to enable password protection for security
+- Plain `http://` traffic on the LAN can be read by other devices; install the certificate and switch to `https://` (see [HTTPS and Certificates](#https-and-certificates))
+- Installing to the home screen needs a secure context (https or localhost); on plain http you can only "Add to Home screen"
 - After changing port, refresh the browser page
+- Settings has **Show channel list** and **Show EPG list** switches; switching one off hides the corresponding section on the remote page
+- **Max EPG items** in settings limits how many programs the program guide returns per channel; the value range is 5–500 and the default is 50
 
 ## WebSocket API Reference
 
@@ -225,8 +268,8 @@ All operations return JSON response on success, or `{ "error": "error message" }
 | Action | Parameters | Description |
 |--------|------------|-------------|
 | `channel` | `channelId` | Switch channel |
-| `prevChannel` | - | Previous channel |
-| `nextChannel` | - | Next channel |
+
+The Previous Channel / Next Channel buttons are implemented by the page: it works out the target channel id from the current channel list and then calls `channel`. The WebSocket API itself has no `prevChannel` / `nextChannel` actions (calling them returns `Unknown action`).
 
 #### Speed Control
 

@@ -33,7 +33,7 @@ features:
     details: 支持 4/6/9 屏幕同时观看，数字键快速切换
     icon: 🖥️
   - title: Web 远程控制
-    details: 浏览器直接操控播放器，随时随地掌控电视
+    details: 浏览器直接操控播放器，同一端口支持 HTTPS，可安装到手机主屏幕
     icon: 📱
   - title: 硬件解码
     details: D3D11VA/DXVA2/NVDEC/软件多模式自动切换
