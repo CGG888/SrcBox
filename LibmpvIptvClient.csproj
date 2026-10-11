@@ -53,4 +53,11 @@
     <Resource Include="srcbox.png" />
     <Resource Include="srcbox.ico" />
   </ItemGroup>
+  <ItemGroup>
+    <!-- PWA icons served by the web remote (/icons/...), embedded so published builds work too -->
+    <EmbeddedResource Include="docs\public\pwa\icon-192.png" LogicalName="SrcBox.Pwa.icon-192.png" />
+    <EmbeddedResource Include="docs\public\pwa\icon-512.png" LogicalName="SrcBox.Pwa.icon-512.png" />
+    <EmbeddedResource Include="docs\public\pwa\maskable-512.png" LogicalName="SrcBox.Pwa.maskable-512.png" />
+    <EmbeddedResource Include="docs\public\pwa\apple-touch-icon-180.png" LogicalName="SrcBox.Pwa.apple-touch-icon-180.png" />
+  </ItemGroup>
 </Project>

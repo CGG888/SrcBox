@@ -3,8 +3,11 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Net.WebSockets;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
@@ -17,12 +20,24 @@ namespace LibmpvIptvClient.Services.WebRemote
     public class WebRemoteServer : IDisposable
     {
         private TcpListener? _tcpListener;
+        private TcpListener? _httpsListener;
+        private X509Certificate2? _httpsCertificate;
         private CancellationTokenSource? _cts;
         private readonly List<WebSocket> _clients = new();
         private readonly object _clientsLock = new();
 
         public bool IsRunning { get; private set; }
         public int Port { get; private set; }
+
+        /// <summary>
+        /// True while the TLS listener is accepting phones on <see cref="HttpsPort"/>.
+        /// </summary>
+        public bool IsHttpsRunning { get; private set; }
+
+        /// <summary>
+        /// Port of the TLS listener, or zero when HTTPS is disabled or could not be started.
+        /// </summary>
+        public int HttpsPort { get; private set; }
 
         // 密码保护
         private bool _requirePassword;
@@ -58,6 +73,15 @@ namespace LibmpvIptvClient.Services.WebRemote
 
         public void Start(int port, bool requirePassword = false, string password = "")
         {
+            Start(port, requirePassword, password, 0);
+        }
+
+        /// <summary>
+        /// Starts the remote. A positive <paramref name="httpsPort"/> also opens a TLS listener, which is
+        /// what lets Android phones install the page as an app (a secure context is required for that).
+        /// </summary>
+        public void Start(int port, bool requirePassword = false, string password = "", int httpsPort = 0)
+        {
             if (IsRunning) return;
 
             Port = port;
@@ -71,19 +95,51 @@ namespace LibmpvIptvClient.Services.WebRemote
                 _tcpListener = new TcpListener(IPAddress.Any, port);
                 _tcpListener.Start();
                 IsRunning = true;
-                _ = Task.Run(() => AcceptClientsAsync(_cts.Token));
+                _ = Task.Run(() => AcceptClientsAsync(_tcpListener, false, _cts.Token));
                 Logger.Debug($"[WebRemote] Server started on port {port}");
             }
             catch (Exception ex)
             {
                 Logger.Error($"[WebRemote] Failed to start server: {ex.Message}");
                 Stop();
+                return;
+            }
+
+            if (httpsPort > 0 && httpsPort != port) StartHttpsListener(httpsPort);
+        }
+
+        /// <summary>
+        /// Opens the TLS listener using the self-signed certificate; the phone trusts the CA behind it.
+        /// </summary>
+        private void StartHttpsListener(int httpsPort)
+        {
+            if (_httpsListener != null || _cts == null) return;
+            if (!WebRemoteCertificateService.TryGetServerCertificate(out var certificate)) return;
+
+            try
+            {
+                _httpsListener = new TcpListener(IPAddress.Any, httpsPort);
+                _httpsListener.Start();
+                _httpsCertificate = certificate;
+                HttpsPort = httpsPort;
+                IsHttpsRunning = true;
+                var token = _cts.Token;
+                _ = Task.Run(() => AcceptClientsAsync(_httpsListener, true, token));
+                Logger.Debug($"[WebRemote] HTTPS server started on port {httpsPort}");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"[WebRemote] Failed to start HTTPS server on port {httpsPort}: {ex.Message}");
+                try { _httpsListener?.Stop(); } catch { }
+                _httpsListener = null;
+                IsHttpsRunning = false;
+                HttpsPort = 0;
             }
         }
 
         public void Stop()
         {
-            if (!IsRunning) return;
+            if (!IsRunning && !IsHttpsRunning) return;
 
             _cts?.Cancel();
             lock (_clientsLock)
@@ -96,33 +152,53 @@ namespace LibmpvIptvClient.Services.WebRemote
             }
             _tcpListener?.Stop();
             _tcpListener = null;
+            _httpsListener?.Stop();
+            _httpsListener = null;
+            _httpsCertificate = null;
             IsRunning = false;
+            IsHttpsRunning = false;
+            HttpsPort = 0;
             Logger.Debug("[WebRemote] Server stopped");
         }
 
-        private async Task AcceptClientsAsync(CancellationToken ct)
+        private async Task AcceptClientsAsync(TcpListener listener, bool useTls, CancellationToken ct)
         {
-            while (!ct.IsCancellationRequested && _tcpListener != null)
+            while (!ct.IsCancellationRequested)
             {
                 try
                 {
-                    var client = await _tcpListener.AcceptTcpClientAsync(ct);
-                    _ = Task.Run(() => HandleClientAsync(client, ct), ct);
+                    var client = await listener.AcceptTcpClientAsync(ct);
+                    _ = Task.Run(() => HandleClientAsync(client, useTls, ct), ct);
                 }
                 catch (OperationCanceledException) { break; }
+                catch (ObjectDisposedException) { break; }
                 catch (Exception ex) { Logger.Error($"[WebRemote] Accept error: {ex.Message}"); }
             }
         }
 
-        private async Task HandleClientAsync(TcpClient tcpClient, CancellationToken ct)
+        private async Task HandleClientAsync(TcpClient tcpClient, bool useTls, CancellationToken ct)
         {
             using (tcpClient)
             {
                 try
                 {
-                    var stream = tcpClient.GetStream();
-                    stream.ReadTimeout = 5000;
-                    Logger.Debug($"[WebRemote] Client connected from {tcpClient.Client.RemoteEndPoint}");
+                    var networkStream = tcpClient.GetStream();
+                    networkStream.ReadTimeout = 5000;
+                    Logger.Debug($"[WebRemote] Client connected from {tcpClient.Client.RemoteEndPoint}{(useTls ? " (https)" : "")}");
+
+                    Stream stream = networkStream;
+                    if (useTls)
+                    {
+                        var ssl = new SslStream(networkStream, false);
+                        await ssl.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
+                        {
+                            ServerCertificate = _httpsCertificate,
+                            ClientCertificateRequired = false,
+                            EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                            CertificateRevocationCheckMode = X509RevocationMode.NoCheck
+                        }, ct);
+                        stream = ssl;
+                    }
 
                     // Read all HTTP headers first
                     var sb = new StringBuilder();
@@ -155,7 +231,7 @@ namespace LibmpvIptvClient.Services.WebRemote
             }
         }
 
-        private async Task ServeHttpPageAsync(TcpClient tcpClient, NetworkStream stream, string request, CancellationToken ct)
+        private async Task ServeHttpPageAsync(TcpClient tcpClient, Stream stream, string request, CancellationToken ct)
         {
             try
             {
@@ -165,6 +241,13 @@ namespace LibmpvIptvClient.Services.WebRemote
                 if (firstLine.StartsWith("GET /logo/"))
                 {
                     await ServeLogoAsync(tcpClient, stream, firstLine, ct);
+                    return;
+                }
+
+                // PWA: CA certificate download, used before the phone can open the https address
+                if (firstLine.TrimStart().StartsWith("GET /cert"))
+                {
+                    await ServeCertificateAsync(tcpClient, stream, ct);
                     return;
                 }
 
@@ -321,22 +404,27 @@ namespace LibmpvIptvClient.Services.WebRemote
             try
             {
                 var manifest = @"{
+  ""id"": ""/"",
   ""name"": ""SrcBox Remote"",
   ""short_name"": ""SrcBox"",
   ""description"": ""SrcBox IPTV Remote Control"",
   ""start_url"": ""/"",
+  ""scope"": ""/"",
   ""display"": ""standalone"",
+  ""display_override"": [""standalone"", ""minimal-ui""],
   ""background_color"": ""#d9dee5"",
   ""theme_color"": ""#d9dee5"",
   ""orientation"": ""portrait"",
   ""icons"": [
-    { ""src"": ""/icons/icon-192.png"", ""sizes"": ""192x192"", ""type"": ""image/png"" },
-    { ""src"": ""/icons/icon-512.png"", ""sizes"": ""512x512"", ""type"": ""image/png"" }
+    { ""src"": ""/icons/icon-192.png"", ""sizes"": ""192x192"", ""type"": ""image/png"", ""purpose"": ""any"" },
+    { ""src"": ""/icons/icon-512.png"", ""sizes"": ""512x512"", ""type"": ""image/png"", ""purpose"": ""any"" },
+    { ""src"": ""/icons/maskable-512.png"", ""sizes"": ""512x512"", ""type"": ""image/png"", ""purpose"": ""maskable"" }
   ],
   ""categories"": [""entertainment"", ""utilities""],
-  ""lang"": ""en""
+  ""lang"": ""en"",
+  ""prefer_related_applications"": false
 }";
-                var header = $"HTTP/1.1 200 OK\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: {Encoding.UTF8.GetByteCount(manifest)}\r\nCache-Control: max-age=86400\r\nConnection: close\r\n\r\n";
+                var header = $"HTTP/1.1 200 OK\r\nContent-Type: application/manifest+json; charset=utf-8\r\nContent-Length: {Encoding.UTF8.GetByteCount(manifest)}\r\nCache-Control: max-age=86400\r\nConnection: close\r\n\r\n";
                 await stream.WriteAsync(Encoding.UTF8.GetBytes(header), ct);
                 await stream.WriteAsync(Encoding.UTF8.GetBytes(manifest), ct);
             }
@@ -350,7 +438,7 @@ namespace LibmpvIptvClient.Services.WebRemote
             {
                 var sw = @"
 // SrcBox Web Remote Service Worker
-var CACHE_NAME = 'srcbox-remote-v2';
+var CACHE_NAME = 'srcbox-remote-v3';
 var STATIC_ASSETS = [
   '/',
   '/manifest.json'
@@ -423,7 +511,6 @@ self.addEventListener('fetch', function(event) {
         {
             try
             {
-                // Parse icon size from request: /icons/icon-192.png or /icons/icon-512.png
                 var parts = request.Split(' ');
                 if (parts.Length < 2)
                 {
@@ -431,23 +518,22 @@ self.addEventListener('fetch', function(event) {
                     return;
                 }
 
-                // Read project logo.png - resolve path from exe directory
-                var exeDir = AppDomain.CurrentDomain.BaseDirectory;
-                // From bin/Debug/net8.0-windows/ go up to project root: ..\..\.. = SrcBox\
-                var projectRoot = Path.GetFullPath(Path.Combine(exeDir, "..", "..", ".."));
-                var iconPath = Path.Combine(projectRoot, "docs", "public", "logo.png");
-                if (!File.Exists(iconPath))
+                var name = parts[1].TrimStart('/');
+                var query = name.IndexOf('?');
+                if (query >= 0) name = name.Substring(0, query);
+                if (name.StartsWith("icons/", StringComparison.OrdinalIgnoreCase)) name = name.Substring("icons/".Length);
+
+                var pngData = WebRemoteIconProvider.GetIcon(name);
+                if (pngData == null)
                 {
-                    Logger.Warn($"[WebRemote] Icon not found: {iconPath}");
                     await SendErrorAsync(stream, "404 Not Found", ct);
                     return;
                 }
 
-                var pngData = await File.ReadAllBytesAsync(iconPath, ct);
                 var header = $"HTTP/1.1 200 OK\r\nContent-Type: image/png\r\nContent-Length: {pngData.Length}\r\nCache-Control: max-age=86400\r\nConnection: close\r\n\r\n";
                 await stream.WriteAsync(Encoding.UTF8.GetBytes(header), ct);
                 await stream.WriteAsync(pngData, ct);
-                Logger.Debug($"[WebRemote] Icon served: {iconPath} ({pngData.Length} bytes)");
+                Logger.Debug($"[WebRemote] Icon served: {name} ({pngData.Length} bytes)");
             }
             catch (Exception ex) { Logger.Error($"[WebRemote] ServeIcon error: {ex.Message}"); }
             finally { tcpClient.Close(); }
@@ -457,27 +543,50 @@ self.addEventListener('fetch', function(event) {
         {
             try
             {
-                var exeDir = AppDomain.CurrentDomain.BaseDirectory;
-                var projectRoot = Path.GetFullPath(Path.Combine(exeDir, "..", "..", ".."));
-                var iconPath = Path.Combine(projectRoot, "srcbox.ico");
-                if (!File.Exists(iconPath))
+                var icoData = WebRemoteIconProvider.ReadAsset("srcbox.ico")
+                              ?? WebRemoteIconProvider.ReadAsset("docs", "public", "srcbox.ico");
+                if (icoData == null)
                 {
-                    Logger.Warn($"[WebRemote] Favicon not found: {iconPath}");
+                    Logger.Warn("[WebRemote] Favicon not found");
                     await SendErrorAsync(stream, "404 Not Found", ct);
                     return;
                 }
 
-                var icoData = await File.ReadAllBytesAsync(iconPath, ct);
                 var header = $"HTTP/1.1 200 OK\r\nContent-Type: image/x-icon\r\nContent-Length: {icoData.Length}\r\nCache-Control: max-age=86400\r\nConnection: close\r\n\r\n";
                 await stream.WriteAsync(Encoding.UTF8.GetBytes(header), ct);
                 await stream.WriteAsync(icoData, ct);
-                Logger.Debug($"[WebRemote] Favicon served: {iconPath} ({icoData.Length} bytes)");
+                Logger.Debug($"[WebRemote] Favicon served ({icoData.Length} bytes)");
             }
             catch (Exception ex) { Logger.Error($"[WebRemote] ServeFavicon error: {ex.Message}"); }
             finally { tcpClient.Close(); }
         }
 
-        private async Task HandleWebSocketAsync(TcpClient tcpClient, NetworkStream stream, string request, CancellationToken ct)
+        /// <summary>
+        /// Hands out the CA certificate. Phones install it once (over http, which needs no trust yet),
+        /// after which the https address counts as a secure context and the app can be installed.
+        /// </summary>
+        private async Task ServeCertificateAsync(TcpClient tcpClient, Stream stream, CancellationToken ct)
+        {
+            try
+            {
+                var der = WebRemoteCertificateService.GetRootCertificateDer();
+                if (der == null || der.Length == 0)
+                {
+                    Logger.Warn("[WebRemote] CA certificate requested but not available");
+                    await SendErrorAsync(stream, "404 Not Found", ct);
+                    return;
+                }
+
+                var header = $"HTTP/1.1 200 OK\r\nContent-Type: application/x-x509-ca-cert\r\nContent-Length: {der.Length}\r\nContent-Disposition: attachment; filename=\"srcbox-ca.crt\"\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n";
+                await stream.WriteAsync(Encoding.UTF8.GetBytes(header), ct);
+                await stream.WriteAsync(der, ct);
+                Logger.Debug($"[WebRemote] CA certificate served ({der.Length} bytes)");
+            }
+            catch (Exception ex) { Logger.Error($"[WebRemote] ServeCertificate error: {ex.Message}"); }
+            finally { tcpClient.Close(); }
+        }
+
+        private async Task HandleWebSocketAsync(TcpClient tcpClient, Stream stream, string request, CancellationToken ct)
         {
             WebSocket? ws = null;
             try
@@ -1670,15 +1779,17 @@ document.getElementById('currentTime').textContent = new Date().toLocaleTimeStri
 
 function renderChannels(data) {
 var grid = document.getElementById('channelGrid'); grid.innerHTML = ''; channelList = [];
-channelNumbers = {}; numberToId = {}; var nextNumber = 0;
+channelNumbers = {}; numberToId = {};
+// The server numbers every channel in playlist group order: the numbers ignore group
+// boundaries and are not shifted by the favourites section, so a channel keeps the
+// same number wherever it is listed (the favourites section reuses it). Reading that
+// number keeps the page and the player overlay showing the same value.
 function assignNumber(c) {
 if (!c || !c.id) return;
-if (channelNumbers[c.id] === undefined) { nextNumber++; channelNumbers[c.id] = nextNumber; numberToId[nextNumber] = c.id; }
+var n = c.number || 0;
+if (n > 0) { channelNumbers[c.id] = n; numberToId[n] = c.id; }
 }
 function isFavGroup(g) { return !!(g && (g.isFavorites || g.name === FAV_GROUP)); }
-// Number every channel in playlist group order first: the numbers ignore group
-// boundaries and are not shifted by the favourites section, so a channel keeps the
-// same number wherever it is listed (the favourites section reuses it).
 if (data.groups && data.groups.length) { data.groups.forEach(function(g) { if (isFavGroup(g)) return; if (g.channels) g.channels.forEach(assignNumber); }); }
 if (data.favorites && data.favorites.length) { data.favorites.forEach(assignNumber); }
 if (data.favorites && data.favorites.length) { data.favorites.forEach(function(c) { channelList.push(c); addChannelItem(grid, c, true); }); }
@@ -1875,6 +1986,9 @@ if ('serviceWorker' in navigator) {
     {
         public string Id { get; set; } = "";
         public string Name { get; set; } = "";
+        /// <summary>1-based channel number, assigned by the server so the page and the local
+        /// channel-number overlay always agree.</summary>
+        public int Number { get; set; }
         public string? Logo { get; set; }
         public string? CurrentProgram { get; set; }
         public string? CurrentTime { get; set; }
