@@ -367,6 +367,24 @@ namespace LibmpvIptvClient
                 // Minimal mode shrinks the window on purpose; keep the previous geometry.
                 if (_shell.IsMinimalMode) return;
 
+                // Fullscreen takes over the whole screen: persisting that rectangle as the user's window
+                // geometry would make the next launch come back screen-sized. Write what the window had
+                // before fullscreen was entered instead.
+                if (_shell.WindowStateActions.IsFullscreen)
+                {
+                    var restore = _shell.WindowStateActions.FullscreenRestoreState;
+                    if (restore == null) return;
+                    if (restore.Width < 200 || restore.Height < 150) return;
+
+                    s.WindowLeft = restore.Left;
+                    s.WindowTop = restore.Top;
+                    s.WindowWidth = _baseWindowWidth >= 640 ? _baseWindowWidth : Math.Max(640, restore.Width);
+                    s.WindowHeight = restore.Height;
+                    s.WindowMaximized = restore.State == WindowState.Maximized;
+                    s.Save();
+                    return;
+                }
+
                 var bounds = WindowState == WindowState.Normal
                     ? new System.Windows.Rect(Left, Top, Width, Height)
                     : RestoreBounds;

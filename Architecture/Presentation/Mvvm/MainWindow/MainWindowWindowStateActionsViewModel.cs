@@ -40,6 +40,12 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         public Window? FullscreenDrawer { get; set; }
         public TopOverlay? TopOverlay { get; set; }
 
+        /// <summary>
+        /// Window form captured when fullscreen was entered (null while windowed). Geometry persistence
+        /// uses it to store the pre-fullscreen rectangle when the app closes while still fullscreen.
+        /// </summary>
+        internal WindowFullscreenState? FullscreenRestoreState => _fullscreenState;
+
         private System.Windows.Controls.Panel? _originalDrawerParent;
         private int _originalDrawerIndex;
         private System.Windows.Controls.Panel? _originalEpgParent;
