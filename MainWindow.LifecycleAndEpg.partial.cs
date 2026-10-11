@@ -736,16 +736,20 @@ namespace LibmpvIptvClient
                 return;
             }
 
-            if (_shell.WindowStateActions.IsFullscreen)
+            if (_shell.WindowStateActions.IsFullscreen && _epgManager == null)
             {
+                // Defensive: the manager is created together with the window, so this only guards an
+                // init-order regression. The overlay still opens, it just cannot refresh the list.
                 if (show) ShowFullscreenEpg();
                 else CloseFullscreenEpg();
+                return;
             }
-            else
-            {
-                ApplyWindowWidthForPanels();
-                _epgManager?.CbEpg_Click(sender, e);
-            }
+
+            // Windowed mode has to widen the panel column first; in fullscreen the panel lives in its
+            // own overlay window. Both cases then go through the manager, which owns the program-list
+            // refresh - bypassing it left an EPG opened for the first time while fullscreen with no data.
+            if (!_shell.WindowStateActions.IsFullscreen) ApplyWindowWidthForPanels();
+            _epgManager?.CbEpg_Click(sender, e);
         }
         void BtnEpgCollapse_Click(object sender, RoutedEventArgs e)
         {
