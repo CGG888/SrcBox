@@ -25,7 +25,6 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         public Action<System.Windows.Forms.MouseEventArgs> FsPanelMouseUp { get; set; } = delegate { };
         public Action FsPanelDoubleClick { get; set; } = delegate { };
         public Action CreateTopOverlay { get; set; } = delegate { };
-        public RoutedEventHandler OnLoaded { get; set; } = delegate { };
         public Action SyncEpgVisibility { get; set; } = delegate { };
         /// <summary>While fullscreen the detached drawer / EPG must not reserve grid space.</summary>
         public Action CollapsePanelColumns { get; set; } = delegate { };

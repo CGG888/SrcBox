@@ -19,7 +19,7 @@ namespace LibmpvIptvClient
                 SyncTimeshiftUi = () => { if (on || _shell.IsTimeshiftActive) _overlayManager.SyncTimeshiftUi(); },
                 ResetOverlayForOwner = () => {
                     _overlayManager.ResetOverlayForOwner(
-                        _shell.WindowStateActions.FullscreenWindow ?? (Window)this,
+                        this,
                         _shell.WindowStateActions.IsFullscreen,
                         () => BtnPlayPause_Click(this, new RoutedEventArgs()),
                         () => BtnStop_Click(this, new RoutedEventArgs()),
@@ -38,7 +38,6 @@ namespace LibmpvIptvClient
                 FsPanelMouseWheel = (e) => FsPanel_MouseWheel(null, e),
                 FsPanelMouseUp = (e) => FsPanel_MouseUp(null, e),
                 FsPanelDoubleClick = () => ToggleFullscreen(false),
-                OnLoaded = OnFullscreenLoaded,
                 CollapsePanelColumns = CollapsePanelColumnsForFullscreen,
                 RestorePanelColumns = RestorePanelColumnsForWindowed,
                 CreateTopOverlay = () =>
@@ -144,6 +143,20 @@ namespace LibmpvIptvClient
             _shell.WindowStateActions.ToggleFullscreen(on, ctx);
             DispatchWindowFormChanged();
 
+            if (on)
+            {
+                // Panels that were already open before the switch keep showing: hand the drawer / EPG over
+                // to their overlay windows once the fullscreen layout has been applied.
+                Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    if (!_shell.WindowStateActions.IsFullscreen) return;
+                    try { if (CbEpg.IsChecked == true) ShowFullscreenEpg(); }
+                    catch (Exception ex) { LibmpvIptvClient.Diagnostics.Logger.Warn($"[Fullscreen] EPG 浮层失败: {ex.Message}"); }
+                    try { if (!_shell.IsDrawerCollapsed) ShowFullscreenDrawer(); }
+                    catch (Exception ex) { LibmpvIptvClient.Diagnostics.Logger.Warn($"[Fullscreen] 抽屉浮层失败: {ex.Message}"); }
+                }), System.Windows.Threading.DispatcherPriority.Loaded);
+            }
+
             if (!on)
             {
                 RestoreDrawerEpgLayoutForWindow();
@@ -203,15 +216,6 @@ namespace LibmpvIptvClient
         void FsPanel_MouseUp(object? sender, System.Windows.Forms.MouseEventArgs e)
         {
             _fullscreenInputManager?.FsPanel_MouseUp(sender, e);
-        }
-        internal void StartPlaybackTimer()
-        {
-            _timer.Start();
-        }
-
-        void OnFullscreenLoaded(object? sender, RoutedEventArgs e)
-        {
-            _overlayManager.OnFullscreenLoaded(sender, e);
         }
         internal void ShowFullscreenDrawer()
         {

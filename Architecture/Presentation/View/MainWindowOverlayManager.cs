@@ -100,15 +100,25 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             ShowOverlayWithDelay();
         }
 
+        /// <summary>Re-syncs the floating control bar after a fullscreen switch. The bar lives in the main
+        /// window's overlay layer and its owner never changes any more, so the existing window is re-bound
+        /// instead of being closed and recreated (that rebuild used to flash the top-most layer).</summary>
         public void ResetOverlayForOwner(Window owner, bool fullscreen, Action playPause, Action stop, Action rew, Action fwd, Action openSourceMenu)
         {
-            try { _overlayWpf?.Close(); } catch { }
-            _overlayWpf = new OverlayControls();
-            _overlayWpf.Owner = owner;
-            
-            BindOverlay(playPause, stop, rew, fwd, openSourceMenu);
-            
-            _overlayWpf.Topmost = true;
+            if (_overlayWpf == null)
+            {
+                BuildOverlayWindow(playPause, stop, rew, fwd, openSourceMenu);
+                if (owner != null && !ReferenceEquals(_overlayWpf.Owner, owner))
+                {
+                    try { _overlayWpf.Owner = owner; } catch { }
+                }
+                PositionOverlay();
+                return;
+            }
+
+            // The bar keeps the handlers it was built with. Re-binding here would subscribe them a second
+            // time (BindOverlay uses +=), so a single click would fire the action twice.
+            try { _overlayWpf.Topmost = true; } catch { }
             try { _overlayWpf.SetDrawerVisible(!_shell.IsDrawerCollapsed); } catch { }
             try { _overlayWpf.SetEpgVisible(_window.CbEpg.IsChecked == true); } catch { }
             
@@ -142,9 +152,13 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             }
             catch { }
             
-            _overlayWpf.Show();
-            PositionOverlay();
-            _overlayWpf.Hide();
+            // Keep the bar hidden after the switch; entering fullscreen shows it again explicitly.
+            try
+            {
+                PositionOverlay();
+                _overlayWpf.Hide();
+            }
+            catch { }
             
             // 刚创建悬浮条后，再异步同步一次时移 UI（避免创建过程中的布局延迟导致的不同步）
             try
@@ -288,18 +302,14 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             _shell.UpdateTimeshiftUi();
         }
 
+        /// <summary>Positions the floating control bar over the video area. The main window hosts the video in
+        /// both modes now, so there is a single code path (no fullscreen branch).</summary>
         public void PositionOverlay()
         {
             if (_overlayWpf == null) return;
-            var rect = (_shell.WindowStateActions.IsFullscreen && _shell.WindowStateActions.FullscreenPanel != null)
-                ? _shell.WindowStateActions.FullscreenPanel.RectangleToScreen(_shell.WindowStateActions.FullscreenPanel.ClientRectangle)
-                : _window.VideoPanel.RectangleToScreen(_window.VideoPanel.ClientRectangle);
-            
-            var visual = _shell.WindowStateActions.IsFullscreen && _shell.WindowStateActions.FullscreenWindow != null 
-                ? (System.Windows.Media.Visual)_shell.WindowStateActions.FullscreenWindow 
-                : (System.Windows.Media.Visual)_window;
-                
-            var source = PresentationSource.FromVisual(visual);
+            var rect = _window.VideoPanel.RectangleToScreen(_window.VideoPanel.ClientRectangle);
+
+            var source = PresentationSource.FromVisual(_window);
             if (source != null)
             {
                 var m = source.CompositionTarget.TransformFromDevice;
@@ -316,50 +326,43 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             _overlayWpf.Width = Math.Max(320, rect.Width);
         }
 
+        /// <summary>Positions the minimal mode top bar over the video area. Like the bottom bar this is based
+        /// on the main window only.</summary>
         public void PositionTopOverlay()
         {
             if (_shell.WindowStateActions.TopOverlay == null) return;
             var isFs = _shell.WindowStateActions.IsFullscreen;
-            if (isFs && _shell.WindowStateActions.FullscreenPanel == null) return;
+
+            // 当未播放或 VideoHost 折叠时，VideoPanel 可能为 0，改为回退到 WPF 视频区域容器
+            var panelRect = _window.VideoPanel.RectangleToScreen(_window.VideoPanel.ClientRectangle);
             System.Drawing.Rectangle rect;
-            if (isFs)
+            if (panelRect.Width <= 0 || panelRect.Height <= 0 || !_window.VideoHost.IsVisible)
             {
-                rect = _shell.WindowStateActions.FullscreenPanel!.RectangleToScreen(_shell.WindowStateActions.FullscreenPanel!.ClientRectangle);
-            }
-            else
-            {
-                // 当未播放或 VideoHost 折叠时，VideoPanel 可能为 0，改为回退到 WPF 视频区域容器
-                var panelRect = _window.VideoPanel.RectangleToScreen(_window.VideoPanel.ClientRectangle);
-                if (panelRect.Width <= 0 || panelRect.Height <= 0 || !_window.VideoHost.IsVisible)
+                try
                 {
-                    try
+                    var container = System.Windows.Media.VisualTreeHelper.GetParent(_window.VideoHost) as System.Windows.FrameworkElement;
+                    if (container != null)
                     {
-                        var container = System.Windows.Media.VisualTreeHelper.GetParent(_window.VideoHost) as System.Windows.FrameworkElement;
-                        if (container != null)
-                        {
-                            var tl = container.PointToScreen(new System.Windows.Point(0, 0));
-                            var br = container.PointToScreen(new System.Windows.Point(container.ActualWidth, container.ActualHeight));
-                            rect = new System.Drawing.Rectangle((int)tl.X, (int)tl.Y, Math.Max(0, (int)(br.X - tl.X)), Math.Max(0, (int)(br.Y - tl.Y)));
-                        }
-                        else
-                        {
-                            rect = panelRect;
-                        }
+                        var tl = container.PointToScreen(new System.Windows.Point(0, 0));
+                        var br = container.PointToScreen(new System.Windows.Point(container.ActualWidth, container.ActualHeight));
+                        rect = new System.Drawing.Rectangle((int)tl.X, (int)tl.Y, Math.Max(0, (int)(br.X - tl.X)), Math.Max(0, (int)(br.Y - tl.Y)));
                     }
-                    catch
+                    else
                     {
                         rect = panelRect;
                     }
                 }
-                else
+                catch
                 {
                     rect = panelRect;
                 }
             }
-            var visual = isFs && _shell.WindowStateActions.FullscreenWindow != null
-                ? (System.Windows.Media.Visual)_shell.WindowStateActions.FullscreenWindow
-                : (System.Windows.Media.Visual)_window;
-            var source = PresentationSource.FromVisual(visual);
+            else
+            {
+                rect = panelRect;
+            }
+
+            var source = PresentationSource.FromVisual(_window);
             if (source != null)
             {
                 var m = source.CompositionTarget.TransformFromDevice;
@@ -378,9 +381,12 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             try { _shell.WindowStateActions.TopOverlay.SyncWindowVisual(isFs, isFs ? WindowState.Maximized : _window.WindowState, _shell.IsMinimalMode); } catch { }
         }
 
+        /// <summary>Shows or hides the floating overlays depending on where the pointer is. Windowed mode keeps
+        /// the bottom bar as a real row of the main window; fullscreen drives both the bottom bar and the
+        /// top bar from the cursor hot zones.</summary>
         public void ShowOverlayWithDelay()
         {
-            if (!_shell.WindowStateActions.IsFullscreen || _shell.WindowStateActions.FullscreenWindow == null || !_shell.WindowStateActions.FullscreenWindow.IsLoaded)
+            if (!_shell.WindowStateActions.IsFullscreen)
             {
                 if (_shell.IsMinimalMode)
                 {
@@ -436,13 +442,10 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 return;
             }
             
-            // 监控并强制全屏窗口置顶
+            // While fullscreen the main window (and with it the video host) must stay above everything else.
             try
             {
-                if (_shell.WindowStateActions.FullscreenWindow != null && !_shell.WindowStateActions.FullscreenWindow.Topmost)
-                {
-                    _shell.WindowStateActions.FullscreenWindow.Topmost = true;
-                }
+                if (!_window.Topmost) _window.Topmost = true;
             }
             catch { }
 
@@ -452,21 +455,20 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
 
             if (GetCursorPos(out POINT p))
             {
-                var fsWindow = _shell.WindowStateActions.FullscreenWindow;
                 System.Windows.Point relPoint;
                 try
                 {
-                    relPoint = fsWindow.PointFromScreen(new System.Windows.Point(p.X, p.Y));
+                    relPoint = _window.PointFromScreen(new System.Windows.Point(p.X, p.Y));
                 }
                 catch
                 {
-                    relPoint = new System.Windows.Point(p.X - fsWindow.Left, p.Y - fsWindow.Top);
+                    relPoint = new System.Windows.Point(p.X - _window.Left, p.Y - _window.Top);
                 }
 
                 var relX = relPoint.X;
                 var relY = relPoint.Y;
-                var screenW = fsWindow.ActualWidth;
-                var screenH = fsWindow.ActualHeight;
+                var screenW = _window.ActualWidth;
+                var screenH = _window.ActualHeight;
 
                 if (screenW <= 0 || screenH <= 0) return;
 
@@ -474,7 +476,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 // cursor sitting on another monitor (or over another application) must never
                 // drive the fullscreen hot zones. Mixed-DPI setups additionally skew
                 // PointFromScreen, hence both the monitor check and the window rect check.
-                bool insideWindow = IsCursorInsideFullscreenWindow(fsWindow, p, relX, relY, screenW, screenH);
+                bool insideWindow = IsCursorInsideWindow(_window, p, relX, relY, screenW, screenH);
 
                 // 1. Bottom Zone (Overlay Controls)
                 double bottomZone = Math.Max(160, screenH * 0.26);
@@ -510,12 +512,9 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                             // 修复：当底部控制栏隐藏时，强制刷新主窗口的置顶状态
                             try
                             {
-                                if (_shell.WindowStateActions.FullscreenWindow != null)
-                                {
-                                    _shell.WindowStateActions.FullscreenWindow.Topmost = true;
-                                    var h = new System.Windows.Interop.WindowInteropHelper(_shell.WindowStateActions.FullscreenWindow).Handle;
-                                    SetWindowPos(h, new IntPtr(-1), 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0040);
-                                }
+                                _window.Topmost = true;
+                                var h = new System.Windows.Interop.WindowInteropHelper(_window).Handle;
+                                SetWindowPos(h, new IntPtr(-1), 0, 0, 0, 0, 0x0001 | 0x0002 | 0x0040);
                             }
                             catch { }
 
@@ -585,14 +584,14 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
         }
 
         /// <summary>
-        /// True when the cursor is on the same monitor as the fullscreen window and inside its
+        /// True when the cursor is on the same monitor as <paramref name="window"/> and inside its
         /// client rectangle. Guards the hot zones against pointer positions on other screens.
         /// </summary>
-        private static bool IsCursorInsideFullscreenWindow(System.Windows.Window fsWindow, POINT p, double relX, double relY, double screenW, double screenH)
+        private static bool IsCursorInsideWindow(System.Windows.Window window, POINT p, double relX, double relY, double screenW, double screenH)
         {
             try
             {
-                var fsHandle = new System.Windows.Interop.WindowInteropHelper(fsWindow).Handle;
+                var fsHandle = new System.Windows.Interop.WindowInteropHelper(window).Handle;
                 var cursorMonitor = MonitorFromPoint(new POINT { X = p.X, Y = p.Y }, MONITOR_DEFAULTTONEAREST);
                 var windowMonitor = MonitorFromWindow(fsHandle, MONITOR_DEFAULTTONEAREST);
                 if (cursorMonitor != IntPtr.Zero && windowMonitor != IntPtr.Zero && cursorMonitor != windowMonitor)
@@ -645,14 +644,14 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                             {
                                 _shell.WindowStateActions.FullscreenEpg.Show();
                                 _shell.WindowStateActions.FullscreenEpg.Visibility = Visibility.Visible;
-                                _shell.WindowStateActions.FullscreenWindow.Topmost = true;
+                                _window.Topmost = true;
                                 _shell.WindowStateActions.FullscreenEpg.Topmost = !preferTopOverlay;
                                 if (!preferTopOverlay) _shell.WindowStateActions.FullscreenEpg.Activate();
                                 
                                 var topOffset = _shell.WindowStateActions.GetTopOverlayOffset();
-                                _shell.WindowStateActions.FullscreenEpg.Left = _shell.WindowStateActions.FullscreenWindow.Left;
-                                _shell.WindowStateActions.FullscreenEpg.Top = _shell.WindowStateActions.FullscreenWindow.Top + topOffset;
-                                _shell.WindowStateActions.FullscreenEpg.Height = Math.Max(0, _shell.WindowStateActions.FullscreenWindow.ActualHeight - topOffset);
+                                _shell.WindowStateActions.FullscreenEpg.Left = _window.Left;
+                                _shell.WindowStateActions.FullscreenEpg.Top = _window.Top + topOffset;
+                                _shell.WindowStateActions.FullscreenEpg.Height = Math.Max(0, _window.ActualHeight - topOffset);
                             }
                         }
                         else 
@@ -665,7 +664,6 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                             {
                                 _shell.WindowStateActions.FullscreenEpg.Hide();
                                 _shell.WindowStateActions.FullscreenEpg.Visibility = Visibility.Collapsed;
-                                if (_shell.WindowStateActions.FullscreenWindow != null) _shell.WindowStateActions.FullscreenWindow.Topmost = _window.Topmost;
                             }
                         }
                     }
@@ -676,7 +674,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 }
 
                 // 4. Drawer (Right)
-                if (!_shell.IsDrawerCollapsed && _shell.WindowStateActions.FullscreenWindow != null) 
+                if (!_shell.IsDrawerCollapsed) 
                 {
                     if (_shell.WindowStateActions.FullscreenDrawer == null) _window.ShowFullscreenDrawer(); 
                     
@@ -693,14 +691,14 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                             {
                                 _shell.WindowStateActions.FullscreenDrawer.Show();
                                 _shell.WindowStateActions.FullscreenDrawer.Visibility = Visibility.Visible;
-                                _shell.WindowStateActions.FullscreenWindow.Topmost = true;
+                                _window.Topmost = true;
                                 _shell.WindowStateActions.FullscreenDrawer.Topmost = !preferTopOverlay;
                                 if (!preferTopOverlay) _shell.WindowStateActions.FullscreenDrawer.Activate();
                                 
                                 var topOffset = _shell.WindowStateActions.GetTopOverlayOffset();
-                                _shell.WindowStateActions.FullscreenDrawer.Left = _shell.WindowStateActions.FullscreenWindow.Left + _shell.WindowStateActions.FullscreenWindow.ActualWidth - w;
-                                _shell.WindowStateActions.FullscreenDrawer.Top = _shell.WindowStateActions.FullscreenWindow.Top + topOffset;
-                                _shell.WindowStateActions.FullscreenDrawer.Height = Math.Max(0, _shell.WindowStateActions.FullscreenWindow.ActualHeight - topOffset);
+                                _shell.WindowStateActions.FullscreenDrawer.Left = _window.Left + _window.ActualWidth - w;
+                                _shell.WindowStateActions.FullscreenDrawer.Top = _window.Top + topOffset;
+                                _shell.WindowStateActions.FullscreenDrawer.Height = Math.Max(0, _window.ActualHeight - topOffset);
                             }
                         }
                         else
@@ -709,7 +707,6 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                             {
                                 _shell.WindowStateActions.FullscreenDrawer.Hide();
                                 _shell.WindowStateActions.FullscreenDrawer.Visibility = Visibility.Collapsed;
-                                if (_shell.WindowStateActions.FullscreenWindow != null) _shell.WindowStateActions.FullscreenWindow.Topmost = _window.Topmost;
                             }
                         }
                     }
@@ -738,7 +735,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
 
         public void ShowFsOverlayNow()
         {
-            if (!_shell.WindowStateActions.IsFullscreen || _shell.WindowStateActions.FullscreenWindow == null || _overlayWpf == null) return;
+            if (!_shell.WindowStateActions.IsFullscreen || _overlayWpf == null) return;
             try
             {
                 PositionOverlay();
@@ -750,60 +747,6 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             catch { }
         }
         
-        public void OnFullscreenLoaded(object? sender, RoutedEventArgs e)
-        {
-            if (!_shell.WindowStateActions.IsFullscreen) return;
-            if (_overlayWpf == null) return;
-            if (sender is not Window win) return;
-            
-            if (_shell.WindowStateActions.FullscreenDrawer == null && !_shell.IsDrawerCollapsed)
-            {
-                _window.ShowFullscreenDrawer();
-            }
-
-            win.Dispatcher.BeginInvoke(new Action(() =>
-            {
-                if (!_shell.WindowStateActions.IsFullscreen) return;
-                if (_overlayWpf == null) return;
-                try
-                {
-                    _overlayWpf.Owner = null;
-                    _overlayWpf.Visibility = Visibility.Collapsed;
-                    _overlayWpf.Hide();
-
-                    if (!ReferenceEquals(_overlayWpf.Owner, win))
-                    {
-                        _overlayWpf.Owner = win;
-                    }
-                    _overlayWpf.Topmost = true;
-                    _overlayWpf.InvalidateVisual();
-                    _overlayWpf.Show();
-                    _overlayWpf.Visibility = Visibility.Visible;
-                    ShowFsOverlayNow();
-                    
-                    PositionOverlay();
-                    _overlayHideTimer.Stop();
-                    _overlayHideTimer.Start();
-                    ShowOverlayWithDelay();
-
-                    // _timer is in MainWindow, need to access it or expose method.
-                    // But _timer is mainly for PlaybackTick.
-                    // We can expose StartPlaybackTimer/StopPlaybackTimer on MainWindow.
-                    // Or access _window._timer if internal.
-                    // MainWindow._timer is private.
-                    // I should expose internal methods on MainWindow: StartPlaybackTimer(), StopPlaybackTimer().
-                    _window.StartPlaybackTimer();
-                    StartTimers();
-                    
-                    if (_shell.IsTimeshiftActive) _shell.UpdateTimeshiftUi();
-                }
-                catch (Exception ex)
-                {
-                    LibmpvIptvClient.Diagnostics.Logger.Error("Overlay reparent error: " + ex.Message);
-                }
-            }), System.Windows.Threading.DispatcherPriority.Loaded);
-        }
-
         public void StopTimers()
         {
             _overlayHideTimer.Stop();

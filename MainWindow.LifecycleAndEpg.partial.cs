@@ -806,10 +806,6 @@ namespace LibmpvIptvClient
                 var dpi = VisualTreeHelper.GetDpi(this);
                 double left = topLeft.X / dpi.DpiScaleX;
                 double top = topLeft.Y / dpi.DpiScaleY;
-                if (_shell.WindowStateActions.IsFullscreen && _shell.WindowStateActions.FullscreenWindow != null)
-                {
-                    return new Rect(_shell.WindowStateActions.FullscreenWindow.Left, _shell.WindowStateActions.FullscreenWindow.Top, _shell.WindowStateActions.FullscreenWindow.Width, _shell.WindowStateActions.FullscreenWindow.Height);
-                }
                 return new Rect(left, top, w, h);
             }
             catch
