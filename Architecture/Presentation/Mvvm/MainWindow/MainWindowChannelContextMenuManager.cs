@@ -299,6 +299,8 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             try
             {
                 channel.Tag = targetSource;
+                // User picked this variant on purpose: remember it for the next playback / session.
+                _shell.RememberChannelSource(channel, targetSource);
 
                 if (_shell.CurrentChannel == channel && !string.IsNullOrWhiteSpace(targetSource.Url))
                 {

@@ -102,7 +102,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             if (channel == null) return;
             try
             {
-                if (ApplyRememberedChannel(AppSettings.Current.SavedSources, sourceUrl, UserDataStore.ComputeKey(channel)))
+                if (ApplyRememberedChannel(AppSettings.Current.SavedSources, sourceUrl, UserDataStore.ComputeChannelKey(channel)))
                 {
                     AppSettings.Current.Save();
                 }
@@ -131,7 +131,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         {
             if (channels == null || string.IsNullOrWhiteSpace(channelKey)) return null;
             return channels.FirstOrDefault(c =>
-                string.Equals(UserDataStore.ComputeKey(c), channelKey, StringComparison.Ordinal));
+                string.Equals(UserDataStore.ComputeChannelKey(c), channelKey, StringComparison.Ordinal));
         }
 
         public string SanitizeUrl(string input)

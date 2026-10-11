@@ -66,6 +66,10 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         {
             if (_shell.PlayerEngine == null || ch == null || _shell.UserDataStore == null) return;
 
+            // Restore the stream variant the user picked for this channel before (the call itself skips
+            // the channel that is already playing, so an automatic degrade is never undone here).
+            _shell.ApplyRememberedChannelSource(ch);
+
             // A non-zap switch (click / history / web-remote / auto-degrade / resume) cancels
             // any pending fast-zap intent and its prefetch anchor. Any play restarts the
             // anchor auto-release window (a new anchor is (re)armed when the first frame shows).

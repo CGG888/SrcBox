@@ -39,7 +39,8 @@ namespace LibmpvIptvClient.Services
                 if (_data.Version <= 0) _data.Version = CurrentVersion;
                 if (_data.Favorites == null) _data.Favorites = new List<string>();
                 if (_data.History == null) _data.History = new List<HistoryItem>();
-                Logger.Debug($"[UserDataStore.Load] favorites={_data.Favorites.Count} history={_data.History.Count}");
+                if (_data.PreferredSources == null) _data.PreferredSources = new Dictionary<string, string>();
+                Logger.Debug($"[UserDataStore.Load] favorites={_data.Favorites.Count} history={_data.History.Count} preferredSources={_data.PreferredSources.Count}");
             }
             catch (Exception ex)
             {
@@ -70,6 +71,18 @@ namespace LibmpvIptvClient.Services
             return $"{(ch.Name ?? "").Trim()}|{(u ?? "").Trim()}";
         }
 
+        /// <summary>
+        /// Stable per-channel key for per-channel user preferences. Unlike <see cref="ComputeKey"/> it
+        /// never depends on the currently selected source variant, so a remembered source can be found
+        /// again on the next playback or after a restart.
+        /// </summary>
+        public static string ComputeChannelKey(Channel ch)
+        {
+            if (!string.IsNullOrWhiteSpace(ch.TvgId)) return ch.TvgId.Trim();
+            var first = ch.Sources?.FirstOrDefault(s => s != null && !string.IsNullOrWhiteSpace(s.Url))?.Url;
+            return $"{(ch.Name ?? "").Trim()}|{(first ?? "").Trim()}";
+        }
+
         public bool IsFavorite(string key) => _data.Favorites.Contains(key, StringComparer.OrdinalIgnoreCase);
 
         public void SetFavorite(string key, bool on)
@@ -91,6 +104,26 @@ namespace LibmpvIptvClient.Services
         }
 
         public IReadOnlyList<string> GetFavorites() => _data.Favorites;
+
+        /// <summary>Source url the user last picked for a channel; null when nothing was remembered.</summary>
+        public string? GetPreferredSource(string channelKey)
+        {
+            if (string.IsNullOrWhiteSpace(channelKey)) return null;
+            return _data.PreferredSources.TryGetValue(channelKey, out var url) ? url : null;
+        }
+
+        /// <summary>Remembers the source url the user picked for a channel. Persists only on change.</summary>
+        public void SetPreferredSource(string channelKey, string sourceUrl)
+        {
+            if (string.IsNullOrWhiteSpace(channelKey) || string.IsNullOrWhiteSpace(sourceUrl)) return;
+            if (_data.PreferredSources.TryGetValue(channelKey, out var existing) &&
+                string.Equals(existing, sourceUrl, StringComparison.OrdinalIgnoreCase))
+            {
+                return;
+            }
+            _data.PreferredSources[channelKey] = sourceUrl;
+            Save();
+        }
 
         public IReadOnlyList<HistoryItem> GetHistory() => _data.History.OrderByDescending(h => h.LastPlayedAtUtc).ToList();
 
@@ -126,6 +159,8 @@ namespace LibmpvIptvClient.Services
         public int Version { get; set; } = 1;
         public List<string> Favorites { get; set; } = new List<string>();
         public List<HistoryItem> History { get; set; } = new List<HistoryItem>();
+        /// <summary>Per-channel memory of the source variant the user picked (channel key → source url).</summary>
+        public Dictionary<string, string> PreferredSources { get; set; } = new Dictionary<string, string>();
     }
 
     public class HistoryItem

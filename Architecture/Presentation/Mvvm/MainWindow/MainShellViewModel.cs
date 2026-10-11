@@ -730,6 +730,54 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             }
         }
 
+        /// <summary>
+        /// Remembers the stream variant the user explicitly picked for a channel, so playing that
+        /// channel again (or in the next session) starts on the same variant.
+        /// </summary>
+        public void RememberChannelSource(Channel? channel, Source? source)
+        {
+            if (channel == null || source == null || string.IsNullOrWhiteSpace(source.Url)) return;
+            try
+            {
+                UserDataStore?.SetPreferredSource(UserDataStore.ComputeChannelKey(channel), source.Url);
+            }
+            catch (Exception ex)
+            {
+                LibmpvIptvClient.Diagnostics.Logger.Error("[SourceMemory] remember failed: " + ex.Message);
+            }
+        }
+
+        /// <summary>
+        /// Selects the stream variant the user picked for this channel before, when that variant is
+        /// still available. Never applied to the channel that is already playing, otherwise the
+        /// automatic health-based degrade (which replays the same channel) would be undone.
+        /// </summary>
+        public void ApplyRememberedChannelSource(Channel? channel)
+        {
+            // The channel that is already on the air keeps whatever variant it currently plays.
+            if (channel == null || ReferenceEquals(channel, CurrentChannel)) return;
+            try
+            {
+                var store = UserDataStore;
+                if (store == null) return;
+
+                var preferred = store.GetPreferredSource(UserDataStore.ComputeChannelKey(channel));
+                if (string.IsNullOrWhiteSpace(preferred)) return;
+
+                var match = SourceLoader.BuildSourcesForChannel(channel, Channels)
+                    .FirstOrDefault(s => s != null && string.Equals(s.Url, preferred, StringComparison.OrdinalIgnoreCase));
+                if (match == null || ReferenceEquals(channel.Tag, match)) return;
+
+                channel.Tag = match;
+                LibmpvIptvClient.Diagnostics.Logger.Info(
+                    $"[SourceMemory] {channel.Name} → {match.Name ?? match.Url}");
+            }
+            catch (Exception ex)
+            {
+                LibmpvIptvClient.Diagnostics.Logger.Error("[SourceMemory] apply failed: " + ex.Message);
+            }
+        }
+
         private List<Source> _currentSources = new List<Source>();
         public List<Source> CurrentSources
         {
@@ -962,7 +1010,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 
                 // Already watching that very channel (same playlist reloaded): do not reconnect it.
                 if (CurrentChannel != null &&
-                    string.Equals(UserDataStore.ComputeKey(CurrentChannel), key, StringComparison.Ordinal)) return;
+                    string.Equals(UserDataStore.ComputeChannelKey(CurrentChannel), key, StringComparison.Ordinal)) return;
 
                 var target = MainWindowSourceLoaderViewModel.FindChannelByKey(loadedChannels, key);
                 if (target == null) return;

@@ -73,7 +73,10 @@ namespace LibmpvIptvClient.Tests
         public void FindChannelByKey_ResolvesByTvgIdAndByNameUrlFallback()
         {
             var byTvgId = new Channel { Name = "CCTV1", TvgId = "cctv1" };
-            var byNameUrl = new Channel { Name = "CCTV2", Tag = new Source { Url = "http://example/2" } };
+            var byNameUrl = new Channel { Name = "CCTV2" };
+            byNameUrl.Sources.Add(new Source { Url = "http://example/2" });
+            // The user is watching another variant: the memory key must still resolve this channel.
+            byNameUrl.Tag = new Source { Url = "http://example/2-alt" };
             var channels = new List<Channel> { byTvgId, byNameUrl };
 
             Assert.AreSame(byTvgId, MainWindowSourceLoaderViewModel.FindChannelByKey(channels, "cctv1"));

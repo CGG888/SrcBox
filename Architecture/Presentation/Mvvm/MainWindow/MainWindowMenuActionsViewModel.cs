@@ -389,8 +389,10 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 
         private void SwitchSource(Source newSrc)
         {
-            if (_shell.CurrentChannel == null) return;
+            if (_shell.CurrentChannel == null || newSrc == null) return;
             _shell.CurrentChannel.Tag = newSrc;
+            // User picked this variant on purpose: remember it for the next playback / session.
+            _shell.RememberChannelSource(_shell.CurrentChannel, newSrc);
             var u = _shell.SourceLoader.SanitizeUrl(newSrc.Url);
             LibmpvIptvClient.Diagnostics.Logger.Info("切换到 " + u);
             _shell.CurrentUrl = u;
