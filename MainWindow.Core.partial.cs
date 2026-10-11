@@ -77,6 +77,7 @@ namespace LibmpvIptvClient
             _channelContextMenuManager = new MainWindowChannelContextMenuManager(_shell);
             _shell.PropertyChanged += OnShellPropertyChanged;
             _shell.RequestClose += () => Close();
+            _shell.EpgLoaded += OnEpgLoaded;
             Loaded += OnLoaded;
             Closed += OnClosed;
             PreviewKeyDown += OnPreviewKeyDown;

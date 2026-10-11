@@ -52,5 +52,10 @@
   <SolidColorBrush x:Key="StatusReplayFillBrush" Color="#00A000"/>
   <SolidColorBrush x:Key="StatusTimeshiftFillBrush" Color="#00A8A8"/>
   
-  <SolidColorBrush x:Key="TopOverlayScrimBrush" Color="#FAFAFA"/>
+  <!-- Translucent scrim for the surfaces that float over the video: the fullscreen EPG / channel list windows
+       and the top / bottom bars. Mirrors the dark theme gradient, so light mode is not painted solid. -->
+  <LinearGradientBrush x:Key="TopOverlayScrimBrush" StartPoint="0,0" EndPoint="0,1">
+    <GradientStop Color="#CCFAFAFA" Offset="0"/>
+    <GradientStop Color="#00FAFAFA" Offset="1"/>
+  </LinearGradientBrush>
 </ResourceDictionary>

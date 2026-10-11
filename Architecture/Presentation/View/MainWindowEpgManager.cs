@@ -185,7 +185,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             var programs = _epgService?.GetPrograms(_shell.CurrentChannel.TvgId, _shell.CurrentChannel.TvgName, _shell.CurrentChannel.Name);
             if (programs == null || programs.Count == 0)
             {
-                programs = GeneratePlaceholderEpg();
+                programs = GenerateFallbackEpg();
             }
             var filtered = _shell.EpgActions.FilterProgramsForDate(programs, _shell.CurrentEpgDate).Items.ToList();
             try
@@ -302,7 +302,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
 
             if (programs == null || programs.Count == 0)
             {
-                programs = GeneratePlaceholderEpg();
+                programs = GenerateFallbackEpg();
             }
             var dataSet = _shell.EpgActions.BuildEpgDataSet(programs, focusDate);
             _shell.AvailableDates = dataSet.AvailableDates.ToList();
@@ -497,6 +497,30 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 });
             }
             return list;
+        }
+
+        /// <summary>
+        /// Fallback list for a channel the guide has no data for. While the guide is still downloading a
+        /// single "loading" row is honest about what is happening; the 24 generic slots would look like
+        /// real programmes and are therefore only used once the load has finished.
+        /// </summary>
+        private List<EpgProgram> GenerateFallbackEpg()
+        {
+            return _epgService?.IsLoading == true ? GenerateLoadingEpg() : GeneratePlaceholderEpg();
+        }
+
+        private static List<EpgProgram> GenerateLoadingEpg()
+        {
+            var now = DateTime.Now;
+            return new List<EpgProgram>
+            {
+                new EpgProgram
+                {
+                    Title = ResxLocalizer.Get("EPG_Loading", "节目单加载中..."),
+                    Start = now,
+                    End = now.AddHours(1)
+                }
+            };
         }
     }
 }

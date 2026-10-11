@@ -252,6 +252,8 @@ namespace LibmpvIptvClient
                     if (CbWebRemoteShowChannels != null) CbWebRemoteShowChannels.IsChecked = wr.ShowChannelList;
                     if (CbWebRemoteShowEpg != null) CbWebRemoteShowEpg.IsChecked = wr.ShowEpgList;
                     if (CbWebRemoteShowChannelNumber != null) CbWebRemoteShowChannelNumber.IsChecked = wr.ShowChannelNumber;
+                    // The field accepts 5-500; a stored value outside the range is shown clamped
+                    if (TbWebRemoteMaxEpgItems != null) TbWebRemoteMaxEpgItems.Text = System.Math.Clamp(wr.MaxEpgItems, 5, 500).ToString();
                 }
                 catch { }
 
@@ -524,6 +526,8 @@ namespace LibmpvIptvClient
                 if (CbWebRemoteShowChannels != null) CbWebRemoteShowChannels.IsChecked = wr.ShowChannelList;
                 if (CbWebRemoteShowEpg != null) CbWebRemoteShowEpg.IsChecked = wr.ShowEpgList;
                 if (CbWebRemoteShowChannelNumber != null) CbWebRemoteShowChannelNumber.IsChecked = wr.ShowChannelNumber;
+                // The field accepts 5-500; a stored value outside the range is shown clamped
+                if (TbWebRemoteMaxEpgItems != null) TbWebRemoteMaxEpgItems.Text = System.Math.Clamp(wr.MaxEpgItems, 5, 500).ToString();
 
                 RefreshWebRemoteAccessPanel();
 
@@ -1166,11 +1170,32 @@ namespace LibmpvIptvClient
             catch { }
         }
 
-        private void BtnCopyWebRemoteUrl_Click(object sender, RoutedEventArgs e)
+        /// <summary>Issues a new CA/server certificate and reloads the HTTPS listener with it.</summary>
+        private void BtnWebRemoteCertRegenerate_Click(object sender, RoutedEventArgs e)
         {
             try
             {
-                var url = TbWebRemoteUrl?.Text ?? string.Empty;
+                WebRemoteCertificateService.Regenerate();
+                if (AppSettings.Current.WebRemote?.Enabled == true) WebRemoteManager.RestartIfNeeded();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"[WebRemote] regenerate certificate failed: {ex.Message}");
+            }
+
+            RefreshWebRemoteAccessPanel();
+        }
+
+        private void BtnCopyWebRemoteUrl_Click(object sender, RoutedEventArgs e) => CopyWebRemoteText(TbWebRemoteUrl?.Text);
+
+        private void BtnCopyWebRemoteCertUrl_Click(object sender, RoutedEventArgs e) => CopyWebRemoteText(TbWebRemoteCertUrl?.Text);
+
+        /// <summary>Copies a remote address and flashes the "copied" hint for two seconds.</summary>
+        private void CopyWebRemoteText(string? text)
+        {
+            try
+            {
+                var url = text ?? string.Empty;
                 if (string.IsNullOrWhiteSpace(url)) return;
 
                 System.Windows.Clipboard.SetText(url);
@@ -1193,8 +1218,8 @@ namespace LibmpvIptvClient
 
         private WebRemoteConfig BuildWebRemoteConfigFromUi()
         {
-            var port = 8899;
-            if (int.TryParse(TbWebRemotePort?.Text?.Trim(), out var parsed) && parsed > 0 && parsed <= 65535) port = parsed;
+            var port = ParsePort(TbWebRemotePort?.Text, 8899);
+            if (!int.TryParse(TbWebRemoteMaxEpgItems?.Text?.Trim(), out var maxEpgItems)) maxEpgItems = 50;
 
             return new WebRemoteConfig
             {
@@ -1204,7 +1229,9 @@ namespace LibmpvIptvClient
                 Password = TbWebRemotePassword?.Text ?? "",
                 ShowChannelList = CbWebRemoteShowChannels?.IsChecked == true,
                 ShowEpgList = CbWebRemoteShowEpg?.IsChecked == true,
-                ShowChannelNumber = CbWebRemoteShowChannelNumber?.IsChecked != false
+                ShowChannelNumber = CbWebRemoteShowChannelNumber?.IsChecked != false,
+                // 5-500 is the range the settings field and the guide document
+                MaxEpgItems = System.Math.Clamp(maxEpgItems, 5, 500)
             };
         }
 
@@ -1224,14 +1251,20 @@ namespace LibmpvIptvClient
             try
             {
                 var enabled = CbWebRemoteEnabled?.IsChecked == true;
-                var port = 8899;
-                if (int.TryParse(TbWebRemotePort?.Text?.Trim(), out var parsed) && parsed > 0 && parsed <= 65535) port = parsed;
+                var port = ParsePort(TbWebRemotePort?.Text, 8899);
 
                 var host = enabled ? WebRemoteAddressHelper.GetPreferredLocalIPv4() : null;
-                var url = enabled ? WebRemoteAddressHelper.BuildUrl(host, port) : string.Empty;
+                // The QR code targets the HTTPS address, which is the only form a phone can install; it only
+                // falls back to HTTP while the certificate is unavailable (or the TLS port failed to bind).
+                var useHttps = enabled && WebRemoteManager.IsTlsAvailable;
+                var url = enabled
+                    ? WebRemoteAddressHelper.BuildUrl(host, port, useHttps ? "https" : "http")
+                    : string.Empty;
+                var certUrl = enabled ? WebRemoteAddressHelper.BuildUrl(host, port) + "cert" : string.Empty;
                 var hasUrl = !string.IsNullOrEmpty(url);
 
                 if (TbWebRemoteUrl != null) TbWebRemoteUrl.Text = url;
+                if (TbWebRemoteCertUrl != null) TbWebRemoteCertUrl.Text = certUrl;
                 if (ImgWebRemoteQr != null) ImgWebRemoteQr.Source = hasUrl ? WebRemoteQrCode.Create(url) : null;
                 if (GridWebRemoteAccess != null) GridWebRemoteAccess.Visibility = hasUrl ? Visibility.Visible : Visibility.Collapsed;
                 if (TbWebRemoteCopied != null) TbWebRemoteCopied.Visibility = Visibility.Collapsed;
@@ -1243,11 +1276,43 @@ namespace LibmpvIptvClient
                         ? Helpers.Localizer.S("UI_WebRemote_NoAddress", "未找到局域网地址，请检查网络连接")
                         : Helpers.Localizer.S("UI_WebRemote_NotEnabled", "开启后可在同一局域网内扫码访问");
                 }
+
+                RefreshWebRemoteCertificateStatus();
             }
             catch (Exception ex)
             {
                 Logger.Debug($"[WebRemote] refresh access panel failed: {ex.Message}");
             }
+        }
+
+        /// <summary>Shows whether the HTTPS certificate is ready, together with its expiry date.</summary>
+        private void RefreshWebRemoteCertificateStatus()
+        {
+            if (TbWebRemoteCertStatus == null) return;
+
+            try
+            {
+                if (WebRemoteCertificateService.TryGetServerCertificate(out var certificate) && certificate != null)
+                {
+                    TbWebRemoteCertStatus.Text = Helpers.Localizer.S("UI_WebRemote_CertReady", "证书已就绪")
+                        + " · " + certificate.NotAfter.ToString("yyyy-MM-dd");
+                }
+                else
+                {
+                    TbWebRemoteCertStatus.Text = Helpers.Localizer.S("UI_WebRemote_CertMissing", "证书未生成");
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug($"[WebRemote] certificate status failed: {ex.Message}");
+                TbWebRemoteCertStatus.Text = Helpers.Localizer.S("UI_WebRemote_CertMissing", "证书未生成");
+            }
+        }
+
+        /// <summary>Parses a port from a text box, falling back for missing or out-of-range input.</summary>
+        private static int ParsePort(string? text, int fallback)
+        {
+            return int.TryParse(text?.Trim(), out var parsed) && parsed > 0 && parsed <= 65535 ? parsed : fallback;
         }
 
         // ---- Deinterlace (反交错) 设置 ----

@@ -186,5 +186,26 @@ namespace LibmpvIptvClient.Tests
                 Assert.IsTrue(html.Contains(marker), $"remote html is missing {marker}");
             }
         }
+
+        [TestMethod]
+        public void RemoteHtml_DeclaresTheMatchingHtmlLangTag()
+        {
+            // Traditional Chinese used to fall through to zh-CN, so the browser picked a simplified
+            // font stack and the PWA reported the wrong language.
+            var cases = new (string Lang, string Expected)[]
+            {
+                ("zh-CN", "lang=\"zh-CN\""),
+                ("zh-TW", "lang=\"zh-Hant\""),
+                ("zh-Hant", "lang=\"zh-Hant\""),
+                ("en-US", "lang=\"en\""),
+                ("ru-RU", "lang=\"ru\"")
+            };
+
+            foreach (var (lang, expected) in cases)
+            {
+                var html = WebRemoteServer.GetRemoteHtml(lang);
+                Assert.IsTrue(html.Contains(expected), $"{lang} should render {expected}");
+            }
+        }
     }
 }

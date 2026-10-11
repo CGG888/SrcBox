@@ -24,6 +24,9 @@
   <!-- The localization consistency test reads the raw language files, so copy them next to the tests. -->
   <ItemGroup>
     <Content Include="..\Resources\Strings.*.xaml" Link="Resources\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\Resources\Colors.*.xaml" Link="Resources\%(Filename)%(Extension)" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\Controls\Components\TopOverlay.xaml" Link="Controls\Components\TopOverlay.xaml" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="..\Controls\Components\OverlayControls.xaml" Link="Controls\Components\OverlayControls.xaml" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

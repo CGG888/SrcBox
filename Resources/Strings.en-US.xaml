@@ -167,6 +167,7 @@
   <sys:String x:Key="EPG_Yesterday">Yesterday</sys:String>
   <sys:String x:Key="EPG_Tomorrow">Tomorrow</sys:String>
   <sys:String x:Key="EPG_Featured">Featured</sys:String>
+  <sys:String x:Key="EPG_Loading">Loading guide...</sys:String>
   <sys:String x:Key="EPG_NoData">No data</sys:String>
 
   <!-- Drawer -->
@@ -277,19 +278,25 @@
   <sys:String x:Key="UI_Logo_Desc">Configure channel logo source</sys:String>
   <sys:String x:Key="UI_Recording_Settings">Recording Settings</sys:String>
   <sys:String x:Key="UI_WebRemote_Tab">Remote</sys:String>
-  <sys:String x:Key="UI_WebRemote_Enable">Enable Web Remote</sys:String>
-  <sys:String x:Key="UI_WebRemote_Port">Port</sys:String>
+  <sys:String x:Key="UI_WebRemote_Enable">Enable Web Remote (HTTP + HTTPS)</sys:String>
+  <sys:String x:Key="UI_WebRemote_Port">Port (shared by HTTP / HTTPS)</sys:String>
   <sys:String x:Key="UI_WebRemote_RequirePassword">Require Password</sys:String>
   <sys:String x:Key="UI_WebRemote_ShowChannels">Show Channel List</sys:String>
   <sys:String x:Key="UI_WebRemote_ShowEpg">Show EPG</sys:String>
   <sys:String x:Key="UI_WebRemote_ShowChannelNumber">Show channel number when switching from the remote</sys:String>
-  <sys:String x:Key="UI_WebRemote_Hint">When enabled, control the player from your phone browser at http://PC-IP:port on the same local network.</sys:String>
+  <sys:String x:Key="UI_WebRemote_MaxEpgItems">Max EPG items (5-500)</sys:String>
+  <sys:String x:Key="UI_WebRemote_CertAddress">Certificate install address (first time on a phone)</sys:String>
+  <sys:String x:Key="UI_WebRemote_CertReady">Certificate ready</sys:String>
+  <sys:String x:Key="UI_WebRemote_CertMissing">Certificate not generated</sys:String>
+  <sys:String x:Key="UI_WebRemote_CertRegenerate">Regenerate certificate</sys:String>
+  <sys:String x:Key="UI_WebRemote_CertHint">First use on a phone: open the certificate install address and install the certificate (Android: pick "CA certificate"; iPhone: install the profile and then enable full trust), then follow the page prompt to reopen it over HTTPS and add it to your home screen. Without a certificate you can still use the browser menu "Add to Home screen" and then the fullscreen button in the page header.</sys:String>
+  <sys:String x:Key="UI_WebRemote_Hint">Enabling serves HTTP and HTTPS on the same port, so a phone browser on the same LAN can control the player at http://PC-IP:port or https://PC-IP:port.</sys:String>
   <sys:String x:Key="UI_TabWebRemote">Remote</sys:String>
   <sys:String x:Key="UI_WebRemote_Access">Scan to connect</sys:String>
   <sys:String x:Key="UI_WebRemote_Url">Access URL</sys:String>
   <sys:String x:Key="UI_WebRemote_Copy">Copy link</sys:String>
   <sys:String x:Key="UI_WebRemote_Copied">Copied</sys:String>
-  <sys:String x:Key="UI_WebRemote_ScanHint">Scan the QR code with your phone camera or browser to open the remote. The code and link update automatically when the port changes.</sys:String>
+  <sys:String x:Key="UI_WebRemote_ScanHint">Scan the QR code with your phone camera or browser to open the remote (HTTPS address; install the certificate first). The code and link update automatically when the ports change.</sys:String>
   <sys:String x:Key="UI_WebRemote_NotEnabled">Enable the remote to scan and connect from here.</sys:String>
   <sys:String x:Key="UI_WebRemote_NoAddress">No LAN address found. Please check your network connection.</sys:String>
   <sys:String x:Key="UI_UploadQueue_Tab">Upload Queue</sys:String>

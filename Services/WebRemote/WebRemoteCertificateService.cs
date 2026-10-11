@@ -95,6 +95,106 @@ namespace LibmpvIptvClient.Services.WebRemote
         }
 
         /// <summary>
+        /// PEM encoded CA certificate, served as /cert.pem for phone installers that only accept a
+        /// text certificate (some Android builds refuse the DER file).
+        /// </summary>
+        public static string? GetRootCertificatePem()
+        {
+            var der = GetRootCertificateDer();
+            return der == null || der.Length == 0 ? null : ToPem(der);
+        }
+
+        /// <summary>PEM encoding of one DER certificate, wrapped at the customary 64 characters.</summary>
+        internal static string ToPem(byte[] der)
+        {
+            var builder = new System.Text.StringBuilder();
+            builder.Append("-----BEGIN CERTIFICATE-----\n");
+            var base64 = Convert.ToBase64String(der);
+            for (var i = 0; i < base64.Length; i += 64)
+            {
+                builder.Append(base64, i, Math.Min(64, base64.Length - i));
+                builder.Append('\n');
+            }
+            builder.Append("-----END CERTIFICATE-----\n");
+            return builder.ToString();
+        }
+
+        /// <summary>
+        /// Apple configuration profile that installs the CA as a trusted root request on iOS in one
+        /// step. iOS still needs the user to switch on full trust under Certificate Trust Settings.
+        /// </summary>
+        public static string? BuildRootCaProfile()
+        {
+            var der = GetRootCertificateDer();
+            return der == null || der.Length == 0 ? null : BuildRootCaProfile(der);
+        }
+
+        /// <summary>Builds the same Apple profile from an explicit DER certificate (kept pure for tests).</summary>
+        internal static string BuildRootCaProfile(byte[] der)
+        {
+            var payloadUuid = DeriveUuid(der);
+            var profileUuid = DeriveUuid(der, 1);
+            var encoded = Convert.ToBase64String(der, Base64FormattingOptions.InsertLineBreaks);
+
+            return $@"<?xml version=""1.0"" encoding=""UTF-8""?>
+<!DOCTYPE plist PUBLIC ""-//Apple//DTD PLIST 1.0//EN"" ""http://www.apple.com/DTDs/PropertyList-1.0.dtd"">
+<plist version=""1.0"">
+<dict>
+    <key>PayloadContent</key>
+    <array>
+        <dict>
+            <key>PayloadCertificateFileName</key>
+            <string>srcbox-ca.crt</string>
+            <key>PayloadContent</key>
+            <data>
+{encoded}
+            </data>
+            <key>PayloadDescription</key>
+            <string>SrcBox Local CA</string>
+            <key>PayloadDisplayName</key>
+            <string>SrcBox Local CA</string>
+            <key>PayloadIdentifier</key>
+            <string>local.srcbox.webremote.ca.{payloadUuid}</string>
+            <key>PayloadType</key>
+            <string>com.apple.security.root</string>
+            <key>PayloadUUID</key>
+            <string>{payloadUuid}</string>
+            <key>PayloadVersion</key>
+            <integer>1</integer>
+        </dict>
+    </array>
+    <key>PayloadDescription</key>
+    <string>Trusts the SrcBox web remote on this network.</string>
+    <key>PayloadDisplayName</key>
+    <string>SrcBox Web Remote</string>
+    <key>PayloadIdentifier</key>
+    <string>local.srcbox.webremote.{profileUuid}</string>
+    <key>PayloadOrganization</key>
+    <string>SrcBox</string>
+    <key>PayloadRemovalDisallowed</key>
+    <false/>
+    <key>PayloadType</key>
+    <string>Configuration</string>
+    <key>PayloadUUID</key>
+    <string>{profileUuid}</string>
+    <key>PayloadVersion</key>
+    <integer>1</integer>
+</dict>
+</plist>
+";
+        }
+
+        /// <summary>
+        /// Stable UUID for a certificate so that reinstalling the same profile is treated as an update.
+        /// </summary>
+        private static string DeriveUuid(byte[] der, byte salt = 0)
+        {
+            var hash = SHA1.HashData(der);
+            hash[15] = (byte)(hash[15] ^ salt);
+            return new Guid(hash[..16]).ToString().ToUpperInvariant();
+        }
+
+        /// <summary>
         /// Discards the cached material and issues a brand new CA plus server certificate.
         /// </summary>
         public static void Regenerate()

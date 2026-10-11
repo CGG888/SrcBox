@@ -25,6 +25,13 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         public event Action? RequestClose;
         public void CloseWindow() => RequestClose?.Invoke();
 
+        /// <summary>
+        /// Raised on the UI thread every time freshly loaded guide data has been merged (once per source
+        /// and once when the load finishes). Playback starts long before the guide has been downloaded,
+        /// so the EPG panel has to repaint as soon as data lands instead of waiting for its refresh tick.
+        /// </summary>
+        public event Action? EpgLoaded;
+
         // Sub-ViewModels
         public MainWindowMenuActionsViewModel MenuActions { get; }
         public MainWindowChannelPlaybackActionsViewModel ChannelPlaybackActions { get; }
@@ -982,11 +989,13 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                     {
                         try
                         {
-                            await _epgService.LoadEpgAsync(epgUrls);
-                            System.Windows.Application.Current.Dispatcher.Invoke(() =>
+                            // The service reports after every merged source: the channel titles and the
+                            // guide panel are updated with the first source instead of the last one.
+                            await _epgService.LoadEpgAsync(epgUrls, () => System.Windows.Application.Current.Dispatcher.Invoke(() =>
                             {
                                 EpgActions.SyncChannelCurrentProgramTitles(loadedChannels, ch => _epgService.GetCurrentProgram(ch.TvgId, ch.TvgName, ch.Name));
-                            });
+                                EpgLoaded?.Invoke();
+                            }));
                             System.Windows.Application.Current.Dispatcher.Invoke(async () =>
                             {
                                 try { await RecordingActions.LoadRecordingsLocalGroupedAsync(loadedChannels, _epgService); } catch { }

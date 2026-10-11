@@ -29,10 +29,23 @@ namespace LibmpvIptvClient.Services
         public Task LoadEpgAsync(string url) => LoadEpgAsync(new[] { url });
 
         /// <summary>
+        /// True while a guide is being downloaded/parsed. The UI needs it to tell "the guide has not
+        /// arrived yet" from "this channel simply has no guide data".
+        /// </summary>
+        public bool IsLoading { get; private set; }
+
+        public Task LoadEpgAsync(IEnumerable<string> urls) => LoadEpgAsync(urls, null);
+
+        /// <summary>
         /// Loads and merges one or more EPG sources (issue #38). Programmes are merged per channel
         /// id: the first source wins, later sources only add what is still missing.
         /// </summary>
-        public async Task LoadEpgAsync(IEnumerable<string> urls)
+        /// <param name="onProgress">
+        /// Called on the loading thread after every source has been merged, and once more when the whole
+        /// load is over. The data merged so far is already queryable at that point, so a caller can paint
+        /// the first source's programmes instead of waiting for the last one (and the next refresh tick).
+        /// </param>
+        public async Task LoadEpgAsync(IEnumerable<string> urls, Action? onProgress)
         {
             var list = urls?
                 .Where(u => !string.IsNullOrWhiteSpace(u))
@@ -49,49 +62,81 @@ namespace LibmpvIptvClient.Services
             var mergedTvgNames = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-            foreach (var url in list)
+            IsLoading = true;
+            try
             {
-                try
+                foreach (var url in list)
                 {
-                    var data = await DownloadEpgDataAsync(url).ConfigureAwait(false);
-                    if (data == null || data.Length == 0) continue;
-
-                    LibmpvIptvClient.Diagnostics.Logger.Info($"节目单数据大小: {data.Length} bytes ({url})");
-                    var parsed = await Task.Run(() => ParseXmlResult(OpenEpgStream(data)));
-
-                    foreach (var kv in parsed.Programs)
+                    try
                     {
-                        if (!mergedPrograms.TryGetValue(kv.Key, out var target))
+                        var data = await DownloadEpgDataAsync(url).ConfigureAwait(false);
+                        if (data == null || data.Length == 0) continue;
+
+                        LibmpvIptvClient.Diagnostics.Logger.Info($"节目单数据大小: {data.Length} bytes ({url})");
+                        var parsed = await Task.Run(() => ParseXmlResult(OpenEpgStream(data)));
+
+                        foreach (var kv in parsed.Programs)
                         {
-                            target = new List<EpgProgram>();
-                            mergedPrograms[kv.Key] = target;
+                            if (!mergedPrograms.TryGetValue(kv.Key, out var target))
+                            {
+                                target = new List<EpgProgram>();
+                                mergedPrograms[kv.Key] = target;
+                            }
+                            foreach (var prog in kv.Value)
+                            {
+                                if (seen.Add($"{kv.Key}|{prog.Start:O}|{prog.End:O}|{prog.Title}")) target.Add(prog);
+                            }
                         }
-                        foreach (var prog in kv.Value)
-                        {
-                            if (seen.Add($"{kv.Key}|{prog.Start:O}|{prog.End:O}|{prog.Title}")) target.Add(prog);
-                        }
+                        foreach (var kv in parsed.ChannelNames) mergedNames.TryAdd(kv.Key, kv.Value);
+                        foreach (var kv in parsed.TvgNames) mergedTvgNames.TryAdd(kv.Key, kv.Value);
+
+                        LibmpvIptvClient.Diagnostics.Logger.Info($"节目单已合并 {url}: {parsed.Programs.Count} 个频道");
                     }
-                    foreach (var kv in parsed.ChannelNames) mergedNames.TryAdd(kv.Key, kv.Value);
-                    foreach (var kv in parsed.TvgNames) mergedTvgNames.TryAdd(kv.Key, kv.Value);
+                    catch (Exception ex)
+                    {
+                        LibmpvIptvClient.Diagnostics.Logger.Error($"EPG Load Error ({url}): {ex.Message}");
+                    }
 
-                    LibmpvIptvClient.Diagnostics.Logger.Info($"节目单已合并 {url}: {parsed.Programs.Count} 个频道");
-                }
-                catch (Exception ex)
-                {
-                    LibmpvIptvClient.Diagnostics.Logger.Error($"EPG Load Error ({url}): {ex.Message}");
+                    // Publish source by source: the first guide is usable while the remaining ones are
+                    // still downloading, and the next progress call repaints with the fuller data.
+                    PublishMerged(mergedPrograms, mergedNames, mergedTvgNames);
+                    onProgress?.Invoke();
                 }
             }
-
-            foreach (var kv in mergedPrograms)
+            finally
             {
-                kv.Value.Sort((a, b) => a.Start.CompareTo(b.Start));
+                // Always report completion, even when every source failed: the caller uses this to swap
+                // "loading" for the real (or placeholder) list.
+                IsLoading = false;
+                onProgress?.Invoke();
             }
 
-            _programs = mergedPrograms;
-            _channelNameMap = mergedNames;
-            _tvgNameMap = mergedTvgNames;
-            _programsByHour.Clear();
             LibmpvIptvClient.Diagnostics.Logger.Info($"节目单加载完成，包含 {_programs.Count} 个频道（来源 {list.Count} 个）");
+        }
+
+        /// <summary>
+        /// Publishes everything merged so far. The lists and maps are copied so the UI thread never reads
+        /// a collection the loader is still appending to, and the fuzzy-match cache is dropped because
+        /// matches computed against the partial guide must not survive as "no guide for this channel".
+        /// </summary>
+        private void PublishMerged(
+            Dictionary<string, List<EpgProgram>> programs,
+            Dictionary<string, string> names,
+            Dictionary<string, string> tvgNames)
+        {
+            var snapshot = new Dictionary<string, List<EpgProgram>>(StringComparer.OrdinalIgnoreCase);
+            foreach (var kv in programs)
+            {
+                var copy = new List<EpgProgram>(kv.Value);
+                copy.Sort((a, b) => a.Start.CompareTo(b.Start));
+                snapshot[kv.Key] = copy;
+            }
+
+            _programs = snapshot;
+            _channelNameMap = new Dictionary<string, string>(names, StringComparer.OrdinalIgnoreCase);
+            _tvgNameMap = new Dictionary<string, string>(tvgNames, StringComparer.OrdinalIgnoreCase);
+            _programsByHour.Clear();
+            _smartMatchCache.Clear();
         }
 
         /// <summary>Downloads an EPG url, reusing the 12 hour temp-file cache.</summary>

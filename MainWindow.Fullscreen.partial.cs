@@ -140,6 +140,7 @@ namespace LibmpvIptvClient
             // player host) is no longer hidden or rebuilt, so there is nothing to pause while fullscreen (I4).
             _shell.WindowStateActions.ToggleFullscreen(on, ctx);
             DispatchWindowFormChanged();
+            ApplyFullscreenBarsPalette(on);
 
             if (on)
             {
@@ -166,6 +167,17 @@ namespace LibmpvIptvClient
                     try { if (ListGroups != null) ListGroups.Items.Refresh(); } catch { }
                 }, System.Windows.Threading.DispatcherPriority.Loaded);
             }
+        }
+
+        /// <summary>
+        /// The floating top / bottom bars are painted with the fullscreen palette: dark while fullscreen, so
+        /// they match dark fullscreen even in the light theme, and back to the selected theme once the
+        /// windowed layout (with its own embedded bars) is restored.
+        /// </summary>
+        void ApplyFullscreenBarsPalette(bool fullscreen)
+        {
+            try { Helpers.FullscreenOverlayTheme.UseDarkPalette(_overlayManager.OverlayWpf, fullscreen); } catch { }
+            try { Helpers.FullscreenOverlayTheme.UseDarkPalette(_shell.WindowStateActions.TopOverlay, fullscreen); } catch { }
         }
 
         void RestoreDrawerEpgLayoutForWindow()

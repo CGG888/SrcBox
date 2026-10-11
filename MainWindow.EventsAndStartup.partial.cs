@@ -170,6 +170,21 @@ namespace LibmpvIptvClient
             catch { }
         }
 
+        /// <summary>
+        /// Repaints the guide as soon as programme data lands. Playback starts while the guide is still
+        /// downloading, so without this the panel keeps whatever it rendered (placeholders or an empty
+        /// list) until the one-minute refresh timer fires.
+        /// </summary>
+        void OnEpgLoaded()
+        {
+            try
+            {
+                _epgManager?.UpdateEpgDisplay();
+                _epgManager?.UpdateEpgDateUI();
+            }
+            catch { }
+        }
+
         void OnThemeChanged()
         {
             try

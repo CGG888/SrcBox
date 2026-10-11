@@ -11,9 +11,9 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Product>SrcBox</Product>
     <AssemblyTitle>SrcBox</AssemblyTitle>
-    <Version>1.1.14</Version>
-    <AssemblyVersion>1.1.14.0</AssemblyVersion>
-    <FileVersion>1.1.14.0</FileVersion>
+    <Version>1.1.15</Version>
+    <AssemblyVersion>1.1.15.0</AssemblyVersion>
+    <FileVersion>1.1.15.0</FileVersion>
     <GenerateProgramFile>false</GenerateProgramFile>
     <DisableWinExeConsoleOutput>true</DisableWinExeConsoleOutput>
   </PropertyGroup>
@@ -31,8 +31,13 @@
     <PackageReference Include="Downloader" Version="4.1.1" />
   </ItemGroup>
   <ItemGroup>
+    <!-- The test project copies source assets (dictionaries, overlay XAML) next to its own binaries;
+         those copies live under Tests\ and must never be compiled into the app again. -->
     <Compile Remove="Tests\**\*.cs" />
     <None Include="Tests\**\*.cs" />
+    <Page Remove="Tests\**" />
+    <ApplicationDefinition Remove="Tests\**" />
+    <Resource Remove="Tests\**" />
   </ItemGroup>
   <ItemGroup>
     <None Update="appsettings.json">

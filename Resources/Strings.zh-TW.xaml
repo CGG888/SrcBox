@@ -157,6 +157,7 @@
   <sys:String x:Key="EPG_Yesterday">昨天</sys:String>
   <sys:String x:Key="EPG_Tomorrow">明天</sys:String>
   <sys:String x:Key="EPG_Featured">精選</sys:String>
+  <sys:String x:Key="EPG_Loading">節目單載入中...</sys:String>
   <sys:String x:Key="EPG_NoData">無資料</sys:String>
 
   <!-- Drawer -->
@@ -504,19 +505,25 @@
 
   <!-- Web Remote -->
   <sys:String x:Key="UI_WebRemote_Tab">遙控器</sys:String>
-  <sys:String x:Key="UI_WebRemote_Enable">啟用 Web 遙控器</sys:String>
-  <sys:String x:Key="UI_WebRemote_Port">埠</sys:String>
+  <sys:String x:Key="UI_WebRemote_Enable">啟用 Web 遙控器（HTTP + HTTPS）</sys:String>
+  <sys:String x:Key="UI_WebRemote_Port">埠（HTTP / HTTPS 共用）</sys:String>
   <sys:String x:Key="UI_WebRemote_RequirePassword">需要存取密碼</sys:String>
   <sys:String x:Key="UI_WebRemote_ShowChannels">顯示頻道列表</sys:String>
   <sys:String x:Key="UI_WebRemote_ShowEpg">顯示節目單</sys:String>
   <sys:String x:Key="UI_WebRemote_ShowChannelNumber">遙控器切台時顯示頻道號</sys:String>
-  <sys:String x:Key="UI_WebRemote_Hint">啟用後，在同一區域網內可透過手機瀏覽器存取 http://電腦IP:埠 來控制播放器。</sys:String>
+  <sys:String x:Key="UI_WebRemote_MaxEpgItems">節目單條數上限 (5-500)</sys:String>
+  <sys:String x:Key="UI_WebRemote_CertAddress">憑證安裝位址（手機首次使用）</sys:String>
+  <sys:String x:Key="UI_WebRemote_CertReady">憑證已就緒</sys:String>
+  <sys:String x:Key="UI_WebRemote_CertMissing">憑證未產生</sys:String>
+  <sys:String x:Key="UI_WebRemote_CertRegenerate">重新產生憑證</sys:String>
+  <sys:String x:Key="UI_WebRemote_CertHint">手機首次使用：先開啟憑證安裝位址安裝憑證（Android 選「CA 憑證」；iPhone 裝描述檔後還須開啟完全信任），再依頁面提示以 HTTPS 開啟，即可安裝到主畫面；不想裝憑證也可用瀏覽器選單「加入主畫面」，再點頁面右上角全螢幕按鈕。</sys:String>
+  <sys:String x:Key="UI_WebRemote_Hint">啟用後在同一個埠上同時提供 HTTP 與 HTTPS，同一區域網內的手機瀏覽器可透過 http://電腦IP:埠 或 https://電腦IP:埠 存取來控制播放器。</sys:String>
   <sys:String x:Key="UI_TabWebRemote">遙控器</sys:String>
   <sys:String x:Key="UI_WebRemote_Access">掃碼存取</sys:String>
   <sys:String x:Key="UI_WebRemote_Url">存取位址</sys:String>
   <sys:String x:Key="UI_WebRemote_Copy">複製連結</sys:String>
   <sys:String x:Key="UI_WebRemote_Copied">已複製</sys:String>
-  <sys:String x:Key="UI_WebRemote_ScanHint">用手機相機或瀏覽器掃描二維碼即可開啟遙控器。二維碼與連結會隨連接埠自動更新。</sys:String>
+  <sys:String x:Key="UI_WebRemote_ScanHint">用手機相機或瀏覽器掃描二維碼即可開啟遙控器（HTTPS 位址，首次需先安裝憑證）。二維碼與連結會隨連接埠自動更新。</sys:String>
   <sys:String x:Key="UI_WebRemote_NotEnabled">開啟遙控器後可在此掃碼存取。</sys:String>
   <sys:String x:Key="UI_WebRemote_NoAddress">未找到區域網路位址，請檢查網路連線。</sys:String>
 

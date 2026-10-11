@@ -157,6 +157,7 @@
   <sys:String x:Key="EPG_Yesterday">Вчера</sys:String>
   <sys:String x:Key="EPG_Tomorrow">Завтра</sys:String>
   <sys:String x:Key="EPG_Featured">Рекомендуемое</sys:String>
+  <sys:String x:Key="EPG_Loading">Загрузка программы...</sys:String>
   <sys:String x:Key="EPG_NoData">Нет данных</sys:String>
 
   <!-- Drawer -->
@@ -505,19 +506,25 @@
 
   <!-- Web Remote -->
   <sys:String x:Key="UI_WebRemote_Tab">Пульт</sys:String>
-  <sys:String x:Key="UI_WebRemote_Enable">Включить Web-пульт</sys:String>
-  <sys:String x:Key="UI_WebRemote_Port">Порт</sys:String>
+  <sys:String x:Key="UI_WebRemote_Enable">Включить Web-пульт (HTTP + HTTPS)</sys:String>
+  <sys:String x:Key="UI_WebRemote_Port">Порт (общий для HTTP / HTTPS)</sys:String>
   <sys:String x:Key="UI_WebRemote_RequirePassword">Требовать пароль</sys:String>
   <sys:String x:Key="UI_WebRemote_ShowChannels">Показывать список каналов</sys:String>
   <sys:String x:Key="UI_WebRemote_ShowEpg">Показывать программу</sys:String>
   <sys:String x:Key="UI_WebRemote_ShowChannelNumber">Показывать номер канала при переключении с пульта</sys:String>
-  <sys:String x:Key="UI_WebRemote_Hint">После включения управляйте плеером из браузера телефона по адресу http://IP-ПК:порт в той же локальной сети.</sys:String>
+  <sys:String x:Key="UI_WebRemote_MaxEpgItems">Максимум программ в телепрограмме (5-500)</sys:String>
+  <sys:String x:Key="UI_WebRemote_CertAddress">Адрес для установки сертификата (первый раз на телефоне)</sys:String>
+  <sys:String x:Key="UI_WebRemote_CertReady">Сертификат готов</sys:String>
+  <sys:String x:Key="UI_WebRemote_CertMissing">Сертификат не создан</sys:String>
+  <sys:String x:Key="UI_WebRemote_CertRegenerate">Пересоздать сертификат</sys:String>
+  <sys:String x:Key="UI_WebRemote_CertHint">Первый раз на телефоне: откройте адрес для установки сертификата и установите его (Android — «Сертификат ЦС»; iPhone — установите профиль и включите полное доверие), затем по подсказке страницы перейдите на HTTPS и добавьте пульт на главный экран. Без сертификата тоже можно: меню браузера «На главный экран», затем кнопка полного экрана в шапке страницы.</sys:String>
+  <sys:String x:Key="UI_WebRemote_Hint">Включение поднимает HTTP и HTTPS на одном порту, поэтому браузер телефона в той же локальной сети может управлять плеером по http://IP-ПК:порт или https://IP-ПК:порт.</sys:String>
   <sys:String x:Key="UI_TabWebRemote">Пульт</sys:String>
   <sys:String x:Key="UI_WebRemote_Access">Подключение по QR</sys:String>
   <sys:String x:Key="UI_WebRemote_Url">Адрес доступа</sys:String>
   <sys:String x:Key="UI_WebRemote_Copy">Копировать ссылку</sys:String>
   <sys:String x:Key="UI_WebRemote_Copied">Скопировано</sys:String>
-  <sys:String x:Key="UI_WebRemote_ScanHint">Отсканируйте QR-код камерой телефона или браузером, чтобы открыть пульт. Код и ссылка обновляются при смене порта.</sys:String>
+  <sys:String x:Key="UI_WebRemote_ScanHint">Отсканируйте QR-код камерой телефона или браузером, чтобы открыть пульт (адрес HTTPS; сначала установите сертификат). Код и ссылка обновляются при смене портов.</sys:String>
   <sys:String x:Key="UI_WebRemote_NotEnabled">Включите пульт, чтобы подключиться отсюда.</sys:String>
   <sys:String x:Key="UI_WebRemote_NoAddress">Локальный адрес сети не найден. Проверьте подключение.</sys:String>
 

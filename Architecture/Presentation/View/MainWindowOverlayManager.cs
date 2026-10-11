@@ -108,6 +108,10 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
         {
             _overlayWpf = new OverlayControls();
             _overlayWpf.Owner = _window;
+
+            // The bar is built lazily, so it has to pick the fullscreen palette up here when it happens to
+            // be created while fullscreen is already active.
+            FullscreenOverlayTheme.UseDarkPalette(_overlayWpf, _shell.WindowStateActions.IsFullscreen);
             
             BindOverlay(playPause, stop, rew, fwd, openSourceMenu);
             

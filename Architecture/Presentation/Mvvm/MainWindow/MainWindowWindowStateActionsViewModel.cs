@@ -264,8 +264,9 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         }
 
         /// <summary>
-        /// Aligns the fullscreen EPG / drawer with the main window: they start below the auto-hiding top
-        /// bar and stop above the floating bottom navigation bar, which overlays the bottom of the video.
+        /// Aligns the fullscreen EPG / drawer with the main window: they are floating cards that stay
+        /// clear of the auto-hiding top bar, stop above the floating bottom navigation bar, keep an even
+        /// margin above and below and never touch the screen edge their frame is docked to.
         /// </summary>
         public void PositionFullscreenPanels() => PositionFullscreenPanelsFor(_fullscreenOwner);
 
@@ -276,19 +277,21 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             {
                 var topOffset = GetTopOverlayOffset();
                 var navReserve = _activeContext?.GetNavigationHeight?.Invoke() ?? 0;
-                var height = Math.Max(0, window.ActualHeight - topOffset - navReserve);
+                var (top, height) = Helpers.PanelWindowLayout.FullscreenPanelVertical(
+                    window.Top, window.ActualHeight, topOffset, navReserve);
 
                 if (FullscreenEpg != null)
                 {
-                    FullscreenEpg.Left = window.Left;
-                    FullscreenEpg.Top = window.Top + topOffset;
+                    FullscreenEpg.Left = Helpers.PanelWindowLayout.FullscreenEpgLeft(window.Left);
+                    FullscreenEpg.Top = top;
                     FullscreenEpg.Height = height;
                 }
 
                 if (FullscreenDrawer != null)
                 {
-                    FullscreenDrawer.Left = window.Left + window.ActualWidth - FullscreenDrawer.Width;
-                    FullscreenDrawer.Top = window.Top + topOffset;
+                    FullscreenDrawer.Left = Helpers.PanelWindowLayout.FullscreenDrawerLeft(
+                        window.Left, window.ActualWidth, FullscreenDrawer.Width);
+                    FullscreenDrawer.Top = top;
                     FullscreenDrawer.Height = height;
                 }
             }
@@ -319,10 +322,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 DataContext = mainWindow.DataContext
             };
             
-            // Same translucent scrim as the floating bottom navigation bar, so the video keeps showing
-            // through the panel instead of the opaque card colour used by the windowed layout.
-            FullscreenDrawer.SetResourceReference(Window.BackgroundProperty, "TopOverlayScrimBrush");
-            FullscreenDrawer.Resources["CardBackgroundBrush"] = System.Windows.Media.Brushes.Transparent;
+            FullscreenOverlayTheme.ApplyFullscreenPanelPalette(FullscreenDrawer);
             PositionFullscreenPanelsFor(mainWindow);
             
             try 
@@ -401,10 +401,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 DataContext = mainWindow.DataContext
             };
             
-            // Same translucent scrim as the floating bottom navigation bar, so the video keeps showing
-            // through the panel instead of the opaque card colour used by the windowed layout.
-            FullscreenEpg.SetResourceReference(Window.BackgroundProperty, "TopOverlayScrimBrush");
-            FullscreenEpg.Resources["CardBackgroundBrush"] = System.Windows.Media.Brushes.Transparent;
+            FullscreenOverlayTheme.ApplyFullscreenPanelPalette(FullscreenEpg);
             PositionFullscreenPanelsFor(mainWindow);
             
             try 

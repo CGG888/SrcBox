@@ -20,8 +20,7 @@ namespace LibmpvIptvClient.Services.WebRemote
     public class WebRemoteServer : IDisposable
     {
         private TcpListener? _tcpListener;
-        private TcpListener? _httpsListener;
-        private X509Certificate2? _httpsCertificate;
+        private X509Certificate2? _tlsCertificate;
         private CancellationTokenSource? _cts;
         private readonly List<WebSocket> _clients = new();
         private readonly object _clientsLock = new();
@@ -30,20 +29,26 @@ namespace LibmpvIptvClient.Services.WebRemote
         public int Port { get; private set; }
 
         /// <summary>
-        /// True while the TLS listener is accepting phones on <see cref="HttpsPort"/>.
+        /// True when a server certificate is loaded, so TLS clients are accepted on the same port as
+        /// plain http clients.
         /// </summary>
-        public bool IsHttpsRunning { get; private set; }
+        public bool IsTlsAvailable { get; private set; }
 
         /// <summary>
-        /// Port of the TLS listener, or zero when HTTPS is disabled or could not be started.
+        /// First byte of a TLS record (a handshake). Plain http always starts with an ASCII verb, so a
+        /// single byte is enough to tell the two protocols apart on one shared port.
         /// </summary>
-        public int HttpsPort { get; private set; }
+        internal const byte TlsHandshakePrefix = 0x16;
+
+        internal static bool LooksLikeTlsHandshake(byte firstByte) => firstByte == TlsHandshakePrefix;
 
         // 密码保护
         private bool _requirePassword;
         private string _password = "";
-        // NEW-13: ConcurrentDictionary instead of HashSet + lock, eliminating data race
-        private readonly System.Collections.Concurrent.ConcurrentDictionary<string, bool> _authenticatedTokens = new();
+        // NEW-13: ConcurrentDictionary instead of HashSet + lock, eliminating data race.
+        // Keyed by the connection itself: the old string key came from ws.SubProtocol, which is always
+        // empty here, so one authenticated device silently unlocked every other client on the LAN.
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<WebSocket, bool> _authenticatedClients = new();
 
         public Func<WebRemoteStatus>? GetStatusCallback { get; set; }
         public Func<List<WebRemoteChannelGroup>>? GetChannelsCallback { get; set; }
@@ -71,75 +76,50 @@ namespace LibmpvIptvClient.Services.WebRemote
         public Action<string>? StopRecordingCallback { get; set; }
         public Action<string>? DeleteRecordingCallback { get; set; }
 
-        public void Start(int port, bool requirePassword = false, string password = "")
-        {
-            Start(port, requirePassword, password, 0);
-        }
-
         /// <summary>
-        /// Starts the remote. A positive <paramref name="httpsPort"/> also opens a TLS listener, which is
-        /// what lets Android phones install the page as an app (a secure context is required for that).
+        /// Starts the remote on a single port that speaks both plain http and https: the first byte of
+        /// every connection decides which protocol the client uses. Android Chrome needs the https side
+        /// before it treats the page as a secure context and offers to install it as an app, while the
+        /// plain http side stays reachable on the very same address for the first visit.
         /// </summary>
-        public void Start(int port, bool requirePassword = false, string password = "", int httpsPort = 0)
+        public void Start(int port, bool requirePassword = false, string password = "")
         {
             if (IsRunning) return;
 
             Port = port;
             _requirePassword = requirePassword;
             _password = password ?? "";
-            _authenticatedTokens.Clear();
+            _authenticatedClients.Clear();
             _cts = new CancellationTokenSource();
+
+            if (WebRemoteCertificateService.TryGetServerCertificate(out var certificate))
+            {
+                _tlsCertificate = certificate;
+                IsTlsAvailable = true;
+            }
+            else
+            {
+                Logger.Warn("[WebRemote] No certificate available, the remote will answer plain http only");
+            }
 
             try
             {
                 _tcpListener = new TcpListener(IPAddress.Any, port);
                 _tcpListener.Start();
                 IsRunning = true;
-                _ = Task.Run(() => AcceptClientsAsync(_tcpListener, false, _cts.Token));
-                Logger.Debug($"[WebRemote] Server started on port {port}");
+                _ = Task.Run(() => AcceptClientsAsync(_tcpListener, _cts.Token));
+                Logger.Debug($"[WebRemote] Server started on port {port}{(IsTlsAvailable ? " (http + https)" : " (http only)")}");
             }
             catch (Exception ex)
             {
                 Logger.Error($"[WebRemote] Failed to start server: {ex.Message}");
                 Stop();
-                return;
-            }
-
-            if (httpsPort > 0 && httpsPort != port) StartHttpsListener(httpsPort);
-        }
-
-        /// <summary>
-        /// Opens the TLS listener using the self-signed certificate; the phone trusts the CA behind it.
-        /// </summary>
-        private void StartHttpsListener(int httpsPort)
-        {
-            if (_httpsListener != null || _cts == null) return;
-            if (!WebRemoteCertificateService.TryGetServerCertificate(out var certificate)) return;
-
-            try
-            {
-                _httpsListener = new TcpListener(IPAddress.Any, httpsPort);
-                _httpsListener.Start();
-                _httpsCertificate = certificate;
-                HttpsPort = httpsPort;
-                IsHttpsRunning = true;
-                var token = _cts.Token;
-                _ = Task.Run(() => AcceptClientsAsync(_httpsListener, true, token));
-                Logger.Debug($"[WebRemote] HTTPS server started on port {httpsPort}");
-            }
-            catch (Exception ex)
-            {
-                Logger.Error($"[WebRemote] Failed to start HTTPS server on port {httpsPort}: {ex.Message}");
-                try { _httpsListener?.Stop(); } catch { }
-                _httpsListener = null;
-                IsHttpsRunning = false;
-                HttpsPort = 0;
             }
         }
 
         public void Stop()
         {
-            if (!IsRunning && !IsHttpsRunning) return;
+            if (!IsRunning && !IsTlsAvailable) return;
 
             _cts?.Cancel();
             lock (_clientsLock)
@@ -152,23 +132,20 @@ namespace LibmpvIptvClient.Services.WebRemote
             }
             _tcpListener?.Stop();
             _tcpListener = null;
-            _httpsListener?.Stop();
-            _httpsListener = null;
-            _httpsCertificate = null;
+            _tlsCertificate = null;
             IsRunning = false;
-            IsHttpsRunning = false;
-            HttpsPort = 0;
+            IsTlsAvailable = false;
             Logger.Debug("[WebRemote] Server stopped");
         }
 
-        private async Task AcceptClientsAsync(TcpListener listener, bool useTls, CancellationToken ct)
+        private async Task AcceptClientsAsync(TcpListener listener, CancellationToken ct)
         {
             while (!ct.IsCancellationRequested)
             {
                 try
                 {
                     var client = await listener.AcceptTcpClientAsync(ct);
-                    _ = Task.Run(() => HandleClientAsync(client, useTls, ct), ct);
+                    _ = Task.Run(() => HandleClientAsync(client, ct), ct);
                 }
                 catch (OperationCanceledException) { break; }
                 catch (ObjectDisposedException) { break; }
@@ -176,7 +153,7 @@ namespace LibmpvIptvClient.Services.WebRemote
             }
         }
 
-        private async Task HandleClientAsync(TcpClient tcpClient, bool useTls, CancellationToken ct)
+        private async Task HandleClientAsync(TcpClient tcpClient, CancellationToken ct)
         {
             using (tcpClient)
             {
@@ -184,15 +161,37 @@ namespace LibmpvIptvClient.Services.WebRemote
                 {
                     var networkStream = tcpClient.GetStream();
                     networkStream.ReadTimeout = 5000;
+                    tcpClient.ReceiveTimeout = 5000;
+
+                    // Port unification: look at the first byte without consuming it, since a TLS client
+                    // needs that byte to stay in the stream for the handshake.
+                    var head = new byte[1];
+                    bool useTls;
+                    try
+                    {
+                        useTls = tcpClient.Client.Receive(head, 0, 1, SocketFlags.Peek) == 1
+                                 && LooksLikeTlsHandshake(head[0]);
+                    }
+                    catch (SocketException)
+                    {
+                        return;
+                    }
+
                     Logger.Debug($"[WebRemote] Client connected from {tcpClient.Client.RemoteEndPoint}{(useTls ? " (https)" : "")}");
 
                     Stream stream = networkStream;
                     if (useTls)
                     {
+                        if (_tlsCertificate == null)
+                        {
+                            Logger.Warn("[WebRemote] TLS client rejected: no certificate available");
+                            return;
+                        }
+
                         var ssl = new SslStream(networkStream, false);
                         await ssl.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
                         {
-                            ServerCertificate = _httpsCertificate,
+                            ServerCertificate = _tlsCertificate,
                             ClientCertificateRequired = false,
                             EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
                             CertificateRevocationCheckMode = X509RevocationMode.NoCheck
@@ -244,10 +243,25 @@ namespace LibmpvIptvClient.Services.WebRemote
                     return;
                 }
 
-                // PWA: CA certificate download, used before the phone can open the https address
-                if (firstLine.TrimStart().StartsWith("GET /cert"))
+                // PWA: CA certificate download, used before the phone can open the https address.
+                // Served in DER, PEM and Apple profile flavour because the three phone installers want
+                // different files.
+                var requestPath = RequestPath(firstLine);
+                if (requestPath is "/cert" or "/cert.crt" or "/cert.der")
                 {
                     await ServeCertificateAsync(tcpClient, stream, ct);
+                    return;
+                }
+
+                if (requestPath == "/cert.pem")
+                {
+                    await ServeCertificatePemAsync(tcpClient, stream, ct);
+                    return;
+                }
+
+                if (requestPath is "/cert.mobileconfig" or "/profile.mobileconfig")
+                {
+                    await ServeCertificateProfileAsync(tcpClient, stream, ct);
                     return;
                 }
 
@@ -281,7 +295,7 @@ namespace LibmpvIptvClient.Services.WebRemote
 
                 Logger.Debug("[WebRemote] Sending HTML page");
                 var lang = ParseAcceptLanguage(request);
-                var html = GetRemoteHtml(lang);
+                var html = GetRemoteHtml(lang, IsTlsAvailable ? Port : 0);
                 var header = $"HTTP/1.1 200 OK\r\nContent-Type: text/html; charset=utf-8\r\nContent-Length: {Encoding.UTF8.GetByteCount(html)}\r\nConnection: close\r\n\r\n";
                 var headerBuf = Encoding.UTF8.GetBytes(header);
                 var bodyBuf = Encoding.UTF8.GetBytes(html);
@@ -438,7 +452,7 @@ namespace LibmpvIptvClient.Services.WebRemote
             {
                 var sw = @"
 // SrcBox Web Remote Service Worker
-var CACHE_NAME = 'srcbox-remote-v3';
+var CACHE_NAME = 'srcbox-remote-v6';
 var STATIC_ASSETS = [
   '/',
   '/manifest.json'
@@ -586,6 +600,73 @@ self.addEventListener('fetch', function(event) {
             finally { tcpClient.Close(); }
         }
 
+        /// <summary>
+        /// Path of the request line without the query string, used to route the certificate downloads.
+        /// </summary>
+        internal static string RequestPath(string requestLine)
+        {
+            if (string.IsNullOrEmpty(requestLine)) return "";
+            var firstSpace = requestLine.IndexOf(' ');
+            if (firstSpace < 0) return "";
+            var rest = requestLine[(firstSpace + 1)..].Trim();
+            var secondSpace = rest.IndexOf(' ');
+            if (secondSpace >= 0) rest = rest[..secondSpace];
+            var query = rest.IndexOf('?');
+            if (query >= 0) rest = rest[..query];
+            return rest;
+        }
+
+        /// <summary>
+        /// Hands out the CA certificate as PEM text: a few phone installers refuse the DER file.
+        /// </summary>
+        private async Task ServeCertificatePemAsync(TcpClient tcpClient, Stream stream, CancellationToken ct)
+        {
+            try
+            {
+                var pem = WebRemoteCertificateService.GetRootCertificatePem();
+                if (string.IsNullOrEmpty(pem))
+                {
+                    Logger.Warn("[WebRemote] CA certificate requested but not available");
+                    await SendErrorAsync(stream, "404 Not Found", ct);
+                    return;
+                }
+
+                var body = Encoding.UTF8.GetBytes(pem);
+                var header = $"HTTP/1.1 200 OK\r\nContent-Type: application/x-pem-file\r\nContent-Length: {body.Length}\r\nContent-Disposition: attachment; filename=\"srcbox-ca.pem\"\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n";
+                await stream.WriteAsync(Encoding.UTF8.GetBytes(header), ct);
+                await stream.WriteAsync(body, ct);
+                Logger.Debug($"[WebRemote] CA certificate (pem) served ({body.Length} bytes)");
+            }
+            catch (Exception ex) { Logger.Error($"[WebRemote] ServeCertificatePem error: {ex.Message}"); }
+            finally { tcpClient.Close(); }
+        }
+
+        /// <summary>
+        /// Hands out an Apple configuration profile that installs the CA. On iOS this is the reliable
+        /// way in: a bare .crt download often ends up in the Files app with nothing able to install it.
+        /// </summary>
+        private async Task ServeCertificateProfileAsync(TcpClient tcpClient, Stream stream, CancellationToken ct)
+        {
+            try
+            {
+                var profile = WebRemoteCertificateService.BuildRootCaProfile();
+                if (string.IsNullOrEmpty(profile))
+                {
+                    Logger.Warn("[WebRemote] CA profile requested but not available");
+                    await SendErrorAsync(stream, "404 Not Found", ct);
+                    return;
+                }
+
+                var body = Encoding.UTF8.GetBytes(profile);
+                var header = $"HTTP/1.1 200 OK\r\nContent-Type: application/x-apple-aspen-config\r\nContent-Length: {body.Length}\r\nContent-Disposition: attachment; filename=\"srcbox-ca.mobileconfig\"\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n";
+                await stream.WriteAsync(Encoding.UTF8.GetBytes(header), ct);
+                await stream.WriteAsync(body, ct);
+                Logger.Debug($"[WebRemote] CA profile served ({body.Length} bytes)");
+            }
+            catch (Exception ex) { Logger.Error($"[WebRemote] ServeCertificateProfile error: {ex.Message}"); }
+            finally { tcpClient.Close(); }
+        }
+
         private async Task HandleWebSocketAsync(TcpClient tcpClient, Stream stream, string request, CancellationToken ct)
         {
             WebSocket? ws = null;
@@ -650,6 +731,8 @@ self.addEventListener('fetch', function(event) {
                 if (ws != null)
                 {
                     lock (_clientsLock) { _clients.Remove(ws); }
+                    // Force a fresh password prompt on reconnect instead of trusting a stale entry.
+                    _authenticatedClients.TryRemove(ws, out _);
                 }
                 try { tcpClient.Close(); } catch { }
             }
@@ -668,8 +751,7 @@ self.addEventListener('fetch', function(event) {
                 // 密码验证：除了 auth 动作外都需要验证
                 if (_requirePassword && action != "auth")
                 {
-                    var token = ws.SubProtocol ?? "";
-                    bool isAuth = _authenticatedTokens.ContainsKey(token); // NEW-13: lock-free
+                    bool isAuth = _authenticatedClients.ContainsKey(ws); // NEW-13: lock-free, per connection
                     if (!isAuth)
                     {
                         Logger.Warn($"[WebRemote] Unauthorized access attempt: {action}");
@@ -691,7 +773,7 @@ self.addEventListener('fetch', function(event) {
                         bool ok = !string.IsNullOrEmpty(_password) && pwd == _password;
                         if (ok)
                         {
-                            _authenticatedTokens.TryAdd(ws.SubProtocol ?? "", true); // NEW-13: lock-free
+                            _authenticatedClients.TryAdd(ws, true); // NEW-13: lock-free, per connection
                             Logger.Debug("[WebRemote] Client authenticated successfully");
                         }
                         else
@@ -928,12 +1010,20 @@ self.addEventListener('fetch', function(event) {
             Stop();
         }
 
-        internal static string GetRemoteHtml(string lang = "zh-CN")
+        internal static string GetRemoteHtml(string lang = "zh-CN", int httpsPort = 0, bool? showChannelList = null, bool? showEpgList = null)
         {
             var strings = WebRemoteStrings.Get(lang);
+            // The section switches come from the Web Remote settings; the parameters let tests override them.
+            var webRemote = AppSettings.Current?.WebRemote;
+            var showChannels = showChannelList ?? webRemote?.ShowChannelList ?? true;
+            var showEpg = showEpgList ?? webRemote?.ShowEpgList ?? true;
             var stringsJson = System.Text.Json.JsonSerializer.Serialize(strings);
-            var langAttr = (lang ?? "zh-CN").ToLowerInvariant().StartsWith("en") ? "en"
-                : (lang ?? "zh-CN").ToLowerInvariant().StartsWith("ru") ? "ru"
+            // The html lang attribute has to follow the page language, Traditional Chinese included: the string
+            // tables pick zh-TW from the same Accept-Language tag, so hard-coding zh-CN mislabelled that page.
+            var langTag = (lang ?? "zh-CN").ToLowerInvariant();
+            var langAttr = langTag.StartsWith("en") ? "en"
+                : langTag.StartsWith("ru") ? "ru"
+                : langTag.Contains("tw") || langTag.Contains("hk") || langTag.Contains("hant") ? "zh-Hant"
                 : "zh-CN";
             var tpl = BuildHtmlTemplate()
                 .Replace("__T_JSON__", stringsJson)
@@ -963,9 +1053,6 @@ self.addEventListener('fetch', function(event) {
                 .Replace("__LOADING__", strings.TryGetValue("loading", out var t21) ? t21 : "")
                 .Replace("__SEC_EPG__", strings.TryGetValue("section_epg", out var t22) ? t22 : "")
                 .Replace("__EPG_SELECT__", strings.TryGetValue("epg_select", out var t23) ? t23 : "")
-                .Replace("__EPG_EMPTY__", strings.TryGetValue("epg_empty", out var t24) ? t24 : "")
-                .Replace("__EXIT_CONFIRM__", strings.TryGetValue("exit_confirm", out var t25) ? t25 : "")
-                .Replace("__CONNECTING__", strings.TryGetValue("connecting", out var t26) ? t26 : "")
                 .Replace("__FAV_STAR__", strings.TryGetValue("fav_star", out var t27) ? t27 : "*")
                 .Replace("__FAV_GROUP__", strings.TryGetValue("fav_group", out var t28) ? t28 : "Favorites")
                 .Replace("__SEC_SOURCES__", strings.TryGetValue("sec_sources", out var t29) ? t29 : "")
@@ -975,32 +1062,20 @@ self.addEventListener('fetch', function(event) {
                 .Replace("__MODAL_ADD_SOURCE__", strings.TryGetValue("modal_add_source", out var t33) ? t33 : "")
                 .Replace("__LABEL_SOURCE_NAME__", strings.TryGetValue("label_source_name", out var t34) ? t34 : "")
                 .Replace("__LABEL_SOURCE_URL__", strings.TryGetValue("label_source_url", out var t35) ? t35 : "")
-                .Replace("__SOURCE_EMPTY__", strings.TryGetValue("source_empty", out var t36) ? t36 : "")
-                .Replace("__SOURCE_ACTIVE__", strings.TryGetValue("source_active", out var t37) ? t37 : "")
-                .Replace("__SOURCE_SELECT__", strings.TryGetValue("source_select", out var t38) ? t38 : "")
-                .Replace("__SOURCE_REMOVE__", strings.TryGetValue("source_remove", out var t39) ? t39 : "")
-                .Replace("__CONFIRM_REMOVE_SOURCE__", strings.TryGetValue("confirm_remove_source", out var t40) ? t40 : "")
-                .Replace("__RECORDING_EMPTY__", strings.TryGetValue("recording_empty", out var t41) ? t41 : "")
-                .Replace("__RECORDING_STOP__", strings.TryGetValue("recording_stop", out var t42) ? t42 : "")
-                .Replace("__RECORDING_DELETE__", strings.TryGetValue("recording_delete", out var t43) ? t43 : "")
-                .Replace("__REMINDER_EMPTY__", strings.TryGetValue("reminder_empty", out var t44) ? t44 : "")
-                .Replace("__REMINDER_CANCEL__", strings.TryGetValue("reminder_cancel", out var t45) ? t45 : "")
                 .Replace("__MODAL_ADD_REMINDER__", strings.TryGetValue("modal_add_reminder", out var t46) ? t46 : "")
                 .Replace("__LABEL_REMINDER_ACTION__", strings.TryGetValue("label_reminder_action", out var t47) ? t47 : "")
                 .Replace("__ACTION_PLAY__", strings.TryGetValue("action_play", out var t48) ? t48 : "")
                 .Replace("__ACTION_RECORD_FRONT__", strings.TryGetValue("action_record_front", out var t49) ? t49 : "")
                 .Replace("__ACTION_RECORD_BACK__", strings.TryGetValue("action_record_back", out var t50) ? t50 : "")
-                .Replace("__ACTION_NOTIFY__", strings.TryGetValue("action_notify", out var t51) ? t51 : "")
                 .Replace("__LABEL_PRE_ALERT__", strings.TryGetValue("label_pre_alert", out var t52) ? t52 : "")
                 .Replace("__BTN_CANCEL__", strings.TryGetValue("btn_cancel", out var t53) ? t53 : "")
                 .Replace("__BTN_CONFIRM__", strings.TryGetValue("btn_confirm", out var t54) ? t54 : "")
-                .Replace("__BTN_REPLAY__", strings.TryGetValue("btn_replay", out var t55) ? t55 : "")
                 .Replace("__BTN_TIMESHIFT__", strings.TryGetValue("btn_timeshift", out var t56) ? t56 : "")
-                .Replace("__BTN_TIMESHIFT_ON__", strings.TryGetValue("btn_timeshift_on", out var t57) ? t57 : "")
-                .Replace("__BTN_TIMESHIFT_OFF__", strings.TryGetValue("btn_timeshift_off", out var t58) ? t58 : "")
-                .Replace("__BTN_REMIND__", strings.TryGetValue("btn_remind", out var t59) ? t59 : "")
-                .Replace("__BTN_RECORD__", strings.TryGetValue("btn_record", out var t60) ? t60 : "")
-                .Replace("__STATUS_CANCELLED__", strings.TryGetValue("status_cancelled", out var t61) ? t61 : "");
+                // HTTPS port offered to the page for the "open over https" install step (0 = HTTPS disabled)
+                .Replace("__HTTPS_PORT__", httpsPort.ToString())
+                // Section switches are baked in so a section hidden in the settings is never shown
+                .Replace("__SHOW_CHANNELS__", showChannels ? "true" : "false")
+                .Replace("__SHOW_EPG__", showEpg ? "true" : "false");
             return tpl;
         }
 
@@ -1028,7 +1103,7 @@ self.addEventListener('fetch', function(event) {
 <html lang=""__LANG__"">
 <head>
 <meta charset=""UTF-8"">
-<meta name=""viewport"" content=""width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"">
+<meta name=""viewport"" content=""width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"">
 <!-- PWA Meta Tags -->
 <meta name=""description"" content=""SrcBox IPTV Remote Control"">
 <link rel=""manifest"" href=""/manifest.json"">
@@ -1036,8 +1111,8 @@ self.addEventListener('fetch', function(event) {
 <meta name=""apple-mobile-web-app-capable"" content=""yes"">
 <meta name=""apple-mobile-web-app-status-bar-style"" content=""black-translucent"">
 <meta name=""apple-mobile-web-app-title"" content=""SrcBox"">
-<link rel=""apple-touch-icon"" href=""/icons/icon-192.png"">
-<link rel=""apple-touch-icon-precomposed"" href=""/icons/icon-192.png"">
+<link rel=""apple-touch-icon"" sizes=""180x180"" href=""/icons/apple-touch-icon-180.png"">
+<link rel=""apple-touch-icon-precomposed"" sizes=""180x180"" href=""/icons/apple-touch-icon-180.png"">
 <link rel=""icon"" type=""image/x-icon"" href=""/favicon.ico"">
 <title>__TITLE__</title>
 <style>
@@ -1103,7 +1178,10 @@ body.dark-theme #passwordOverlay input { background-color: var(--neu-well); }
 html { background: var(--neu-bg); }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--neu-bg); color: var(--neu-text); min-height: 100vh; overflow-x: hidden; }
 body.dark-theme, body.theme-dark { color: var(--neu-text); }
-.container { max-width: 100%; margin: 0 auto; padding: 12px; }
+/* Safe-area insets: with viewport-fit=cover the page paints under the iPhone notch and the home
+   indicator, so every edge that holds content adds the matching env() inset. Browsers without env()
+   keep the plain padding declared first. */
+.container { max-width: 100%; margin: 0 auto; padding: 12px; padding-top: calc(12px + env(safe-area-inset-top, 0px)); padding-right: calc(12px + env(safe-area-inset-right, 0px)); padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); padding-left: calc(12px + env(safe-area-inset-left, 0px)); }
 .header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 8px 12px; background: var(--neu-surface); color: var(--neu-text); border: none; border-radius: var(--neu-radius); box-shadow: var(--neu-shadow-out); }
 .header h1 { font-size: 16px; margin: 0; display: flex; align-items: center; gap: 8px; color: var(--neu-text); }
 .live-badge { background: var(--neu-danger); color: var(--neu-primary-fg); padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: bold; animation: pulse 2s infinite; }
@@ -1196,7 +1274,7 @@ body.dark-theme, body.theme-dark { color: var(--neu-text); }
 .loading { text-align: center; padding: 30px; color: var(--neu-text-muted); font-size: 12px; }
 .loading::after { content: '...'; animation: dots 1.5s infinite; }
 @keyframes dots { 0%,20% { content: '.'; } 40% { content: '..'; } 60%,100% { content: '...'; } }
-#passwordOverlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--neu-bg); display: flex; align-items: center; justify-content: center; z-index: 9999; flex-direction: column; gap: 16px; }
+#passwordOverlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--neu-bg); display: flex; align-items: center; justify-content: center; z-index: 9999; flex-direction: column; gap: 16px; padding: 16px; padding-top: calc(16px + env(safe-area-inset-top, 0px)); padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); box-sizing: border-box; }
 #passwordOverlay h2 { color: var(--neu-text); font-size: 18px; margin: 0; }
 #passwordOverlay input { padding: 12px 16px; font-size: 14px; border: none; border-radius: var(--neu-radius); width: 200px; text-align: center; background: var(--neu-surface); color: var(--neu-text); box-shadow: var(--neu-shadow-in); }
 #passwordOverlay button { padding: 10px 24px; font-size: 14px; border: none; border-radius: var(--neu-radius); background: var(--neu-primary); color: var(--neu-primary-fg); cursor: pointer; box-shadow: var(--neu-shadow-out-sm); touch-action: manipulation; }
@@ -1225,9 +1303,9 @@ body.dark-theme, body.theme-dark { color: var(--neu-text); }
 .reminder-item .raction.notify { background: #57606f; }
 .recording-item .rcstatus { font-size: 11px; color: var(--neu-text-muted); }
 .recording-item .rcsize { font-size: 11px; color: var(--neu-primary); }
-.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--neu-bg); opacity: 0.98; display: none; align-items: center; justify-content: center; z-index: 10000; }
+.modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--neu-bg); opacity: 0.98; display: none; align-items: center; justify-content: center; z-index: 10000; padding: 16px; padding-top: calc(16px + env(safe-area-inset-top, 0px)); padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); box-sizing: border-box; }
 .modal-overlay.show { display: flex; }
-.modal-box { background: var(--neu-surface); border: none; border-radius: var(--neu-radius); padding: 20px; min-width: 300px; max-width: 400px; box-shadow: var(--neu-shadow-out); }
+.modal-box { background: var(--neu-surface); border: none; border-radius: var(--neu-radius); padding: 20px; min-width: 300px; max-width: 400px; box-shadow: var(--neu-shadow-out); max-height: calc(100vh - 32px); max-height: calc(100dvh - 32px); max-height: calc(100dvh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); overflow-y: auto; -webkit-overflow-scrolling: touch; }
 .modal-box h3 { margin: 0 0 16px 0; font-size: 16px; color: var(--neu-text); }
 .modal-box label { display: block; font-size: 12px; color: var(--neu-text-muted); margin-bottom: 6px; }
 .modal-box input, .modal-box select { width: 100%; padding: 10px 12px; border: none; border-radius: 10px; background: var(--neu-surface); color: var(--neu-text); font-size: 13px; margin-bottom: 12px; box-sizing: border-box; box-shadow: var(--neu-shadow-in-sm); appearance: none; -webkit-appearance: none; }
@@ -1314,6 +1392,32 @@ body.remote-mode .now-playing, body.remote-mode .controls-wrapper, body.remote-m
 .epg-btn-live, .epg-btn-replay, .epg-btn-timeshift, .epg-btn-remind, .epg-btn-rec { background-image: var(--neu-grad); box-shadow: var(--neu-shadow-out-sm), var(--neu-hi); }
 .volume-bar, .rp-vol-track, .rp-num-display, .epg-date-display, .rp-status, .modal-box input,
 .modal-box select, #passwordOverlay input { background-image: var(--neu-grad-well); }
+/* Phone sized standard remote: the pad must fit one viewport without scrolling. Blocks scale
+   with vh clamps so the layout adapts from a 360x640 phone up to a tablet. */
+.install-toggle { font-size: 13px; padding: 8px 10px; }
+.install-body { line-height: 1.5; word-break: break-word; }
+.install-body a { color: var(--neu-primary); text-decoration: underline; }
+body.remote-mode { height: 100vh; height: 100dvh; overflow-x: hidden; overflow-y: auto; display: flex; flex-direction: column; --safe-vh: calc((100vh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) / 100); }
+/* --safe-vh is 1% of the height the pad can really use: the viewport minus the safe-area insets the
+   container reserves, so the whole pad still fits on a notched phone instead of pushing the footer out. */
+@supports (height: 100dvh) { body.remote-mode { --safe-vh: calc((100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) / 100); } }
+body.remote-mode .container { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: clamp(6px, calc(var(--safe-vh) * 1.2), 12px); padding-top: max(clamp(6px, calc(var(--safe-vh) * 1.2), 12px), env(safe-area-inset-top, 0px)); padding-right: max(clamp(6px, calc(var(--safe-vh) * 1.2), 12px), env(safe-area-inset-right, 0px)); padding-bottom: max(clamp(6px, calc(var(--safe-vh) * 1.2), 12px), env(safe-area-inset-bottom, 0px)); padding-left: max(clamp(6px, calc(var(--safe-vh) * 1.2), 12px), env(safe-area-inset-left, 0px)); }
+body.remote-mode .header { flex: 0 0 auto; margin-bottom: clamp(6px, calc(var(--safe-vh) * 1.2), 12px); }
+body.remote-mode .remote-pad { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: space-between; gap: clamp(4px, calc(var(--safe-vh) * 0.9), 12px); max-width: none; }
+body.remote-mode .rp-status { padding: clamp(8px, calc(var(--safe-vh) * 1.4), 16px); margin-bottom: 0; }
+body.remote-mode .rp-channel { font-size: clamp(15px, calc(var(--safe-vh) * 2.6), 20px); }
+body.remote-mode .rp-program { font-size: clamp(11px, calc(var(--safe-vh) * 1.7), 13px); }
+body.remote-mode .rp-dpad { gap: clamp(6px, calc(var(--safe-vh) * 1.2), 12px); margin-bottom: 0; }
+body.remote-mode .rp-btn { min-height: clamp(36px, calc(var(--safe-vh) * 6.6), 64px); min-width: 0; font-size: clamp(15px, calc(var(--safe-vh) * 2.4), 20px); }
+body.remote-mode .rp-vol { gap: clamp(6px, calc(var(--safe-vh) * 1.2), 12px); margin-bottom: 0; }
+body.remote-mode .rp-vol-btn { min-height: clamp(36px, calc(var(--safe-vh) * 6.6), 64px); min-width: clamp(36px, calc(var(--safe-vh) * 6.6), 64px); }
+body.remote-mode .rp-numpad { gap: clamp(6px, calc(var(--safe-vh) * 1.2), 12px); margin-bottom: 0; }
+body.remote-mode .rp-num-btn { min-height: clamp(30px, calc(var(--safe-vh) * 5.2), 56px); font-size: clamp(15px, calc(var(--safe-vh) * 2.4), 22px); }
+body.remote-mode .rp-num-display { min-height: clamp(26px, calc(var(--safe-vh) * 4.2), 38px); margin-bottom: clamp(4px, calc(var(--safe-vh) * 0.8), 12px); }
+body.remote-mode .rp-num-hint { min-height: clamp(12px, calc(var(--safe-vh) * 2), 18px); margin-bottom: 0; }
+body.remote-mode .rp-footer { gap: clamp(6px, calc(var(--safe-vh) * 1.2), 8px); }
+body.remote-mode .rp-text-btn { min-height: clamp(36px, calc(var(--safe-vh) * 6.6), 64px); font-size: clamp(11px, calc(var(--safe-vh) * 1.7), 14px); }
+@media (min-width: 480px) { body.remote-mode .remote-pad { max-width: 420px; margin: 0 auto; width: 100%; } }
 </style>
 </head>
 <body>
@@ -1329,6 +1433,8 @@ body.remote-mode .now-playing, body.remote-mode .controls-wrapper, body.remote-m
 <div class=""header-actions"">
 <button class=""view-toggle"" id=""viewToggle"" onclick=""toggleRemoteView()"" data-standard=""__VIEW_STANDARD__"" data-full=""__VIEW_FULL__"">__VIEW_STANDARD__</button>
 <button class=""theme-toggle"" id=""themeToggle"" onclick=""toggleTheme()"">__THEME__</button>
+<button class=""theme-toggle install-toggle"" id=""installFab"" onclick=""showInstallModal()"" style=""display:none;""></button>
+<button class=""theme-toggle"" id=""fsFab"" onclick=""toggleBrowserFullscreen()"" style=""display:none;"">⛶</button>
 </div>
 </div>
 
@@ -1405,6 +1511,7 @@ body.remote-mode .now-playing, body.remote-mode .controls-wrapper, body.remote-m
 <button class=""btn"" onclick=""refreshData()""><svg class=""icon"" viewBox=""0 0 24 24""><path d=""M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z""/></svg><span>__BTN_REFRESH__</span></button>
 <button class=""btn"" onclick=""seek(-10)""><svg class=""icon"" viewBox=""0 0 24 24""><path d=""M11 18V6l-8.5 6 8.5 6zm.5-6l8.5 6V6l-8.5 6z""/></svg><span>-10s</span></button>
 <button class=""btn"" onclick=""seek(10)""><svg class=""icon"" viewBox=""0 0 24 24""><path d=""M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z""/></svg><span>+10s</span></button>
+<button class=""btn"" id=""btnTimeshift"" onclick=""toggleTimeshift()""><svg class=""icon"" viewBox=""0 0 24 24""><path id=""timeshiftPath"" d=""M8 5v14l11-7z""/></svg><span id=""btnTimeshiftText"">__BTN_TIMESHIFT__</span></button>
 </div>
 </div>
 
@@ -1429,6 +1536,18 @@ body.remote-mode .now-playing, body.remote-mode .controls-wrapper, body.remote-m
 <div class=""mbtns"">
 <button class=""mcancel"" onclick=""closeReminderModal()"">__BTN_CANCEL__</button>
 <button class=""mok"" onclick=""doAddReminder()"">__BTN_CONFIRM__</button>
+</div>
+</div>
+</div>
+
+<!-- Install to home screen Modal -->
+<div class=""modal-overlay"" id=""installModal"">
+<div class=""modal-box"">
+<h3 id=""installTitle""></h3>
+<div class=""rem-info install-body"" id=""installBody""></div>
+<div class=""mbtns"">
+<button class=""mcancel"" id=""installLater"" onclick=""dismissInstall()""></button>
+<button class=""mok"" id=""installGo"" onclick=""doInstall()"" style=""display:none;""></button>
 </div>
 </div>
 </div>
@@ -1506,6 +1625,9 @@ body.remote-mode .now-playing, body.remote-mode .controls-wrapper, body.remote-m
 
 <script>
 const T = __T_JSON__;
+const HTTPS_PORT = __HTTPS_PORT__;
+const SHOW_CHANNELS = __SHOW_CHANNELS__;
+const SHOW_EPG = __SHOW_EPG__;
 const FAV_GROUP = '__FAV_GROUP__';
 const FAV_STAR = '__FAV_STAR__';
 let ws; let currentChannelId = ''; let currentVolume = 70; let previousVolume = 70;
@@ -1519,6 +1641,11 @@ var rpMode = document.getElementById('rpMode'); if (rpMode) rpMode.textContent =
 var rpNumHint = document.getElementById('rpNumHint'); if (rpNumHint) rpNumHint.textContent = T.num_hint || '';
 renderNumDisplay();
 applyRemoteView();
+// Sections switched off in the settings stay hidden; their data keeps loading in the background
+var chSection = document.querySelector('.channel-section');
+if (chSection && !SHOW_CHANNELS) chSection.style.display = 'none';
+var epgSection = document.querySelector('.epg-section');
+if (epgSection && !SHOW_EPG) epgSection.style.display = 'none';
 }
 
 function connect() {
@@ -1768,6 +1895,7 @@ if (!s.muted && s.volume > 0) previousVolume = s.volume;
 currentVolume = s.muted ? previousVolume : (s.volume || 0);
 isMuted = s.muted || false;
 isTimeshiftEnabled = s.timeshiftEnabled || false;
+updateTimeshiftBtn();
 updateVolumeUI(); updateChannelActive();
 if (currentChannelId) loadEpg(currentChannelId, currentEpgDate);
 // Update date display to today if no date selected
@@ -1852,7 +1980,7 @@ var actionHtml = '';
 if (p.isCurrent) {
 actionHtml += '<button class=""epg-btn-live"" onclick=""event.stopPropagation();changeChannel(\'' + data.channelId + '\')"">' + T.btn_watch + '</button>';
 }
-else if (isPast && isTimeshiftEnabled) {
+else if (isPast && p.canReplay) {
 actionHtml += '<button class=""epg-btn-replay"" onclick=""event.stopPropagation();doReplayProgram(\'' + data.channelId + '\', \'' + p.name + '\', \'' + p.startISO + '\', \'' + p.endISO + '\')"">' + T.btn_replay + '</button>';
 }
 else if (isFuture) {
@@ -1952,6 +2080,117 @@ var id = numberToId[target];
 if (id) { changeChannel(id); } else { showNumHint(T.channel_not_found || 'Not found'); }
 }
 async function exitApp() { if (confirm(T.exit_confirm)) send('exit'); }
+
+// Install to home screen: native prompt when the browser offers one, Safari instructions for iOS,
+// and a certificate hint when the page is served over plain http (no service worker = no install).
+let installMode = '';
+let deferredInstallPrompt = null;
+function isStandaloneDisplay() {
+  try { if (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) return true; } catch (e) { }
+  return window.navigator.standalone === true;
+}
+function installWasDismissed() {
+  try { return localStorage.getItem('srcbox_install_dismissed') === '1'; } catch (e) { return false; }
+}
+function initInstall() {
+  var fab = document.getElementById('installFab');
+  var fs = document.getElementById('fsFab');
+  // Fullscreen works on plain http too (the Fullscreen API needs no secure context), so the button stays
+  // available for phones that open the remote as a plain home screen shortcut.
+  if (fs) {
+    if (browserFullscreenSupported()) { fs.title = T.btn_fullscreen || ''; fs.style.display = ''; }
+    else fs.style.display = 'none';
+  }
+  if (!fab) return;
+  if (isStandaloneDisplay() || installWasDismissed()) { fab.style.display = 'none'; return; }
+  if (!window.isSecureContext) installMode = 'insecure';
+  else if (/iphone|ipad|ipod/i.test(navigator.userAgent)) installMode = 'ios';
+  else installMode = 'native';
+  fab.textContent = T.install_short || '';
+  fab.style.display = '';
+}
+function browserFullscreenSupported() {
+  var el = document.documentElement;
+  return !!(el.requestFullscreen || el.webkitRequestFullscreen);
+}
+function toggleBrowserFullscreen() {
+  try {
+    var el = document.documentElement;
+    if (document.fullscreenElement || document.webkitFullscreenElement) {
+      var exit = document.exitFullscreen || document.webkitExitFullscreen;
+      if (exit) exit.call(document);
+    } else {
+      var enter = el.requestFullscreen || el.webkitRequestFullscreen;
+      if (enter) enter.call(el);
+    }
+  } catch (e) { }
+}
+window.addEventListener('beforeinstallprompt', function (e) { e.preventDefault(); deferredInstallPrompt = e; });
+window.addEventListener('appinstalled', function () {
+  var fab = document.getElementById('installFab'); if (fab) fab.style.display = 'none';
+});
+function noCertHint() {
+  var ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  return ios ? (T.install_nocert_ios || '') : (T.install_nocert_android || '');
+}
+function certLinks() {
+  return '<br/><br/><a href=""/cert"">' + (T.install_cert || '') + '</a>'
+       + ' · <a href=""/cert.pem"">' + (T.install_cert_pem || '') + '</a>'
+       + ' · <a href=""/cert.mobileconfig"">' + (T.install_cert_ios || '') + '</a>';
+}
+function showInstallModal() {
+  var modal = document.getElementById('installModal'); if (!modal) return;
+  var title = document.getElementById('installTitle');
+  var bodyEl = document.getElementById('installBody');
+  var later = document.getElementById('installLater');
+  var go = document.getElementById('installGo');
+  if (title) title.textContent = T.install_title || '';
+  if (later) { later.textContent = T.install_later || ''; later.style.display = ''; }
+  if (go) go.style.display = 'none';
+  if (installMode === 'ios') {
+    if (bodyEl) bodyEl.textContent = T.install_ios || '';
+    if (go) { go.textContent = T.btn_confirm || 'OK'; go.style.display = ''; }
+  } else if (installMode === 'insecure') {
+    if (bodyEl) bodyEl.innerHTML = (T.install_insecure || '') + '<br/><br/>' + (T.install_cert_steps || '')
+      + certLinks() + '<br/><br/>' + noCertHint();
+    if (go && HTTPS_PORT > 0) { go.textContent = T.install_https_open || ''; go.style.display = ''; }
+  } else if (deferredInstallPrompt) {
+    if (bodyEl) bodyEl.textContent = T.install_android || '';
+    if (go) { go.textContent = T.install_go || ''; go.style.display = ''; }
+  } else {
+    // No captured beforeinstallprompt: Chrome only fires it once the page is installable, so point the
+    // user at the browser menu entry instead of offering a button that could never do anything.
+    if (bodyEl) bodyEl.innerHTML = (T.install_manual || '') + '<br/><br/>' + noCertHint() + certLinks();
+    if (go) { go.textContent = T.btn_confirm || 'OK'; go.style.display = ''; }
+  }
+  modal.classList.add('show');
+}
+function closeInstallModal() {
+  var modal = document.getElementById('installModal'); if (modal) modal.classList.remove('show');
+}
+function dismissInstall() {
+  try { localStorage.setItem('srcbox_install_dismissed', '1'); } catch (e) { }
+  var fab = document.getElementById('installFab'); if (fab) fab.style.display = 'none';
+  closeInstallModal();
+}
+function openSecureRemote() {
+  if (!HTTPS_PORT) { closeInstallModal(); return; }
+  window.location.href = 'https://' + window.location.hostname + ':' + HTTPS_PORT + '/';
+}
+function doInstall() {
+  if (installMode === 'native' && deferredInstallPrompt) {
+    var prompt = deferredInstallPrompt;
+    deferredInstallPrompt = null;
+    prompt.prompt();
+    if (prompt.userChoice && prompt.userChoice.then) prompt.userChoice.then(function () { closeInstallModal(); });
+    return;
+  }
+  if (installMode === 'insecure') { openSecureRemote(); return; }
+  closeInstallModal();
+}
+
+// Initialize the install entry before connecting: a failed WebSocket connect must not hide it.
+initInstall();
 connect();
 
 // Register Service Worker for PWA install support
@@ -2003,6 +2242,9 @@ if ('serviceWorker' in navigator) {
         public string EndISO { get; set; } = "";     // yyyy-MM-ddTHH:mm:ss
         public string Date { get; set; } = "";       // MM-dd (显示日期)
         public bool IsCurrent { get; set; }
+        /// <summary>True when this channel can replay the programme (catch-up source or timeshift url),
+        /// so the page only offers the replay button where it can actually work.</summary>
+        public bool CanReplay { get; set; }
         // 微标类型: "live"=正在播出 "replay"=回看 "reminder"=预约 "next"=下一节目
         public string? Badge { get; set; }
         public string? BadgeHtml { get; set; }

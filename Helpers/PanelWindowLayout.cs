@@ -39,5 +39,40 @@ namespace LibmpvIptvClient.Helpers
         /// </summary>
         public static bool IsUserResize(double currentWidth, double appliedWidth)
             => double.IsNaN(appliedWidth) || System.Math.Abs(currentWidth - appliedWidth) >= ResizeTolerance;
+
+        /// <summary>
+        /// Share of the usable fullscreen height an overlay panel occupies. In fullscreen the panels are
+        /// floating cards, not full-height columns: the remaining share is split evenly above and below,
+        /// which keeps the list readable without it running from the top bar to the bottom bar.
+        /// </summary>
+        public const double FullscreenPanelHeightRatio = 0.72;
+
+        /// <summary>
+        /// Gap between an overlay panel and the screen edge it is docked to. The panel frame is drawn on
+        /// the outermost pixel, so without a gap it lands exactly on the edge of the fullscreen picture
+        /// and the border looks cut off instead of sitting inside the fullscreen area.
+        /// </summary>
+        public const double FullscreenPanelOuterMargin = 16;
+
+        /// <summary>
+        /// Vertical placement of an overlay panel: a window-relative top and a height that is centred in
+        /// the usable area (the screen minus the auto-hiding top bar and the floating bottom navigation
+        /// bar), so the spacing above and below the panel is identical.
+        /// </summary>
+        public static (double Top, double Height) FullscreenPanelVertical(
+            double windowTop, double windowHeight, double topOffset, double navReserve)
+        {
+            var available = System.Math.Max(0, windowHeight - topOffset - navReserve);
+            var height = available * FullscreenPanelHeightRatio;
+            return (windowTop + topOffset + (available - height) / 2, height);
+        }
+
+        /// <summary>Left edge of the fullscreen EPG panel, inset from the left screen edge.</summary>
+        public static double FullscreenEpgLeft(double windowLeft)
+            => windowLeft + FullscreenPanelOuterMargin;
+
+        /// <summary>Left edge of the fullscreen drawer panel; its right edge is inset from the screen edge.</summary>
+        public static double FullscreenDrawerLeft(double windowLeft, double windowWidth, double panelWidth)
+            => windowLeft + windowWidth - panelWidth - FullscreenPanelOuterMargin;
     }
 }

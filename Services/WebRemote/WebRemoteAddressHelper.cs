@@ -69,10 +69,10 @@ namespace LibmpvIptvClient.Services.WebRemote
         /// <summary>
         /// Builds the Web Remote URL, e.g. http://192.168.1.20:8899/
         /// </summary>
-        public static string BuildUrl(string? host, int port)
+        public static string BuildUrl(string? host, int port, string scheme = DefaultScheme)
         {
             if (string.IsNullOrWhiteSpace(host) || port <= 0) return "";
-            return $"{DefaultScheme}://{host}:{port}/";
+            return $"{scheme}://{host}:{port}/";
         }
 
         internal static bool IsUsable(string? ip)

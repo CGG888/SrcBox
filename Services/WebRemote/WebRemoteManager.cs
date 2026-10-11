@@ -16,6 +16,9 @@ namespace LibmpvIptvClient.Services.WebRemote
 
         public static bool IsRunning => _server?.IsRunning ?? false;
 
+        /// <summary>True when the certificate is loaded, so the same port also answers https.</summary>
+        public static bool IsTlsAvailable => _server?.IsTlsAvailable ?? false;
+
         public static void Initialize(MainShellViewModel shell)
         {
             _shell = shell;
@@ -62,8 +65,9 @@ namespace LibmpvIptvClient.Services.WebRemote
                 _server.StopRecordingCallback = StopRecording;
                 _server.DeleteRecordingCallback = DeleteRecording;
 
+                // The HTTPS listener always comes up with the HTTP one: it is what makes PWA install work on a phone.
                 _server.Start(config.HttpPort, config.RequirePassword, config.Password);
-                Logger.Debug($"[WebRemote] Manager initialized on port {config.HttpPort}");
+                Logger.Debug($"[WebRemote] Manager initialized on port {config.HttpPort}{(IsTlsAvailable ? " (http + https)" : " (http only)")}");
             }
             catch (Exception ex)
             {
@@ -506,6 +510,8 @@ namespace LibmpvIptvClient.Services.WebRemote
                         EndISO = p.End.ToString("yyyy-MM-ddTHH:mm:ss"),
                         Date = p.Start.ToString("MM-dd"),
                         IsCurrent = p.Start <= now && p.End > now,
+                        // Replay only works on channels with a catch-up source or timeshift url
+                        CanReplay = channelObj?.HasTimeshift == true,
                         Badge = badgeType,
                         BadgeHtml = badgeHtml
                     };

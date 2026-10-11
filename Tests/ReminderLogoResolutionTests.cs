@@ -38,7 +38,9 @@ namespace LibmpvIptvClient.Tests
         {
             // Nothing cached: the url is handed through (the toast shows its fallback icon) and the
             // download is scheduled in the background instead of being awaited here.
-            var url = "http://127.0.0.1:9/logo/not-cached.png";
+            // The url must be unique per run: the negative result is cached on disk by url, so a fixed
+            // url makes this test fail on every run after the first one.
+            var url = "http://127.0.0.1:9/not-cached-" + Guid.NewGuid().ToString("N") + ".png";
 
             Assert.AreEqual(url, ReminderService.ResolveLogoNonBlocking("CCTV1", url));
         }
@@ -47,10 +49,11 @@ namespace LibmpvIptvClient.Tests
         public void ResolveLogoNonBlocking_ReturnsImmediatelyForAnUnreachableUrl()
         {
             var sw = Stopwatch.StartNew();
-            var result = ReminderService.ResolveLogoNonBlocking("CCTV1", "http://10.255.255.1/logo.png");
+            var unreachable = "http://10.255.255.1/logo-" + Guid.NewGuid().ToString("N") + ".png";
+            var result = ReminderService.ResolveLogoNonBlocking("CCTV1", unreachable);
             sw.Stop();
 
-            Assert.AreEqual("http://10.255.255.1/logo.png", result);
+            Assert.AreEqual(unreachable, result);
             Assert.IsTrue(sw.ElapsedMilliseconds < 1000,
                 $"解析台标不应阻塞调用线程，实际耗时 {sw.ElapsedMilliseconds}ms");
         }
