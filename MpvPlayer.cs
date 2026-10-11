@@ -2,6 +2,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text;
 using LibmpvIptvClient.Diagnostics;
+using LibmpvIptvClient.Helpers;
 using System.Globalization;
 
 namespace LibmpvIptvClient
@@ -38,8 +39,8 @@ namespace LibmpvIptvClient
             SetString("audio-device", "auto");
             SetString("ad-lavc-threads", threads.ToString(System.Globalization.CultureInfo.InvariantCulture));
             SetString("audio-channels", "stereo");
-            // 注：随包 libmpv-2.dll 中没有 ad-lavc-downmix 选项（写入会静默失败），
-            // 立体声下混由上面的 audio-channels=stereo 完成。
+            // 注：5.1→stereo 的下混由上面的 audio-channels=stereo 完成；本版 libmpv-2.dll 的
+            // audio-normalize-downmix 默认为 no（实测下混不会额外衰减），无需再设 ad-lavc-downmix。
             SetString("audio-pitch-correction", "yes");
             
             // 设置全局通用 User-Agent，解决部分源因空 UA 拒绝访问的问题
@@ -79,19 +80,10 @@ namespace LibmpvIptvClient
             // 音频设置
             try
             {
-                // volume-gain: 音量增益 (dB), -200 ~ +60
-                var gain = Math.Max(-200, Math.Min(60, _settings.VolumeGain));
-                SetString("volume-gain", gain.ToString(CultureInfo.InvariantCulture));
-                // volume-max: 最大音量 (%), 100 ~ 1000
-                var volMax = Math.Max(100, Math.Min(1000, _settings.VolumeMax));
-                SetString("volume-max", volMax.ToString(CultureInfo.InvariantCulture));
-                // audio-delay: 音频延迟 (秒), -100 ~ 100
-                var delay = Math.Max(-100.0, Math.Min(100.0, _settings.AudioDelay));
-                SetString("audio-delay", delay.ToString(CultureInfo.InvariantCulture));
-                // 初始音量 (0~100): 默认 100
+                // volume: mpv 以 100 为 0 dB(unity)，低于 100 按立方曲线衰减
                 var initVolume = Math.Max(0, Math.Min(100, _settings.Volume));
                 SetString("volume", initVolume.ToString(CultureInfo.InvariantCulture));
-
+                ApplyAudioSettings();
             }
             catch (Exception ex)
             {
@@ -99,9 +91,34 @@ namespace LibmpvIptvClient
             }
 
             var initDiMode = string.IsNullOrWhiteSpace(_settings.Deinterlace) ? "no" : _settings.Deinterlace;
-            var initGain = Math.Max(-200, Math.Min(60, _settings.VolumeGain));
-            Logger.Debug($"[mpv] init alang={_settings.Alang} slang={_settings.Slang} di={initDiMode} gain={initGain}dB");
+            Logger.Debug($"[mpv] init alang={_settings.Alang} slang={_settings.Slang} di={initDiMode} gain={VolumeMath.GainDb(_settings.VolumeGain, _settings.VolumeMax).ToString("0.00", CultureInfo.InvariantCulture)}dB");
         }
+
+        /// <summary>
+        /// Applies the audio properties that can change at runtime: the gain (user gain plus the headroom the
+        /// "最大音量" ceiling unlocks), the ceiling itself and the audio delay. mpv's "volume" stays at 100 =
+        /// unity, so any loudness above the source level has to come from "volume-gain".
+        /// </summary>
+        public void ApplyAudioSettings()
+        {
+            try
+            {
+                var gain = VolumeMath.GainDb(_settings.VolumeGain, _settings.VolumeMax);
+                SetString("volume-gain", gain.ToString(CultureInfo.InvariantCulture));
+                // volume-max: 最大音量 (%), 100 ~ 1000
+                var volMax = Math.Max(100, Math.Min(1000, _settings.VolumeMax));
+                SetString("volume-max", volMax.ToString(CultureInfo.InvariantCulture));
+                // audio-delay: 音频延迟 (秒), -100 ~ 100
+                var delay = Math.Max(-100.0, Math.Min(100.0, _settings.AudioDelay));
+                SetString("audio-delay", delay.ToString(CultureInfo.InvariantCulture));
+                Logger.Debug($"[mpv] audio gain={gain.ToString("0.00", CultureInfo.InvariantCulture)}dB volume-max={volMax}% delay={delay.ToString(CultureInfo.InvariantCulture)}s");
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn($"[mpv] 音频参数应用失败: {ex.Message}");
+            }
+        }
+
         public void SetSpeed(double speed)
         {
             SetDouble("speed", speed);
@@ -135,7 +152,12 @@ namespace LibmpvIptvClient
         }
         public void SetString(string name, string value)
         {
-            mpv_set_property_string(_handle, name, value);
+            var rc = mpv_set_property_string(_handle, name, value);
+            if (rc < 0)
+            {
+                // Silent failures used to hide broken properties (e.g. options missing from this build).
+                Logger.Warn($"[mpv] 设置 {name}={value} 失败 (rc={rc})");
+            }
         }
 
         /// <summary>

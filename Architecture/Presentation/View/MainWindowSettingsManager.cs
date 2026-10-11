@@ -276,19 +276,10 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                     AppSettings.Current.DeinterlaceAlgorithm);
             }
             catch { }
-            // 音频设置立即应用（volume-gain, volume-max, audio-delay）
+            // 音频设置立即应用（volume-gain / volume-max / audio-delay）
             try
             {
-                if (_window.PlayerInterop != null)
-                {
-                    var gain = Math.Max(-200.0, Math.Min(60.0, AppSettings.Current.VolumeGain));
-                    _window.PlayerInterop.SetString("volume-gain", gain.ToString(System.Globalization.CultureInfo.InvariantCulture));
-                    var volMax = Math.Max(100, Math.Min(1000, AppSettings.Current.VolumeMax));
-                    _window.PlayerInterop.SetString("volume-max", volMax.ToString(System.Globalization.CultureInfo.InvariantCulture));
-                    var delay = Math.Max(-100.0, Math.Min(100.0, AppSettings.Current.AudioDelay));
-                    _window.PlayerInterop.SetString("audio-delay", delay.ToString(System.Globalization.CultureInfo.InvariantCulture));
-                    Logger.Debug($"[Settings] apply volume-gain={gain}dB volume-max={volMax}% audio-delay={delay}s");
-                }
+                _window.PlayerInterop?.ApplyAudioSettings();
             }
             catch { }
             try

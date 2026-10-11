@@ -506,6 +506,7 @@
   <sys:String x:Key="UI_Audio_Section">音频设置</sys:String>
   <sys:String x:Key="UI_Audio_VolumeGain">音量增益</sys:String>
   <sys:String x:Key="UI_Audio_VolumeMax">最大音量</sys:String>
+  <sys:String x:Key="UI_Audio_VolumeMax_Hint">音量滑杆推到 100 时达到该响度：100% 为原始音量，超过 100% 才提升响度，最高 +12 dB。</sys:String>
   <sys:String x:Key="UI_Audio_Delay">音频延迟</sys:String>
 
   <!-- User-facing Logs -->

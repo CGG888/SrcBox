@@ -360,6 +360,7 @@
                       <Slider x:Name="SliderVolumeMax" Grid.Column="0" Minimum="100" Maximum="1000" Value="130" TickFrequency="10" IsSnapToTickEnabled="True" VerticalAlignment="Center" ValueChanged="SliderVolumeMax_ValueChanged"/>
                       <TextBlock Grid.Column="1" x:Name="TxtVolumeMax" Text="130%" VerticalAlignment="Center" Margin="12,0,0,0" MinWidth="60"/>
                     </Grid>
+                    <TextBlock Text="{DynamicResource UI_Audio_VolumeMax_Hint}" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" TextWrapping="Wrap" Margin="0,-8,0,16"/>
                     <TextBlock Text="{DynamicResource UI_Audio_Delay}" Margin="0,0,0,8"/>
                     <Grid>
                       <Grid.ColumnDefinitions>
