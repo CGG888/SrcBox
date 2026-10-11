@@ -52,7 +52,11 @@ http://192.168.1.100:8899
 
 ## 界面截图
 
-![Web 远程控制](../screenshots/web.jpeg)
+| 标准遥控 · 深色 | 标准遥控 · 浅色 |
+|:---:|:---:|
+| ![标准遥控 · 深色](../screenshots/web-remote-pad-dark.png) | ![标准遥控 · 浅色](../screenshots/web-remote-pad-light.png) |
+| **完整界面 · 深色** | **完整界面 · 浅色** |
+| ![完整界面 · 深色](../screenshots/web-remote-full-dark.png) | ![完整界面 · 浅色](../screenshots/web-remote-full-light.png) |
 
 ## 界面说明
 
@@ -75,6 +79,7 @@ http://192.168.1.100:8899
 | ⌫ | 清除已输入的编号 |
 | ✓ | 立即跳转到输入的频道 |
 | 换源 / 静音 | 切换播放源 / 切换静音状态 |
+| 全屏 / 关闭 | 切换全屏 / 关闭播放器 |
 
 界面采用拟物（Neumorphism）风格：默认浅色，使用右上角的 🌙 / ☀️ 按钮可切换深色拟物风格。
 

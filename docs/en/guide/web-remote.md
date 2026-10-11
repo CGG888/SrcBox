@@ -52,7 +52,11 @@ After enabling, the **Web Remote** tab in the Settings window shows the current 
 
 ## Screenshot
 
-![Web Remote Control](../../screenshots/web.jpeg)
+| Standard remote · dark | Standard remote · light |
+|:---:|:---:|
+| ![Standard remote · dark](../../screenshots/web-remote-pad-dark.png) | ![Standard remote · light](../../screenshots/web-remote-pad-light.png) |
+| **Full interface · dark** | **Full interface · light** |
+| ![Full interface · dark](../../screenshots/web-remote-full-dark.png) | ![Full interface · light](../../screenshots/web-remote-full-light.png) |
 
 ## Interface Description
 
@@ -75,6 +79,7 @@ The button in the top-right corner switches between two interfaces, and the choi
 | ⌫ | Clear the entered number |
 | ✓ | Tune immediately |
 | Switch Source / Mute | Switch playback source / toggle mute |
+| Fullscreen / Close | Toggle fullscreen / exit the player |
 
 The interface uses a Neumorphism style: it is light by default, and the 🌙 / ☀️ button in the top-right corner switches to the dark neumorphism style.
 

@@ -943,26 +943,53 @@ self.addEventListener('fetch', function(event) {
 --neu-primary-fg: #fff;
 --neu-danger: hsl(0 72% 51%);
 --neu-radius: 0.75rem;
---neu-shadow-out: 6px 6px 12px rgba(166,180,200,0.55), -6px -6px 12px rgba(255,255,255,0.75);
---neu-shadow-in: inset 4px 4px 8px rgba(166,180,200,0.55), inset -4px -4px 8px rgba(255,255,255,0.75);
---neu-shadow-out-sm: 3px 3px 6px rgba(166,180,200,0.55), -3px -3px 6px rgba(255,255,255,0.75);
---neu-shadow-in-sm: inset 2px 2px 5px rgba(166,180,200,0.55), inset -2px -2px 5px rgba(255,255,255,0.75);
+--neu-well: var(--neu-surface);
+--neu-shadow-out: 9px 9px 18px rgba(163,177,198,0.75), -9px -9px 18px rgba(255,255,255,0.95);
+--neu-shadow-in: inset 5px 5px 10px rgba(163,177,198,0.75), inset -5px -5px 10px rgba(255,255,255,0.95);
+--neu-shadow-out-sm: 5px 5px 10px rgba(163,177,198,0.7), -5px -5px 10px rgba(255,255,255,0.92);
+--neu-shadow-in-sm: inset 3px 3px 6px rgba(163,177,198,0.7), inset -3px -3px 6px rgba(255,255,255,0.92);
+--neu-hi: inset 1px 1px 1px rgba(255,255,255,0.9), inset -1px -1px 1px rgba(163,177,198,0.45);
+--neu-grad: linear-gradient(145deg, rgba(255,255,255,0.55), rgba(163,177,198,0.12));
+--neu-grad-well: linear-gradient(145deg, rgba(163,177,198,0.35), rgba(255,255,255,0.55));
 }
 body.dark-theme {
---neu-bg: hsl(0 0% 3.9%);
---neu-surface: hsl(0 0% 3.9%);
---neu-surface2: hsl(0 0% 14.9%);
+--neu-bg: hsl(0 0% 4%);
+--neu-surface: hsl(0 0% 11%);
+--neu-surface2: hsl(0 0% 19%);
+--neu-well: hsl(0 0% 6%);
 --neu-text: hsl(0 0% 98%);
---neu-text-muted: hsl(0 0% 63.9%);
---neu-border: hsl(0 0% 14.9%);
+--neu-text-muted: hsl(0 0% 68%);
+--neu-border: hsl(0 0% 26%);
 --neu-primary: hsl(246 96% 68%);
 --neu-primary-fg: #fff;
 --neu-danger: hsl(0 72% 51%);
---neu-shadow-out: 6px 6px 12px rgba(0,0,0,0.7), -6px -6px 12px rgba(255,255,255,0.06);
---neu-shadow-in: inset 4px 4px 8px rgba(0,0,0,0.7), inset -4px -4px 8px rgba(255,255,255,0.06);
---neu-shadow-out-sm: 3px 3px 6px rgba(0,0,0,0.7), -3px -3px 6px rgba(255,255,255,0.06);
---neu-shadow-in-sm: inset 2px 2px 5px rgba(0,0,0,0.7), inset -2px -2px 5px rgba(255,255,255,0.06);
+--neu-shadow-out: 9px 9px 18px rgba(0,0,0,0.95), -9px -9px 18px rgba(255,255,255,0.24);
+--neu-shadow-in: inset 5px 5px 10px rgba(0,0,0,0.95), inset -5px -5px 10px rgba(255,255,255,0.16);
+--neu-shadow-out-sm: 5px 5px 10px rgba(0,0,0,0.95), -5px -5px 10px rgba(255,255,255,0.24);
+--neu-shadow-in-sm: inset 3px 3px 6px rgba(0,0,0,0.95), inset -3px -3px 6px rgba(255,255,255,0.16);
+--neu-hi: inset 1px 1px 1px rgba(255,255,255,0.16), inset -1px -1px 1px rgba(0,0,0,0.7);
+--neu-grad: linear-gradient(145deg, rgba(255,255,255,0.18), rgba(0,0,0,0.35));
+--neu-grad-well: linear-gradient(145deg, rgba(0,0,0,0.5), rgba(255,255,255,0.07));
 }
+/* Dark theme polish: on a near-black page same-tone surfaces make every button
+   vanish, so raised controls get a lighter fill than the card holding them, active
+   states keep that fill and only flip their shadow, and recessed wells sit between
+   the page and the card tone. Primary/danger buttons keep their own colours.
+   Only background-color is set here so the depth gradients below still layer on. */
+body.dark-theme .btn, body.dark-theme .theme-toggle, body.dark-theme .view-toggle,
+body.dark-theme .channel-item, body.dark-theme .epg-item, body.dark-theme .epg-nav-btn,
+body.dark-theme .source-item, body.dark-theme .source-item .sbtns button,
+body.dark-theme .modal-box .mbtns button,
+body.dark-theme .rp-btn, body.dark-theme .rp-vol-btn, body.dark-theme .rp-text-btn,
+body.dark-theme .rp-num-btn { background-color: var(--neu-surface2); }
+body.dark-theme .channel-item.active, body.dark-theme .source-item.active,
+body.dark-theme .epg-item.current { background-color: var(--neu-surface2); }
+body.dark-theme .rp-ok { background-color: var(--neu-primary); }
+body.dark-theme .btn.active, body.dark-theme .rp-num-btn.rp-num-ok { background-color: var(--neu-primary); }
+body.dark-theme .modal-box .mbtns .mok { background-color: var(--neu-primary); }
+body.dark-theme .volume-bar, body.dark-theme .rp-vol-track, body.dark-theme .rp-num-display,
+body.dark-theme .epg-date-display, body.dark-theme .modal-box input, body.dark-theme .modal-box select,
+body.dark-theme #passwordOverlay input { background-color: var(--neu-well); }
 * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
 html { background: var(--neu-bg); }
 body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--neu-bg); color: var(--neu-text); min-height: 100vh; overflow-x: hidden; }
@@ -1131,7 +1158,7 @@ body.remote-mode .now-playing, body.remote-mode .controls-wrapper, body.remote-m
 .rp-vol-btn:active { box-shadow: var(--neu-shadow-in); }
 .rp-vol-track { flex: 1; height: 14px; border-radius: 10px; background: var(--neu-surface); overflow: hidden; box-shadow: var(--neu-shadow-in-sm); }
 .rp-vol-fill { height: 100%; background: var(--neu-primary); border-radius: 10px; transition: width 0.3s; }
-.rp-footer { display: flex; gap: 12px; }
+.rp-footer { display: flex; gap: 8px; }
 .rp-text-btn { flex: 1; min-height: 64px; border: none; border-radius: var(--neu-radius); background: var(--neu-surface); color: var(--neu-text); font-size: 14px; font-weight: 600; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s; box-shadow: var(--neu-shadow-out); touch-action: manipulation; }
 .rp-text-btn:active { box-shadow: var(--neu-shadow-in); }
 .rp-numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 12px; }
@@ -1166,6 +1193,18 @@ body.remote-mode .now-playing, body.remote-mode .controls-wrapper, body.remote-m
 @media (min-width: 480px) {
 .remote-pad { max-width: 420px; margin: 0 auto; }
 }
+/* Depth: translucent face gradients plus a bright top-left rim make the neumorphic
+   relief read on phone screens; recessed wells take the inverse gradient. Accent
+   buttons keep their own fill because the gradient overlay is translucent. */
+.rp-footer .rp-text-btn.rp-exit { background-color: var(--neu-danger); color: var(--neu-primary-fg); }
+.header, .now-playing, .controls-wrapper, .volume-control, .channel-section, .epg-section,
+.source-section, .reminder-section, .recording-section, .modal-box,
+.btn, .theme-toggle, .view-toggle, .rp-btn, .rp-vol-btn, .rp-text-btn,
+.modal-box .mbtns button, #passwordOverlay button { background-image: var(--neu-grad); box-shadow: var(--neu-shadow-out), var(--neu-hi); }
+.channel-item, .epg-item, .epg-nav-btn, .source-item, .source-item .sbtns button, .rp-num-btn,
+.epg-btn-live, .epg-btn-replay, .epg-btn-timeshift, .epg-btn-remind, .epg-btn-rec { background-image: var(--neu-grad); box-shadow: var(--neu-shadow-out-sm), var(--neu-hi); }
+.volume-bar, .rp-vol-track, .rp-num-display, .epg-date-display, .rp-status, .modal-box input,
+.modal-box select, #passwordOverlay input { background-image: var(--neu-grad-well); }
 </style>
 </head>
 <body>
@@ -1222,6 +1261,8 @@ body.remote-mode .now-playing, body.remote-mode .controls-wrapper, body.remote-m
 <div class=""rp-footer"">
 <button class=""rp-text-btn"" onclick=""switchSource()"">__BTN_SWITCH__</button>
 <button class=""rp-text-btn"" onclick=""toggleMute()"">__BTN_MUTE__</button>
+<button class=""rp-text-btn"" onclick=""fullscreen()"">__BTN_FULLSCREEN__</button>
+<button class=""rp-text-btn rp-exit"" onclick=""exitApp()"">__BTN_EXIT__</button>
 </div>
 </div>
 
@@ -1582,7 +1623,7 @@ updateThemeColorMeta();
 }
 function updateThemeColorMeta() {
 var meta = document.querySelector('meta[name=""theme-color""]');
-if (meta) meta.setAttribute('content', isDarkTheme ? '#0f0c29' : '#d9dee5');
+if (meta) meta.setAttribute('content', isDarkTheme ? '#0a0a0a' : '#d9dee5');
 }
 
 function updateVolumeUI() {

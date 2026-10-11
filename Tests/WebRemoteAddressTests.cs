@@ -150,5 +150,41 @@ namespace LibmpvIptvClient.Tests
                 Assert.IsTrue(html.Contains(marker), $"remote html is missing {marker}");
             }
         }
+
+        [TestMethod]
+        public void RemoteHtml_PadFooterExposesFullscreenAndCloseButtons()
+        {
+            var html = WebRemoteServer.GetRemoteHtml("en-US");
+
+            var start = html.IndexOf("<div class=\"rp-footer\"", StringComparison.Ordinal);
+            Assert.IsTrue(start >= 0, "standard remote pad has no footer");
+
+            var end = html.IndexOf("</div>", start, StringComparison.Ordinal);
+            var footer = html.Substring(start, end - start);
+
+            Assert.IsTrue(footer.Contains("fullscreen()"), "pad footer is missing the fullscreen button");
+            Assert.IsTrue(footer.Contains("exitApp()"), "pad footer is missing the close button");
+            Assert.AreEqual(4,
+                System.Text.RegularExpressions.Regex.Matches(footer, "rp-text-btn").Count,
+                "pad footer should expose exactly four buttons");
+        }
+
+        [TestMethod]
+        public void RemoteHtml_KeepsNeumorphicDepthAndDarkThemeContrast()
+        {
+            var html = WebRemoteServer.GetRemoteHtml("en-US");
+
+            // Depth tokens + the dark-theme overrides that keep raised controls visible and
+            // keep the accent fills (regular/OK buttons) from being flattened by the surface tile.
+            foreach (var marker in new[]
+                     {
+                         "--neu-grad:", "--neu-grad-well:", "--neu-hi:", "--neu-shadow-out-sm:",
+                         "body.dark-theme .rp-ok", "body.dark-theme .btn.active",
+                         "body.dark-theme .rp-num-btn.rp-num-ok", ".rp-footer .rp-text-btn.rp-exit"
+                     })
+            {
+                Assert.IsTrue(html.Contains(marker), $"remote html is missing {marker}");
+            }
+        }
     }
 }
