@@ -737,6 +737,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         public void RememberChannelSource(Channel? channel, Source? source)
         {
             if (channel == null || source == null || string.IsNullOrWhiteSpace(source.Url)) return;
+            if (!AppSettings.Current.RememberChannelSource) return;
             try
             {
                 UserDataStore?.SetPreferredSource(UserDataStore.ComputeChannelKey(channel), source.Url);
@@ -756,6 +757,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         {
             // The channel that is already on the air keeps whatever variant it currently plays.
             if (channel == null || ReferenceEquals(channel, CurrentChannel)) return;
+            if (!AppSettings.Current.RememberChannelSource) return;
             try
             {
                 var store = UserDataStore;
@@ -1003,6 +1005,8 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         /// Only a user playlist switch arms the restore, so auto-loading at startup stays silent.</summary>
         private void RestoreRememberedChannel(List<Channel> loadedChannels)
         {
+            // Memory off: switching playlists must not start playback on its own.
+            if (!AppSettings.Current.RememberChannelPerPlaylist) return;
             try
             {
                 var key = SourceLoader.TakePendingRestoreKey(CurrentSourceUrl);

@@ -564,6 +564,15 @@
   <sys:String x:Key="Decoder_NVDEC">NVDEC (АО)</sys:String>
   <sys:String x:Key="Decoder_Software">Программный</sys:String>
 
+  <!-- Memory & restore -->
+  <sys:String x:Key="UI_Memory_Title">Память и восстановление</sys:String>
+  <sys:String x:Key="UI_Memory_RememberPlaylistSource">Запоминать последний источник списка</sys:String>
+  <sys:String x:Key="UI_Memory_RememberPlaylistSource_Hint">При запуске автоматически загружается и выбирается последний использованный источник списка. Если выключено, источник выбирается вручную.</sys:String>
+  <sys:String x:Key="UI_Memory_RememberChannel">Запоминать последний канал для каждого списка</sys:String>
+  <sys:String x:Key="UI_Memory_RememberChannel_Hint">При возврате к списку воспроизведение продолжается с канала, который вы смотрели в нём последним.</sys:String>
+  <sys:String x:Key="UI_Memory_RememberChannelSource">Запоминать выбранный источник для каждого канала</sys:String>
+  <sys:String x:Key="UI_Memory_RememberChannelSource_Hint">Выбранный вручную вариант потока будет использоваться и в следующий раз. Автоматическое переключение не затрагивается.</sys:String>
+
   <!-- Settings Items -->
   <sys:String x:Key="UI_NetworkPlayback">Сетевое воспроизведение</sys:String>
   <sys:String x:Key="UI_RtspSettings">Настройки RTSP</sys:String>

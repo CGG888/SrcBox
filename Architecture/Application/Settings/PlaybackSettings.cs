@@ -246,6 +246,9 @@ namespace LibmpvIptvClient
         public string ThemeMode { get; set; } = "System";
         public string LastLocalM3uPath { get; set; } = "";
         public bool AutoLoadLastSource { get; set; } = true;
+        // Memory: resume the channel remembered per playlist, and the stream variant picked per channel
+        public bool RememberChannelPerPlaylist { get; set; } = true;
+        public bool RememberChannelSource { get; set; } = true;
         // 频道快照预览（需要 rtp2httpd 开启 X-Request-Snapshot）
         public bool EnableChannelPreview { get; set; } = false;
         // 频道快照尺寸（默认 214x120，16:9）

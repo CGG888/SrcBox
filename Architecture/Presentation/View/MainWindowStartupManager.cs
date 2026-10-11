@@ -56,8 +56,14 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
 
         public void InitializeAutoLoad()
         {
-            if (AppSettings.Current.AutoLoadLastSource &&
-                !string.IsNullOrWhiteSpace(AppSettings.Current.LastLocalM3uPath) &&
+            if (!AppSettings.Current.AutoLoadLastSource)
+            {
+                // "Remember the last playlist source" is off: the user picks the source manually.
+                Logger.Info("启动时不自动载入列表源（设置已关闭）");
+                return;
+            }
+
+            if (!string.IsNullOrWhiteSpace(AppSettings.Current.LastLocalM3uPath) &&
                 File.Exists(AppSettings.Current.LastLocalM3uPath))
             {
                 Logger.Info("正在自动加载上次本地 M3U...");

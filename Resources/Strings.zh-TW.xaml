@@ -563,6 +563,15 @@
   <sys:String x:Key="Decoder_NVDEC">NVDEC (硬體)</sys:String>
   <sys:String x:Key="Decoder_Software">軟體解碼</sys:String>
 
+  <!-- Memory & restore -->
+  <sys:String x:Key="UI_Memory_Title">記憶與恢復</sys:String>
+  <sys:String x:Key="UI_Memory_RememberPlaylistSource">記住上次使用的列表源</sys:String>
+  <sys:String x:Key="UI_Memory_RememberPlaylistSource_Hint">啟動時自動載入並選取上次使用的列表源；關閉後每次啟動都需手動選擇。</sys:String>
+  <sys:String x:Key="UI_Memory_RememberChannel">記住每個列表最後播放的頻道</sys:String>
+  <sys:String x:Key="UI_Memory_RememberChannel_Hint">切換回某個列表時，自動繼續播放你上次在該列表觀看的頻道。</sys:String>
+  <sys:String x:Key="UI_Memory_RememberChannelSource">記住每個頻道選用的源</sys:String>
+  <sys:String x:Key="UI_Memory_RememberChannelSource_Hint">你手動切換過的線路會被記住，重播該頻道時仍使用這一路；自動降級不受影響。</sys:String>
+
   <!-- Settings Items -->
   <sys:String x:Key="UI_NetworkPlayback">網絡播放</sys:String>
   <sys:String x:Key="UI_RtspSettings">RTSP 設定</sys:String>

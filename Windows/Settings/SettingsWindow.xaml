@@ -379,6 +379,19 @@
           <TabItem Header="{DynamicResource UI_TabPlayback}">
             <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
               <StackPanel Margin="16,8,24,8">
+                <!-- 记忆与恢复 -->
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
+                  <StackPanel>
+                    <TextBlock Text="{DynamicResource UI_Memory_Title}" FontWeight="SemiBold" Margin="0,0,0,12"/>
+                    <CheckBox x:Name="CbRememberPlaylistSource" Content="{DynamicResource UI_Memory_RememberPlaylistSource}"/>
+                    <TextBlock Text="{DynamicResource UI_Memory_RememberPlaylistSource_Hint}" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,10" TextWrapping="Wrap"/>
+                    <CheckBox x:Name="CbRememberChannel" Content="{DynamicResource UI_Memory_RememberChannel}"/>
+                    <TextBlock Text="{DynamicResource UI_Memory_RememberChannel_Hint}" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,10" TextWrapping="Wrap"/>
+                    <CheckBox x:Name="CbRememberChannelSource" Content="{DynamicResource UI_Memory_RememberChannelSource}"/>
+                    <TextBlock Text="{DynamicResource UI_Memory_RememberChannelSource_Hint}" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,2,0,0" TextWrapping="Wrap"/>
+                  </StackPanel>
+                </Border>
+
                 <!-- 回放设置 -->
                 <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
                   <controls:PlaybackDrawer x:Name="ReplaySettingsControl"/>

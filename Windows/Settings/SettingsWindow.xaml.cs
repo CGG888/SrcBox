@@ -140,6 +140,9 @@ namespace LibmpvIptvClient
                 TbAlang.Text = current.Alang ?? "";
                 TbSlang.Text = current.Slang ?? "";
                 TbMpvTimeout.Text = current.MpvNetworkTimeoutSec.ToString(CultureInfo.InvariantCulture);
+                CbRememberPlaylistSource.IsChecked = current.AutoLoadLastSource;
+                CbRememberChannel.IsChecked = current.RememberChannelPerPlaylist;
+                CbRememberChannelSource.IsChecked = current.RememberChannelSource;
             }
             catch { }
 
@@ -336,7 +339,10 @@ namespace LibmpvIptvClient
                 TbHlsReadahead?.Text ?? "0",
                 TbAlang?.Text ?? "",
                 TbSlang?.Text ?? "",
-                TbMpvTimeout?.Text ?? "0");
+                TbMpvTimeout?.Text ?? "0",
+                CbRememberPlaylistSource?.IsChecked == true,
+                CbRememberChannel?.IsChecked == true,
+                CbRememberChannelSource?.IsChecked == true);
         }
         HttpHeaderConfig ReadHttpHeaderFormState()
         {
@@ -407,6 +413,9 @@ namespace LibmpvIptvClient
                 TbAlang.Text = pState.Alang;
                 TbSlang.Text = pState.Slang;
                 TbMpvTimeout.Text = pState.MpvNetworkTimeout;
+                CbRememberPlaylistSource.IsChecked = pState.RememberPlaylistSource;
+                CbRememberChannel.IsChecked = pState.RememberChannel;
+                CbRememberChannelSource.IsChecked = pState.RememberChannelSource;
                 // EPG/Logo/Replay/Timeshift 控件刷新
                 _tempReplay = _replayDrawerViewModel.BuildTempConfig(s.Replay);
                 _tempTimeshift = _timeshiftDrawerViewModel.BuildTempConfig(s.Timeshift);

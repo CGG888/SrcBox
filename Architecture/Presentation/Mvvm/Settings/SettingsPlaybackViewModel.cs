@@ -15,7 +15,10 @@ public sealed record SettingsPlaybackFormState(
     string HlsReadahead,
     string Alang,
     string Slang,
-    string MpvNetworkTimeout);
+    string MpvNetworkTimeout,
+    bool RememberPlaylistSource,
+    bool RememberChannel,
+    bool RememberChannelSource);
 
 public sealed class SettingsPlaybackViewModel : ViewModelBase
 {
@@ -33,7 +36,10 @@ public sealed class SettingsPlaybackViewModel : ViewModelBase
             settings.HlsReadaheadSecs.ToString(CultureInfo.InvariantCulture),
             settings.Alang ?? string.Empty,
             settings.Slang ?? string.Empty,
-            settings.MpvNetworkTimeoutSec.ToString(CultureInfo.InvariantCulture)
+            settings.MpvNetworkTimeoutSec.ToString(CultureInfo.InvariantCulture),
+            settings.AutoLoadLastSource,
+            settings.RememberChannelPerPlaylist,
+            settings.RememberChannelSource
         );
     }
 
@@ -67,5 +73,9 @@ public sealed class SettingsPlaybackViewModel : ViewModelBase
         
         if (int.TryParse(form.MpvNetworkTimeout, NumberStyles.Any, CultureInfo.InvariantCulture, out var nt)) 
             settings.MpvNetworkTimeoutSec = Math.Max(0, nt);
+
+        settings.AutoLoadLastSource = form.RememberPlaylistSource;
+        settings.RememberChannelPerPlaylist = form.RememberChannel;
+        settings.RememberChannelSource = form.RememberChannelSource;
     }
 }

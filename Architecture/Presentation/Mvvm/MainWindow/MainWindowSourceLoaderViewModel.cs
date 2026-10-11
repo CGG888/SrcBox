@@ -100,6 +100,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         public void RememberChannel(string? sourceUrl, Channel? channel)
         {
             if (channel == null) return;
+            if (!AppSettings.Current.RememberChannelPerPlaylist) return;
             try
             {
                 if (ApplyRememberedChannel(AppSettings.Current.SavedSources, sourceUrl, UserDataStore.ComputeChannelKey(channel)))

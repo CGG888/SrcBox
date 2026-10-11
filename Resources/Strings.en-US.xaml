@@ -574,6 +574,15 @@
   <sys:String x:Key="Decoder_NVDEC">NVDEC (HW)</sys:String>
   <sys:String x:Key="Decoder_Software">Software</sys:String>
 
+  <!-- Memory & restore -->
+  <sys:String x:Key="UI_Memory_Title">Memory &amp; Restore</sys:String>
+  <sys:String x:Key="UI_Memory_RememberPlaylistSource">Remember the last playlist source</sys:String>
+  <sys:String x:Key="UI_Memory_RememberPlaylistSource_Hint">Loads and selects the playlist source you used last when the player starts. Turn it off to always pick one manually.</sys:String>
+  <sys:String x:Key="UI_Memory_RememberChannel">Remember the last channel per playlist</sys:String>
+  <sys:String x:Key="UI_Memory_RememberChannel_Hint">Switching back to a playlist resumes the channel you last watched in it.</sys:String>
+  <sys:String x:Key="UI_Memory_RememberChannelSource">Remember the source picked per channel</sys:String>
+  <sys:String x:Key="UI_Memory_RememberChannelSource_Hint">A stream variant you switched to manually is reused the next time that channel plays. Automatic fallback is unaffected.</sys:String>
+
   <!-- Settings Items -->
   <sys:String x:Key="UI_NetworkPlayback">Network Playback</sys:String>
   <sys:String x:Key="UI_RtspSettings">RTSP Settings</sys:String>
