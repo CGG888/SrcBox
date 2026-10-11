@@ -310,6 +310,7 @@ namespace LibmpvIptvClient.Services.WebRemote
                 var favGroup = new WebRemoteChannelGroup
                 {
                     Name = GetLocalizedFavGroupName(),
+                    IsFavorites = true,
                     Channels = favorites.Select(c => {
                         var prog = _shell.EpgService?.GetPrograms(c.Id ?? c.TvgId ?? "", c.TvgName, c.Name)?.FirstOrDefault(p => p.Start <= DateTime.Now && p.End > DateTime.Now);
                         var cachedLogo = LogoCacheService.Instance.GetCachedPath(c.Logo ?? "");

@@ -606,7 +606,7 @@ self.addEventListener('fetch', function(event) {
                         {
                             Logger.Debug($"[WebRemote] First group: {groups[0].Name}, channels: {groups[0].Channels.Count}");
                         }
-                        result = new { groups, favorites = groups.FirstOrDefault(g => g.Name == "我的收藏")?.Channels ?? new List<WebRemoteChannel>() };
+                        result = new { groups, favorites = groups.FirstOrDefault(g => g.IsFavorites)?.Channels ?? new List<WebRemoteChannel>() };
                         break;
 
                     case "getEpg":
@@ -1634,8 +1634,14 @@ function assignNumber(c) {
 if (!c || !c.id) return;
 if (channelNumbers[c.id] === undefined) { nextNumber++; channelNumbers[c.id] = nextNumber; numberToId[nextNumber] = c.id; }
 }
-if (data.favorites && data.favorites.length) { data.favorites.forEach(function(c) { assignNumber(c); channelList.push(c); addChannelItem(grid, c, true); }); }
-if (data.groups && data.groups.length) { data.groups.forEach(function(g) { if (g.name === FAV_GROUP) return; if (g.channels) g.channels.forEach(function(c) { assignNumber(c); channelList.push(c); addChannelItem(grid, c); }); }); }
+function isFavGroup(g) { return !!(g && (g.isFavorites || g.name === FAV_GROUP)); }
+// Number every channel in playlist group order first: the numbers ignore group
+// boundaries and are not shifted by the favourites section, so a channel keeps the
+// same number wherever it is listed (the favourites section reuses it).
+if (data.groups && data.groups.length) { data.groups.forEach(function(g) { if (isFavGroup(g)) return; if (g.channels) g.channels.forEach(assignNumber); }); }
+if (data.favorites && data.favorites.length) { data.favorites.forEach(assignNumber); }
+if (data.favorites && data.favorites.length) { data.favorites.forEach(function(c) { channelList.push(c); addChannelItem(grid, c, true); }); }
+if (data.groups && data.groups.length) { data.groups.forEach(function(g) { if (isFavGroup(g)) return; if (g.channels) g.channels.forEach(function(c) { channelList.push(c); addChannelItem(grid, c); }); }); }
 updateChannelActive();
 }
 function addChannelItem(grid, c, isFavorite) {
@@ -1858,6 +1864,8 @@ if ('serviceWorker' in navigator) {
     {
         public string Name { get; set; } = "";
         public List<WebRemoteChannel> Channels { get; set; } = new();
+        // Marks the synthetic favourites group so clients never match it by its localized name
+        public bool IsFavorites { get; set; }
     }
 
     public class WebRemoteSource

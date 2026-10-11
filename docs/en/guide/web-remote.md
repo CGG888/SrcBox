@@ -120,7 +120,7 @@ The interface uses a Neumorphism style: it is light by default, and the ðŸŒ™ / â
 - Display all available channels and favorites
 - Click channel name to switch playback
 - Favorite channels displayed at top with star icon
-- Each channel shows its channel number, matching the number keys of the standard remote pad one-to-one (favorites reuse the same number)
+- Each channel shows its channel number; numbers run continuously in playlist group order and never restart per group, matching the number keys of the standard remote pad one-to-one (favorites reuse the number of their group entry)
 
 ### EPG Program Guide
 
