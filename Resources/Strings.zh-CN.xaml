@@ -330,6 +330,7 @@
   <sys:String x:Key="UI_WebRemote_RequirePassword">需要访问密码</sys:String>
   <sys:String x:Key="UI_WebRemote_ShowChannels">显示频道列表</sys:String>
   <sys:String x:Key="UI_WebRemote_ShowEpg">显示节目单</sys:String>
+  <sys:String x:Key="UI_WebRemote_ShowChannelNumber">遥控器切台时显示频道号</sys:String>
   <sys:String x:Key="UI_WebRemote_Hint">启用后，在同一局域网内可通过手机浏览器访问 http://电脑IP:端口 来控制播放器。</sys:String>
   <sys:String x:Key="UI_TabWebRemote">遥控器</sys:String>
   <sys:String x:Key="UI_WebRemote_Access">扫码访问</sys:String>

@@ -507,6 +507,9 @@ namespace LibmpvIptvClient
         public string Password { get; set; } = "";
         public bool ShowChannelList { get; set; } = true;
         public bool ShowEpgList { get; set; } = true;
+        /// <summary>Flashes the channel number over the player video area when a channel is switched from
+        /// the web remote.</summary>
+        public bool ShowChannelNumber { get; set; } = true;
         public int MaxEpgItems { get; set; } = 50;
     }
 

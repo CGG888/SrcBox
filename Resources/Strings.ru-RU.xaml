@@ -510,6 +510,7 @@
   <sys:String x:Key="UI_WebRemote_RequirePassword">Требовать пароль</sys:String>
   <sys:String x:Key="UI_WebRemote_ShowChannels">Показывать список каналов</sys:String>
   <sys:String x:Key="UI_WebRemote_ShowEpg">Показывать программу</sys:String>
+  <sys:String x:Key="UI_WebRemote_ShowChannelNumber">Показывать номер канала при переключении с пульта</sys:String>
   <sys:String x:Key="UI_WebRemote_Hint">После включения управляйте плеером из браузера телефона по адресу http://IP-ПК:порт в той же локальной сети.</sys:String>
   <sys:String x:Key="UI_TabWebRemote">Пульт</sys:String>
   <sys:String x:Key="UI_WebRemote_Access">Подключение по QR</sys:String>

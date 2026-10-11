@@ -840,6 +840,7 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                       </Grid.RowDefinitions>
                       <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -856,9 +857,11 @@
 
                       <CheckBox x:Name="CbWebRemoteShowChannels" Grid.Row="4" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebRemote_ShowChannels}" IsChecked="True" Margin="0,0,0,8"/>
 
-                      <CheckBox x:Name="CbWebRemoteShowEpg" Grid.Row="5" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebRemote_ShowEpg}" IsChecked="True" Margin="0,0,0,16"/>
+                      <CheckBox x:Name="CbWebRemoteShowEpg" Grid.Row="5" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebRemote_ShowEpg}" IsChecked="True" Margin="0,0,0,8"/>
 
-                      <TextBlock Grid.Row="6" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" TextWrapping="Wrap">
+                      <CheckBox x:Name="CbWebRemoteShowChannelNumber" Grid.Row="6" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebRemote_ShowChannelNumber}" IsChecked="True" Margin="0,0,0,16"/>
+
+                      <TextBlock Grid.Row="7" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" TextWrapping="Wrap">
                         <Run Text="{DynamicResource UI_WebRemote_Hint}"/>
                       </TextBlock>
                     </Grid>

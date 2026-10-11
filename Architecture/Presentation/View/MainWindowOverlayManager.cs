@@ -14,6 +14,8 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
         private readonly MainShellViewModel _shell;
         
         private OverlayControls? _overlayWpf;
+        private ChannelNumberOverlay? _channelNumberWpf;
+        private DispatcherTimer? _channelNumberHideTimer;
         private DispatcherTimer _overlayHideTimer = new DispatcherTimer();
         private DispatcherTimer _overlayPollTimer = new DispatcherTimer();
         private DispatcherTimer? _timeshiftResyncTimer;
@@ -21,6 +23,13 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
         private DateTime _lastOverlayEval = DateTime.MinValue;
         private bool _lastBottomVisible = false;
         private bool _lastTopVisible = false;
+
+        /// <summary>Distance (DIPs) between the channel number badge and the video area corner.</summary>
+        private const double ChannelNumberMarginX = 38;
+        private const double ChannelNumberMarginY = 32;
+
+        /// <summary>How long the channel number badge stays on screen.</summary>
+        private static readonly TimeSpan ChannelNumberVisibleTime = TimeSpan.FromSeconds(3);
 
         public OverlayControls? OverlayWpf => _overlayWpf;
 
@@ -68,6 +77,10 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             {
                 _overlayWpf?.Close();
                 _overlayWpf = null;
+                _channelNumberHideTimer?.Stop();
+                _channelNumberHideTimer = null;
+                _channelNumberWpf?.Close();
+                _channelNumberWpf = null;
                 _overlayHideTimer.Stop();
                 _overlayPollTimer.Stop();
             }
@@ -332,12 +345,14 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 _overlayWpf.Left = pt1.X;
                 _overlayWpf.Top = pt2.Y - _overlayWpf.Height;
                 _overlayWpf.Width = Math.Max(320, pt2.X - pt1.X);
+                PositionChannelNumberOverlay();
                 return;
             }
             // Fallback
             _overlayWpf.Left = rect.Left;
             _overlayWpf.Top = rect.Bottom - _overlayWpf.Height;
             _overlayWpf.Width = Math.Max(320, rect.Width);
+            PositionChannelNumberOverlay();
         }
 
         /// <summary>Positions the minimal mode top bar over the video area. Like the bottom bar this is based
@@ -347,34 +362,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             if (_shell.WindowStateActions.TopOverlay == null) return;
             var isFs = _shell.WindowStateActions.IsFullscreen;
 
-            // 当未播放或 VideoHost 折叠时，VideoPanel 可能为 0，改为回退到 WPF 视频区域容器
-            var panelRect = _window.VideoPanel.RectangleToScreen(_window.VideoPanel.ClientRectangle);
-            System.Drawing.Rectangle rect;
-            if (panelRect.Width <= 0 || panelRect.Height <= 0 || !_window.VideoHost.IsVisible)
-            {
-                try
-                {
-                    var container = System.Windows.Media.VisualTreeHelper.GetParent(_window.VideoHost) as System.Windows.FrameworkElement;
-                    if (container != null)
-                    {
-                        var tl = container.PointToScreen(new System.Windows.Point(0, 0));
-                        var br = container.PointToScreen(new System.Windows.Point(container.ActualWidth, container.ActualHeight));
-                        rect = new System.Drawing.Rectangle((int)tl.X, (int)tl.Y, Math.Max(0, (int)(br.X - tl.X)), Math.Max(0, (int)(br.Y - tl.Y)));
-                    }
-                    else
-                    {
-                        rect = panelRect;
-                    }
-                }
-                catch
-                {
-                    rect = panelRect;
-                }
-            }
-            else
-            {
-                rect = panelRect;
-            }
+            var rect = GetVideoScreenRect();
 
             var source = PresentationSource.FromVisual(_window);
             if (source != null)
@@ -393,6 +381,83 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             _shell.WindowStateActions.TopOverlay.Top = rect.Top;
             _shell.WindowStateActions.TopOverlay.Width = rect.Width;
             try { _shell.WindowStateActions.TopOverlay.SyncWindowVisual(isFs, isFs ? WindowState.Maximized : _window.WindowState, _shell.IsMinimalMode); } catch { }
+        }
+
+        /// <summary>Screen rectangle of the video area. VideoPanel reports zero while nothing is playing
+        /// or the video host is collapsed, so this falls back to the WPF container around it.</summary>
+        private System.Drawing.Rectangle GetVideoScreenRect()
+        {
+            var panelRect = _window.VideoPanel.RectangleToScreen(_window.VideoPanel.ClientRectangle);
+            if (panelRect.Width > 0 && panelRect.Height > 0 && _window.VideoHost.IsVisible) return panelRect;
+
+            try
+            {
+                var container = System.Windows.Media.VisualTreeHelper.GetParent(_window.VideoHost) as System.Windows.FrameworkElement;
+                if (container != null)
+                {
+                    var tl = container.PointToScreen(new System.Windows.Point(0, 0));
+                    var br = container.PointToScreen(new System.Windows.Point(container.ActualWidth, container.ActualHeight));
+                    return new System.Drawing.Rectangle((int)tl.X, (int)tl.Y, Math.Max(0, (int)(br.X - tl.X)), Math.Max(0, (int)(br.Y - tl.Y)));
+                }
+            }
+            catch { }
+
+            return panelRect;
+        }
+
+        /// <summary>Flashes the channel number in the top-right corner of the video area. Only channel
+        /// switches made from the web remote call this; the badge hides itself after a few seconds.</summary>
+        public void ShowChannelNumber(int number)
+        {
+            if (number <= 0) return;
+            try
+            {
+                if (_channelNumberWpf == null)
+                {
+                    _channelNumberWpf = new ChannelNumberOverlay();
+                    try { _channelNumberWpf.Owner = _window; } catch { }
+
+                    _channelNumberHideTimer = new DispatcherTimer { Interval = ChannelNumberVisibleTime };
+                    _channelNumberHideTimer.Tick += (s, e) =>
+                    {
+                        _channelNumberHideTimer?.Stop();
+                        _channelNumberWpf?.Hide();
+                    };
+                }
+
+                _channelNumberWpf.SetNumber(number);
+                _channelNumberWpf.Show();
+                // SizeToContent needs a layout pass before the badge has a size to align against.
+                _channelNumberWpf.UpdateLayout();
+                PositionChannelNumberOverlay();
+
+                _channelNumberHideTimer?.Stop();
+                _channelNumberHideTimer?.Start();
+            }
+            catch { }
+        }
+
+        /// <summary>Anchors the channel number badge to the top-right corner of the video area.</summary>
+        public void PositionChannelNumberOverlay()
+        {
+            if (_channelNumberWpf == null || !_channelNumberWpf.IsVisible) return;
+
+            var rect = GetVideoScreenRect();
+            var width = _channelNumberWpf.ActualWidth > 0 ? _channelNumberWpf.ActualWidth : 0;
+
+            var source = PresentationSource.FromVisual(_window);
+            if (source != null)
+            {
+                var m = source.CompositionTarget.TransformFromDevice;
+                var pt1 = m.Transform(new System.Windows.Point(rect.Left, rect.Top));
+                var pt2 = m.Transform(new System.Windows.Point(rect.Right, rect.Bottom));
+                _channelNumberWpf.Left = Math.Max(pt1.X, pt2.X - width - ChannelNumberMarginX);
+                _channelNumberWpf.Top = pt1.Y + ChannelNumberMarginY;
+                return;
+            }
+
+            _channelNumberWpf.Left = Math.Max(rect.Left, rect.Right - width - ChannelNumberMarginX);
+            _channelNumberWpf.Top = rect.Top + ChannelNumberMarginY;
         }
 
         /// <summary>Shows or hides the floating overlays depending on where the pointer is. Windowed mode keeps

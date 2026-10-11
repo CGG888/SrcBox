@@ -282,6 +282,7 @@
   <sys:String x:Key="UI_WebRemote_RequirePassword">Require Password</sys:String>
   <sys:String x:Key="UI_WebRemote_ShowChannels">Show Channel List</sys:String>
   <sys:String x:Key="UI_WebRemote_ShowEpg">Show EPG</sys:String>
+  <sys:String x:Key="UI_WebRemote_ShowChannelNumber">Show channel number when switching from the remote</sys:String>
   <sys:String x:Key="UI_WebRemote_Hint">When enabled, control the player from your phone browser at http://PC-IP:port on the same local network.</sys:String>
   <sys:String x:Key="UI_TabWebRemote">Remote</sys:String>
   <sys:String x:Key="UI_WebRemote_Access">Scan to connect</sys:String>

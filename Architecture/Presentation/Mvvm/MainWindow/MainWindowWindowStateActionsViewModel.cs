@@ -42,6 +42,13 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         public Window? FullscreenDrawer { get; set; }
         public TopOverlay? TopOverlay { get; set; }
 
+        /// <summary>Raised when the channel number badge should flash over the video area, which only
+        /// happens for channel switches made from the web remote.</summary>
+        public event Action<int>? RequestChannelNumberOverlay;
+
+        /// <summary>Asks the shell to flash the given channel number over the video area.</summary>
+        public void ShowChannelNumberOverlay(int number) => RequestChannelNumberOverlay?.Invoke(number);
+
         /// <summary>
         /// Window form captured when fullscreen was entered (null while windowed). Geometry persistence
         /// uses it to store the pre-fullscreen rectangle when the app closes while still fullscreen.

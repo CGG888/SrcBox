@@ -251,6 +251,7 @@ namespace LibmpvIptvClient
                     if (TbWebRemotePassword != null) TbWebRemotePassword.Text = wr.Password ?? "";
                     if (CbWebRemoteShowChannels != null) CbWebRemoteShowChannels.IsChecked = wr.ShowChannelList;
                     if (CbWebRemoteShowEpg != null) CbWebRemoteShowEpg.IsChecked = wr.ShowEpgList;
+                    if (CbWebRemoteShowChannelNumber != null) CbWebRemoteShowChannelNumber.IsChecked = wr.ShowChannelNumber;
                 }
                 catch { }
 
@@ -522,6 +523,7 @@ namespace LibmpvIptvClient
                 if (TbWebRemotePassword != null) TbWebRemotePassword.Text = wr.Password ?? "";
                 if (CbWebRemoteShowChannels != null) CbWebRemoteShowChannels.IsChecked = wr.ShowChannelList;
                 if (CbWebRemoteShowEpg != null) CbWebRemoteShowEpg.IsChecked = wr.ShowEpgList;
+                if (CbWebRemoteShowChannelNumber != null) CbWebRemoteShowChannelNumber.IsChecked = wr.ShowChannelNumber;
 
                 RefreshWebRemoteAccessPanel();
 
@@ -1201,7 +1203,8 @@ namespace LibmpvIptvClient
                 RequirePassword = CbWebRemotePassword?.IsChecked == true,
                 Password = TbWebRemotePassword?.Text ?? "",
                 ShowChannelList = CbWebRemoteShowChannels?.IsChecked == true,
-                ShowEpgList = CbWebRemoteShowEpg?.IsChecked == true
+                ShowEpgList = CbWebRemoteShowEpg?.IsChecked == true,
+                ShowChannelNumber = CbWebRemoteShowChannelNumber?.IsChecked != false
             };
         }
 

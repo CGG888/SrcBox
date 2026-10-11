@@ -328,7 +328,33 @@ namespace LibmpvIptvClient.Services.WebRemote
                 groups.Insert(0, favGroup);
             }
 
+            // Publish the shared channel numbers, so the page shows exactly the number the local
+            // channel-number overlay shows for a channel switched from the remote.
+            var numbers = BuildChannelNumbers();
+            foreach (var group in groups)
+                foreach (var channel in group.Channels)
+                    channel.Number = numbers.TryGetValue(channel.Id ?? "", out var number) ? number : 0;
+
             return groups;
+        }
+
+        /// <summary>1-based channel numbers (web channel id → number) shared by the remote page and the
+        /// local channel-number overlay. The numbering follows the playlist group order and numbers the
+        /// favourites last, which is the order the page renders as well.</summary>
+        private static Dictionary<string, int> BuildChannelNumbers()
+        {
+            var groups = new List<IEnumerable<string?>>();
+            if (_shell == null) return WebRemoteChannelNumbering.BuildNumberMap(groups);
+
+            var channelGroups = _shell.ChannelGroups?.ToList() ?? new List<ChannelGroupItem>();
+            foreach (var group in channelGroups)
+                groups.Add((group.Items ?? new List<Channel>()).Select(c => c.Id ?? c.TvgId));
+
+            var favorites = _shell.Favorites;
+            if (favorites != null && favorites.Any())
+                groups.Add(favorites.Select(c => c.Id ?? c.TvgId));
+
+            return WebRemoteChannelNumbering.BuildNumberMap(groups);
         }
 
         private static List<WebRemoteProgram> GetEpg(string channelId, DateTime? filterDate = null)
@@ -507,6 +533,9 @@ namespace LibmpvIptvClient.Services.WebRemote
                     {
                         Logger.Debug($"[WebRemote] ChangeChannel via web remote: {channel.Name}");
                         _shell.ChannelPlaybackActions?.PlayChannel(channel);
+                        // The channel-number badge is a remote-only affordance: mouse driven switches
+                        // take a different path and never reach this method.
+                        ShowChannelNumberOverlay(channelId);
                     }
                 }
                 catch (Exception ex)
@@ -514,6 +543,22 @@ namespace LibmpvIptvClient.Services.WebRemote
                     Logger.Error($"[WebRemote] ChangeChannel error: {ex.Message}");
                 }
             });
+        }
+
+        /// <summary>Flashes the channel number over the player video area for a channel switched from the
+        /// remote page (can be turned off in the web remote settings).</summary>
+        private static void ShowChannelNumberOverlay(string channelId)
+        {
+            try
+            {
+                if (AppSettings.Current.WebRemote?.ShowChannelNumber == false) return;
+                if (!BuildChannelNumbers().TryGetValue(channelId, out var number) || number <= 0) return;
+                _shell?.WindowStateActions?.ShowChannelNumberOverlay(number);
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug($"[WebRemote] channel number overlay failed: {ex.Message}");
+            }
         }
 
         private static void ExitApp()

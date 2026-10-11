@@ -509,6 +509,7 @@
   <sys:String x:Key="UI_WebRemote_RequirePassword">需要存取密碼</sys:String>
   <sys:String x:Key="UI_WebRemote_ShowChannels">顯示頻道列表</sys:String>
   <sys:String x:Key="UI_WebRemote_ShowEpg">顯示節目單</sys:String>
+  <sys:String x:Key="UI_WebRemote_ShowChannelNumber">遙控器切台時顯示頻道號</sys:String>
   <sys:String x:Key="UI_WebRemote_Hint">啟用後，在同一區域網內可透過手機瀏覽器存取 http://電腦IP:埠 來控制播放器。</sys:String>
   <sys:String x:Key="UI_TabWebRemote">遙控器</sys:String>
   <sys:String x:Key="UI_WebRemote_Access">掃碼存取</sys:String>
