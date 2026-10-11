@@ -68,6 +68,72 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             AppSettings.Current.Save();
         }
 
+        // ---- Per-playlist channel memory -------------------------------------------------
+        // Each saved playlist remembers the channel the user last watched in it. Switching back to a
+        // playlist resumes that channel instead of leaving the previous playlist's channel playing.
+
+        private string _pendingRestoreUrl = "";
+        private string _pendingRestoreChannelKey = "";
+
+        /// <summary>Arms the memory restore for a playlist the user switched to. Only an explicit
+        /// switch arms it, so auto-loading a playlist (e.g. at startup) never starts playback.</summary>
+        public void ArmChannelRestore(M3uSource? src)
+        {
+            _pendingRestoreUrl = src?.Url ?? "";
+            _pendingRestoreChannelKey = src?.LastChannelKey ?? "";
+        }
+
+        /// <summary>Returns the channel key to restore for the playlist that just finished loading and
+        /// clears the arming state. Returns an empty string when this load was not an armed switch.</summary>
+        public string TakePendingRestoreKey(string? loadedUrl)
+        {
+            var armedUrl = _pendingRestoreUrl;
+            var key = _pendingRestoreChannelKey;
+            _pendingRestoreUrl = "";
+            _pendingRestoreChannelKey = "";
+            if (string.IsNullOrWhiteSpace(key) || string.IsNullOrWhiteSpace(loadedUrl)) return "";
+            return string.Equals(armedUrl, loadedUrl, StringComparison.OrdinalIgnoreCase) ? key : "";
+        }
+
+        /// <summary>Persists the channel the user is watching under the playlist it came from. A null
+        /// channel is a no-op: stopping playback must not erase what the playlist remembers.</summary>
+        public void RememberChannel(string? sourceUrl, Channel? channel)
+        {
+            if (channel == null) return;
+            try
+            {
+                if (ApplyRememberedChannel(AppSettings.Current.SavedSources, sourceUrl, UserDataStore.ComputeKey(channel)))
+                {
+                    AppSettings.Current.Save();
+                }
+            }
+            catch (Exception ex)
+            {
+                LibmpvIptvClient.Diagnostics.Logger.Error("[SourceLoader.RememberChannel] " + ex.Message);
+            }
+        }
+
+        /// <summary>Writes <paramref name="channelKey"/> onto the saved playlist with
+        /// <paramref name="sourceUrl"/>. Returns true when the stored value changed (caller saves).</summary>
+        public static bool ApplyRememberedChannel(List<M3uSource>? sources, string? sourceUrl, string? channelKey)
+        {
+            if (sources == null || string.IsNullOrWhiteSpace(sourceUrl)) return false;
+            var src = sources.FirstOrDefault(s => string.Equals(s.Url, sourceUrl, StringComparison.OrdinalIgnoreCase));
+            if (src == null) return false;
+            var key = channelKey ?? "";
+            if (string.Equals(src.LastChannelKey, key, StringComparison.Ordinal)) return false;
+            src.LastChannelKey = key;
+            return true;
+        }
+
+        /// <summary>Finds the channel a stored memory key points at, or null when it is gone.</summary>
+        public static Channel? FindChannelByKey(IEnumerable<Channel>? channels, string? channelKey)
+        {
+            if (channels == null || string.IsNullOrWhiteSpace(channelKey)) return null;
+            return channels.FirstOrDefault(c =>
+                string.Equals(UserDataStore.ComputeKey(c), channelKey, StringComparison.Ordinal));
+        }
+
         public string SanitizeUrl(string input)
         {
             if (string.IsNullOrWhiteSpace(input)) return input;

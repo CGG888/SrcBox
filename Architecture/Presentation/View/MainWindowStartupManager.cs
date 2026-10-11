@@ -69,7 +69,9 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 if (lastSelected != null)
                 {
                     Logger.Info("正在自动加载上次选择的源: " + lastSelected.Name);
-                    _shell.MenuActions.LoadM3u(lastSelected);
+                    // Startup auto-load must not start playback: only a manual playlist switch resumes
+                    // the channel remembered for that playlist.
+                    _shell.MenuActions.LoadM3u(lastSelected, restoreChannel: false);
                 }
             }
 

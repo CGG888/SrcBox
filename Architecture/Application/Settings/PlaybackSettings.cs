@@ -32,6 +32,9 @@ namespace LibmpvIptvClient
         /// <summary>EPG url used for this playlist only (issue #38). Empty means "use the global list".</summary>
         public string EpgUrl { get; set; } = "";
         public bool IsSelected { get; set; }
+        /// <summary>Per-playlist memory: key of the channel the user last watched in this playlist
+        /// (see UserDataStore.ComputeKey). Switching back to the playlist resumes that channel.</summary>
+        public string LastChannelKey { get; set; } = "";
     }
 
     public class EpgConfig

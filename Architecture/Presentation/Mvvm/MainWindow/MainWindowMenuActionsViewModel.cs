@@ -257,9 +257,13 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             }
         }
 
-        public void LoadM3u(M3uSource src)
+        /// <summary>Loads a saved playlist. <paramref name="restoreChannel"/> is false for the startup
+        /// auto-load, which must not start playback on its own.</summary>
+        public void LoadM3u(M3uSource src, bool restoreChannel = true)
         {
+            if (src == null) return;
             _shell.SourceLoader.UpdateLastSource("", src);
+            if (restoreChannel) _shell.SourceLoader.ArmChannelRestore(src);
             RequestLoadChannels?.Invoke(src.Url);
             RequestRefreshM3uList?.Invoke();
         }

@@ -720,7 +720,14 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         public Channel? CurrentChannel
         {
             get => _currentChannel;
-            set => SetProperty(ref _currentChannel, value);
+            set
+            {
+                if (SetProperty(ref _currentChannel, value))
+                {
+                    // Per-playlist memory: remember what the user is watching in the playlist it came from.
+                    SourceLoader.RememberChannel(CurrentSourceUrl, value);
+                }
+            }
         }
 
         private List<Source> _currentSources = new List<Source>();
@@ -880,6 +887,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                     FilteredChannels = loadedChannels;
                     FilterCountText = string.Format(LibmpvIptvClient.Helpers.ResxLocalizer.Get("Drawer_CountAll", "共 {0} 个频道"), loadedChannels.Count);
                     LoadHistory();
+                    RestoreRememberedChannel(loadedChannels);
                 });
 
                 // No full-list health scan here: sources are probed only when their channel
@@ -940,6 +948,31 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             catch (Exception ex)
             {
                 LibmpvIptvClient.Diagnostics.Logger.Error("加载频道失败 " + ex.Message);
+            }
+        }
+
+        /// <summary>Plays the channel the user last watched in the playlist that just finished loading.
+        /// Only a user playlist switch arms the restore, so auto-loading at startup stays silent.</summary>
+        private void RestoreRememberedChannel(List<Channel> loadedChannels)
+        {
+            try
+            {
+                var key = SourceLoader.TakePendingRestoreKey(CurrentSourceUrl);
+                if (string.IsNullOrWhiteSpace(key)) return;
+
+                // Already watching that very channel (same playlist reloaded): do not reconnect it.
+                if (CurrentChannel != null &&
+                    string.Equals(UserDataStore.ComputeKey(CurrentChannel), key, StringComparison.Ordinal)) return;
+
+                var target = MainWindowSourceLoaderViewModel.FindChannelByKey(loadedChannels, key);
+                if (target == null) return;
+
+                LibmpvIptvClient.Diagnostics.Logger.Info("[SourceLoader] 恢复列表记忆频道 " + target.Name);
+                ChannelPlaybackActions.PlayChannel(target);
+            }
+            catch (Exception ex)
+            {
+                LibmpvIptvClient.Diagnostics.Logger.Error("[RestoreRememberedChannel] " + ex.Message);
             }
         }
 
