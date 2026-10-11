@@ -14,8 +14,6 @@ namespace LibmpvIptvClient
             var ctx = new LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow.FullscreenContext
             {
                 MainWindow = this,
-                Mpv = _mpv,
-                WindowedPanel = VideoPanel,
                 SyncTimeshiftUi = () => { if (on || _shell.IsTimeshiftActive) _overlayManager.SyncTimeshiftUi(); },
                 ResetOverlayForOwner = () => {
                     _overlayManager.ResetOverlayForOwner(
@@ -34,10 +32,6 @@ namespace LibmpvIptvClient
                 TogglePlayPause = () => BtnPlayPause_Click(this, new RoutedEventArgs()),
                 PositionOverlay = () => { _overlayManager.PositionOverlay(); _overlayManager.PositionTopOverlay(); },
                 ShowOverlayWithDelay = _overlayManager.ShowOverlayWithDelay,
-                FsHostPreviewMouseWheel = (e) => FsHost_PreviewMouseWheel(null, e),
-                FsPanelMouseWheel = (e) => FsPanel_MouseWheel(null, e),
-                FsPanelMouseUp = (e) => FsPanel_MouseUp(null, e),
-                FsPanelDoubleClick = () => ToggleFullscreen(false),
                 CollapsePanelColumns = CollapsePanelColumnsForFullscreen,
                 RestorePanelColumns = RestorePanelColumnsForWindowed,
                 CreateTopOverlay = () =>
@@ -205,17 +199,9 @@ namespace LibmpvIptvClient
             try { DrawerColumn.SetCurrentValue(ColumnDefinition.WidthProperty, _shell.DrawerGridLength); } catch { }
         }
 
-        void FsHost_PreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
-        {
-            _fullscreenInputManager?.FsHost_PreviewMouseWheel(sender, e);
-        }
         void FsPanel_MouseWheel(object? sender, System.Windows.Forms.MouseEventArgs e)
         {
             _fullscreenInputManager?.FsPanel_MouseWheel(sender, e);
-        }
-        void FsPanel_MouseUp(object? sender, System.Windows.Forms.MouseEventArgs e)
-        {
-            _fullscreenInputManager?.FsPanel_MouseUp(sender, e);
         }
         internal void ShowFullscreenDrawer()
         {
@@ -255,7 +241,6 @@ namespace LibmpvIptvClient
                 EpgPanel.ClearValue(UIElement.VisibilityProperty);
             }
         }
-        void FsPanel_DoubleClick(object? sender, EventArgs e) => _fullscreenInputManager?.FsPanel_DoubleClick(sender, e);
         string SanitizeUrl(string input)
         {
             return _shell.SourceLoader.SanitizeUrl(input);

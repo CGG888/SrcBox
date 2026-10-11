@@ -20,7 +20,8 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
 
         public void OpenSettings(int tabIndex = 0)
         {
-            var owner = (_shell.WindowStateActions.IsFullscreen && _shell.WindowStateActions.FullscreenWindow != null) ? (Window)_shell.WindowStateActions.FullscreenWindow : _window;
+            // Fullscreen is applied to the main window itself, so the settings window is always owned by it.
+            var owner = (Window)_window;
             try
             {
                 foreach (Window w in System.Windows.Application.Current.Windows)

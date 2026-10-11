@@ -346,11 +346,11 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             RequestMinimalToggle?.Invoke(on);
         }
 
-        private System.Windows.Window GetOwnerWindow()
+        private System.Windows.Window? GetOwnerWindow()
         {
-            return (_shell.WindowStateActions.IsFullscreen && _shell.WindowStateActions.FullscreenWindow != null) 
-                ? (System.Windows.Window)_shell.WindowStateActions.FullscreenWindow 
-                : System.Windows.Application.Current.MainWindow;
+            // Fullscreen is applied to the main window itself, so it is always the owner of the menus.
+            return LibmpvIptvClient.Helpers.OwnerWindowResolver.MainWindow
+                   ?? System.Windows.Application.Current?.MainWindow;
         }
 
         public List<MenuItemViewModel> BuildSourceMenuItems()

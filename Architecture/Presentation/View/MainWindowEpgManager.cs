@@ -442,8 +442,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 if (ctx == null) return;
                 var now = DateTime.Now;
                 if (!_shell.EpgReminderActions.CanCreateReminder(ctx, now)) return;
-                var ownerWin = (_shell.WindowStateActions.IsFullscreen && _shell.WindowStateActions.FullscreenWindow != null) ? (Window)_shell.WindowStateActions.FullscreenWindow : _window;
-                var dlg = new ReminderDialog(_shell.CurrentChannel.Name, ctx.Title, ctx.Start) { Owner = ownerWin, WindowStartupLocation = WindowStartupLocation.CenterOwner, Topmost = _shell.WindowStateActions.IsFullscreen };
+                var dlg = new ReminderDialog(_shell.CurrentChannel.Name, ctx.Title, ctx.Start) { Owner = _window, WindowStartupLocation = WindowStartupLocation.CenterOwner, Topmost = _shell.WindowStateActions.IsFullscreen };
                 if (dlg.ShowDialog() == true)
                 {
                     var r = _shell.EpgReminderActions.BuildReminder(_shell.CurrentChannel, ctx, dlg.PreAlertSeconds, dlg.Action, null, dlg.RecordMode, dlg.RecordDurationMin);
@@ -465,8 +464,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                     var oldBooked = ctx.IsBooked;
                     ctx.IsBooked = true;
                     try { _window.ListEpg.Items.Refresh(); } catch { }
-                    var ownerWin = (_shell.WindowStateActions.IsFullscreen && _shell.WindowStateActions.FullscreenWindow != null) ? (Window)_shell.WindowStateActions.FullscreenWindow : _window;
-                    var dlg = new ReminderDialog(_shell.CurrentChannel.Name, ctx.Title, ctx.Start) { Owner = ownerWin, WindowStartupLocation = WindowStartupLocation.CenterOwner, Topmost = _shell.WindowStateActions.IsFullscreen };
+                    var dlg = new ReminderDialog(_shell.CurrentChannel.Name, ctx.Title, ctx.Start) { Owner = _window, WindowStartupLocation = WindowStartupLocation.CenterOwner, Topmost = _shell.WindowStateActions.IsFullscreen };
                     if (dlg.ShowDialog() == true)
                     {
                         var r = _shell.EpgReminderActions.BuildReminder(_shell.CurrentChannel, ctx, dlg.PreAlertSeconds, dlg.Action, dlg.PlayMode, dlg.RecordMode, dlg.RecordDurationMin);

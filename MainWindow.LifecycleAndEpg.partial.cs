@@ -70,8 +70,7 @@ namespace LibmpvIptvClient
                     var yesLine = LibmpvIptvClient.Helpers.Localizer.S("CloseConfirm_LineYes", "是：退出软件");
                     var noLine = LibmpvIptvClient.Helpers.Localizer.S("CloseConfirm_LineNo", "否：最小化到系统托盘");
                     var msg = label + Environment.NewLine + Environment.NewLine + yesLine + Environment.NewLine + noLine;
-                    var owner = (_shell.WindowStateActions.IsFullscreen && _shell.WindowStateActions.FullscreenWindow != null) ? (Window)_shell.WindowStateActions.FullscreenWindow : this;
-                    var (r, remember) = ModernMessageBox.ShowWithRemember(owner, msg, title, MessageBoxButton.YesNo);
+                    var (r, remember) = ModernMessageBox.ShowWithRemember(this, msg, title, MessageBoxButton.YesNo);
                     if (r.HasValue && r.Value == true)
                     {
                         if (remember)
@@ -415,11 +414,6 @@ namespace LibmpvIptvClient
                 _overlayManager.Close();
                 SourceHealthService.Instance.Stop();
                 try { _recordingManager?.Close(); } catch { }
-                if (_shell.WindowStateActions.FullscreenWindow != null)
-                {
-                    _shell.WindowStateActions.FullscreenWindow.Close();
-                    _shell.WindowStateActions.FullscreenWindow = null;
-                }
                 if (_mpv != null)
                 {
                     _mpv.Dispose();

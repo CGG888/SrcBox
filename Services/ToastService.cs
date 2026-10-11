@@ -26,9 +26,7 @@ namespace LibmpvIptvClient.Services
         {
             System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
             {
-                var owner = System.Windows.Application.Current?.Windows.OfType<FullscreenWindow>().FirstOrDefault(w => w.IsVisible)
-                            as System.Windows.Window
-                            ?? System.Windows.Application.Current?.Windows.OfType<MainWindow>().FirstOrDefault();
+                var owner = Helpers.OwnerWindowResolver.MainWindow as System.Windows.Window;
                 var win = new ReminderToastWindow(channelId, channelName, program, startLocal, logoPath, isDue, null, null, false);
                 try { if (owner != null) { win.Owner = owner; win.Topmost = true; } } catch { }
                 ApplyKind(win, isDue ? ToastKind.ProgramStart : ToastKind.Appointment);
@@ -39,9 +37,7 @@ namespace LibmpvIptvClient.Services
         {
             System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
             {
-                var owner = System.Windows.Application.Current?.Windows.OfType<FullscreenWindow>().FirstOrDefault(w => w.IsVisible)
-                            as System.Windows.Window
-                            ?? System.Windows.Application.Current?.Windows.OfType<MainWindow>().FirstOrDefault();
+                var owner = Helpers.OwnerWindowResolver.MainWindow as System.Windows.Window;
                 var win = new ReminderToastWindow(channelId, channelName, program, startLocal, logoPath, true, null, null, true, playMode ?? "default", countdownSec);
                 try { if (owner != null) { win.Owner = owner; win.Topmost = true; } } catch { }
                 ApplyKind(win, ToastKind.ProgramStart, null);
@@ -53,9 +49,7 @@ namespace LibmpvIptvClient.Services
         {
             System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
             {
-                var owner = System.Windows.Application.Current?.Windows.OfType<FullscreenWindow>().FirstOrDefault(w => w.IsVisible)
-                            as System.Windows.Window
-                            ?? System.Windows.Application.Current?.Windows.OfType<MainWindow>().FirstOrDefault();
+                var owner = Helpers.OwnerWindowResolver.MainWindow as System.Windows.Window;
                 bool isRecordBack = string.Equals(recordType, "back", StringComparison.OrdinalIgnoreCase);
                 var win = new ReminderToastWindow(channelId, channelName, program, startLocal, logoPath, true, null, null, true, playMode ?? "default", countdownSec, isRecordBack);
                 try { if (owner != null) { win.Owner = owner; win.Topmost = true; } } catch { }
@@ -68,9 +62,7 @@ namespace LibmpvIptvClient.Services
         {
             System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
             {
-                var owner = System.Windows.Application.Current?.Windows.OfType<FullscreenWindow>().FirstOrDefault(w => w.IsVisible)
-                            as System.Windows.Window
-                            ?? System.Windows.Application.Current?.Windows.OfType<MainWindow>().FirstOrDefault();
+                var owner = Helpers.OwnerWindowResolver.MainWindow as System.Windows.Window;
                 bool isRecordBack = string.Equals(recordType, "back", StringComparison.OrdinalIgnoreCase);
                 var statusText = isRecordBack
                     ? LibmpvIptvClient.Helpers.ResxLocalizer.Get("Recording_BackStopped", "后台录制已停止")

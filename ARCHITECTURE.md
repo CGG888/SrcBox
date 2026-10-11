@@ -286,12 +286,11 @@ Windows/
 │   ├── ReminderListWindow.xaml     # 预约列表
 │   └── ScheduledRecordingListWindow.xaml  # 预约录制列表
 │
-├── Others/               # 其他窗口 (6 对)
+├── Others/               # 其他窗口 (5 对)
 │   ├── AboutWindow.xaml            # 关于窗口
 │   ├── AddM3uWindow.xaml           # 添加 M3U
 │   ├── DebugWindow.xaml            # 调试窗口
 │   ├── EditM3uWindow.xaml          # 编辑 M3U
-│   ├── FullscreenWindow.xaml       # 全屏窗口
 │   └── UploadQueueWindow.xaml      # 上传队列
 │
 └── Settings/             # 设置窗口 (2 对)

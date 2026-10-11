@@ -48,16 +48,9 @@ namespace LibmpvIptvClient.Helpers
                 bool isFs = false;
                 try
                 {
-                    var fs = System.Windows.Application.Current?.Windows.OfType<FullscreenWindow>().FirstOrDefault();
-                    if (fs != null && fs.IsVisible)
-                    {
-                        _instance.Owner = fs; isFs = true;
-                    }
-                    else
-                    {
-                        var mw = System.Windows.Application.Current?.Windows.OfType<MainWindow>().FirstOrDefault();
-                        if (mw != null) _instance.Owner = mw;
-                    }
+                    // Fullscreen is applied to the main window itself, so the main window is also the owner to use.
+                    var mw = OwnerWindowResolver.MainWindow;
+                    if (mw != null) { _instance.Owner = mw; isFs = OwnerWindowResolver.IsOwnerTopmost; }
                 }
                 catch { }
                 _instance.Show();
@@ -75,16 +68,7 @@ namespace LibmpvIptvClient.Helpers
                     {
                         try
                         {
-                            if (isFs)
-                            {
-                                var fs2 = System.Windows.Application.Current?.Windows.OfType<FullscreenWindow>().FirstOrDefault();
-                                fs2?.Activate();
-                            }
-                            else
-                            {
-                                var mw2 = System.Windows.Application.Current?.Windows.OfType<MainWindow>().FirstOrDefault();
-                                mw2?.Activate();
-                            }
+                            OwnerWindowResolver.MainWindow?.Activate();
                         }
                         catch { }
                     };
@@ -104,8 +88,7 @@ namespace LibmpvIptvClient.Helpers
             {
                 if (_instance == null || !_instance.IsVisible) return;
                 if (_autoFollow) CenterOverMain();
-                var fs = System.Windows.Application.Current?.Windows.OfType<FullscreenWindow>().FirstOrDefault();
-                _instance.Topmost = (fs != null && fs.IsVisible) || _instance.Owner == null;
+                _instance.Topmost = OwnerWindowResolver.IsOwnerTopmost || _instance.Owner == null;
             }
             catch { }
         }

@@ -15,7 +15,6 @@ namespace LibmpvIptvClient.Tests
         {
             var vm = new MainWindowWindowStateActionsViewModel();
             Assert.IsFalse(vm.IsFullscreen);
-            Assert.IsNull(vm.FullscreenWindow);
         }
 
         [TestMethod]
@@ -27,8 +26,6 @@ namespace LibmpvIptvClient.Tests
             vm.ToggleFullscreen(false, new FullscreenContext());
 
             Assert.IsFalse(vm.IsFullscreen);
-            Assert.IsNull(vm.FullscreenWindow);
-            Assert.IsNull(vm.FullscreenPanel);
         }
 
         [TestMethod]
