@@ -430,6 +430,7 @@ namespace LibmpvIptvClient
                 {
                     _recordingManager?.Initialize();
                     InitializeAutoLoad();
+                    StartBackgroundUpdateCheck();
                 }), System.Windows.Threading.DispatcherPriority.Background);
             }
             catch (Exception ex)
@@ -444,6 +445,24 @@ namespace LibmpvIptvClient
         void InitializeAppServices()
         {
             _startupManager?.InitializeAppServices();
+        }
+
+        void StartBackgroundUpdateCheck()
+        {
+            _startupManager?.StartBackgroundUpdateCheck();
+        }
+
+        void BtnUpdateBadge_Click(object sender, RoutedEventArgs e)
+        {
+            _shell.UpdateBadge.OpenUpdateFlow();
+        }
+
+        /// <summary>
+        /// Mirrors the title-bar badge state onto the (auto-hiding) fullscreen overlay window.
+        /// </summary>
+        void SyncUpdateBadgeToTopOverlay()
+        {
+            try { _shell.WindowStateActions.TopOverlay?.SetUpdateBadgeVisible(_shell.UpdateBadge.HasNewVersion); } catch { }
         }
 
         IPlayerEngine InitializePlayer()
@@ -556,7 +575,8 @@ namespace LibmpvIptvClient
             _shell.ShortcutActions.RequestVolumeDown += () => AdjustVolumeByWheel(-120);
             _shell.ShortcutActions.RequestToggleMinimalMode += (on) => _shell.MenuActions.ToggleMinimalMode(on);
             _shell.ShortcutActions.RequestOpenSettings += () => OpenSettings();
-            _shell.ShortcutActions.RequestShowAbout += () => _shell.MenuActions.ShowAbout();
+            _shell.UpdateBadge.RequestOpenUpdateFlow += () => OpenSettings(0, triggerUpdateCheck: true);
+            _shell.UpdateBadge.Changed += SyncUpdateBadgeToTopOverlay;
             _shell.ShortcutActions.RequestShowShortcuts += () => ShowShortcuts();
             _shell.ShortcutActions.RequestStartRecording += () => { try { _recordingManager?.ToggleRecordNow(); } catch { } };
             _shell.ShortcutActions.RequestOpenMultiScreen += (count) => OpenMultiScreen(count);
@@ -679,12 +699,14 @@ namespace LibmpvIptvClient
                                         return true;
                                     }
                                     return false;
-                                }
+                                },
+                                OpenUpdateFlow: () => OpenSettings(0, triggerUpdateCheck: true)
                             ));
                             try { _shell.WindowStateActions.TopOverlay.Height = 28; } catch { }
                             try { _shell.WindowStateActions.TopOverlay.Show(); } catch { }
                             try { _overlayManager.PositionTopOverlay(); } catch { }
                             try { _shell.WindowStateActions.TopOverlay.SyncWindowVisual(false, WindowState, _shell.IsMinimalMode); } catch { }
+                            SyncUpdateBadgeToTopOverlay();
                         }
                     }
                     catch { }

@@ -395,10 +395,9 @@
   <sys:String x:Key="EPG_Status_LocalFile">本地</sys:String>
 
   <!-- About -->
-  <sys:String x:Key="About_TitleBar">關於 源匣 (SrcBox)</sys:String>
   <sys:String x:Key="About_Desc1">基於 libmpv 的高效能 Windows IPTV 播放器。</sys:String>
   <sys:String x:Key="About_Desc2">支援 M3U、EPG、回看等功能。</sys:String>
-  <sys:String x:Key="About_Update">更新</sys:String>
+  <sys:String x:Key="Update_NewVersionBadge">發現新版本，點擊查看更新</sys:String>
   <sys:String x:Key="App_DescShort">支援組播/單播、EPG、回看與時移的播放器</sys:String>
 
   <!-- M3U Edit -->
@@ -542,7 +541,6 @@
   <sys:String x:Key="Shortcuts_Other">其他</sys:String>
   <sys:String x:Key="Shortcuts_DebugWindow">除錯視窗</sys:String>
   <sys:String x:Key="Shortcuts_Settings">設定</sys:String>
-  <sys:String x:Key="Shortcuts_About">關於</sys:String>
   <sys:String x:Key="Shortcuts_ShortcutsHelp">快捷鍵說明</sys:String>
   <sys:String x:Key="Shortcuts_ExitMinimal">退出精簡模式</sys:String>
   <sys:String x:Key="Shortcuts_Exit">退出</sys:String>
@@ -600,7 +598,6 @@
   <sys:String x:Key="UI_TimeOverride_TabTitle">時間覆蓋</sys:String>
 
   <!-- Menu - Missing -->
-  <sys:String x:Key="Menu_About">關於</sys:String>
   <sys:String x:Key="Menu_Application">應用</sys:String>
   <sys:String x:Key="Menu_AspectRatio">畫面比例</sys:String>
   <sys:String x:Key="Menu_ClearCloseMode">清除關閉記憶</sys:String>

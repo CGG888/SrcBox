@@ -65,11 +65,4 @@ public sealed class MainWindowDialogActionsViewModel : ViewModelBase
         }
         return null;
     }
-
-    public LibmpvIptvClient.AboutWindow CreateAboutDialog(System.Windows.Window owner, bool topmost)
-    {
-        var dlg = new LibmpvIptvClient.AboutWindow { Owner = owner, WindowStartupLocation = System.Windows.WindowStartupLocation.CenterOwner };
-        try { dlg.Topmost = topmost; } catch { }
-        return dlg;
-    }
 }

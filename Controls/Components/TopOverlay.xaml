@@ -169,6 +169,11 @@
                         <TextBlock Text="{DynamicResource App_Name}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                     </StackPanel>
                 </Button>
+                <!-- New release indicator: visibility is driven by SetUpdateBadgeVisible (no DataContext here) -->
+                <Button x:Name="BtnUpdateBadge" Click="BtnUpdateBadge_Click" Visibility="Collapsed"
+                        ToolTip="{DynamicResource Update_NewVersionBadge}" VerticalAlignment="Center">
+                    <Ellipse Width="9" Height="9" Fill="#E5484D" Margin="6,0,4,0" VerticalAlignment="Center"/>
+                </Button>
             </StackPanel>
 
             <!-- Right: Window Buttons -->

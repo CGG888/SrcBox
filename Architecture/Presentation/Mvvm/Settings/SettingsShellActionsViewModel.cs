@@ -23,13 +23,6 @@ public sealed class SettingsShellActionsViewModel : ViewModelBase
         OpenUrlInternal(url);
     }
 
-    public AboutWindow CreateAboutDialog(Window owner, bool topmost)
-    {
-        var dlg = new AboutWindow { Owner = owner, WindowStartupLocation = WindowStartupLocation.CenterOwner };
-        try { dlg.Topmost = topmost; } catch { }
-        return dlg;
-    }
-
     public void RaiseDebug(Action? debugRequested)
     {
         try { debugRequested?.Invoke(); } catch { }

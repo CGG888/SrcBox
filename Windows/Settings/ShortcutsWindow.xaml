@@ -168,9 +168,6 @@
                         <TextBlock Grid.Row="1" Grid.Column="0" Text="Ctrl+," Foreground="#FFD0D0D0" FontFamily="Consolas"/>
                         <TextBlock Grid.Row="1" Grid.Column="1" Text="{DynamicResource Shortcuts_Settings}" Foreground="White" Margin="20,0,0,4"/>
 
-                        <TextBlock Grid.Row="2" Grid.Column="0" Text="Ctrl+I" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
-                        <TextBlock Grid.Row="2" Grid.Column="1" Text="{DynamicResource Shortcuts_About}" Foreground="White" Margin="20,0,0,4"/>
-
                         <TextBlock Grid.Row="3" Grid.Column="0" Text="Ctrl+/" Foreground="#FFD0D0D0" FontFamily="Consolas"/>
                         <TextBlock Grid.Row="3" Grid.Column="1" Text="{DynamicResource Shortcuts_ShortcutsHelp}" Foreground="White" Margin="20,0,0,4"/>
 

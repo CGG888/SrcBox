@@ -395,6 +395,21 @@
                             <TextBlock Text="{DynamicResource App_Name}" FontSize="14" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
+                    <!-- New release indicator: lights up only when a newer version was found -->
+                    <Button x:Name="BtnUpdateBadge" Click="BtnUpdateBadge_Click" ToolTip="{DynamicResource Update_NewVersionBadge}"
+                            VerticalAlignment="Center">
+                        <Button.Style>
+                            <Style TargetType="Button" BasedOn="{StaticResource TitleBtnStyle}">
+                                <Setter Property="Visibility" Value="Collapsed"/>
+                                <Style.Triggers>
+                                    <DataTrigger Binding="{Binding UpdateBadge.HasNewVersion}" Value="True">
+                                        <Setter Property="Visibility" Value="Visible"/>
+                                    </DataTrigger>
+                                </Style.Triggers>
+                            </Style>
+                        </Button.Style>
+                        <Ellipse Width="9" Height="9" Fill="#E5484D" Margin="6,0,4,0" VerticalAlignment="Center"/>
+                    </Button>
                 </StackPanel>
 
                 <!-- Right: Window Buttons -->

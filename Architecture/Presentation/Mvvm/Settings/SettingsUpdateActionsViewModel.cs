@@ -1,4 +1,5 @@
 using LibmpvIptvClient.Architecture.Application.Shared;
+using LibmpvIptvClient.Architecture.Application.Settings;
 
 namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.Settings;
 
@@ -6,7 +7,7 @@ public sealed record UpdateCheckInteractionResult(
     bool ShowBadge,
     bool ShouldPromptUpdate,
     string PromptMessage,
-    AboutWindow.ReleaseInfo? ReleaseInfo,
+    ReleaseInfo? ReleaseInfo,
     bool ShouldShowInfo,
     string InfoMessage,
     string Title);

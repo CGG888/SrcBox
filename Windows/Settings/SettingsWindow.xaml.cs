@@ -892,16 +892,6 @@ namespace LibmpvIptvClient
         {
             _shellActionsViewModel.RaiseDebug(DebugRequested);
         }
-        void BtnOpenAbout_Click(object sender, RoutedEventArgs e)
-        {
-            try
-            {
-                var owner = this.Owner ?? this;
-                var dlg = _shellActionsViewModel.CreateAboutDialog(owner, this.Topmost);
-                dlg.ShowDialog();
-            }
-            catch { }
-        }
         async void BtnCheckUpdateInline_Click(object sender, RoutedEventArgs e)
         {
             try
@@ -1104,6 +1094,11 @@ namespace LibmpvIptvClient
             }
             catch { }
         }
+        /// <summary>
+        /// Runs the update check on demand (used by the title-bar badge click).
+        /// </summary>
+        public void TriggerUpdateCheck() => _ = CheckUpdateInlineAsync(true);
+
         async System.Threading.Tasks.Task CheckUpdateInlineAsync(bool interactive)
         {
             try

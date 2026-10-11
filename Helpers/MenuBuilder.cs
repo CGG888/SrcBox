@@ -15,7 +15,6 @@ namespace LibmpvIptvClient.Helpers
             Action<M3uSource>? editM3u,
             Action<M3uSource>? loadM3u,
             Action? openSettings,
-            Action? showAbout,
             Action? exitApp,
             Action<bool>? toggleFcc,
             Action<bool>? toggleUdp,
@@ -387,10 +386,6 @@ namespace LibmpvIptvClient.Helpers
             var miSettings = new MenuItem { Header = Localizer.S("Menu_Settings", "设置"), InputGestureText = "Ctrl+," };
             Wire(miSettings, openSettings);
             miApp.Items.Add(miSettings);
-
-            var miAbout = new MenuItem { Header = Localizer.S("Menu_About", "关于"), InputGestureText = "Ctrl+I" };
-            Wire(miAbout, showAbout);
-            miApp.Items.Add(miAbout);
 
             var miTopmost = new MenuItem
             {

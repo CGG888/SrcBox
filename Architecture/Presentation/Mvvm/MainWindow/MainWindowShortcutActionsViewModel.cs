@@ -32,7 +32,6 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow;
     VolumeDown,
     ToggleMinimalMode,
     OpenSettings,
-    ShowAbout,
     ShowShortcuts,
     StartRecording,
     OpenMultiScreen4,
@@ -57,7 +56,6 @@ public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
     public event System.Action? RequestVolumeDown;
     public event System.Action<bool>? RequestToggleMinimalMode;
     public event System.Action? RequestOpenSettings;
-    public event System.Action? RequestShowAbout;
     public event System.Action? RequestShowShortcuts;
     public event System.Action? RequestStartRecording;
     public event System.Action<int>? RequestOpenMultiScreen;
@@ -105,7 +103,6 @@ public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
             Key.OemMinus => MainWindowShortcutAction.VolumeDown,
             Key.Subtract => MainWindowShortcutAction.VolumeDown,
             Key.L => isCtrlPressed && isShiftPressed ? MainWindowShortcutAction.ToggleMinimalMode : (!isCtrlPressed ? MainWindowShortcutAction.ToggleDrawer : MainWindowShortcutAction.None),
-            Key.I => isCtrlPressed ? MainWindowShortcutAction.ShowAbout : MainWindowShortcutAction.None,
             Key.OemQuestion => isCtrlPressed ? MainWindowShortcutAction.ShowShortcuts : MainWindowShortcutAction.None,
             Key.OemComma => isCtrlPressed ? MainWindowShortcutAction.OpenSettings : MainWindowShortcutAction.None,
             Key.R => !isCtrlPressed ? MainWindowShortcutAction.StartRecording : MainWindowShortcutAction.None,
@@ -199,9 +196,6 @@ public sealed class MainWindowShortcutActionsViewModel : ViewModelBase
                 break;
             case MainWindowShortcutAction.OpenSettings:
                 RequestOpenSettings?.Invoke();
-                break;
-            case MainWindowShortcutAction.ShowAbout:
-                RequestShowAbout?.Invoke();
                 break;
             case MainWindowShortcutAction.ShowShortcuts:
                 RequestShowShortcuts?.Invoke();

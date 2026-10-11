@@ -54,6 +54,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         public MainWindowDragDropActionsViewModel DragDropActions { get; }
         public MainWindowWindowStateActionsViewModel WindowStateActions { get; } = new();
         public MainWindowMediaInfoViewModel MediaInfo { get; }
+        public MainWindowUpdateBadgeActionsViewModel UpdateBadge { get; } = new();
 
         private double _volume = 60;
         public double Volume

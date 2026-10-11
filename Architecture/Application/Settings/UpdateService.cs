@@ -9,10 +9,21 @@ using System.Reflection;
 
 namespace LibmpvIptvClient.Architecture.Application.Settings;
 
+/// <summary>
+/// Release metadata shared by the update service, the update dialog and the settings page.
+/// </summary>
+public sealed class ReleaseInfo
+{
+    public string Version { get; set; } = "";
+    public string Notes { get; set; } = "";
+    public string DownloadUrl { get; set; } = "";
+    public string FileName { get; set; } = "";
+}
+
 public sealed record UpdateCheckResult(
     bool IsNewer,
     string CurrentVersion,
-    AboutWindow.ReleaseInfo? ReleaseInfo,
+    ReleaseInfo? ReleaseInfo,
     string ErrorMessage);
 
 public interface IUpdateService
@@ -83,7 +94,7 @@ public class GithubUpdateService : IUpdateService
         catch { return false; }
     }
 
-    private async Task<AboutWindow.ReleaseInfo?> FetchLatestReleaseAsync(string apiUrl, bool useCdn, CancellationToken cancellationToken)
+    private async Task<ReleaseInfo?> FetchLatestReleaseAsync(string apiUrl, bool useCdn, CancellationToken cancellationToken)
     {
         var urls = new List<string> { apiUrl };
         
@@ -149,7 +160,7 @@ public class GithubUpdateService : IUpdateService
                 }
                 
                 var ver = (tag ?? root.GetProperty("name").GetString() ?? "").Trim().TrimStart('v', 'V');
-                return new AboutWindow.ReleaseInfo { Version = ver, Notes = body ?? "", DownloadUrl = assetUrl, FileName = assetName };
+                return new ReleaseInfo { Version = ver, Notes = body ?? "", DownloadUrl = assetUrl, FileName = assetName };
             }
             catch { }
         }

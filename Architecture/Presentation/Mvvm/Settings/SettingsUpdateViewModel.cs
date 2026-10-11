@@ -7,7 +7,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.Settings;
 public sealed class SettingsUpdateViewModel : ViewModelBase
 {
     private readonly IUpdateService _updateService;
-    private AboutWindow.ReleaseInfo? _latestRelease;
+    private ReleaseInfo? _latestRelease;
 
     public string CurrentVersion { get; }
 
@@ -17,7 +17,7 @@ public sealed class SettingsUpdateViewModel : ViewModelBase
         CurrentVersion = _updateService.GetCurrentVersion();
     }
 
-    public async Task<(bool IsNewer, AboutWindow.ReleaseInfo? ReleaseInfo, string Message)> CheckUpdateAsync(bool interactive, CancellationToken cancellationToken = default)
+    public async Task<(bool IsNewer, ReleaseInfo? ReleaseInfo, string Message)> CheckUpdateAsync(bool interactive, CancellationToken cancellationToken = default)
     {
         var result = await _updateService.CheckForUpdatesAsync(interactive, cancellationToken);
         
@@ -34,7 +34,7 @@ public sealed class SettingsUpdateViewModel : ViewModelBase
         return (true, result.ReleaseInfo, string.Empty);
     }
 
-    public AboutWindow.ReleaseInfo? GetLatestRelease()
+    public ReleaseInfo? GetLatestRelease()
     {
         return _latestRelease;
     }

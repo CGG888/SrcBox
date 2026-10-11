@@ -2,6 +2,8 @@ using System;
 using System.IO;
 using System.Linq;
 using System.Windows;
+using LibmpvIptvClient.Architecture.Application.Settings;
+using LibmpvIptvClient.Architecture.Core;
 using LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow;
 using LibmpvIptvClient.Diagnostics;
 using LibmpvIptvClient.Helpers;
@@ -84,6 +86,66 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             // No full-list source health scan on startup: sources are probed only when their
             // channel starts playing (SourceHealthService.ProbeChannelSourcesAsync) so ONU /
             // modem line limits are not consumed at launch.
+        }
+
+        /// <summary>
+        /// Starts the silent version check in the background. Throttled by
+        /// <see cref="MainWindowUpdateBadgeActionsViewModel.CheckInterval"/>, it never prompts
+        /// the user and never blocks startup; a newer release only lights the title-bar badge.
+        /// </summary>
+        public void StartBackgroundUpdateCheck()
+        {
+            try
+            {
+                if (!MainWindowUpdateBadgeActionsViewModel.IsCheckDue(AppSettings.Current.LastUpdateCheckUtc, DateTime.UtcNow))
+                {
+                    return;
+                }
+
+                _ = RunUpdateCheckAsync();
+            }
+            catch (Exception ex)
+            {
+                try { Logger.Debug("[Update] 启动检查跳过: " + ex.Message); } catch { }
+            }
+        }
+
+        private async System.Threading.Tasks.Task RunUpdateCheckAsync()
+        {
+            try
+            {
+                var service = ResolveUpdateService();
+                var result = await service.CheckForUpdatesAsync(useCdn: true).ConfigureAwait(false);
+
+                // Record the attempt even when it failed, otherwise an offline machine would
+                // retry on every launch.
+                try
+                {
+                    AppSettings.Current.LastUpdateCheckUtc = DateTime.UtcNow;
+                    AppSettings.Current.Save();
+                }
+                catch { }
+
+                if (!result.IsNewer || result.ReleaseInfo == null)
+                {
+                    return;
+                }
+
+                _window.Dispatcher.Invoke(() =>
+                {
+                    try { _shell.UpdateBadge.Apply(result); } catch { }
+                });
+            }
+            catch (Exception ex)
+            {
+                try { Logger.Debug("[Update] 静默检查失败: " + ex.Message); } catch { }
+            }
+        }
+
+        private static IUpdateService ResolveUpdateService()
+        {
+            try { return SrcBoxArchitectureHost.Kernel.Resolve<IUpdateService>(); }
+            catch { return new GithubUpdateService(HttpClientService.Instance.Client); }
         }
 
         private void OnRecordingTriggered(object? sender, ScheduledRecordingTriggerArgs e)

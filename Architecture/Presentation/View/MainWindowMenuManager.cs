@@ -121,7 +121,6 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 editM3u: (s) => _shell.MenuActions.EditM3u(s),
                 loadM3u: (s) => _shell.MenuActions.LoadM3u(s),
                 openSettings: () => _window.Dispatcher.Invoke(() => OpenSettings()),
-                showAbout: () => _shell.MenuActions.ShowAbout(),
                 exitApp: () => _shell.MenuActions.ExitApp(),
                 toggleFcc: (on) => _shell.MenuActions.ToggleFcc(on),
                 toggleUdp: (on) => _shell.MenuActions.ToggleUdp(on),

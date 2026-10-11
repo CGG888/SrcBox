@@ -18,7 +18,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             _overlayManager = overlayManager;
         }
 
-        public void OpenSettings(int tabIndex = 0)
+        public void OpenSettings(int tabIndex = 0, bool triggerUpdateCheck = false)
         {
             // Fullscreen is applied to the main window itself, so the settings window is always owned by it.
             var owner = (Window)_window;
@@ -35,6 +35,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                         try { existing.Owner = owner; } catch { }
                         try { existing.SelectTab(tabIndex); } catch { }
                         try { existing.Activate(); existing.Topmost = existing.Topmost; } catch { }
+                        if (triggerUpdateCheck) { try { existing.TriggerUpdateCheck(); } catch { } }
                         return;
                     }
                 }
@@ -50,6 +51,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             dlg.ApplySettingsRequested += ApplySettings;
             try { dlg.SelectTab(tabIndex); } catch { }
             dlg.Show();
+            if (triggerUpdateCheck) { try { dlg.TriggerUpdateCheck(); } catch { } }
         }
 
         private void ApplySettings(PlaybackSettings settings)

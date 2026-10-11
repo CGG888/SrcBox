@@ -94,9 +94,11 @@ namespace LibmpvIptvClient
                                     return true;
                                 }
                                 return false;
-                            }
+                            },
+                            OpenUpdateFlow: () => OpenSettings(0, triggerUpdateCheck: true)
                         ));
                         try { _shell.WindowStateActions.TopOverlay.SyncWindowVisual(true, WindowState.Maximized, _shell.IsMinimalMode); } catch { }
+                        SyncUpdateBadgeToTopOverlay();
                     }
                 },
                 SyncEpgVisibility = () =>

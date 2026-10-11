@@ -164,9 +164,9 @@ namespace LibmpvIptvClient
         }
         internal void UpdatePlayPauseIconFromManager() => UpdatePlayPauseIcon();
 
-        internal void OpenSettings(int tabIndex = 0)
+        internal void OpenSettings(int tabIndex = 0, bool triggerUpdateCheck = false)
         {
-            _settingsManager?.OpenSettings(tabIndex);
+            _settingsManager?.OpenSettings(tabIndex, triggerUpdateCheck);
         }
 
         internal void ShowShortcuts()

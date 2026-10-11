@@ -20,6 +20,8 @@ namespace LibmpvIptvClient
         public event Action? AddM3u;
         public event Action? AddM3uFile;
         public event Action? ExitApp;
+        /// <summary>Raised when the new-release dot is clicked.</summary>
+        public event Action? OpenUpdateFlow;
         public event Action<M3uSource>? LoadM3u;
         public event Action<M3uSource>? EditM3u;
         public event Action<bool>? FccChanged;
@@ -69,6 +71,19 @@ namespace LibmpvIptvClient
         public void SetCloseVisible(bool visible)
         {
             try { if (BtnClose != null) BtnClose.Visibility = visible ? Visibility.Visible : Visibility.Collapsed; } catch { }
+        }
+
+        /// <summary>
+        /// Shows or hides the new-release dot next to the title button.
+        /// </summary>
+        public void SetUpdateBadgeVisible(bool visible)
+        {
+            try { if (BtnUpdateBadge != null) BtnUpdateBadge.Visibility = visible ? Visibility.Visible : Visibility.Collapsed; } catch { }
+        }
+
+        private void BtnUpdateBadge_Click(object sender, RoutedEventArgs e)
+        {
+            try { OpenUpdateFlow?.Invoke(); } catch { }
         }
 
         public void SyncWindowVisual(bool isFullscreenOwner, WindowState ownerState, bool minimalOn)
@@ -127,7 +142,6 @@ namespace LibmpvIptvClient
                 editM3u: EditM3u,
                 loadM3u: LoadM3u,
                 openSettings: OpenSettings,
-                showAbout: null,
                 exitApp: ExitApp,
                 toggleFcc: (on) =>
                 {

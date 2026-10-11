@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Threading;
 using LibmpvIptvClient.Services;
+using LibmpvIptvClient.Architecture.Application.Settings;
 using Downloader;
 using System.Net;
 
@@ -14,7 +15,7 @@ namespace LibmpvIptvClient
 {
     public partial class UpdateDialog : Window
     {
-        private readonly AboutWindow.ReleaseInfo? _info;
+        private readonly ReleaseInfo? _info;
         private HttpClient _http => LibmpvIptvClient.Services.HttpClientService.Instance.Client;
         private string _downloadPath = "";
         private int _cdnCount = 0;
@@ -27,7 +28,7 @@ namespace LibmpvIptvClient
             public string Url { get; set; } = "";
             public override string ToString() => Name;
         }
-        public UpdateDialog(AboutWindow.ReleaseInfo? info)
+        public UpdateDialog(ReleaseInfo? info)
         {
             InitializeComponent();
             _info = info;

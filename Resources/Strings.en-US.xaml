@@ -410,10 +410,9 @@
   <sys:String x:Key="UI_Future">Future</sys:String>
 
   <!-- About -->
-  <sys:String x:Key="About_TitleBar">About SrcBox</sys:String>
   <sys:String x:Key="About_Desc1">High-performance Windows IPTV player powered by libmpv.</sys:String>
   <sys:String x:Key="About_Desc2">Supports M3U playlists, EPG, catch-up and more.</sys:String>
-  <sys:String x:Key="About_Update">Update</sys:String>
+  <sys:String x:Key="Update_NewVersionBadge">A new version is available - click to view</sys:String>
   <sys:String x:Key="App_DescShort">SrcBox with multicast/unicast, EPG, catch-up and timeshift</sys:String>
   
   <!-- M3U Edit -->
@@ -553,7 +552,6 @@
   <sys:String x:Key="Shortcuts_Other">Other</sys:String>
   <sys:String x:Key="Shortcuts_DebugWindow">Debug Window</sys:String>
   <sys:String x:Key="Shortcuts_Settings">Settings</sys:String>
-  <sys:String x:Key="Shortcuts_About">About</sys:String>
   <sys:String x:Key="Shortcuts_ShortcutsHelp">Shortcuts Help</sys:String>
   <sys:String x:Key="Shortcuts_ExitMinimal">Exit Minimal Mode</sys:String>
   <sys:String x:Key="Shortcuts_Exit">Exit</sys:String>
@@ -611,7 +609,6 @@
   <sys:String x:Key="UI_TimeOverride_TabTitle">Time Override</sys:String>
 
   <!-- Menu - Missing -->
-  <sys:String x:Key="Menu_About">About</sys:String>
   <sys:String x:Key="Menu_Application">Application</sys:String>
   <sys:String x:Key="Menu_AspectRatio">Aspect Ratio</sys:String>
   <sys:String x:Key="Menu_ClearCloseMode">Clear Close Mode</sys:String>

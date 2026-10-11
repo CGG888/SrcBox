@@ -51,7 +51,8 @@ public sealed record TopOverlayBindingContext(
     Func<bool>? IsMinimalMode,
     Func<string>? GetCurrentAspectRatio,
     Func<double>? GetCurrentSpeed,
-    Func<System.Windows.Input.Key, System.Windows.Input.ModifierKeys, bool>? ShortcutKeyPressed);
+    Func<System.Windows.Input.Key, System.Windows.Input.ModifierKeys, bool>? ShortcutKeyPressed,
+    Action? OpenUpdateFlow);
 
 public sealed class MainWindowOverlayBindingActionsViewModel : ViewModelBase
 {
@@ -105,5 +106,6 @@ public sealed class MainWindowOverlayBindingActionsViewModel : ViewModelBase
         if (context.RatioChanged != null) topOverlay.RatioChanged += context.RatioChanged;
         if (context.SpeedChanged != null) topOverlay.SpeedChanged += context.SpeedChanged;
         if (context.ShortcutKeyPressed != null) topOverlay.ShortcutKeyPressed += context.ShortcutKeyPressed;
+        if (context.OpenUpdateFlow != null) topOverlay.OpenUpdateFlow += context.OpenUpdateFlow;
     }
 }

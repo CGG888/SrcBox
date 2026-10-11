@@ -268,13 +268,6 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             RequestRefreshM3uList?.Invoke();
         }
 
-        public void ShowAbout()
-        {
-            var owner = GetOwnerWindow();
-            var dlg = _shell.DialogActions.CreateAboutDialog(owner, _shell.WindowStateActions.IsFullscreen);
-            dlg.ShowDialog();
-        }
-
         public void ExitApp()
         {
             _shell.CloseWindow();

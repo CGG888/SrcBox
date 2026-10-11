@@ -377,10 +377,9 @@
   <sys:String x:Key="UI_Future">Будущие</sys:String>
 
   <!-- About -->
-  <sys:String x:Key="About_TitleBar">О SrcBox</sys:String>
   <sys:String x:Key="About_Desc1">Высокопроизводительный IPTV-плеер для Windows на базе libmpv.</sys:String>
   <sys:String x:Key="About_Desc2">Поддержка M3U, EPG, записи и др.</sys:String>
-  <sys:String x:Key="About_Update">Обновить</sys:String>
+  <sys:String x:Key="Update_NewVersionBadge">Доступна новая версия — нажмите, чтобы посмотреть</sys:String>
   <sys:String x:Key="App_DescShort">IPTV-плеер: мультикаст/уникаст, EPG, запись, таймшифт</sys:String>
 
   <!-- M3U Edit -->
@@ -543,7 +542,6 @@
   <sys:String x:Key="Shortcuts_Other">Другое</sys:String>
   <sys:String x:Key="Shortcuts_DebugWindow">Окно отладки</sys:String>
   <sys:String x:Key="Shortcuts_Settings">Настройки</sys:String>
-  <sys:String x:Key="Shortcuts_About">О программе</sys:String>
   <sys:String x:Key="Shortcuts_ShortcutsHelp">Справка по горячим клавишам</sys:String>
   <sys:String x:Key="Shortcuts_ExitMinimal">Выйти из минимального режима</sys:String>
   <sys:String x:Key="Shortcuts_Exit">Выход</sys:String>
@@ -601,7 +599,6 @@
   <sys:String x:Key="UI_TimeOverride_TabTitle">Переопределение времени</sys:String>
 
   <!-- Menu - Missing -->
-  <sys:String x:Key="Menu_About">О программе</sys:String>
   <sys:String x:Key="Menu_Application">Приложение</sys:String>
   <sys:String x:Key="Menu_AspectRatio">Соотношение сторон</sys:String>
   <sys:String x:Key="Menu_ClearCloseMode">Очистить память закрытия</sys:String>
