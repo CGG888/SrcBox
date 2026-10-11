@@ -249,12 +249,13 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 
         private void EnsureTopmostZOrder()
         {
-            var window = FullscreenWindow ?? _fullscreenOwner;
-            if (window == null) return;
+            // Fullscreen is applied to the main window itself now, so the window that has to be pushed
+            // back to the top of the top-most band is always the main window.
+            if (_fullscreenOwner == null) return;
             try
             {
-                window.Topmost = false;
-                window.Topmost = true;
+                _fullscreenOwner.Topmost = false;
+                _fullscreenOwner.Topmost = true;
             }
             catch { }
         }
