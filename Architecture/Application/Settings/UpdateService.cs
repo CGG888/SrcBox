@@ -83,12 +83,18 @@ public class GithubUpdateService : IUpdateService
         }
     }
 
-    private bool IsNewer(string remote, string local)
+    private bool IsNewer(string remote, string local) => IsNewerVersion(remote, local);
+
+    /// <summary>
+    /// True when <paramref name="remote"/> is a strictly newer semantic version than
+    /// <paramref name="local"/>. Unparsable values are treated as "not newer".
+    /// </summary>
+    public static bool IsNewerVersion(string? remote, string? local)
     {
         try
         {
-            Version vr = new Version(remote.Split('-')[0].TrimStart('v', 'V'));
-            Version vl = new Version(local.Split('-')[0].TrimStart('v', 'V'));
+            Version vr = new Version((remote ?? "").Split('-')[0].TrimStart('v', 'V'));
+            Version vl = new Version((local ?? "").Split('-')[0].TrimStart('v', 'V'));
             return vr > vl;
         }
         catch { return false; }

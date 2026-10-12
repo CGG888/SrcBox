@@ -173,6 +173,28 @@
                     </Setter.Value>
                 </Setter>
             </Style>
+            <!-- Title-bar update dot: same hit-testing as the title button, but no dropdown caret -->
+            <Style x:Key="UpdateDotButtonStyle" TargetType="Button">
+                <Setter Property="Background" Value="Transparent"/>
+                <Setter Property="BorderThickness" Value="0"/>
+                <Setter Property="MinHeight" Value="20"/>
+                <Setter Property="Cursor" Value="Hand"/>
+                <Setter Property="WindowChrome.IsHitTestVisibleInChrome" Value="True"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="Button">
+                            <Border x:Name="bd" Background="{TemplateBinding Background}">
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="bd" Property="Background" Value="{DynamicResource ButtonHoverBackgroundBrush}"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
             <Style x:Key="TagChip" TargetType="Border">
                 <Setter Property="Background" Value="{DynamicResource ChipButtonBackgroundBrush}"/>
                 <Setter Property="CornerRadius" Value="4"/>
@@ -399,7 +421,7 @@
                     <Button x:Name="BtnUpdateBadge" Click="BtnUpdateBadge_Click" ToolTip="{DynamicResource Update_NewVersionBadge}"
                             VerticalAlignment="Center">
                         <Button.Style>
-                            <Style TargetType="Button" BasedOn="{StaticResource TitleBtnStyle}">
+                            <Style TargetType="Button" BasedOn="{StaticResource UpdateDotButtonStyle}">
                                 <Setter Property="Visibility" Value="Collapsed"/>
                                 <Style.Triggers>
                                     <DataTrigger Binding="{Binding UpdateBadge.HasNewVersion}" Value="True">

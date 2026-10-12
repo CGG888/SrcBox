@@ -97,12 +97,23 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
         {
             try
             {
-                if (!MainWindowUpdateBadgeActionsViewModel.IsCheckDue(AppSettings.Current.LastUpdateCheckUtc, DateTime.UtcNow))
+                var service = ResolveUpdateService();
+                var currentVersion = service.GetCurrentVersion();
+
+                // An update found earlier stays visible: the daily throttle must not hide a release
+                // the user has not installed yet.
+                RestoreKnownUpdate(currentVersion);
+
+                if (!MainWindowUpdateBadgeActionsViewModel.IsCheckDue(
+                        AppSettings.Current.LastUpdateCheckUtc,
+                        AppSettings.Current.LastUpdateCheckVersion,
+                        currentVersion,
+                        DateTime.UtcNow))
                 {
                     return;
                 }
 
-                _ = RunUpdateCheckAsync();
+                _ = RunUpdateCheckAsync(service);
             }
             catch (Exception ex)
             {
@@ -110,21 +121,44 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             }
         }
 
-        private async System.Threading.Tasks.Task RunUpdateCheckAsync()
+        /// <summary>Lights the badge from the version a previous session found, without a network call.</summary>
+        private void RestoreKnownUpdate(string currentVersion)
         {
             try
             {
-                var service = ResolveUpdateService();
+                var known = AppSettings.Current.KnownNewerVersion;
+                if (string.IsNullOrEmpty(known) || !GithubUpdateService.IsNewerVersion(known, currentVersion))
+                {
+                    return;
+                }
+
+                _window.Dispatcher.Invoke(() =>
+                {
+                    try { _shell.UpdateBadge.ApplyKnownVersion(known); } catch { }
+                });
+            }
+            catch { }
+        }
+
+        private async System.Threading.Tasks.Task RunUpdateCheckAsync(IUpdateService service)
+        {
+            try
+            {
                 var result = await service.CheckForUpdatesAsync(useCdn: true).ConfigureAwait(false);
 
-                // Record the attempt even when it failed, otherwise an offline machine would
-                // retry on every launch.
-                try
+                // Record the attempt only when the check really answered: an offline or blocked
+                // machine must retry on the next launch instead of staying silent for a whole day.
+                if (result.ReleaseInfo != null)
                 {
-                    AppSettings.Current.LastUpdateCheckUtc = DateTime.UtcNow;
-                    AppSettings.Current.Save();
+                    try
+                    {
+                        AppSettings.Current.LastUpdateCheckUtc = DateTime.UtcNow;
+                        AppSettings.Current.LastUpdateCheckVersion = service.GetCurrentVersion();
+                        AppSettings.Current.KnownNewerVersion = result.IsNewer ? (result.ReleaseInfo.Version ?? "") : "";
+                        AppSettings.Current.Save();
+                    }
+                    catch { }
                 }
-                catch { }
 
                 if (!result.IsNewer || result.ReleaseInfo == null)
                 {

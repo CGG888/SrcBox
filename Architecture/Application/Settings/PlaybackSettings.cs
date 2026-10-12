@@ -239,6 +239,11 @@ namespace LibmpvIptvClient
         public List<string> UpdateCdnMirrors { get; set; } = new List<string>();
         // UTC timestamp of the last background update check (null = never checked)
         public DateTime? LastUpdateCheckUtc { get; set; }
+        // App version the last background update check ran with: a version change checks again at once
+        public string LastUpdateCheckVersion { get; set; } = "";
+        // Newer version the last successful check found ("" = up to date): keeps the title-bar dot
+        // lit across restarts until the update is installed.
+        public string KnownNewerVersion { get; set; } = "";
         // M3U 缓存设置
         public bool EnableM3uCache { get; set; } = true;
         public double M3uCacheTtlHours { get; set; } = 12;

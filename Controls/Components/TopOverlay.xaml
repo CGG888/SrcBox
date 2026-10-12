@@ -63,6 +63,28 @@
             </Setter>
         </Style>
 
+        <!-- Update dot: same hover as the title button, but no dropdown caret and no button chrome -->
+        <Style x:Key="UpdateDotButtonStyle" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="MinHeight" Value="20"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="bd" Background="{TemplateBinding Background}">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="bd" Property="Background" Value="{DynamicResource ButtonHoverBackgroundBrush}"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
         <Style TargetType="{x:Type ContextMenu}">
             <Setter Property="Background" Value="{DynamicResource CardBackgroundBrush}"/>
             <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
@@ -171,6 +193,7 @@
                 </Button>
                 <!-- New release indicator: visibility is driven by SetUpdateBadgeVisible (no DataContext here) -->
                 <Button x:Name="BtnUpdateBadge" Click="BtnUpdateBadge_Click" Visibility="Collapsed"
+                        Style="{StaticResource UpdateDotButtonStyle}"
                         ToolTip="{DynamicResource Update_NewVersionBadge}" VerticalAlignment="Center">
                     <Ellipse Width="9" Height="9" Fill="#E5484D" Margin="6,0,4,0" VerticalAlignment="Center"/>
                 </Button>

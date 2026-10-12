@@ -712,6 +712,7 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                       </Grid.RowDefinitions>
 
                       <CheckBox x:Name="ChkRtp2httpdTz" Grid.Row="0" Grid.ColumnSpan="2" Content="{DynamicResource UI_Rtp2httpd_Tz}"/>

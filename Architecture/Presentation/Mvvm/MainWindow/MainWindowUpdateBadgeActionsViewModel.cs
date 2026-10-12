@@ -49,7 +49,34 @@ public sealed class MainWindowUpdateBadgeActionsViewModel : ViewModelBase
         return true;
     }
 
+    /// <summary>
+    /// Lights the badge from a version an earlier session found, so the dot survives a restart
+    /// instead of waiting for the next network check.
+    /// </summary>
+    /// <returns>True when the badge was lit by this call.</returns>
+    public bool ApplyKnownVersion(string? version)
+    {
+        if (string.IsNullOrEmpty(version))
+        {
+            return false;
+        }
+
+        LatestVersion = version;
+        HasNewVersion = true;
+        Changed?.Invoke();
+        return true;
+    }
+
     /// <summary>True when no check ran yet or the last one is older than <see cref="CheckInterval"/>.</summary>
     public static bool IsCheckDue(DateTime? lastCheckUtc, DateTime nowUtc)
         => lastCheckUtc == null || nowUtc - lastCheckUtc.Value >= CheckInterval;
+
+    /// <summary>
+    /// True when a check is due for the given app version: never checked, checked with another
+    /// version (for example right after an update was installed), or the interval has elapsed.
+    /// </summary>
+    public static bool IsCheckDue(DateTime? lastCheckUtc, string? lastCheckVersion, string? currentVersion, DateTime nowUtc)
+        => (!string.IsNullOrEmpty(currentVersion) &&
+            !string.Equals(lastCheckVersion, currentVersion, StringComparison.Ordinal))
+           || IsCheckDue(lastCheckUtc, nowUtc);
 }
