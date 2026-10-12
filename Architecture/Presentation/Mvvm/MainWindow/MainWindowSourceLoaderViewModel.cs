@@ -135,31 +135,12 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 string.Equals(UserDataStore.ComputeChannelKey(c), channelKey, StringComparison.Ordinal));
         }
 
-        public string SanitizeUrl(string input)
-        {
-            if (string.IsNullOrWhiteSpace(input)) return input;
-            var s = input.Trim();
-            
-            var idx = s.IndexOf('$');
-            if (idx > 0) s = s.Substring(0, idx);
-            s = s.Trim().TrimEnd(',');
-            
-            try
-            {
-                if (s.StartsWith("http", StringComparison.OrdinalIgnoreCase) && !s.Contains("%"))
-                {
-                    bool hasNonAscii = s.Any(c => c > 127);
-                    if (hasNonAscii)
-                    {
-                        var uri = new Uri(s);
-                        return uri.AbsoluteUri;
-                    }
-                }
-            }
-            catch { }
-
-            return s;
-        }
+        /// <summary>
+        /// Playback url of a playlist entry: the "$quality" suffix is dropped and a non ascii path is
+        /// percent-encoded. Shared with <see cref="LibmpvIptvClient.Services.ArchiveUrlBuilder"/> so
+        /// replay/timeshift append to the same url the player opens.
+        /// </summary>
+        public string SanitizeUrl(string input) => LibmpvIptvClient.Services.PlayUrlSanitizer.Clean(input)!;
 
         public bool IsMulticast(string url)
         {

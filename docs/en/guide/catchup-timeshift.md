@@ -52,6 +52,8 @@ Notes:
 
 - `catchup-source` is the replay URL template. It can be the same as the live URL, or a dedicated replay endpoint.
 - `catchup` values like `default/append/shift` are playlist ecosystem hints. For this player, the key is whether `catchup-source` exists and can produce a valid URL.
+- A parameter-only `catchup-source` (for example `?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}`) is appended to the channel live URL (joined with `&` when the live URL already carries a query). Writing `catchup="append"` states the same intent explicitly.
+- When the live URL comes from **rtp2httpd** (its default port `5140`, or a path containing `/rtsp/`) you need **no configuration at all**: the player appends the archive request itself as `playseek=START-END` (UTC while the "rtp2httpd time zone marker" is off, local time once it is on). A configured global template still takes priority over this fallback.
 
 ## Time placeholders (core of customization)
 

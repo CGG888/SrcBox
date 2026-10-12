@@ -52,6 +52,8 @@ https://example.com/live/index.m3u8
 
 - `catchup-source` 是「回放位址模板」，可以與直播位址相同，也可以是另一條專用回放入口。
 - `catchup` 常見有 `default/append/shift`，用於給播放清單/播放器生態標註「回看模式」；本播放器的關鍵是 `catchup-source` 是否存在且可生成有效 URL。
+- `catchup-source` 只寫參數段（例如 `?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}`）時，會自動拼接到該頻道的直播位址後（直播位址已帶 `?` 時改用 `&`）；寫 `catchup="append"` 可明確宣告這種拼接。
+- 直播位址是 **rtp2httpd** 的（預設連接埠 `5140`，或路徑裡帶 `/rtsp/`）時**可以完全不設定**：播放器會自動以 `playseek=開始-結束` 追加回看參數（未開啟「rtp2httpd 時區標記」時用 UTC，開啟後用本地時間）；已設定的全域模板仍然優先於這個自動回退。
 
 ## 時間佔位符（自訂的核心）
 

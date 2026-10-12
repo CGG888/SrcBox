@@ -734,49 +734,23 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             => LibmpvIptvClient.Services.UrlPlaceholderExpander.Expand(url, start, end, appendEpgTime);
 
         /// <summary>
-        /// Resolves the url used for replay/timeshift playback: the per-channel catchup-source first,
-        /// then the global replay format, then the global timeshift format. The initial replay and every
-        /// later seek share this, otherwise a channel without catchup-source can be opened for replay
-        /// but never seeked.
+        /// Resolves the url used for replay/timeshift playback through
+        /// <see cref="LibmpvIptvClient.Services.ArchiveUrlBuilder"/>: the per-channel catchup-source
+        /// first, then the global replay format, then the global timeshift format. The initial replay
+        /// and every later seek share this, otherwise a channel without catchup-source can be opened
+        /// for replay but never seeked.
         /// </summary>
         string? ResolveArchiveUrl(Channel? ch)
         {
             if (ch == null) return null;
-            if (!string.IsNullOrEmpty(ch.CatchupSource)) return ch.CatchupSource;
 
             var replay = AppSettings.Current.Replay;
-            if (replay.Enabled)
-            {
-                var fromReplay = BuildFromFormat(ch, replay.UrlFormat);
-                if (!string.IsNullOrEmpty(fromReplay)) return fromReplay;
-            }
-
             var timeshift = AppSettings.Current.Timeshift;
-            if (timeshift.Enabled)
-            {
-                var fromTimeshift = BuildFromFormat(ch, timeshift.UrlFormat);
-                if (!string.IsNullOrEmpty(fromTimeshift)) return fromTimeshift;
-            }
-
-            return null;
-        }
-
-        static string? BuildFromFormat(Channel ch, string? fmt)
-        {
-            if (string.IsNullOrWhiteSpace(fmt)) return null;
-            fmt = fmt!.Trim();
-
-            // "?playseek=..." style formats are appended to the channel's live url.
-            if (fmt.StartsWith("?") || fmt.StartsWith("&"))
-            {
-                var live = (ch.Tag is Source s1 && !string.IsNullOrEmpty(s1.Url)) ? s1.Url
-                           : (ch.Sources != null && ch.Sources.Count > 0 ? ch.Sources[0].Url : "");
-                if (string.IsNullOrEmpty(live)) return null;
-                var sep = live.Contains("?") ? "&" : "?";
-                return live + sep + fmt.TrimStart('?', '&');
-            }
-
-            return fmt.Replace("{id}", ch.Id ?? ch.Name);
+            return LibmpvIptvClient.Services.ArchiveUrlBuilder.ResolveArchiveUrl(
+                ch,
+                replay.Enabled ? replay.UrlFormat : null,
+                timeshift.Enabled ? timeshift.UrlFormat : null,
+                AppSettings.Current?.HttpHeaders?.Rtp2httpdTimezoneEnabled == true);
         }
 
         public void JumpToChannelByIdOrName(string id, string name)
