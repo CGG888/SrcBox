@@ -137,5 +137,156 @@ namespace LibmpvIptvClient.Tests
             shell.HandlePlaybackTick(0, null, false);   // 新流从 610s 处开始
             Assert.AreEqual(610, shell.SeekValue, 0.01, "seek 后界面位置应前进而不是回零");
         }
+
+        // ---------------- rtp2httpd (stackia/rtp2httpd) ----------------
+        // 直播地址是 rtp2httpd 的 /rtsp/<上游>:554/... 代理地址，catchup-source 是"纯参数段
+        // playseek"，只有把它拼到直播地址上，rtp2httpd 才会返回回看流（否则退回直播）。
+
+        const string Rtp2httpdLive =
+            "http://192.168.50.1:5140/rtsp/10.7.60.172/PLTV/88888888/224/3221225688/723212.smil?rrsip=10.7.227.140&accountinfo=abc";
+
+        static Channel MakeRtp2httpdChannel()
+        {
+            var channel = new Channel
+            {
+                Id = "cctv1",
+                TvgId = "cctv1",
+                Name = "CCTV1",
+                Catchup = "append",
+                CatchupSource = "?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}"
+            };
+            channel.Sources.Add(new Source { Id = "live", Name = "live", Url = Rtp2httpdLive });
+            return channel;
+        }
+
+        static MainShellViewModel MakeRtp2httpdShell(FakePlayerEngine engine)
+        {
+            var shell = new MainShellViewModel();
+            shell.InjectServices(new EpgService(), engine, null!);
+            var channel = MakeRtp2httpdChannel();
+            shell.CurrentChannel = channel;
+            shell.CurrentUrl = Rtp2httpdLive;
+            return shell;
+        }
+
+        static void AssertPlayseekUrl(string url, string expectedValuePrefix)
+        {
+            Assert.IsTrue(url.StartsWith(Rtp2httpdLive + "&playseek=", StringComparison.Ordinal),
+                "必须把 playseek 拼到直播地址上: " + url);
+            StringAssert.StartsWith(url.Substring((Rtp2httpdLive + "&playseek=").Length), expectedValuePrefix);
+        }
+
+        // 回看：点节目单里的过去节目 → 交给 mpv 的必须是"直播地址 + playseek"。
+        [TestMethod]
+        public void Rtp2httpdReplay_ClickingAPastProgram_RequestsPlayseekOnTheLiveUrl()
+        {
+            var engine = new FakePlayerEngine();
+            var shell = MakeRtp2httpdShell(engine);
+            var program = new EpgProgram { Title = "P", Start = ProgStart, End = ProgEnd };
+
+            shell.ChannelPlaybackActions.PlayCatchup(shell.CurrentChannel, program);
+
+            Assert.AreEqual(1, engine.Played.Count);
+            AssertPlayseekUrl(engine.Played[0], ProgStart.ToString("yyyyMMddHHmmss") + "-");
+        }
+
+        // 时移：进入时移必须发出 playseek 请求（同一地址换时间段，rtp2httpd 就是这么做的）。
+        [TestMethod]
+        public void Rtp2httpdTimeshift_EnteringTimeshift_RequestsPlayseek()
+        {
+            var engine = new FakePlayerEngine();
+            var shell = MakeRtp2httpdShell(engine);
+
+            shell.IsTimeshiftActive = true;
+
+            Assert.AreEqual(1, engine.Played.Count, "进入时移应当起播时移流");
+            StringAssert.Contains(engine.Played[0], "&playseek=");
+            StringAssert.Contains(engine.Played[0], Rtp2httpdLive);
+            Assert.IsFalse(engine.Played[0].Contains("starttime="), "rtp2httpd 不认 starttime: " + engine.Played[0]);
+        }
+
+        // 频道完全没有 catchup 标签时，rtp2httpd 地址要靠自动回退生成 playseek。
+        // 没有 UA 的 TZ/UTC+N 标记时时间必须用 UTC 表达（rtp2httpd 默认按 UTC 解析）。
+        [TestMethod]
+        public void Rtp2httpdTimeshift_WithoutAnyCatchupTag_FallsBackToUtcPlayseek()
+        {
+            var engine = new FakePlayerEngine();
+            var shell = MakeRtp2httpdShell(engine);
+            var channel = shell.CurrentChannel;
+            channel.CatchupSource = "";
+            var headers = AppSettings.Current.HttpHeaders;
+            var zone = headers.Rtp2httpdTimezoneEnabled;
+            try
+            {
+                headers.Rtp2httpdTimezoneEnabled = false;
+                shell.ChannelPlaybackActions.PlayCatchupAt(channel, ProgStart);
+            }
+            finally
+            {
+                headers.Rtp2httpdTimezoneEnabled = zone;
+            }
+
+            Assert.AreEqual(1, engine.Played.Count, "没有任何模板时也应当能回看 rtp2httpd 地址");
+            AssertPlayseekUrl(engine.Played[0], ProgStart.ToUniversalTime().ToString("yyyyMMddHHmmss") + "-");
+        }
+
+        // 打开 UA 的 TZ/UTC+N 标记后，可以（也应该）直接发本地时间，由 rtp2httpd 按标记换算。
+        [TestMethod]
+        public void Rtp2httpdTimeshift_WithTimeZoneMarker_FallsBackToLocalPlayseek()
+        {
+            var engine = new FakePlayerEngine();
+            var shell = MakeRtp2httpdShell(engine);
+            var channel = shell.CurrentChannel;
+            channel.CatchupSource = "";
+            var headers = AppSettings.Current.HttpHeaders;
+            var zone = headers.Rtp2httpdTimezoneEnabled;
+            try
+            {
+                headers.Rtp2httpdTimezoneEnabled = true;
+                shell.ChannelPlaybackActions.PlayCatchupAt(channel, ProgStart);
+            }
+            finally
+            {
+                headers.Rtp2httpdTimezoneEnabled = zone;
+            }
+
+            Assert.AreEqual(1, engine.Played.Count);
+            AssertPlayseekUrl(engine.Played[0], ProgStart.ToString("yyyyMMddHHmmss") + "-");
+        }
+
+        // 关键回归：用户打开"时间覆盖"（start_end 布局）后，playseek 请求不得被改写成
+        // starttime/endtime —— 否则 rtp2httpd 会静默回落到直播。
+        [TestMethod]
+        public void Rtp2httpdTimeshift_WithTimeOverrideEnabled_KeepsPlayseek()
+        {
+            var engine = new FakePlayerEngine();
+            var shell = MakeRtp2httpdShell(engine);
+            var cfg = AppSettings.Current.TimeOverride;
+            var oldEnabled = cfg.Enabled;
+            var oldMode = cfg.Mode;
+            var oldLayout = cfg.Layout;
+            var oldEncoding = cfg.Encoding;
+            try
+            {
+                cfg.Enabled = true;
+                cfg.Mode = "time_only";
+                cfg.Layout = "start_end";
+                cfg.Encoding = "local";
+
+                shell.ChannelPlaybackActions.PlayCatchupAt(shell.CurrentChannel, ProgStart);
+            }
+            finally
+            {
+                cfg.Enabled = oldEnabled;
+                cfg.Mode = oldMode;
+                cfg.Layout = oldLayout;
+                cfg.Encoding = oldEncoding;
+            }
+
+            Assert.AreEqual(1, engine.Played.Count);
+            AssertPlayseekUrl(engine.Played[0], ProgStart.ToString("yyyyMMddHHmmss") + "-");
+            Assert.IsFalse(engine.Played[0].Contains("starttime="),
+                "时间覆盖不得把 playseek 改写成 starttime: " + engine.Played[0]);
+        }
     }
 }

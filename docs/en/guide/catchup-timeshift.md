@@ -174,6 +174,7 @@ https://example.com/live/stream
 - Channel `catchup-source` → builds the base URL and time placeholders (recommended per channel).
 - Settings Replay/Timeshift template → used as a fallback when the channel doesn't provide `catchup-source`.
 - Time Override (Settings → Time Override) → when enabled, rewrites only the time section (layout/keys/encoding), leaving domain/path and non-time params intact. Applies to both channel and fallback templates.
+- Exception: a URL that already carries a `playseek`/`tvdr` archive request (rtp2httpd and similar) is only rewritten by the "playseek" layout; every other layout leaves it untouched, so the server never answers a replay request with the live stream.
 - Tip: first generate a working URL via channel/fallback template, then use Time Override to unify the time expression required by your provider (e.g., starttime/endtime, UTC, or Unix seconds).
 
 ## Missing formats / private placeholders

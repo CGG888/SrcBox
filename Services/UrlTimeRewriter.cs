@@ -31,6 +31,13 @@ namespace LibmpvIptvClient.Services
             var playseekKey = string.IsNullOrWhiteSpace(cfg.PlayseekKey) ? "playseek" : cfg.PlayseekKey;
             var urlEncode = cfg.UrlEncode;
 
+            // A url that already carries a playseek/tvdr request is a finished archive request in the
+            // server's own format (rtp2httpd and compatible portals). Only a playseek layout may touch
+            // it: rewriting it into starttime/endtime (or start/duration) removes the parameter the
+            // server actually understands, so the server answers with the live stream instead of the
+            // requested window while the UI still shows the replay/timeshift as playing.
+            if (layout != "playseek" && HasArchiveParam(url)) return url;
+
             string baseUrl = url;
             string path = url;
             string query = "";
@@ -83,6 +90,17 @@ namespace LibmpvIptvClient.Services
                 if (url.IndexOf(key + "=", qIdx, StringComparison.OrdinalIgnoreCase) >= 0) return true;
             }
             return false;
+        }
+
+        /// <summary>True when the url already carries a playseek/tvdr archive request (rtp2httpd style).</summary>
+        public static bool HasArchiveParam(string url)
+        {
+            if (string.IsNullOrEmpty(url)) return false;
+            var qIdx = url.IndexOf('?');
+            if (qIdx < 0 || qIdx >= url.Length - 1) return false;
+
+            return url.IndexOf("playseek=", qIdx, StringComparison.OrdinalIgnoreCase) >= 0
+                || url.IndexOf("tvdr=", qIdx, StringComparison.OrdinalIgnoreCase) >= 0;
         }
 
         static readonly string[] TimeKeys =
