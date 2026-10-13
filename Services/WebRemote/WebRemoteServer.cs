@@ -54,7 +54,7 @@ namespace LibmpvIptvClient.Services.WebRemote
 
         public Func<WebRemoteStatus>? GetStatusCallback { get; set; }
         public Func<List<WebRemoteChannelGroup>>? GetChannelsCallback { get; set; }
-        public Func<string, DateTime?, List<WebRemoteProgram>>? GetEpgCallback { get; set; }
+        public Func<string, DateTime?, bool, List<WebRemoteProgram>>? GetEpgCallback { get; set; }
         public Action? PlayCallback { get; set; }
         public Action? PauseCallback { get; set; }
         public Action? StopCallback { get; set; }
@@ -991,6 +991,7 @@ self.addEventListener('fetch', function(event) {
                     case "getEpg":
                         var channelId = "";
                         DateTime? filterDate = null;
+                        var fullSchedule = false;
                         if (json.TryGetProperty("channelId", out var idElem))
                             channelId = idElem.GetString() ?? "";
                         if (json.TryGetProperty("date", out var dateElem) && dateElem.ValueKind == JsonValueKind.String)
@@ -999,7 +1000,11 @@ self.addEventListener('fetch', function(event) {
                             if (!string.IsNullOrEmpty(dateStr) && DateTime.TryParse(dateStr, out var parsed))
                                 filterDate = parsed;
                         }
-                        result = new { channelId, programs = GetEpgCallback?.Invoke(channelId, filterDate) ?? new List<WebRemoteProgram>() };
+                        // The timeshift strip asks for the whole schedule instead of one day, so the
+                        // answer is echoed back with the flag and the page keeps it apart from the list.
+                        if (json.TryGetProperty("full", out var fullElem) && fullElem.ValueKind == JsonValueKind.True)
+                            fullSchedule = true;
+                        result = new { channelId, full = fullSchedule, programs = GetEpgCallback?.Invoke(channelId, filterDate, fullSchedule) ?? new List<WebRemoteProgram>() };
                         break;
 
                     case "play":
@@ -1516,6 +1521,8 @@ body.dark-theme, body.theme-dark { color: var(--neu-text); }
 .ts-block-time { font-size: 10px; color: var(--neu-text-muted); font-variant-numeric: tabular-nums; }
 .ts-block-name { font-size: 12px; font-weight: 600; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .ts-block.current .ts-block-name { color: var(--neu-primary); }
+/* A slot that has not aired yet: part of the scrollable EPG, but not reachable by a seek. */
+.ts-block.out { opacity: 0.5; }
 .ts-playhead { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--neu-primary); box-shadow: 0 0 6px var(--neu-primary); pointer-events: none; }
 .ts-detail { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; }
 .ts-detail-main { font-size: 13px; font-weight: 600; color: var(--neu-text); }
@@ -2009,6 +2016,11 @@ let ws; let currentChannelId = ''; let currentVolume = 70; let previousVolume = 
 let isMuted = false; let channelList = []; let isDarkTheme = true; let isAuthenticated = false;
 // Programmes of the channel the EPG section shows: the timeshift scrubber draws its axis from them
 let epgPrograms = [];
+// The timeshift strip scrolls the whole schedule rather than the day the cursor is in, so it keeps
+// its own copy of the EPG: this one holds every programme the server has for the channel, and the
+// flag stops the scrubber from asking again every second while the answer is on its way.
+let tsEpgPrograms = [];
+let tsEpgRequested = false;
 
 function applyStaticText() {
 document.getElementById('statusMode').textContent = T.status_stopped;
@@ -2076,6 +2088,13 @@ return;
 }
 if (data.groups !== undefined) renderChannels(data);
 else if (data.programs !== undefined) {
+                    // The whole schedule feeds the timeshift strip only; the guide keeps its own day.
+                    if (data.full === true) {
+                        tsEpgPrograms = data.programs || [];
+                        tsBandSignature = null;
+                        if (tsWindow.active) renderTimeshiftBand();
+                        return;
+                    }
                     // Debug: check badgeHtml in received data
                     if (data.programs && data.programs.length > 0) {
                         console.log('EPG received, first prog badgeHtml:', JSON.stringify(data.programs[0].badgeHtml), 'isCurrent:', data.programs[0].isCurrent);
@@ -2104,6 +2123,16 @@ function doAuth() { const pwd = document.getElementById('pwdInput').value; if (!
 function loadChannels() { send('getChannels'); }
 let currentEpgDate = null; // null means default (today)
 function loadEpg(channelId, dateStr) { send('getEpg', { channelId: channelId, date: dateStr || null }); }
+// Whole schedule for the timeshift strip: no day window, so the user can scroll and pick any
+// programme the EPG holds, not only the ones of the day the cursor happens to be in.
+function loadTimeshiftEpg() {
+  if (!currentChannelId || tsEpgRequested) return;
+  tsEpgRequested = true;
+  send('getEpg', { channelId: currentChannelId, date: null, full: true });
+}
+// The strip and the cursor lookups run over the full schedule when it has arrived, and fall back to
+// the day list of the guide until then.
+function tsProgrammeList() { return tsEpgPrograms.length ? tsEpgPrograms : epgPrograms; }
 function loadEpgForDate(dateStr) {
     currentEpgDate = dateStr;
     var today = new Date();
@@ -2267,7 +2296,7 @@ function renderTimeshiftScale(start, end) {
 }
 function tsProgramAt(ms) {
   var found = null;
-  epgPrograms.forEach(function(p) {
+  tsProgrammeList().forEach(function(p) {
     var s = p.startISO ? new Date(p.startISO).getTime() : 0;
     var e = p.endISO ? new Date(p.endISO).getTime() : 0;
     if (!s || !e) return;
@@ -2294,7 +2323,7 @@ function renderTimeshiftAxis() {
   axis.innerHTML = '';
   if (!tsWindow.active || tsWindow.to <= tsWindow.from) return;
   var slot = tsSlotFor(tsWindow.from + tsWindow.position * 1000);
-  epgPrograms.forEach(function(p) {
+  tsProgrammeList().forEach(function(p) {
     var s = p.startISO ? new Date(p.startISO).getTime() : 0;
     var e = p.endISO ? new Date(p.endISO).getTime() : 0;
     if (!s || !e || s <= slot.from || s >= slot.to) return;
@@ -2309,28 +2338,25 @@ function renderTimeshiftAxis() {
 // either side so the neighbours are visible). Blocks grow with their slot length so the band reads
 // like a TV EPG bar, and the block under the cursor is highlighted and centred without scrolling the
 // page. Rebuilt only when the window or the programme list changes.
-var tsBandSignature = null, tsBlockSpans = [], tsCentredBlock = null;
+var tsBandSignature = null, tsBlockSpans = [], tsCentredBlock = null, tsOutKey = null;
 function renderTimeshiftBand() {
   var inner = document.getElementById('tsBandInner');
   if (!inner) return;
   if (!tsWindow.active || tsWindow.to <= tsWindow.from) { inner.innerHTML = ''; tsBandSignature = null; tsBlockSpans = []; tsCentredBlock = null; return; }
-  // The strip is the selector and only ever shows the day the cursor is in: it scrolls inside that
-  // day and never crosses midnight, so the slots stay comparable while swiping. The signature leaves
-  // the window out, because the window end moves every second and the strip must not be rebuilt (and
-  // pulled back to the cursor) while the user is browsing it.
-  var cursorMs = tsWindow.from + tsWindow.position * 1000;
-  var anchor = tsProgramAt(cursorMs);
-  var dayKey = anchor && anchor.startISO ? new Date(anchor.startISO).toDateString() : null;
-  var list = epgPrograms.filter(function(p) {
+  // The strip is the selector over the whole EPG the server sent - every programme for the channel,
+  // not just the day the cursor is in - so the user can scroll to any of them and tap it. The
+  // signature leaves the window out, because the window end moves every second and the strip must not
+  // be rebuilt (and pulled back to the cursor) while the user is browsing it.
+  var list = tsProgrammeList().filter(function(p) {
     var s = p.startISO ? new Date(p.startISO).getTime() : 0;
     var e = p.endISO ? new Date(p.endISO).getTime() : 0;
-    if (!s || !e) return false;
-    return !dayKey || new Date(p.startISO).toDateString() === dayKey;
+    return !!s && !!e;
   });
-  var signature = (dayKey || '') + '|' + list.map(function(p) { return p.startISO; }).join(',');
+  var signature = (tsEpgPrograms.length ? 'full|' : 'day|') + list.map(function(p) { return p.startISO; }).join(',');
   if (signature === tsBandSignature) return;
   tsBandSignature = signature;
   tsCentredBlock = null;
+  tsOutKey = null;
   tsBlockSpans = [];
   inner.innerHTML = '';
   var playhead = document.createElement('div');
@@ -2369,6 +2395,9 @@ function renderTimeshiftBand() {
     name.textContent = p.name || '';
     block.appendChild(time);
     block.appendChild(name);
+    // Programmes that have not started yet are outside the seekable window, so they are marked as
+    // read-only: the strip scrolls the whole EPG, but only what has aired can be timeshifted to.
+    if (s > tsWindow.to) block.classList.add('out');
     inner.appendChild(block);
     tsBlockSpans.push({ el: block, start: s, end: e });
   });
@@ -2390,6 +2419,14 @@ function tsHoldBand() {
 function tsReleaseBand() {
   tsHoldUntil = 0;
   if (tsRecentreTimer) { clearTimeout(tsRecentreTimer); tsRecentreTimer = null; }
+}
+// Keeps the read-only marking in step with the live edge: a slot becomes selectable once its start
+// time has passed, so the classes are only refreshed when the window end moves past a minute.
+function refreshTimeshiftAvailability() {
+  var key = Math.floor(tsWindow.to / 60000);
+  if (key === tsOutKey) return;
+  tsOutKey = key;
+  tsBlockSpans.forEach(function(span) { span.el.classList.toggle('out', span.start > tsWindow.to); });
 }
 // Move the playhead to the cursor and mark the slot it falls in, centring that slot in the band.
 function positionPlayhead(ms) {
@@ -2446,6 +2483,7 @@ function paintTimeshift(seconds) {
   var cardTime = document.getElementById('programTime');
   if (cardTime) cardTime.textContent = (s && e) ? tsClockText(s, false) + '-' + tsClockText(e, false) : '';
   positionPlayhead(atMs);
+  refreshTimeshiftAvailability();
 }
 function updateTimeshift(t) {
   var box = document.getElementById('tsScrubber');
@@ -2460,6 +2498,8 @@ function updateTimeshift(t) {
   tsWindow.from = t.fromMs; tsWindow.to = t.toMs;
   tsWindow.position = Math.max(0, Math.min(tsTotalSeconds(), t.positionSec || 0));
   if (box) box.style.display = 'block';
+  // The strip scrolls the whole schedule, which the guide's day list does not carry.
+  loadTimeshiftEpg();
   renderTimeshiftAxis();
   renderTimeshiftBand();
   paintTimeshift(tsDragging ? tsDragSeconds : tsWindow.position);
@@ -2538,6 +2578,8 @@ function tsSecondsFromEvent(ev) {
       var card = ev.target && ev.target.closest ? ev.target.closest('.ts-block[data-start]') : null;
       if (!card) return;
       var startMs = Number(card.getAttribute('data-start'));
+      // Nothing to timeshift to before the programme has aired: the window ends at the live edge.
+      if (startMs > tsWindow.to) return;
       var seconds = Math.max(0, Math.min(tsTotalSeconds(), (startMs - tsWindow.from) / 1000));
       send('seekTimeshift', { seconds: Math.round(seconds) });
       tsDragSeconds = seconds;
@@ -2632,7 +2674,10 @@ var rpProgram = document.getElementById('rpProgram'); if (rpProgram) rpProgram.t
 var rpModeEl = document.getElementById('rpMode');
 if (rpModeEl) { rpModeEl.textContent = modeMap[s.mode] || s.mode || T.mode_default; rpModeEl.className = 'rp-mode ' + (modeClass[s.mode] || 'mode-stopped'); }
 isPlayingState = s.mode !== 'Stopped' && !!s.mode;
+var previousChannelId = currentChannelId;
 currentChannelId = (s.channel && s.channel.id) || '';
+// A new channel means a new schedule: drop the strip's copy so it is fetched again.
+if (currentChannelId !== previousChannelId) { tsEpgPrograms = []; tsEpgRequested = false; tsBandSignature = null; }
 if (!s.muted && s.volume > 0) previousVolume = s.volume;
 currentVolume = s.muted ? previousVolume : (s.volume || 0);
 isMuted = s.muted || false;

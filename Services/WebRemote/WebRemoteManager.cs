@@ -399,7 +399,7 @@ namespace LibmpvIptvClient.Services.WebRemote
             return WebRemoteChannelNumbering.BuildNumberMap(groups);
         }
 
-        private static List<WebRemoteProgram> GetEpg(string channelId, DateTime? filterDate = null)
+        private static List<WebRemoteProgram> GetEpg(string channelId, DateTime? filterDate = null, bool fullSchedule = false)
         {
             if (_shell == null || _shell.EpgService == null || string.IsNullOrEmpty(channelId))
                 return new List<WebRemoteProgram>();
@@ -460,13 +460,23 @@ namespace LibmpvIptvClient.Services.WebRemote
                 }
 
                 // 过滤策略：使用6 AM边界的TV风格日期
-                // 优先级：filterDate > replay日期 > 今天+明天
-                var maxItems = AppSettings.Current.WebRemote.MaxEpgItems;
+                // 优先级：全部节目 > filterDate > replay日期 > 今天+明天
+                // The strip in the web remote scrolls the whole schedule, so that request skips the day
+                // window and keeps a much higher cap; every other caller keeps the configured limit.
+                var maxItems = fullSchedule
+                    ? Math.Max(AppSettings.Current.WebRemote.MaxEpgItems, 800)
+                    : AppSettings.Current.WebRemote.MaxEpgItems;
                 int filterStart, filterEnd;
 
                 DateTime windowStart, windowEnd;
 
-                if (filterDate.HasValue)
+                if (fullSchedule && programs.Count > 0)
+                {
+                    windowStart = programs[0].Start;
+                    windowEnd = programs[programs.Count - 1].End;
+                    Logger.Debug($"[WebRemote] Full schedule: {programs.Count} programmes, window={windowStart:yyyy-MM-dd HH:mm}-{windowEnd:yyyy-MM-dd HH:mm}");
+                }
+                else if (filterDate.HasValue)
                 {
                     // 用户选择特定日期：00:00 到 23:59:59
                     windowStart = filterDate.Value.Date;
