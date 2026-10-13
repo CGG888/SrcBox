@@ -1486,31 +1486,29 @@ body.dark-theme, body.theme-dark { color: var(--neu-text); }
    remote pad view hides it with the rest of the controls. */
 .ts-scrubber { margin-top: 12px; }
 .ts-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11px; color: var(--neu-text-muted); margin-bottom: 6px; }
+.ts-head-left { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .ts-clock { font-size: 12px; font-weight: 600; color: var(--neu-text); font-variant-numeric: tabular-nums; }
-/* The meter copies the volume row above it exactly - 20px glyph, 10px gaps, 44px value - so the two
-   bars line up column for column, and the bar itself keeps the volume bar's 12px slab. The row
-   padding widens the touch target so a finger can still grab the thin bar. */
-.ts-meter { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
-.ts-icon { flex: 0 0 auto; width: 20px; height: 20px; fill: var(--neu-text-muted); }
-.ts-time { flex: 0 0 44px; width: 44px; text-align: right; font-size: 12px; font-weight: 600; color: var(--neu-text); font-variant-numeric: tabular-nums; }
-.ts-track { position: relative; flex: 1 1 auto; min-width: 0; height: 12px; border: none; border-radius: 8px; background: var(--neu-surface); box-shadow: var(--neu-shadow-in-sm); cursor: pointer; overflow: hidden; touch-action: none; }
+/* The meter and the strip both run the full width of the card, because the strip is the selector and
+   the bar is the fine control: nothing else shares their columns. The bar is only as tall as the
+   volume bar, and the row padding around it is what the finger aims at when dragging. */
+.ts-meter { display: flex; align-items: center; padding: 6px 0; }
+.ts-icon { flex: 0 0 auto; width: 14px; height: 14px; fill: var(--neu-text-muted); }
+.ts-track { position: relative; flex: 1 1 auto; width: 100%; min-width: 0; height: 12px; border: none; border-radius: 8px; background: var(--neu-surface); box-shadow: var(--neu-shadow-in-sm); cursor: pointer; overflow: hidden; touch-action: none; }
 .ts-track:focus-visible { outline: 2px solid var(--neu-primary); outline-offset: 2px; }
 .ts-axis { position: absolute; inset: 0; }
 /* Programme boundaries inside the bar; normally empty because the bar spans a single slot. */
 .ts-seg { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--neu-border); }
 .ts-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--neu-primary); opacity: 0.3; }
 .ts-knob { position: absolute; top: 0; bottom: 0; left: 0; width: 3px; margin-left: -1px; background: var(--neu-primary); }
-/* The tick labels sit under the bar only, so they are inset by exactly the glyph column and the value
-   column of the row above: the first and last label line up with the ends of the bar. */
-.ts-scale { display: flex; justify-content: space-between; gap: 4px; margin-top: 4px; padding: 0 54px 0 30px; font-size: 10px; color: var(--neu-text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; }
+/* Tick labels span the bar itself, so the first and last label line up with the ends of the bar. */
+.ts-scale { display: flex; justify-content: space-between; gap: 4px; margin-top: 4px; font-size: 10px; color: var(--neu-text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; }
 /* The EPG band: the same programmes as the track, drawn as a swipeable timeline of readable blocks.
    Each block is as wide as its slot (flex-grow in minutes, with a floor so short items stay legible),
    carries its own start time and title, and the block holding the cursor is highlighted and kept
    centred while a playhead marks the exact position. Tapping a block seeks to that slot's start, so
    the phone gets both coarse (tap a programme) and fine (drag the track) control. */
-/* The strip lives in the same two columns as the bar above it - the glyph column on the left, the
-   clock column on the right - so the selected block and its marker sit under the meter's scale. */
-.ts-band { position: relative; margin: 8px 54px 0 30px; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+/* The strip is the selector and owns the full card width, so a day of programmes has room to scroll. */
+.ts-band { position: relative; margin: 8px 0 0; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
 .ts-band::-webkit-scrollbar { display: none; }
 .ts-band-inner { position: relative; display: flex; align-items: stretch; gap: 4px; min-height: 56px; }
 .ts-block { flex: 1 1 0; min-width: 84px; padding: 6px 8px 8px; border: none; border-radius: 10px; background: var(--neu-surface); color: var(--neu-text); box-shadow: var(--neu-shadow-out-sm); text-align: left; cursor: pointer; touch-action: manipulation; display: flex; flex-direction: column; gap: 2px; }
@@ -1519,7 +1517,7 @@ body.dark-theme, body.theme-dark { color: var(--neu-text); }
 .ts-block-name { font-size: 12px; font-weight: 600; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .ts-block.current .ts-block-name { color: var(--neu-primary); }
 .ts-playhead { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--neu-primary); box-shadow: 0 0 6px var(--neu-primary); pointer-events: none; }
-.ts-detail { display: flex; flex-direction: column; gap: 2px; margin: 6px 54px 0 30px; }
+.ts-detail { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; }
 .ts-detail-main { font-size: 13px; font-weight: 600; color: var(--neu-text); }
 .ts-detail-sub { font-size: 11px; color: var(--neu-text-muted); font-variant-numeric: tabular-nums; }
 .icon { width: 20px; height: 20px; fill: currentColor; }
@@ -1851,15 +1849,13 @@ body.remote-mode .rp-text-btn { min-height: clamp(36px, calc(var(--safe-vh) * 6.
 <button class=""btn"" id=""btnTimeshift"" onclick=""toggleTimeshift()""><svg class=""icon"" viewBox=""0 0 24 24""><path id=""timeshiftPath"" d=""M8 5v14l11-7z""/></svg><span id=""btnTimeshiftText"">__BTN_TIMESHIFT__</span></button>
 </div>
 <div class=""ts-scrubber"" id=""tsScrubber"" style=""display:none;"">
-<div class=""ts-head""><span id=""tsLabel""></span><span class=""ts-clock"" id=""tsClock""></span></div>
+<div class=""ts-head""><span class=""ts-head-left""><svg class=""icon ts-icon"" viewBox=""0 0 24 24""><path d=""M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z""/></svg><span id=""tsLabel""></span></span><span class=""ts-clock"" id=""tsClock""></span></div>
 <div class=""ts-meter"" id=""tsMeter"">
-<svg class=""icon ts-icon"" viewBox=""0 0 24 24""><path d=""M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z""/></svg>
 <div class=""ts-track"" id=""tsTrack"" role=""slider"" tabindex=""0"" aria-valuemin=""0"" aria-valuemax=""100"" aria-valuenow=""0"">
 <div class=""ts-axis"" id=""tsAxis""></div>
 <div class=""ts-fill"" id=""tsFill""></div>
 <div class=""ts-knob"" id=""tsKnob""></div>
 </div>
-<span class=""ts-time"" id=""tsTime""></span>
 </div>
 <div class=""ts-scale"" id=""tsScale""></div>
 <div class=""ts-band"" id=""tsBand""><div class=""ts-band-inner"" id=""tsBandInner""></div></div>
@@ -2257,7 +2253,8 @@ function renderTimeshiftScale(start, end) {
   tsScaleKey = key;
   scale.innerHTML = '';
   if (!usable) return;
-  var byDate = (end - start) >= 12 * 3600 * 1000;
+  // A long slot, or one that crosses midnight, carries the date so the labels never read backwards.
+  var byDate = (end - start) >= 12 * 3600 * 1000 || new Date(start).toDateString() !== new Date(end).toDateString();
   for (var i = 0; i < 5; i++) {
     var at = start + (end - start) * i / 4;
     var tick = document.createElement('span');
@@ -2314,15 +2311,20 @@ function renderTimeshiftBand() {
   var inner = document.getElementById('tsBandInner');
   if (!inner) return;
   if (!tsWindow.active || tsWindow.to <= tsWindow.from) { inner.innerHTML = ''; tsBandSignature = null; tsBlockSpans = []; tsCentredBlock = null; return; }
-  // The band is the selector, so it carries every programme the server sent for the channel, not
-  // only the ones inside the seekable window: the meter above shows the one selected slot, and this
-  // strip is how the user moves on to another.
+  // The strip is the selector and only ever shows the day the cursor is in: it scrolls inside that
+  // day and never crosses midnight, so the slots stay comparable while swiping. The signature leaves
+  // the window out, because the window end moves every second and the strip must not be rebuilt (and
+  // pulled back to the cursor) while the user is browsing it.
+  var cursorMs = tsWindow.from + tsWindow.position * 1000;
+  var anchor = tsProgramAt(cursorMs);
+  var dayKey = anchor && anchor.startISO ? new Date(anchor.startISO).toDateString() : null;
   var list = epgPrograms.filter(function(p) {
     var s = p.startISO ? new Date(p.startISO).getTime() : 0;
     var e = p.endISO ? new Date(p.endISO).getTime() : 0;
-    return !!s && !!e;
+    if (!s || !e) return false;
+    return !dayKey || new Date(p.startISO).toDateString() === dayKey;
   });
-  var signature = tsWindow.from + '|' + tsWindow.to + '|' + list.map(function(p) { return p.startISO; }).join(',');
+  var signature = (dayKey || '') + '|' + list.map(function(p) { return p.startISO; }).join(',');
   if (signature === tsBandSignature) return;
   tsBandSignature = signature;
   tsCentredBlock = null;
@@ -2426,9 +2428,6 @@ function paintTimeshift(seconds) {
   var track = document.getElementById('tsTrack'); if (track) track.setAttribute('aria-valuenow', String(Math.round(pct)));
   var clock = document.getElementById('tsClock');
   if (clock) clock.textContent = tsClockText(atMs, true);
-  // The cell beside the bar is the clock column of the row, mirroring the volume percentage.
-  var time = document.getElementById('tsTime');
-  if (time) time.textContent = tsClockText(atMs, false);
   renderTimeshiftScale(slot.from, slot.to);
   // Tie the position to the EPG: name and slot of the programme that runs at the cursor. The card
   // under the header repeats it, because while timeshift runs the live programme is not what the
