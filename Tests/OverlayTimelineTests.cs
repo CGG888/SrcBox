@@ -1,5 +1,6 @@
 using System;
 using LibmpvIptvClient;
+using LibmpvIptvClient.Architecture.Presentation.Mvvm.Settings;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace LibmpvIptvClient.Tests
@@ -261,6 +262,53 @@ namespace LibmpvIptvClient.Tests
                 "a very long window falls back to the coarsest step rather than drawing thousands of ticks");
         }
 
+        /// <summary>
+        /// Minor ticks subdivide a major step only while the notches stay far enough apart: the finest cadence
+        /// that divides the step and leaves at least <see cref="TimelineBandMetrics.MinimumMinorTickSpacing"/>
+        /// between two notches wins, and a step that is already minute-fine gets none.
+        /// </summary>
+        [DataTestMethod]
+        [DataRow(15, 120d, 1, DisplayName = "a wide fifteen minute step allows the finest notch")]
+        [DataRow(10, 90d, 1, DisplayName = "a ten minute step on a wide bar also subdivides to minutes")]
+        [DataRow(15, 30d, 5, DisplayName = "a narrow fifteen minute step settles for five minute notches")]
+        [DataRow(60, 240d, 2, DisplayName = "the hourly step falls back to two minute notches")]
+        [DataRow(5, 90d, 1, DisplayName = "the finest major step can still subdivide once")]
+        public void MinorTicksSubdivideAMajorStepWhileItStaysReadable(int majorMinutes, double spacing, int expected)
+        {
+            Assert.AreEqual(expected, TimelineBandMetrics.MinorTickMinutesFor(majorMinutes, spacing));
+            int minor = TimelineBandMetrics.MinorTickMinutesFor(majorMinutes, spacing);
+            Assert.AreEqual(0, majorMinutes % minor, "a minor cadence must divide the major step evenly");
+            Assert.IsTrue(spacing * minor / majorMinutes >= TimelineBandMetrics.MinimumMinorTickSpacing,
+                "minor notches must never be drawn closer than the readable minimum");
+        }
+
+        [TestMethod]
+        public void MinorTicksStayOffForDegenerateRulers()
+        {
+            Assert.AreEqual(0, TimelineBandMetrics.MinorTickMinutesFor(0, 200));
+            Assert.AreEqual(0, TimelineBandMetrics.MinorTickMinutesFor(1, 400),
+                "a one minute step has nothing left to subdivide");
+            Assert.AreEqual(0, TimelineBandMetrics.MinorTickMinutesFor(15, 0));
+            Assert.AreEqual(0, TimelineBandMetrics.MinorTickMinutesFor(15, -40));
+        }
+
+        [TestMethod]
+        public void MinorNotchesStayQuieterThanTheFaintestMajorNotch()
+        {
+            Assert.IsTrue(TimelineBandMetrics.MinorNotchHeight < TimelineBandMetrics.StepNotchHeight,
+                "a minor notch is shorter than the plain step notch");
+            Assert.IsTrue(TimelineBandMetrics.StepNotchHeight < TimelineBandMetrics.HalfHourNotchHeight,
+                "the plain step is shorter than the half hour notch");
+            Assert.IsTrue(TimelineBandMetrics.HalfHourNotchHeight < TimelineBandMetrics.HourNotchHeight,
+                "the half hour notch is shorter than the hour notch");
+            Assert.IsTrue(TimelineBandMetrics.MinorNotchOpacity < TimelineBandMetrics.StepNotchOpacity
+                && TimelineBandMetrics.StepNotchOpacity < TimelineBandMetrics.HalfHourNotchOpacity
+                && TimelineBandMetrics.HalfHourNotchOpacity < TimelineBandMetrics.HourNotchOpacity,
+                "the ladder gets fainter the finer the notch");
+            Assert.IsTrue(TimelineBandMetrics.MinorNotchOpacity >= 0.4d,
+                "but the finest notch stays visible rather than fading into the bar");
+        }
+
         [TestMethod]
         public void WindowStartSnapsBackOntoATickBoundary()
         {
@@ -416,6 +464,41 @@ namespace LibmpvIptvClient.Tests
                 $"the programme band grew to {TimeshiftTimeline.BandRowHeight} DIP again");
             Assert.IsTrue(TimeshiftTimeline.BandRowHeight >= 20,
                 "the band still has to fit a name row, a ruler and a clickable segment row");
+        }
+
+        /// <summary>Settings-Playback switch: the EPG timeline stays the default, so an upgrade changes nothing.</summary>
+        [TestMethod]
+        public void SeekBarStyleDefaultsToTheEpgTimeline()
+        {
+            Assert.AreEqual(SeekBarStyle.EpgTimeline, new PlaybackSettings().SeekBar);
+        }
+
+        /// <summary>The chosen style survives the settings dialog round trip, and an unknown value falls back.</summary>
+        [TestMethod]
+        public void SeekBarStyleSurvivesTheSettingsRoundTrip()
+        {
+            var viewModel = new SettingsPlaybackViewModel();
+
+            var form = viewModel.BuildFormState(new PlaybackSettings { SeekBar = SeekBarStyle.Standard });
+            Assert.AreEqual(SeekBarStyle.Standard, form.SeekBar);
+
+            var copy = new PlaybackSettings();
+            viewModel.UpdateSettings(copy, form);
+            Assert.AreEqual(SeekBarStyle.Standard, copy.SeekBar);
+
+            var broken = form with { SeekBar = (SeekBarStyle) 42 };
+            var fallback = new PlaybackSettings();
+            viewModel.UpdateSettings(fallback, broken);
+            Assert.AreEqual(SeekBarStyle.EpgTimeline, fallback.SeekBar,
+                "a hand edited settings file must not be able to poison the seek bar style");
+        }
+
+        /// <summary>Both styles are known by name to the combo tags used by the settings window.</summary>
+        [TestMethod]
+        public void SeekBarStyleNamesMatchTheSettingsComboTags()
+        {
+            Assert.AreEqual("EpgTimeline", SeekBarStyle.EpgTimeline.ToString());
+            Assert.AreEqual("Standard", SeekBarStyle.Standard.ToString());
         }
     }
 }

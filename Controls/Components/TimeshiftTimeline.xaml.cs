@@ -31,7 +31,7 @@ namespace LibmpvIptvClient
     /// applies <see cref="RequiredHeight"/>. Every segment state (live / replay / timeshift / scheduled) comes
     /// from <see cref="Services.TimelineSegmentActions"/>, the single classifier shared with the two hosts.
     /// </summary>
-    public partial class TimeshiftTimeline : UserControl
+    public partial class TimeshiftTimeline : UserControl, ISeekMeter
     {
         /// <summary>Raised when the user starts dragging the band; the host locks its tick-driven value updates until the release.</summary>
         public event Action? SeekStart;
@@ -44,6 +44,12 @@ namespace LibmpvIptvClient
         /// the shared <see cref="Services.TimelineSegmentActions"/> verdict (go live / seek timeshift / replay).
         /// </summary>
         public event Action<TimelineProgramme>? ProgrammeSelected;
+
+        /// <summary>
+        /// Raised when the user clicks a time on the ruler. The host turns it into the shared timeshift jump
+        /// (or into a replay when the channel cannot timeshift at all).
+        /// </summary>
+        public event Action<DateTime>? TimeSeekRequested;
 
         /// <summary>Raised whenever the preferred height changes (band shown/hidden, compact toggled).</summary>
         public event Action? LayoutChanged;
@@ -91,6 +97,7 @@ namespace LibmpvIptvClient
         private DataTemplate? _blockTemplate;
 
         private bool _compactMode = true;
+
         private string _scheduleSignature = string.Empty;
 
         private DateTime _cursor = DateTime.Now;
@@ -246,7 +253,8 @@ namespace LibmpvIptvClient
             {
                 if (state == null || state.Programmes == null || state.Programmes.Count == 0)
                 {
-                    // No schedule to show: fall back to the short meter-only bar (the old 64 px height).
+                    // No schedule to show: drop to the short meter-only layout and let the host show its
+                    // standard progress bar instead (see MainWindow.ApplyWindowedTimelineSnapshot).
                     SetCompactMode(true);
                     HideBand();
                     return;
@@ -537,17 +545,46 @@ namespace LibmpvIptvClient
             if (count <= 0) return;
             double spacing = width / count;
 
+            // Minor notches subdivide a major step whenever the cadence has room: shorter and fainter than the
+            // plain minute step, so the ruler still reads as three levels instead of one grey band.
+            int minorMinutes = TimelineBandMetrics.MinorTickMinutesFor(_tickMinutes, spacing);
+            if (minorMinutes > 0)
+            {
+                int minorCount = (int) Math.Round(_windowSpan.TotalMinutes / minorMinutes);
+                for (int i = 1; i < minorCount; i++)
+                {
+                    if (i * minorMinutes % _tickMinutes == 0) continue; // that position carries a major notch
+                    var minorTime = _windowStart.AddMinutes(i * minorMinutes);
+                    double minorX = TimelineBandMetrics.PercentFor(_windowStart, _windowSpan, minorTime) * width;
+                    var minor = new Rectangle
+                    {
+                        Width = 1,
+                        Height = TimelineBandMetrics.MinorNotchHeight,
+                        Opacity = TimelineBandMetrics.MinorNotchOpacity
+                    };
+                    minor.SetResourceReference(Shape.FillProperty, "BorderBrushCommon");
+                    Canvas.SetLeft(minor, Math.Round(minorX));
+                    Canvas.SetTop(minor, height - TimelineBandMetrics.MinorNotchHeight);
+                    RulerCanvas.Children.Add(minor);
+                }
+            }
+
             for (int i = 0; i <= count; i++)
             {
                 var time = _windowStart.AddMinutes(i * _tickMinutes);
                 double x = TimelineBandMetrics.PercentFor(_windowStart, _windowSpan, time) * width;
 
-                // Graded notches: full hour 8 px, half hour 5 px, plain minute step 3 px at 30 %.
+                // Graded notches: full hour 9 px, half hour 7 px, plain step 5 px, minute subdivision 3 px.
                 bool onHour = time.Minute == 0;
                 bool onHalfHour = time.Minute == 30;
-                double notchHeight = onHour ? 8d : onHalfHour ? 5d : 3d;
+                double notchHeight = onHour ? TimelineBandMetrics.HourNotchHeight
+                    : onHalfHour ? TimelineBandMetrics.HalfHourNotchHeight
+                    : TimelineBandMetrics.StepNotchHeight;
+                double notchOpacity = onHour ? TimelineBandMetrics.HourNotchOpacity
+                    : onHalfHour ? TimelineBandMetrics.HalfHourNotchOpacity
+                    : TimelineBandMetrics.StepNotchOpacity;
 
-                var notch = new Rectangle { Width = 1, Height = notchHeight, Opacity = onHour ? 0.9 : onHalfHour ? 0.6 : 0.3 };
+                var notch = new Rectangle { Width = 1, Height = notchHeight, Opacity = notchOpacity };
                 notch.SetResourceReference(Shape.FillProperty, onHour ? "TextPrimaryBrush" : "BorderBrushCommon");
                 Canvas.SetLeft(notch, Math.Round(x));
                 Canvas.SetTop(notch, height - notchHeight);
@@ -889,6 +926,8 @@ namespace LibmpvIptvClient
                 RowBand.Height = compact ? new GridLength(0) : GridLength.Auto;
                 RowBand.MinHeight = compact ? 0d : BandRowHeight;
                 RulerCanvas.Height = RulerRowHeight;
+                // A spanning child would otherwise inflate the zero-height band row; the meter row carries the volume group.
+                Grid.SetRowSpan(VolumeGroup, compact ? 1 : 3);
                 if (compact)
                 {
                     Band.Visibility = Visibility.Collapsed;
@@ -1047,6 +1086,30 @@ namespace LibmpvIptvClient
             }
         }
 
+        /// <summary>
+        /// A click on the ruler picks the wall clock under the pointer and asks the host to jump there. In the
+        /// live state that means switching timeshift on, which is why the ruler stays hit-testable.
+        /// </summary>
+        void RulerCanvas_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            try
+            {
+                if (_compactMode || _windowSpan.Ticks <= 0) return;
+                double width = RulerCanvas.ActualWidth;
+                if (width <= 0) return;
+
+                var p = e.GetPosition(RulerCanvas);
+                var time = TimelineBandMetrics.TimeAtPercent(_windowStart, _windowSpan,
+                                                             TimelineBandMetrics.ClampPercent(p.X / width));
+                e.Handled = true;
+                TimeSeekRequested?.Invoke(time);
+            }
+            catch (Exception ex)
+            {
+                LibmpvIptvClient.Diagnostics.Logger.Debug($"[Timeline] ruler click failed: {ex.Message}");
+            }
+        }
+
         void TrackCanvas_SizeChanged(object sender, SizeChangedEventArgs e) => Render();
 
         void TrackCanvas_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -1082,12 +1145,12 @@ namespace LibmpvIptvClient
 
                 if (!_pointerDown)
                 {
-                    // Hover: the dashed cursor snaps onto the ruler step and previews what a click would do.
+                    // Hover: the dashed cursor tracks the pointer 1:1 - picking a time never snaps to a tick - and
+                    // previews what a click would do.
                     if (width > 0)
                     {
-                        var raw = TimelineBandMetrics.TimeAtPercent(_windowStart, _windowSpan,
-                                                                    TimelineBandMetrics.ClampPercent(p.X / width));
-                        _hoverCursorTime = TimelineSegmentActions.SnapHover(raw, _tickMinutes, _windowStart, _windowSpan);
+                        _hoverCursorTime = TimelineBandMetrics.TimeAtPercent(_windowStart, _windowSpan,
+                                                                            TimelineBandMetrics.ClampPercent(p.X / width));
                         _hoverCursorVisible = true;
                         UpdateHoverCursor();
                     }

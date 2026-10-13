@@ -321,6 +321,16 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 }
                 catch { }
             };
+
+            // Ruler clicks pick a wall clock instead of a programme; the windowed bar routes the same gesture
+            // into the same handler, so a click on either ruler means the same thing.
+            _overlayWpf.TimeSeekRequested += (time) =>
+            {
+                try { _window.ActivateTimelineTime(time); } catch { }
+            };
+
+            // Both bars now exist, so the persisted seek bar style can be pushed onto them.
+            try { _window.ApplySeekBarStyle(); } catch { }
         }
 
         private void SyncInitialState()

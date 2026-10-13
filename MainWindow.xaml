@@ -1393,17 +1393,21 @@
                     </Style.Triggers>
                 </Style>
             </Border.Style>
-            <Grid Margin="12,0">
+            <!-- 内容整体垂直居中：紧凑态（无 EPG 的标准进度条）只有一行进度条 + 按钮行，
+                 居中后进度条不会贴着上边缘 -->
+            <Grid Margin="12,0" VerticalAlignment="Center">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/> <!-- 节目时间线（与全屏浮层共用控件） -->
-                    <RowDefinition Height="*"/>    <!-- 按钮 -->
+                    <RowDefinition Height="Auto"/> <!-- 按钮 -->
                 </Grid.RowDefinitions>
 
                 <!-- 节目时间线：同一控件也承载全屏浮层的进度条/节目条 -->
-                <local:TimeshiftTimeline x:Name="TimelineWindowed" Grid.Row="0" Margin="0,4,0,0"/>
+                <local:TimeshiftTimeline x:Name="TimelineWindowed" Grid.Row="0" Visibility="Collapsed"/>
+                <!-- 标准进度条：独立控件，只在“进度条样式=标准进度条”或频道没有 EPG 时显示 -->
+                <local:StandardSeekBar x:Name="SeekBarWindowed" Grid.Row="0"/>
 
                 <!-- 按钮行 -->
-                <Grid Grid.Row="1" VerticalAlignment="Center">
+                <Grid x:Name="BottomButtonRow" Grid.Row="1" Margin="0,8,0,0" VerticalAlignment="Center">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/> <!-- 左 -->
                         <ColumnDefinition Width="*"/>    <!-- 中 -->

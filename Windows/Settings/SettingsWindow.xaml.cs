@@ -146,6 +146,7 @@ namespace LibmpvIptvClient
                 CbRememberPlaylistSource.IsChecked = current.AutoLoadLastSource;
                 CbRememberChannel.IsChecked = current.RememberChannelPerPlaylist;
                 CbRememberChannelSource.IsChecked = current.RememberChannelSource;
+                SetComboByTag(CbSeekBarStyle, current.SeekBar.ToString());
             }
             catch { }
 
@@ -351,7 +352,16 @@ namespace LibmpvIptvClient
                 TbMpvTimeout?.Text ?? "0",
                 CbRememberPlaylistSource?.IsChecked == true,
                 CbRememberChannel?.IsChecked == true,
-                CbRememberChannelSource?.IsChecked == true);
+                CbRememberChannelSource?.IsChecked == true,
+                ParseSeekBarStyle(GetComboTag(CbSeekBarStyle, "EpgTimeline")));
+        }
+
+        /// <summary>Maps the combo tag onto the persisted enum; anything unknown keeps the EPG timeline.</summary>
+        static SeekBarStyle ParseSeekBarStyle(string? tag)
+        {
+            return string.Equals(tag, nameof(SeekBarStyle.Standard), StringComparison.OrdinalIgnoreCase)
+                ? SeekBarStyle.Standard
+                : SeekBarStyle.EpgTimeline;
         }
         HttpHeaderConfig ReadHttpHeaderFormState()
         {
@@ -425,6 +435,7 @@ namespace LibmpvIptvClient
                 CbRememberPlaylistSource.IsChecked = pState.RememberPlaylistSource;
                 CbRememberChannel.IsChecked = pState.RememberChannel;
                 CbRememberChannelSource.IsChecked = pState.RememberChannelSource;
+                SetComboByTag(CbSeekBarStyle, pState.SeekBar.ToString());
                 // EPG/Logo/Replay/Timeshift 控件刷新
                 _tempReplay = _replayDrawerViewModel.BuildTempConfig(s.Replay);
                 _tempTimeshift = _timeshiftDrawerViewModel.BuildTempConfig(s.Timeshift);

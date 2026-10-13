@@ -32,6 +32,8 @@ namespace LibmpvIptvClient
         public event Action<bool>? TimeshiftToggled;
         /// <summary>Raised when a programme segment is clicked; the host resolves the intent at click time.</summary>
         public event Action<TimelineProgramme>? ProgrammeSelected;
+        /// <summary>Raised when a time on the ruler is clicked; the host turns it into a timeshift jump.</summary>
+        public event Action<DateTime>? TimeSeekRequested;
         private bool _timeshiftOn = false;
         private bool _muted = false;
 
@@ -56,9 +58,19 @@ namespace LibmpvIptvClient
                 Timeline.SeekStart += () => SeekStart?.Invoke();
                 Timeline.SeekEnd += v => SeekEnd?.Invoke(v);
                 Timeline.ProgrammeSelected += programme => ProgrammeSelected?.Invoke(programme);
+                Timeline.TimeSeekRequested += time => TimeSeekRequested?.Invoke(time);
                 Timeline.VolumeChanged += v => VolumeChanged?.Invoke(v);
                 Timeline.MuteChanged += m => { _muted = m; MuteChanged?.Invoke(m); };
                 Timeline.LayoutChanged += ApplyBarHeight;
+
+                // The standard bar is a separate control with its own 20 px row; it reports the same events.
+                SeekBar.SeekStart += () => SeekStart?.Invoke();
+                SeekBar.SeekEnd += v => SeekEnd?.Invoke(v);
+                SeekBar.VolumeChanged += v => VolumeChanged?.Invoke(v);
+                SeekBar.MuteChanged += m => { _muted = m; MuteChanged?.Invoke(m); };
+                SeekBar.LayoutChanged += ApplyBarHeight;
+                SeekBar.Visibility = Visibility.Collapsed;
+
                 // The button row is measured once it has been laid out; re-fit when its natural height changes.
                 ButtonRowHost.SizeChanged += (s, e) => ApplyBarHeight();
                 Loaded += (s, e) => ApplyBarHeight();
@@ -68,16 +80,16 @@ namespace LibmpvIptvClient
             ApplyBarHeight();
         }
 
-        /// <summary>Resizes this floating window to the height the hosted timeline currently wants.</summary>
+        /// <summary>Resizes this floating window to the height the meter currently on screen wants.</summary>
         void ApplyBarHeight()
         {
             try
             {
-                double required = Timeline?.RequiredHeight ?? 0;
+                double required = ActiveMeter?.RequiredHeight ?? 0;
                 if (required <= 0) required = FallbackMeterHeight;
                 double row = ButtonRowHost?.ActualHeight ?? 0;
                 if (row <= 0) row = ButtonRowHeight;
-                // 8 px between the timeline and the button row, 8 px between the button row and the bar's edge,
+                // 8 px between the meter and the button row, 8 px between the button row and the bar's edge,
                 // so the buttons sit centred in the gap on both sides.
                 var wanted = required + BarGap + row + BarGap;
                 if (Math.Abs(Height - wanted) > 0.5) Height = wanted;
@@ -196,7 +208,7 @@ namespace LibmpvIptvClient
         public void SetMuted(bool muted)
         {
             _muted = muted;
-            try { Timeline.SetMuted(muted); } catch { }
+            try { ActiveMeter.SetMuted(muted); } catch { }
         }
         public void SetTimeshift(bool on)
         {
@@ -219,7 +231,7 @@ namespace LibmpvIptvClient
         }
         public void SetTime(double current, double duration)
         {
-            try { Timeline.SetTime(current, duration); } catch { }
+            try { ActiveMeter.SetTime(current, duration); } catch { }
             if (!_timeshiftOn)
             {
                 try
@@ -232,8 +244,52 @@ namespace LibmpvIptvClient
         }
 
         // ---------------------------------------------------------------------
-        // EPG timeline: forwarded to the hosted control.
+        // The two progress bars. The overlay hosts both and shows exactly one of them, so a change to either
+        // control's own layout cannot move the other one.
         // ---------------------------------------------------------------------
+
+        /// <summary>True while the EPG timeline owns the overlay; false while the standard bar does.</summary>
+        private bool _showTimeline = true;
+
+        /// <summary>True once a pushed snapshot carried a schedule the EPG band could draw.</summary>
+        private bool _hasSchedule;
+
+        /// <summary>Whichever bar is on screen right now.</summary>
+        private ISeekMeter ActiveMeter => _showTimeline ? (ISeekMeter) Timeline : SeekBar;
+
+        /// <summary>
+        /// Chooses which of the two bars is visible. Both stay in the tree, so switching styles is instant and
+        /// never rebuilds the hidden one's rows.
+        /// </summary>
+        void SetBarMode(bool showTimeline)
+        {
+            _showTimeline = showTimeline;
+            try
+            {
+                Timeline.Visibility = showTimeline ? Visibility.Visible : Visibility.Collapsed;
+                SeekBar.Visibility = showTimeline ? Visibility.Collapsed : Visibility.Visible;
+            }
+            catch { }
+            ApplyBarHeight();
+        }
+
+        /// <summary>
+        /// Applies the configured seek-bar style. A channel without an EPG schedule keeps the standard bar even
+        /// when the EPG timeline style is selected.
+        /// </summary>
+        public void ApplySeekBarStyle()
+        {
+            SetBarMode(_hasSchedule && AppSettings.Current.SeekBar != SeekBarStyle.Standard);
+        }
+
+        /// <summary>The hosted EPG timeline; the windowed bar's peer of this window talks to the same type.</summary>
+        public TimeshiftTimeline TimelineControl => Timeline;
+
+        /// <summary>Volume UI of whichever bar is visible (the wheel and the mute tooltip drive it).</summary>
+        public LibmpvIptvClient.Controls.VolumeSlider VolumeSlider => ActiveMeter.VolumeSlider;
+
+        /// <summary>Mute button of whichever bar is visible.</summary>
+        public System.Windows.Controls.Button MuteButton => ActiveMeter.MuteButton;
 
         /// <summary>
         /// Applies a full EPG timeline snapshot. Callers push this every playback tick; the strip itself is only
@@ -241,19 +297,14 @@ namespace LibmpvIptvClient
         /// </summary>
         public void SetTimelineState(OverlayTimelineState? state)
         {
+            _hasSchedule = state != null && state.Programmes != null && state.Programmes.Count > 0;
+            if (!_hasSchedule && _showTimeline && AppSettings.Current.SeekBar != SeekBarStyle.Standard)
+            {
+                SetBarMode(false);
+            }
             try { Timeline.SetTimelineState(state); } catch { }
             ApplyBarHeight();
         }
-
-        /// <summary>Compact = the meter only (the old 80 px bar); false = ticks + strip + detail.</summary>
-        public void SetCompactMode(bool compact)
-        {
-            try { Timeline.SetCompactMode(compact); } catch { }
-            ApplyBarHeight();
-        }
-
-        /// <summary>The hosted timeline; the windowed bar's peer of this window talks to the same type.</summary>
-        public TimeshiftTimeline TimelineControl => Timeline;
 
         public void SetTimeshiftSchedule(IReadOnlyList<TimelineProgramme> programmes, DateTime cursor)
         {
@@ -263,7 +314,7 @@ namespace LibmpvIptvClient
 
         public void SetVolume(double val)
         {
-            try { Timeline.SetVolume(val); } catch { }
+            try { ActiveMeter.SetVolume(val); } catch { }
         }
         string FormatTime(double sec)
         {
@@ -485,8 +536,8 @@ namespace LibmpvIptvClient
         }
         void OnPreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
         {
-            // Wheel over the programme strip scrolls it horizontally; anywhere else it keeps controlling volume.
-            if (Timeline.HandleWheel(e)) return;
+            // Wheel over the EPG programme strip scrolls it horizontally; anywhere else it keeps controlling volume.
+            if (_showTimeline && Timeline.HandleWheel(e)) return;
 
             int step = 5;
             int dir = e.Delta > 0 ? 1 : -1;
@@ -494,11 +545,11 @@ namespace LibmpvIptvClient
             if (_muted)
             {
                 _muted = false;
-                Timeline.SetMuted(false);
+                ActiveMeter.SetMuted(false);
                 MuteChanged?.Invoke(_muted);
             }
-            var v = Math.Max(0, Math.Min(100, Timeline.VolumeSlider.Volume + dir * step));
-            Timeline.VolumeSlider.Volume = v;
+            var v = Math.Max(0, Math.Min(100, VolumeSlider.Volume + dir * step));
+            VolumeSlider.Volume = v;
             // 显示百分比提示
             ShowVolumeTooltip(v);
             e.Handled = true;
@@ -508,7 +559,7 @@ namespace LibmpvIptvClient
         public void ShowVolumeTooltip(double value)
         {
             // 通过 ToolTip 显示百分比
-            Timeline.MuteButton.ToolTip = $"音量: {(int)value}%";
+            MuteButton.ToolTip = $"音量: {(int)value}%";
             // 自动隐藏
             if (_volumeTooltipTimer != null)
             {
@@ -519,7 +570,7 @@ namespace LibmpvIptvClient
             _volumeTooltipTimer.Tick += (s, e2) =>
             {
                 _volumeTooltipTimer?.Stop();
-                Timeline.MuteButton.ToolTip = "静音";
+                MuteButton.ToolTip = "静音";
             };
             _volumeTooltipTimer.Start();
         }

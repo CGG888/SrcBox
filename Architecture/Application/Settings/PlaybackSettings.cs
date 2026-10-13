@@ -163,6 +163,19 @@ namespace LibmpvIptvClient
         public bool AppendEpgTime { get; set; } = false;
     }
 
+    /// <summary>
+    /// Which seek bar the player paints: the EPG programme timeline (default) or the plain standard progress bar.
+    /// Persisted as its numeric value, so an existing style must never be renumbered.
+    /// </summary>
+    public enum SeekBarStyle
+    {
+        /// <summary>Programme timeline with ticks and segment badges; falls back to the plain meter when no EPG data exists.</summary>
+        EpgTimeline = 0,
+
+        /// <summary>Plain standard progress bar, even when an EPG schedule is available.</summary>
+        Standard = 1
+    }
+
     public class PlaybackSettings
     {
         public string Decoder { get; set; } = "auto";
@@ -214,6 +227,12 @@ namespace LibmpvIptvClient
             public double Volume { get; set; } = 100;
             // 音频延迟 (秒): -100 ~ 100，默认 0
             public double AudioDelay { get; set; } = 0;
+
+        /// <summary>
+        /// Seek bar style shared by the windowed bottom bar and the fullscreen overlay. Default = the EPG
+        /// programme timeline; <see cref="SeekBarStyle.Standard"/> forces the plain progress bar instead.
+        /// </summary>
+        public SeekBarStyle SeekBar { get; set; } = SeekBarStyle.EpgTimeline;
 
         public EpgConfig Epg { get; set; } = new EpgConfig();
         public LogoConfig Logo { get; set; } = new LogoConfig();

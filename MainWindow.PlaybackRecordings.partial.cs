@@ -37,6 +37,12 @@ namespace LibmpvIptvClient
             ActivateTimelineSegment(programme, timeline?.ResolveSegment(programme) ?? default);
         }
 
+        /// <summary>Windowed bar ruler click: the ruler is a time picker, so it takes the shared time path.</summary>
+        void TimelineWindowed_TimeSeekRequested(DateTime time)
+        {
+            ActivateTimelineTime(time);
+        }
+
         /// <summary>
         /// The one place a timeline segment click turns into playback, shared by the windowed bottom bar and the
         /// fullscreen overlay. Order: the live slot returns to the live edge, a slot inside the running timeshift
@@ -75,6 +81,48 @@ namespace LibmpvIptvClient
             }
             catch { }
         }
+
+        /// <summary>
+        /// A click on the ruler row, shared by both bars. In the live state this is the "open timeshift here"
+        /// gesture: the shell is switched into timeshift first (the same path as ticking the overlay checkbox),
+        /// then the buffer jumps onto the clicked wall clock. A channel that cannot timeshift falls back to
+        /// catchup playback when the time is still inside the replay window, and is left alone otherwise.
+        /// </summary>
+        internal void ActivateTimelineTime(DateTime target)
+        {
+            try
+            {
+                var channel = _shell.CurrentChannel;
+                if (channel == null) return;
+
+                if (!_shell.IsTimeshiftActive) _shell.IsTimeshiftActive = true;
+
+                if (_shell.IsTimeshiftActive)
+                {
+                    var clamped = target;
+                    if (clamped < _shell.TimeshiftMin) clamped = _shell.TimeshiftMin;
+                    if (_shell.TimeshiftMax > _shell.TimeshiftMin && clamped > _shell.TimeshiftMax) clamped = _shell.TimeshiftMax;
+
+                    Diagnostics.Logger.Info($"时间轴跳转 {clamped:yyyy-MM-dd HH:mm:ss}");
+                    _shell.TimeshiftCursorSec = Math.Max(0, (clamped - _shell.TimeshiftMin).TotalSeconds);
+                    _shell.TimeshiftStart = clamped;
+                    _shell.ChannelPlaybackActions.PlayCatchupAt(channel, clamped, keepTimeshiftMode: true);
+                    return;
+                }
+
+                // No timeshift buffer on this source: a still-replayable instant becomes ordinary catchup playback.
+                if (target < DateTime.Now && target > Services.ArchiveWindow.ReplayFloor)
+                {
+                    Diagnostics.Logger.Info($"时间轴跳转（回看）{target:yyyy-MM-dd HH:mm:ss}");
+                    _shell.ChannelPlaybackActions.PlayCatchupAt(channel, target, keepTimeshiftMode: false);
+                    return;
+                }
+
+                Diagnostics.Logger.Info($"时间轴跳转被忽略：{target:yyyy-MM-dd HH:mm:ss} 不支持时移且不可回看");
+            }
+            catch { }
+        }
+
         void ClearIndicatorsOnStop()
         {
             try

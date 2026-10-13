@@ -34,6 +34,24 @@ namespace LibmpvIptvClient
         /// <summary>Pointer travel below this is a tap, above it a drag (DRAG_THRESHOLD_PX).</summary>
         public const double DragThresholdPx = 4d;
 
+        /// <summary>Candidate minor-tick cadences in whole minutes, finest first; each must divide the major step.</summary>
+        public static readonly int[] MinorTickMinuteOptions = { 1, 2, 5, 10, 15, 30 };
+
+        /// <summary>Two minor notches any closer than this smear the ruler into a grey band.</summary>
+        public const double MinimumMinorTickSpacing = 8d;
+
+        /// <summary>Ruler ladder, tallest rung first: full hour, half hour, plain step, minute subdivision.</summary>
+        public const double HourNotchHeight = 9d;
+        public const double HalfHourNotchHeight = 7d;
+        public const double StepNotchHeight = 5d;
+        public const double MinorNotchHeight = 3d;
+
+        /// <summary>Opacity of each rung of the ruler ladder, strongest first.</summary>
+        public const double HourNotchOpacity = 0.95d;
+        public const double HalfHourNotchOpacity = 0.75d;
+        public const double StepNotchOpacity = 0.6d;
+        public const double MinorNotchOpacity = 0.45d;
+
         /// <summary>Short programmes still get a clickable sliver at the end of the track.</summary>
         public const double MinimumBlockWidth = 2d;
 
@@ -55,6 +73,24 @@ namespace LibmpvIptvClient
                 if (minutes / TickMinuteOptions[i] <= MaxTicksPerWindow) return TickMinuteOptions[i];
             }
             return TickMinuteOptions[TickMinuteOptions.Length - 1];
+        }
+
+        /// <summary>
+        /// Minutes between two minor notches inside a major tick drawn <paramref name="majorSpacingPx"/> pixels
+        /// apart, or 0 when the ruler is too tight to subdivide. The finest cadence that still divides the major
+        /// step and leaves at least <see cref="MinimumMinorTickSpacing"/> between notches wins.
+        /// </summary>
+        public static int MinorTickMinutesFor(int tickMinutes, double majorSpacingPx)
+        {
+            if (tickMinutes <= 1 || majorSpacingPx <= 0) return 0;
+            for (int i = 0; i < MinorTickMinuteOptions.Length; i++)
+            {
+                int minor = MinorTickMinuteOptions[i];
+                if (minor >= tickMinutes) break;
+                if (tickMinutes % minor != 0) continue;
+                if (majorSpacingPx * minor / tickMinutes >= MinimumMinorTickSpacing) return minor;
+            }
+            return 0;
         }
 
         /// <summary>Rounds a wall clock down onto the previous tick boundary so the ruler always starts on a step.</summary>

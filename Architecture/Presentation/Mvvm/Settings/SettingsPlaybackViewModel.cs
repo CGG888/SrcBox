@@ -18,7 +18,8 @@ public sealed record SettingsPlaybackFormState(
     string MpvNetworkTimeout,
     bool RememberPlaylistSource,
     bool RememberChannel,
-    bool RememberChannelSource);
+    bool RememberChannelSource,
+    SeekBarStyle SeekBar);
 
 public sealed class SettingsPlaybackViewModel : ViewModelBase
 {
@@ -39,7 +40,8 @@ public sealed class SettingsPlaybackViewModel : ViewModelBase
             settings.MpvNetworkTimeoutSec.ToString(CultureInfo.InvariantCulture),
             settings.AutoLoadLastSource,
             settings.RememberChannelPerPlaylist,
-            settings.RememberChannelSource
+            settings.RememberChannelSource,
+            settings.SeekBar
         );
     }
 
@@ -77,5 +79,8 @@ public sealed class SettingsPlaybackViewModel : ViewModelBase
         settings.AutoLoadLastSource = form.RememberPlaylistSource;
         settings.RememberChannelPerPlaylist = form.RememberChannel;
         settings.RememberChannelSource = form.RememberChannelSource;
+
+        // An unknown value can only arrive from a hand-edited settings file; fall back to the default timeline.
+        settings.SeekBar = form.SeekBar == SeekBarStyle.Standard ? SeekBarStyle.Standard : SeekBarStyle.EpgTimeline;
     }
 }

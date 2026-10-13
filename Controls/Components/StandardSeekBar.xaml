@@ -1,0 +1,76 @@
+<UserControl x:Class="LibmpvIptvClient.StandardSeekBar"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:controls="clr-namespace:LibmpvIptvClient.Controls"
+             mc:Ignorable="d"
+             d:DesignHeight="20" d:DesignWidth="900">
+  <UserControl.Resources>
+    <!-- 自制控件样式：本控件同时被全屏浮层与窗口模式底栏宿主，不能依赖宿主的资源作用域 -->
+    <Style x:Key="OverlayButtonBase" TargetType="{x:Type ButtonBase}">
+      <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+      <Setter Property="Background" Value="Transparent"/>
+      <Setter Property="BorderBrush" Value="Transparent"/>
+      <Setter Property="BorderThickness" Value="0"/>
+      <Setter Property="Width" Value="24"/>
+      <Setter Property="Height" Value="24"/>
+      <Setter Property="Margin" Value="4,0,0,0"/>
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="HorizontalContentAlignment" Value="Center"/>
+      <Setter Property="VerticalContentAlignment" Value="Center"/>
+      <Setter Property="Template">
+        <Setter.Value>
+          <ControlTemplate TargetType="{x:Type ButtonBase}">
+            <Border x:Name="border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="6">
+              <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+            </Border>
+            <ControlTemplate.Triggers>
+              <Trigger Property="IsMouseOver" Value="True">
+                <Setter TargetName="border" Property="Background" Value="{DynamicResource ChipButtonHoverBrush}"/>
+              </Trigger>
+              <Trigger Property="IsPressed" Value="True">
+                <Setter TargetName="border" Property="Background" Value="{DynamicResource ChipButtonPressedBrush}"/>
+              </Trigger>
+            </ControlTemplate.Triggers>
+          </ControlTemplate>
+        </Setter.Value>
+      </Setter>
+    </Style>
+    <Style x:Key="OverlayIconButton" TargetType="Button" BasedOn="{StaticResource OverlayButtonBase}"/>
+  </UserControl.Resources>
+  <!--
+    标准进度条：一条原生滑块 + 内嵌音量组，只有一个 20px 行。
+    宿主按“进度条样式”设置在它和 EPG 时间轴之间二选一，两者互不共享行结构，各自的改动不会影响对方。
+  -->
+  <Grid x:Name="SeekBarRoot" VerticalAlignment="Center">
+    <Grid.ColumnDefinitions>
+      <ColumnDefinition Width="*"/>
+      <ColumnDefinition Width="120"/>
+    </Grid.ColumnDefinitions>
+
+    <Slider Grid.Column="0" x:Name="SliderSeek" Height="20" Style="{StaticResource UnifiedThickSlider}"
+            VerticalAlignment="Center"
+            Minimum="0" Maximum="100"
+            PreviewMouseDown="SliderSeek_PreviewMouseDown"
+            PreviewMouseUp="SliderSeek_PreviewMouseUp"
+            PreviewMouseMove="SliderSeek_MouseMove"
+            MouseLeave="SliderSeek_MouseLeave"/>
+
+    <!-- 音量区（窗口模式的底栏自带音量控件，因此会把它折叠；全屏浮层的音量界面就是它） -->
+    <Grid x:Name="VolumeGroup" Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center">
+      <Grid.ColumnDefinitions>
+        <ColumnDefinition Width="Auto"/>
+        <ColumnDefinition Width="*"/>
+      </Grid.ColumnDefinitions>
+      <Button x:Name="BtnMute" Grid.Column="0" Style="{StaticResource OverlayIconButton}" ToolTip="{DynamicResource Overlay_Mute}" Click="BtnMute_Click" Margin="0,0,6,0">
+        <Viewbox Width="12" Height="12">
+          <Path x:Name="IconMute" Fill="{DynamicResource TextPrimaryBrush}" Data="M2,5 L2,11 L5,11 L9,15 L9,1 L5,5 Z M11,5 Q13,8 11,11 M14,3 Q17,8 14,13"/>
+        </Viewbox>
+      </Button>
+      <controls:VolumeSlider Grid.Column="1" x:Name="SliderVolume"
+                             VolumeChanged="SliderVolume_VolumeChanged"
+                             VerticalAlignment="Center"/>
+    </Grid>
+  </Grid>
+</UserControl>

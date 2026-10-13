@@ -225,19 +225,21 @@ private void InitializeSourceRatioIcons()
         }
 
         /// <summary>
-        /// Paints the mute state. The icon used to live in the inline windowed bottom bar; it now belongs to the
-        /// shared <see cref="TimeshiftTimeline"/> control, so this forwards to it (the fullscreen overlay's copy
+        /// Paints the mute state on both windowed bars. The icon used to live in the inline windowed bottom bar;
+        /// it now belongs to the shared controls, so this forwards to them in turn (the fullscreen overlay's copy
         /// is painted through <c>OverlayControls.SetMuted</c>).
         /// </summary>
         public void UpdateMuteIcon(bool isMuted)
         {
             try { TimelineWindowed?.SetMuted(isMuted); } catch { }
+            try { SeekBarWindowed?.SetMuted(isMuted); } catch { }
         }
 
         /// <summary>
-        /// Hooks the windowed bottom bar's shared <see cref="TimeshiftTimeline"/> up to the shell. Both bars then
-        /// follow the same events; the volume/mute group stays inside the control (it is only moved when the
-        /// windowed layout cannot spare the width).
+        /// Hooks the two windowed bottom-bar controls up to the shell: the EPG <see cref="TimeshiftTimeline"/> and
+        /// the plain <see cref="StandardSeekBar"/>. Only one of them is on screen at a time (see
+        /// <see cref="SetWindowedBarMode"/>), so the two styles share no layout and fixing one cannot move the
+        /// other.
         /// </summary>
         private void WireWindowedTimeline()
         {
@@ -247,12 +249,32 @@ private void InitializeSourceRatioIcons()
                 TimelineWindowed.SeekStart += TimelineWindowed_SeekStart;
                 TimelineWindowed.SeekEnd += TimelineWindowed_SeekEnd;
                 TimelineWindowed.ProgrammeSelected += TimelineWindowed_ProgrammeSelected;
+                TimelineWindowed.TimeSeekRequested += TimelineWindowed_TimeSeekRequested;
                 TimelineWindowed.VolumeChanged += (val) => { try { _shell.Volume = val; } catch { } };
                 TimelineWindowed.MuteChanged += (on) => { try { _shell.IsMuted = on; } catch { } };
                 TimelineWindowed.LayoutChanged += UpdateWindowedBarHeight;
-                TimelineWindowed.SetCompactMode(true);
+                // The windowed EPG timeline is only ever shown when a schedule exists, so it always owns its band;
+                // the plain 20 px meter belongs to the separate StandardSeekBar control.
+                TimelineWindowed.SetCompactMode(false);
                 TimelineWindowed.SetMuted(_shell.IsMuted);
                 TimelineWindowed.SetVolume(_shell.Volume);
+
+                if (SeekBarWindowed != null)
+                {
+                    SeekBarWindowed.SeekStart += TimelineWindowed_SeekStart;
+                    SeekBarWindowed.SeekEnd += TimelineWindowed_SeekEnd;
+                    SeekBarWindowed.VolumeChanged += (val) => { try { _shell.Volume = val; } catch { } };
+                    SeekBarWindowed.MuteChanged += (on) => { try { _shell.IsMuted = on; } catch { } };
+                    SeekBarWindowed.LayoutChanged += UpdateWindowedBarHeight;
+                    SeekBarWindowed.SetMuted(_shell.IsMuted);
+                    SeekBarWindowed.SetVolume(_shell.Volume);
+                }
+
+                if (BottomButtonRow != null)
+                {
+                    BottomButtonRow.SizeChanged -= BottomButtonRow_SizeChanged;
+                    BottomButtonRow.SizeChanged += BottomButtonRow_SizeChanged;
+                }
                 UpdateWindowedBarHeight();
             }
             catch (Exception ex)
@@ -261,41 +283,131 @@ private void InitializeSourceRatioIcons()
             }
         }
 
-        /// <summary>Mirrors a shell volume change onto the windowed bar's timeline (see the sync manager).</summary>
+        /// <summary>Mirrors a shell volume change onto both windowed bars.</summary>
         public void SetWindowedTimelineVolume(double volume)
         {
             try { TimelineWindowed?.SetVolume(volume); } catch { }
+            try { SeekBarWindowed?.SetVolume(volume); } catch { }
         }
 
-        /// <summary>Mirrors the shell's timeshift flag onto the windowed bar's timeline.</summary>
+        /// <summary>Mirrors the shell's timeshift flag onto the windowed EPG timeline (the standard bar
+        /// has no timeshift state to paint - its scale is the item that is playing).</summary>
         public void SetWindowedTimelineTimeshift(bool on)
         {
             try { TimelineWindowed?.SetTimeshift(on); } catch { }
         }
 
         /// <summary>
-        /// Grows the windowed bottom bar for the full timeline and shrinks it back to the classic 64 px for the
-        /// compact (no EPG data) state. Fullscreen collapses this bar entirely, so the two states never fight.
-        /// The rhythm is explicit: timeline -> 8 px -> button row (30 px) -> 8 px, which keeps the buttons
-        /// centred between the timeline and the bottom edge instead of hugging it.
+        /// Pushes the "seek bar style" setting onto both bars - the windowed bottom bar and the fullscreen
+        /// overlay - so switching it in Settings takes effect without restarting playback. A channel without an
+        /// EPG schedule keeps the standard bar even when the timeline style is selected.
+        /// </summary>
+        public void ApplySeekBarStyle()
+        {
+            SetWindowedBarMode(_windowedTimelineHasData && AppSettings.Current.SeekBar != SeekBarStyle.Standard);
+            try { _overlayManager?.OverlayWpf?.ApplySeekBarStyle(); } catch { }
+            UpdateWindowedBarHeight();
+        }
+
+        /// <summary>Space between the timeline and the button row, and above/below that whole stack.</summary>
+        private const double BottomBarGap = 8;
+
+        /// <summary>Equal padding above and below the stack, so the content reads as vertically centred.</summary>
+        private const double BottomBarPadding = 8;
+
+        /// <summary>Used only until the button row has been measured once.</summary>
+        private const double BottomButtonRowFallbackHeight = 34;
+
+        /// <summary>True while the windowed bar shows the EPG timeline; false while it shows the standard bar.</summary>
+        private bool _windowedBarIsTimeline;
+
+        /// <summary>True when the last snapshot carried a schedule the EPG band could really draw.</summary>
+        private bool _windowedTimelineHasData;
+
+        /// <summary>
+        /// Chooses which windowed bar is on screen. They are two separate controls with their own rows, so
+        /// switching styles never re-lays-out the other one. Returns true when the choice changed.
+        /// </summary>
+        private bool SetWindowedBarMode(bool showTimeline)
+        {
+            var changed = _windowedBarIsTimeline != showTimeline;
+            _windowedBarIsTimeline = showTimeline;
+            try
+            {
+                if (TimelineWindowed != null)
+                {
+                    TimelineWindowed.Visibility = showTimeline
+                        ? System.Windows.Visibility.Visible
+                        : System.Windows.Visibility.Collapsed;
+                }
+                if (SeekBarWindowed != null)
+                {
+                    SeekBarWindowed.Visibility = showTimeline
+                        ? System.Windows.Visibility.Collapsed
+                        : System.Windows.Visibility.Visible;
+                }
+            }
+            catch { }
+            return changed;
+        }
+
+        /// <summary>
+        /// Feeds the windowed bar. The EPG band only takes the bar over when the style asks for it AND the channel
+        /// really has a schedule; a channel without EPG keeps the plain standard progress bar - the same look the
+        /// "no EPG" case had before this setting existed.
+        /// </summary>
+        internal void ApplyWindowedTimelineSnapshot(OverlayTimelineState? state)
+        {
+            var hasData = state != null && state.Programmes != null && state.Programmes.Count > 0;
+            _windowedTimelineHasData = hasData;
+            if (SetWindowedBarMode(hasData && AppSettings.Current.SeekBar != SeekBarStyle.Standard))
+            {
+                UpdateWindowedBarHeight();
+            }
+            try { TimelineWindowed?.SetTimelineState(state); } catch { }
+        }
+
+        /// <summary>
+        /// Sizes the windowed bottom bar from what the bar that is actually on screen really renders, plus the
+        /// button row, keeping the same padding above and below that stack. A hardcoded height made the standard
+        /// progress bar hug the top and pushed the button row into/over the bottom edge; measuring instead keeps
+        /// both the standard bar (no EPG data) and the full EPG timeline centred. Fullscreen collapses this bar
+        /// entirely, so the two states never fight.
         /// </summary>
         private void UpdateWindowedBarHeight()
         {
             try
             {
                 if (BottomBar == null) return;
-                const double buttonRowHeight = 30;
-                const double barGap = 8;
-                const double timelineTopMargin = 4;
-                // The button row keeps VerticalAlignment=Center in the star row, so an exact fit is not required:
-                // the height only has to be big enough that the row is never squeezed below its natural size.
-                var wanted = TimelineWindowed.IsCompactMode
-                    ? 64
-                    : Math.Max(64, TimelineWindowed.RequiredHeight + timelineTopMargin + barGap + buttonRowHeight + barGap);
+                double barHeight;
+                if (_windowedBarIsTimeline && TimelineWindowed != null)
+                {
+                    barHeight = TimelineWindowed.ActualHeight > 0.5
+                        ? TimelineWindowed.ActualHeight
+                        : TimelineWindowed.RequiredHeight;
+                }
+                else if (SeekBarWindowed != null)
+                {
+                    barHeight = SeekBarWindowed.ActualHeight > 0.5
+                        ? SeekBarWindowed.ActualHeight
+                        : SeekBarWindowed.RequiredHeight;
+                }
+                else
+                {
+                    return;
+                }
+                var buttonHeight = BottomButtonRow != null && BottomButtonRow.ActualHeight > 0.5
+                    ? BottomButtonRow.ActualHeight
+                    : BottomButtonRowFallbackHeight;
+                var wanted = Math.Max(64, barHeight + BottomBarGap + buttonHeight + (BottomBarPadding * 2));
                 if (Math.Abs(BottomBar.Height - wanted) > 0.5) BottomBar.Height = wanted;
             }
             catch { }
         }
+
+        /// <summary>Re-sizes the bar once the button row has really been measured (fonts, DPI, theme swap).</summary>
+        private void BottomButtonRow_SizeChanged(object sender, System.Windows.SizeChangedEventArgs e)
+            => UpdateWindowedBarHeight();
 
         public void OpenMultiScreen(int screenCount)
         {

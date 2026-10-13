@@ -234,6 +234,10 @@
   <!-- Playback/Stream -->
   <sys:String x:Key="UI_Playback_EnableHwdec">Включить аппаратное декодирование (d3d11va)</sys:String>
   <sys:String x:Key="UI_Playback_Decoder">Декодер</sys:String>
+  <sys:String x:Key="UI_Playback_SeekBarStyle">Стиль полосы перемотки</sys:String>
+  <sys:String x:Key="UI_Playback_SeekBar_EpgTimeline">Шкала EPG</sys:String>
+  <sys:String x:Key="UI_Playback_SeekBar_Standard">Обычная полоса</sys:String>
+  <sys:String x:Key="UI_Playback_SeekBarStyle_Hint">Шкала EPG показывает передачи, деления и значки состояния: клик по делению включает таймшифт, клик по названию передачи - архив. Обычная полоса всегда показывает только индикатор.</sys:String>
   <sys:String x:Key="UI_Playback_CacheSecs">Кэш (сек)</sys:String>
   <sys:String x:Key="UI_Playback_DemuxerMaxBytes">demuxer-max-bytes (MiB)</sys:String>
   <sys:String x:Key="UI_Playback_DemuxerMaxBackBytes">demuxer-max-back-bytes (MiB)</sys:String>

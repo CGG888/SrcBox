@@ -52,7 +52,7 @@
 
     <!--
       节目段：宽度由宿主按时间比例（percent）算出后写在 ContentPresenter 上，高度固定 24，
-      保证整条时间线不超过原进度条的高度量级。段内两行居中：极小号起播时刻 + 节目名。
+      保证整条时间线不超过原进度条的高度量级。段内只显示节目名，水平垂直居中。
       状态（直播/回看/时移/预约）由绑定标志驱动，主题画刷一律 DynamicResource。
     -->
     <DataTemplate x:Key="TimelineProgrammeTemplate" DataType="{x:Type local:TimelineProgramme}">
@@ -60,7 +60,7 @@
         <Border x:Name="BlockSurface" CornerRadius="3" BorderThickness="1"
                 Background="{DynamicResource CardBackgroundBrush}"
                 BorderBrush="{DynamicResource BorderBrushCommon}"/>
-        <Border x:Name="BlockLiveTint" CornerRadius="3" Opacity="0" Background="{DynamicResource StatusTimeshiftBrush}"/>
+        <Border x:Name="BlockLiveTint" CornerRadius="3" Opacity="0" Background="{DynamicResource StatusLiveBrush}"/>
         <Border x:Name="BlockAccentTint" CornerRadius="3" Opacity="0" Background="{DynamicResource AccentBrush}"/>
         <!-- 可回看段底部 2px 主色条，与直播段的玫红底边区分开 -->
         <Rectangle x:Name="BlockReplayBar" Height="2" Opacity="0" VerticalAlignment="Bottom"
@@ -70,36 +70,27 @@
                    Fill="{DynamicResource StatusTimeshiftBrush}"/>
         <Rectangle x:Name="BlockDash" RadiusX="3" RadiusY="3" StrokeThickness="1" Visibility="Collapsed"
                    Stroke="{DynamicResource TextSecondaryBrush}" StrokeDashArray="2 2"/>
-        <Grid Margin="3,0,3,0">
-          <Grid.RowDefinitions>
-            <RowDefinition Height="9"/>
-            <RowDefinition Height="*"/>
-          </Grid.RowDefinitions>
-          <TextBlock x:Name="BlockTime" Grid.Row="0" Text="{Binding TimeText}" FontSize="8" Opacity="0.55"
-                     VerticalAlignment="Center" HorizontalAlignment="Center" TextAlignment="Center"
-                     FontFamily="Consolas" TextTrimming="CharacterEllipsis"
-                     Foreground="{DynamicResource TextSecondaryBrush}"/>
-          <TextBlock x:Name="BlockName" Grid.Row="1" Text="{Binding Name}" FontSize="10"
-                     VerticalAlignment="Center" HorizontalAlignment="Center" TextAlignment="Center"
-                     TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextPrimaryBrush}"/>
-        </Grid>
-        <!-- 状态角标：直播段不显示（右上角红点已足够），回看 / 时移 / 预约各一枚 -->
-        <Border x:Name="BlockBadge" CornerRadius="2" Padding="3,0" Margin="0,2,2,0"
-                HorizontalAlignment="Right" VerticalAlignment="Top"
-                Background="{DynamicResource BorderBrushCommon}" Visibility="Collapsed">
+        <!-- 段内只留节目名：水平 + 垂直居中，去掉起播时刻后不再需要两行网格 -->
+        <TextBlock x:Name="BlockName" Text="{Binding Name}" FontSize="10" Margin="3,0,3,0"
+                   VerticalAlignment="Center" HorizontalAlignment="Center" TextAlignment="Center"
+                   TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextPrimaryBrush}"/>
+        <!-- 状态角标：右对齐 + 垂直居中，底色由下面的触发器按段状态取与左侧模式 chip 同一组主题画刷 -->
+        <Border x:Name="BlockBadge" CornerRadius="2" Padding="3,0" Margin="0,0,2,0"
+                HorizontalAlignment="Right" VerticalAlignment="Center"
+                Background="{DynamicResource StatusTimeshiftBrush}" Visibility="Collapsed">
           <TextBlock x:Name="BlockBadgeText" Text="{Binding BadgeText}" FontSize="7.5" FontWeight="SemiBold"
-                     Foreground="{DynamicResource TextPrimaryBrush}"/>
+                     Foreground="#FFFFFFFF"/>
         </Border>
         <!-- 当前直播段的右上角红点 -->
         <Ellipse x:Name="BlockNowDot" Width="5" Height="5" Margin="0,2,3,0" Visibility="Collapsed"
                  HorizontalAlignment="Right" VerticalAlignment="Top"
-                 Fill="{DynamicResource StatusTimeshiftBrush}"/>
+                 Fill="{DynamicResource StatusLiveBrush}"/>
       </Grid>
       <DataTemplate.Triggers>
         <!-- 正在直播的节目 -->
         <DataTrigger Binding="{Binding IsLive}" Value="True">
           <Setter TargetName="BlockLiveTint" Property="Opacity" Value="0.22"/>
-          <Setter TargetName="BlockSurface" Property="BorderBrush" Value="{DynamicResource StatusTimeshiftBrush}"/>
+          <Setter TargetName="BlockSurface" Property="BorderBrush" Value="{DynamicResource StatusLiveBrush}"/>
           <Setter TargetName="BlockNowDot" Property="Visibility" Value="Visible"/>
         </DataTrigger>
         <!-- 当前播放游标所在的节目：描边标出，文字保持主色以保证盖在进度填充上仍然可读 -->
@@ -125,6 +116,19 @@
         <!-- 角标：只有回看 / 时移 / 预约带角标文案 -->
         <DataTrigger Binding="{Binding HasBadge}" Value="True">
           <Setter TargetName="BlockBadge" Property="Visibility" Value="Visible"/>
+        </DataTrigger>
+        <!-- 角标底色跟随段状态，与左侧模式 chip 取同一组主题画刷 -->
+        <DataTrigger Binding="{Binding SegmentMode}" Value="Replay">
+          <Setter TargetName="BlockBadge" Property="Background" Value="{DynamicResource StatusReplayFillBrush}"/>
+        </DataTrigger>
+        <DataTrigger Binding="{Binding SegmentMode}" Value="Live">
+          <Setter TargetName="BlockBadge" Property="Background" Value="{DynamicResource StatusLiveFillBrush}"/>
+        </DataTrigger>
+        <DataTrigger Binding="{Binding SegmentMode}" Value="Timeshift">
+          <Setter TargetName="BlockBadge" Property="Background" Value="{DynamicResource StatusTimeshiftFillBrush}"/>
+        </DataTrigger>
+        <DataTrigger Binding="{Binding SegmentMode}" Value="Unavailable">
+          <Setter TargetName="BlockBadge" Property="Background" Value="{DynamicResource StatusBookBrush}"/>
         </DataTrigger>
         <!-- 不可点击（未来的预约段、超期段）：虚线 + 弱化，放在最后以覆盖上面的状态 -->
         <DataTrigger Binding="{Binding CanPlay}" Value="False">
@@ -165,6 +169,7 @@
 
     <!-- 进度条：Minimum/Maximum 由当前节目窗口或 0..时长 驱动；节目时间线可见时它被折叠但仍保存计量值 -->
     <Slider Grid.Row="0" Grid.Column="0" x:Name="SliderSeek" Height="20" Style="{StaticResource UnifiedThickSlider}"
+            VerticalAlignment="Center"
             Minimum="0" Maximum="100"
             ValueChanged="SliderSeek_ValueChanged"
             PreviewMouseDown="SliderSeek_PreviewMouseDown"
@@ -223,8 +228,9 @@
                 Content="&#x203A;" ToolTip="{DynamicResource Timeline_NextSegment}" Click="BtnNextSegment_Click"/>
       </Grid>
 
-      <!-- 刻度：候选步长 5/10/15/30/60 分钟，取第一个让窗口不超过 12 格的步长 -->
-      <Canvas x:Name="RulerCanvas" Grid.Row="1" ClipToBounds="True" IsHitTestVisible="False"/>
+      <!-- 刻度行：直播态也可点，点中即跳到该时刻（开启时移或直接回看），故不再屏蔽命中测试 -->
+      <Canvas x:Name="RulerCanvas" Grid.Row="1" ClipToBounds="True" Background="Transparent" Cursor="Hand"
+              PreviewMouseLeftButtonDown="RulerCanvas_MouseLeftButtonDown"/>
 
       <!-- 刻度与轨道之间的 1px 中性色分隔线，给轨道留出内凹槽的感觉 -->
       <Border Grid.Row="2" Opacity="0.12" BorderThickness="0,1,0,0"

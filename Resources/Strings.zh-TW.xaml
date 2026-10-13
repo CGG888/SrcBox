@@ -234,6 +234,10 @@
   <!-- Playback/Stream -->
   <sys:String x:Key="UI_Playback_EnableHwdec">啟用硬體解碼 (d3d11va)</sys:String>
   <sys:String x:Key="UI_Playback_Decoder">解碼器</sys:String>
+  <sys:String x:Key="UI_Playback_SeekBarStyle">進度條樣式</sys:String>
+  <sys:String x:Key="UI_Playback_SeekBar_EpgTimeline">EPG 時間軸</sys:String>
+  <sys:String x:Key="UI_Playback_SeekBar_Standard">標準進度條</sys:String>
+  <sys:String x:Key="UI_Playback_SeekBarStyle_Hint">EPG 時間軸會顯示節目段、刻度與狀態角標，點刻度進入時移、點節目名進入回看；標準進度條永遠只顯示一條進度條。</sys:String>
   <sys:String x:Key="UI_Playback_CacheSecs">快取秒數</sys:String>
   <sys:String x:Key="UI_Playback_DemuxerMaxBytes">demuxer-max-bytes (MiB)</sys:String>
   <sys:String x:Key="UI_Playback_DemuxerMaxBackBytes">demuxer-max-back-bytes (MiB)</sys:String>

@@ -607,23 +607,26 @@ namespace LibmpvIptvClient
         }
 
         /// <summary>
-        /// Fans one timeline snapshot out to every bar that is currently built. The call is idempotent per state:
-        /// each control rebuilds its strip only when the signature changes, so the every-tick push stays cheap.
+        /// Fans one timeline snapshot out to every bar that is currently built. The windowed bar decides for
+        /// itself whether that snapshot means "EPG timeline" or "keep the standard progress bar" (a channel
+        /// without a schedule, or the standard style in Settings). The call is idempotent per state: each control
+        /// rebuilds its strip only when the signature changes, so the every-tick push stays cheap.
         /// </summary>
         void ApplyTimelineState(OverlayTimelineState? state)
         {
-            try { TimelineWindowed?.SetTimelineState(state); } catch { }
+            ApplyWindowedTimelineSnapshot(state);
             try { _overlayManager?.OverlayWpf?.SetTimelineState(state); } catch { }
         }
 
-        /// <summary>Per-tick progress: the fullscreen overlay and the windowed bar both host a timeline.</summary>
+        /// <summary>Per-tick progress for every bar: the standard meter, the EPG band and the fullscreen overlay.</summary>
         void ApplyTimeToBars(double current, double duration)
         {
+            try { SeekBarWindowed?.SetTime(current, duration); } catch { }
             try { _overlayManager?.OverlayWpf?.SetTime(current, duration); } catch { }
             try { TimelineWindowed?.SetTime(current, duration); } catch { }
         }
 
-        /// <summary>Timeshift window bounds for both hosted timelines.</summary>
+        /// <summary>Timeshift window bounds for the hosted EPG timelines.</summary>
         void ApplyTimeshiftRangeToBars(DateTime min, DateTime max)
         {
             try { _overlayManager?.OverlayWpf?.SetTimeshiftRange(min, max); } catch { }

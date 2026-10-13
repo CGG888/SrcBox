@@ -380,6 +380,18 @@
           <TabItem Header="{DynamicResource UI_TabPlayback}">
             <ScrollViewer VerticalScrollBarVisibility="Auto" Background="Transparent">
               <StackPanel Margin="16,8,24,8">
+                <!-- 进度条样式：标准进度条 / EPG 时间轴 -->
+                <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
+                  <StackPanel>
+                    <TextBlock Text="{DynamicResource UI_Playback_SeekBarStyle}" FontWeight="SemiBold" Margin="0,0,0,8"/>
+                    <ComboBox x:Name="CbSeekBarStyle" Width="220" HorizontalAlignment="Left">
+                      <ComboBoxItem Content="{DynamicResource UI_Playback_SeekBar_EpgTimeline}" Tag="EpgTimeline"/>
+                      <ComboBoxItem Content="{DynamicResource UI_Playback_SeekBar_Standard}" Tag="Standard"/>
+                    </ComboBox>
+                    <TextBlock Text="{DynamicResource UI_Playback_SeekBarStyle_Hint}" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,8,0,0" TextWrapping="Wrap"/>
+                  </StackPanel>
+                </Border>
+
                 <!-- 记忆与恢复 -->
                 <Border Background="{DynamicResource CardBackgroundBrush}" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1" CornerRadius="8" Padding="16" Margin="0,0,0,12">
                   <StackPanel>

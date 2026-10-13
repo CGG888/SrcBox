@@ -86,6 +86,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             catch { }
             AppSettings.Current.Decoder = settings.Decoder;
             AppSettings.Current.CacheSecs = settings.CacheSecs;
+            AppSettings.Current.SeekBar = settings.SeekBar;
             AppSettings.Current.DemuxerMaxBytesMiB = settings.DemuxerMaxBytesMiB;
             AppSettings.Current.DemuxerMaxBackBytesMiB = settings.DemuxerMaxBackBytesMiB;
             AppSettings.Current.FccPrefetchCount = settings.FccPrefetchCount;
@@ -263,6 +264,8 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             }
             catch { }
             AppSettings.Current.Save();
+            // Seek bar style takes effect at once: both bars read the same setting and repaint.
+            try { _window.ApplySeekBarStyle(); } catch { }
             if (_window.PlayerInterop != null && mpvWillChange)
             {
                 _window.PlayerInterop.SetSettings(AppSettings.Current);

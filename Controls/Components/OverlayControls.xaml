@@ -93,18 +93,22 @@
     </Window.Resources>
 
   <Border Background="{DynamicResource TopOverlayScrimBrush}" CornerRadius="8" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1">
-      <!-- 显式节奏：4px 外边距 + 时间线 + 8px + 按钮行 + 8px（由 ApplyBarHeight 按实测行高设置窗口高度） -->
-      <Grid Margin="12,4">
+      <!-- 显式节奏：4px 外边距 + 时间线 + 8px + 按钮行 + 4px 外边距（由 ApplyBarHeight 按实测行高设置窗口高度），
+           内容整体居中，紧凑态的标准进度条因此上下等距 -->
+      <Grid Margin="12,4" VerticalAlignment="Center">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>  <!-- 0: 节目时间线（进度条/刻度/节目条） -->
             <RowDefinition Height="Auto"/>  <!-- 1: 按钮 -->
         </Grid.RowDefinitions>
 
         <!-- 节目时间线：与窗口模式共用同一个控件 -->
-        <local:TimeshiftTimeline x:Name="Timeline" Grid.Row="0" VerticalAlignment="Bottom"/>
+        <local:TimeshiftTimeline x:Name="Timeline" Grid.Row="0" VerticalAlignment="Center"/>
+
+        <!-- 标准进度条：独立控件，按“进度条样式”设置二选一显示 -->
+        <local:StandardSeekBar x:Name="SeekBar" Grid.Row="0" VerticalAlignment="Center"/>
 
         <!-- 按钮行：与时间线和底边各留 8px，保持视觉居中 -->
-        <Grid x:Name="ButtonRowHost" Grid.Row="1" Margin="0,4,0,0" VerticalAlignment="Center">
+        <Grid x:Name="ButtonRowHost" Grid.Row="1" Margin="0,8,0,0" VerticalAlignment="Center">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/> <!-- 左 -->
                 <ColumnDefinition Width="*"/>    <!-- 中 -->
