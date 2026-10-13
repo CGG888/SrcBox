@@ -41,6 +41,8 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             else if (e.PropertyName == nameof(MainShellViewModel.Volume))
             {
                 try { _overlayManager.OverlayWpf?.SetVolume(_shell.Volume); } catch { }
+                // The windowed bottom bar hosts the same timeline control, so it mirrors the shell too.
+                try { _window.SetWindowedTimelineVolume(_shell.Volume); } catch { }
             }
             else if (e.PropertyName == nameof(MainShellViewModel.IsMuted))
             {
@@ -84,6 +86,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             {
                 var on = _shell.IsTimeshiftActive;
                 try { _overlayManager.OverlayWpf?.SetTimeshift(on); } catch { }
+                try { _window.SetWindowedTimelineTimeshift(on); } catch { }
                 if (!on) _shell.ClearRecordingPlayingIndicator();
                 if (!on)
                 {

@@ -15,25 +15,37 @@ namespace LibmpvIptvClient
             _playbackTickManager?.Timer_Tick(sender, e);
             _playbackTickManager?.OnTick(sender, e);
         }
-        void SliderSeek_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        /// <summary>Windowed timeline: the user grabbed the meter (see <see cref="Architecture.Presentation.View.MainWindowSeekInteractionManager"/>).</summary>
+        void TimelineWindowed_SeekStart()
         {
-            _seekInteractionManager?.SliderSeek_PreviewMouseDown(sender, e);
-        }
-        void SliderSeek_PreviewMouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            _seekInteractionManager?.SliderSeek_PreviewMouseUp(sender, e);
+            _seekInteractionManager?.Timeline_SeekStart();
         }
 
-        void SliderSeek_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
+        /// <summary>Windowed timeline: the user released the meter; the payload is in the meter's own units.</summary>
+        void TimelineWindowed_SeekEnd(double seconds)
         {
+            _seekInteractionManager?.Timeline_SeekEnd(seconds);
         }
-        void SliderSeek_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+
+        /// <summary>
+        /// Windowed timeline card click. Mirrors the fullscreen overlay's ProgrammeSelected handler so both bars
+        /// behave identically: stay in timeshift mode when it is already active, otherwise plain catchup.
+        /// </summary>
+        void TimelineWindowed_ProgrammeSelected(DateTime start)
         {
-            _seekInteractionManager?.SliderSeek_MouseMove(sender, e);
-        }
-        void SliderSeek_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
-        {
-            _seekInteractionManager?.SliderSeek_MouseLeave(sender, e);
+            try
+            {
+                var channel = _shell.CurrentChannel;
+                if (channel == null) return;
+                Diagnostics.Logger.Info($"节目单跳转到 {start:yyyy-MM-dd HH:mm:ss}");
+                if (_shell.IsTimeshiftActive)
+                {
+                    _shell.TimeshiftCursorSec = Math.Max(0, (start - _shell.TimeshiftMin).TotalSeconds);
+                    _shell.TimeshiftStart = start;
+                }
+                _shell.ChannelPlaybackActions.PlayCatchupAt(channel, start, keepTimeshiftMode: _shell.IsTimeshiftActive);
+            }
+            catch { }
         }
         void ClearIndicatorsOnStop()
         {

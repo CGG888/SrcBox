@@ -72,6 +72,7 @@ namespace LibmpvIptvClient
             _shellSyncManager = new LibmpvIptvClient.Architecture.Presentation.View.MainWindowShellSyncManager(this, _shell, _overlayManager);
             _playbackTickManager = new LibmpvIptvClient.Architecture.Presentation.View.MainWindowPlaybackTickManager(this, _shell, _overlayManager);
             _seekInteractionManager = new LibmpvIptvClient.Architecture.Presentation.View.MainWindowSeekInteractionManager(this, _shell);
+            WireWindowedTimeline();
             _fullscreenInputManager = new LibmpvIptvClient.Architecture.Presentation.View.MainWindowFullscreenInputManager(this);
             _windowedInputManager = new LibmpvIptvClient.Architecture.Presentation.View.MainWindowWindowedInputManager(this);
             _channelContextMenuManager = new MainWindowChannelContextMenuManager(_shell);
@@ -219,24 +220,72 @@ private void InitializeSourceRatioIcons()
                             path.Stroke = brush;
                     }
                 }
-                if (IconMute != null)
-                {
-                    IconMute.Fill = brush;
-                }
             }
             catch { }
         }
 
-        private const string VolumeData = "M2,5 L2,11 L5,11 L9,15 L9,1 L5,5 Z M11,5 Q13,8 11,11 M14,3 Q17,8 14,13";
-        private const string MuteData = "M2,5 L2,11 L5,11 L9,15 L9,1 L5,5 Z M11,3 L15,13 M15,3 L11,13";
-
+        /// <summary>
+        /// Paints the mute state. The icon used to live in the inline windowed bottom bar; it now belongs to the
+        /// shared <see cref="TimeshiftTimeline"/> control, so this forwards to it (the fullscreen overlay's copy
+        /// is painted through <c>OverlayControls.SetMuted</c>).
+        /// </summary>
         public void UpdateMuteIcon(bool isMuted)
+        {
+            try { TimelineWindowed?.SetMuted(isMuted); } catch { }
+        }
+
+        /// <summary>
+        /// Hooks the windowed bottom bar's shared <see cref="TimeshiftTimeline"/> up to the shell. Both bars then
+        /// follow the same events; the volume/mute group stays inside the control (it is only moved when the
+        /// windowed layout cannot spare the width).
+        /// </summary>
+        private void WireWindowedTimeline()
         {
             try
             {
-                IconMute.Data = isMuted
-                    ? System.Windows.Media.Geometry.Parse(MuteData)
-                    : System.Windows.Media.Geometry.Parse(VolumeData);
+                if (TimelineWindowed == null) return;
+                TimelineWindowed.SeekStart += TimelineWindowed_SeekStart;
+                TimelineWindowed.SeekEnd += TimelineWindowed_SeekEnd;
+                TimelineWindowed.ProgrammeSelected += TimelineWindowed_ProgrammeSelected;
+                TimelineWindowed.VolumeChanged += (val) => { try { _shell.Volume = val; } catch { } };
+                TimelineWindowed.MuteChanged += (on) => { try { _shell.IsMuted = on; } catch { } };
+                TimelineWindowed.LayoutChanged += UpdateWindowedBarHeight;
+                TimelineWindowed.SetCompactMode(true);
+                TimelineWindowed.SetMuted(_shell.IsMuted);
+                TimelineWindowed.SetVolume(_shell.Volume);
+                UpdateWindowedBarHeight();
+            }
+            catch (Exception ex)
+            {
+                Diagnostics.Logger.Debug($"[Timeline] windowed wiring failed: {ex.Message}");
+            }
+        }
+
+        /// <summary>Mirrors a shell volume change onto the windowed bar's timeline (see the sync manager).</summary>
+        public void SetWindowedTimelineVolume(double volume)
+        {
+            try { TimelineWindowed?.SetVolume(volume); } catch { }
+        }
+
+        /// <summary>Mirrors the shell's timeshift flag onto the windowed bar's timeline.</summary>
+        public void SetWindowedTimelineTimeshift(bool on)
+        {
+            try { TimelineWindowed?.SetTimeshift(on); } catch { }
+        }
+
+        /// <summary>
+        /// Grows the windowed bottom bar for the full timeline and shrinks it back to the classic 64 px for the
+        /// compact (no EPG data) state. Fullscreen collapses this bar entirely, so the two states never fight.
+        /// </summary>
+        private void UpdateWindowedBarHeight()
+        {
+            try
+            {
+                if (BottomBar == null) return;
+                const double chromeHeight = 44; // button row + margins
+                var wanted = TimelineWindowed.IsCompactMode ? 64
+                    : Math.Max(64, TimelineWindowed.RequiredHeight + chromeHeight);
+                if (Math.Abs(BottomBar.Height - wanted) > 0.5) BottomBar.Height = wanted;
             }
             catch { }
         }

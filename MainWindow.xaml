@@ -1395,38 +1395,12 @@
             </Border.Style>
             <Grid Margin="12,0">
                 <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto"/> <!-- 进度条 -->
+                    <RowDefinition Height="Auto"/> <!-- 节目时间线（与全屏浮层共用控件） -->
                     <RowDefinition Height="*"/>    <!-- 按钮 -->
                 </Grid.RowDefinitions>
 
-                <!-- 进度条行 -->
-                <Grid Grid.Row="0" Margin="0,0,0,0" VerticalAlignment="Center">
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition Width="*"/>
-                        <ColumnDefinition Width="120"/>
-                    </Grid.ColumnDefinitions>
-                    <Slider Grid.Column="0" x:Name="SliderSeek" Height="20" Style="{StaticResource UnifiedThickSlider}" 
-                            Minimum="0" Maximum="{Binding SeekMaximum}" Value="{Binding SeekValue, Mode=TwoWay}"
-                            PreviewMouseDown="SliderSeek_PreviewMouseDown"
-                            PreviewMouseUp="SliderSeek_PreviewMouseUp"
-                            PreviewMouseMove="SliderSeek_MouseMove"
-                            MouseLeave="SliderSeek_MouseLeave"/>
-                    <Grid Grid.Column="1" Margin="12,0,0,0">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="Auto"/>
-                            <ColumnDefinition Width="*"/>
-                        </Grid.ColumnDefinitions>
-                        <Button x:Name="BtnMute" Grid.Column="0" Style="{StaticResource BarButton}" ToolTip="{DynamicResource Overlay_Mute}" Click="BtnMute_Click" Margin="0,0,6,0">
-                            <Viewbox Width="12" Height="12">
-                                <Path x:Name="IconMute" Fill="{DynamicResource TextPrimaryBrush}" Data="M2,5 L2,11 L5,11 L9,15 L9,1 L5,5 Z M11,5 Q13,8 11,11 M14,3 Q17,8 14,13"/>
-                            </Viewbox>
-                        </Button>
-                        <controls:VolumeSlider Grid.Column="1" x:Name="SliderVolume"
-                                               IsMuted="{Binding DataContext.IsMuted, RelativeSource={RelativeSource AncestorType=Window}, Mode=OneWay}"
-                                               Volume="{Binding DataContext.Volume, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay}"
-                                               VerticalAlignment="Center"/>
-                    </Grid>
-                </Grid>
+                <!-- 节目时间线：同一控件也承载全屏浮层的进度条/节目条 -->
+                <local:TimeshiftTimeline x:Name="TimelineWindowed" Grid.Row="0" Margin="0,6,0,0"/>
 
                 <!-- 按钮行 -->
                 <Grid Grid.Row="1" VerticalAlignment="Center">

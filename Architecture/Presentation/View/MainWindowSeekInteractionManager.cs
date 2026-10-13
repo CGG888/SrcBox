@@ -4,6 +4,12 @@ using LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow;
 
 namespace LibmpvIptvClient.Architecture.Presentation.View
 {
+    /// <summary>
+    /// Windowed-bar seek wiring. The windowed bottom bar hosts the same <see cref="TimeshiftTimeline"/> control
+    /// as the fullscreen overlay, so this manager listens to the control's own seek events instead of reading a
+    /// bare <c>Slider</c>: the meter already reports its value in meter units (seconds from <c>Minimum</c>), which
+    /// is exactly what the timeshift / replay conversions below need.
+    /// </summary>
     public class MainWindowSeekInteractionManager
     {
         private readonly MainWindow _window;
@@ -15,72 +21,41 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             _shell = shell;
         }
 
-        public void SliderSeek_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        /// <summary>The user grabbed the meter: lock the tick-driven position updates until the release.</summary>
+        public void Timeline_SeekStart()
         {
             _shell.IsSeeking = true;
-            try
-            {
-                var slider = _window.SeekSliderForManager;
-                var p = e.GetPosition(slider);
-                var ratio = Math.Max(0, Math.Min(1, slider.ActualWidth > 0 ? p.X / slider.ActualWidth : 0));
-                var sec = ratio * (_shell.SeekMaximum - slider.Minimum) + slider.Minimum;
-                _shell.SeekValue = sec;
-            }
-            catch { }
         }
 
-        public void SliderSeek_PreviewMouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        /// <summary>
+        /// The user released the meter. <paramref name="seconds"/> is in the meter's own units: seconds from the
+        /// timeshift window start while timeshifting, otherwise seconds from the programme start (or 0..duration
+        /// for plain playback) - the same conversion the plain windowed slider used to receive.
+        /// </summary>
+        public void Timeline_SeekEnd(double seconds)
         {
             if (_window.PlayerInterop == null) return;
             _shell.IsSeeking = false;
-            var v = _shell.SeekValue;
+            var v = Math.Max(0, seconds);
+            _shell.SeekValue = v;
             if (_shell.IsTimeshiftActive && _shell.CurrentChannel != null)
             {
-                _shell.TimeshiftCursorSec = Math.Max(0, v);
+                _shell.TimeshiftCursorSec = v;
                 var t = _shell.TimeshiftMin.AddSeconds(_shell.TimeshiftCursorSec);
                 _shell.ChannelPlaybackActions.PlayCatchupAt(_shell.CurrentChannel, t, keepTimeshiftMode: true);
                 _shell.TimeshiftStart = t;
             }
             else if (_shell.PlaybackMode == PlaybackMode.Replay && _shell.CurrentChannel != null && _shell.CurrentPlayingProgram != null)
             {
-                // The slider is program-relative in replay: convert back to a wall-clock time and
+                // The meter is program-relative in replay: convert back to a wall-clock time and
                 // re-request the archive url (these streams cannot be seeked inside mpv).
-                var target = _shell.CurrentPlayingProgram.Start.AddSeconds(Math.Max(0, v));
+                var target = _shell.CurrentPlayingProgram.Start.AddSeconds(v);
                 _shell.ChannelPlaybackActions.PlayCatchupAt(_shell.CurrentChannel, target);
             }
             else
             {
                 _shell.PlayerEngine?.SeekAbsolute(v);
             }
-        }
-
-        public void SliderSeek_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
-        {
-            try
-            {
-                var slider = _window.SeekSliderForManager;
-                var p = e.GetPosition(slider);
-                var ratio = Math.Max(0, Math.Min(1, slider.ActualWidth > 0 ? p.X / slider.ActualWidth : 0));
-                var sec = ratio * (_shell.SeekMaximum - slider.Minimum) + slider.Minimum;
-                if (_shell.IsTimeshiftActive)
-                {
-                    var t = _shell.TimeshiftMin.AddSeconds(Math.Max(0, sec));
-                    slider.ToolTip = t.ToString("yyyy-MM-dd HH:mm:ss");
-                }
-                else
-                {
-                    var tip = _shell.CurrentPlayingProgram != null
-                        ? _shell.CurrentPlayingProgram.Start.AddSeconds(Math.Max(0, sec)).ToString("yyyy-MM-dd HH:mm:ss")
-                        : TimeSpan.FromSeconds(Math.Max(0, sec)).ToString(TimeSpan.FromSeconds(sec).TotalHours >= 1 ? @"h\:mm\:ss" : @"m\:ss");
-                    slider.ToolTip = tip;
-                }
-            }
-            catch { }
-        }
-
-        public void SliderSeek_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
-        {
-            try { _window.SeekSliderForManager.ClearValue(FrameworkElement.ToolTipProperty); } catch { }
         }
     }
 }

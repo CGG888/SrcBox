@@ -5,6 +5,11 @@ using System.Windows.Controls;
 
 namespace LibmpvIptvClient
 {
+    /// <summary>
+    /// Fullscreen floating control bar. The EPG timeline itself lives in <see cref="TimeshiftTimeline"/> so the
+    /// windowed bottom bar can host the identical control; this window only owns the button row and forwards the
+    /// timeline's public surface to the shell so existing subscribers keep working unchanged.
+    /// </summary>
     public partial class OverlayControls : Window
     {
         public event Action? PlayPause;
@@ -20,15 +25,20 @@ namespace LibmpvIptvClient
         public event Action<bool>? DrawerToggled;
         public event Action<bool>? EpgToggled;
         public event Action<string>? AspectRatioChanged;
-        private bool _seeking = false;
         public bool IsSourcesMenuOpen { get; private set; } = false;
         public bool IsRatioMenuOpen { get; private set; } = false;
         public bool IsAnyMenuOpen => IsSourcesMenuOpen || IsRatioMenuOpen;
         public string CurrentAspect { get; set; } = "default";
         public event Action<bool>? TimeshiftToggled;
+        /// <summary>Raised when a playable programme card is clicked; the payload is the programme start (wall clock).</summary>
+        public event Action<DateTime>? ProgrammeSelected;
         private bool _timeshiftOn = false;
-        private DateTime _tsMin;
-        private DateTime _tsMax;
+        private bool _muted = false;
+
+        // Height of the overlay window: the compact bar when there is no EPG schedule, the timeline bar otherwise.
+        private const double CompactBarHeight = 80;
+        private const double TimelineBarHeight = 168;
+
         public OverlayControls()
         {
             InitializeComponent();
@@ -36,6 +46,31 @@ namespace LibmpvIptvClient
             PreviewKeyDown += OnPreviewKeyDown;
             try { CbTimeshift.Checked += (s, e) => TimeshiftToggled?.Invoke(true); } catch { }
             try { CbTimeshift.Unchecked += (s, e) => TimeshiftToggled?.Invoke(false); } catch { }
+
+            // The timeline is the only place that knows the meter's real height, so the host window follows it.
+            try
+            {
+                Timeline.SeekStart += () => SeekStart?.Invoke();
+                Timeline.SeekEnd += v => SeekEnd?.Invoke(v);
+                Timeline.ProgrammeSelected += start => ProgrammeSelected?.Invoke(start);
+                Timeline.VolumeChanged += v => VolumeChanged?.Invoke(v);
+                Timeline.MuteChanged += m => { _muted = m; MuteChanged?.Invoke(m); };
+                Timeline.LayoutChanged += ApplyBarHeight;
+            }
+            catch { }
+
+            ApplyBarHeight();
+        }
+
+        /// <summary>Resizes this floating window to the height the hosted timeline currently wants.</summary>
+        void ApplyBarHeight()
+        {
+            try
+            {
+                double required = Timeline?.RequiredHeight ?? 0;
+                Height = required > 0 && !Timeline!.IsCompactMode ? TimelineBarHeight : CompactBarHeight;
+            }
+            catch { }
         }
 
         void OnPreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
@@ -132,10 +167,6 @@ namespace LibmpvIptvClient
                             path.Stroke = brush;
                     }
                 }
-                if (IconMute != null)
-                {
-                    IconMute.Fill = brush;
-                }
             }
             catch { }
         }
@@ -149,33 +180,21 @@ namespace LibmpvIptvClient
             }
             catch { }
         }
-        private const string VolumeData = "M2,5 L2,11 L5,11 L9,15 L9,1 L5,5 Z M11,5 Q13,8 11,11 M14,3 Q17,8 14,13";
-        private const string MuteData = "M2,5 L2,11 L5,11 L9,15 L9,1 L5,5 Z M11,3 L15,13 M15,3 L11,13";
 
         public void SetMuted(bool muted)
         {
             _muted = muted;
-            try
-            {
-                IconMute.Data = _muted
-                    ? System.Windows.Media.Geometry.Parse(MuteData)
-                    : System.Windows.Media.Geometry.Parse(VolumeData);
-                BtnMute.Background = _muted
-                    ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(0x33, 0xFF, 0x45, 0x3A))
-                    : null;
-                SliderVolume.IsMuted = _muted;
-            }
-            catch { }
+            try { Timeline.SetMuted(muted); } catch { }
         }
         public void SetTimeshift(bool on)
         {
             _timeshiftOn = on;
             try { CbTimeshift.IsChecked = on; } catch { }
+            try { Timeline.SetTimeshift(on); } catch { }
         }
         public void SetTimeshiftRange(DateTime min, DateTime max)
         {
-            _tsMin = min;
-            _tsMax = max;
+            try { Timeline.SetTimeshiftRange(min, max); } catch { }
         }
         public void SetTimeshiftLabels(DateTime cursor, DateTime now, bool seeking)
         {
@@ -188,20 +207,51 @@ namespace LibmpvIptvClient
         }
         public void SetTime(double current, double duration)
         {
-            SliderSeek.Maximum = duration <= 0 ? 1 : duration;
-            if (!_seeking)
-            {
-                SliderSeek.Value = Math.Max(0, Math.Min(SliderSeek.Maximum, current));
-            }
+            try { Timeline.SetTime(current, duration); } catch { }
             if (!_timeshiftOn)
             {
-                LblElapsed.Text = FormatTime(current);
-                LblDuration.Text = FormatTime(duration);
+                try
+                {
+                    LblElapsed.Text = FormatTime(current);
+                    LblDuration.Text = FormatTime(duration);
+                }
+                catch { }
             }
         }
+
+        // ---------------------------------------------------------------------
+        // EPG timeline: forwarded to the hosted control.
+        // ---------------------------------------------------------------------
+
+        /// <summary>
+        /// Applies a full EPG timeline snapshot. Callers push this every playback tick; the strip itself is only
+        /// rebuilt when <see cref="OverlayTimelineState.Signature"/> changes so it does not flicker.
+        /// </summary>
+        public void SetTimelineState(OverlayTimelineState? state)
+        {
+            try { Timeline.SetTimelineState(state); } catch { }
+            ApplyBarHeight();
+        }
+
+        /// <summary>Compact = the meter only (the old 80 px bar); false = ticks + strip + detail.</summary>
+        public void SetCompactMode(bool compact)
+        {
+            try { Timeline.SetCompactMode(compact); } catch { }
+            ApplyBarHeight();
+        }
+
+        /// <summary>The hosted timeline; the windowed bar's peer of this window talks to the same type.</summary>
+        public TimeshiftTimeline TimelineControl => Timeline;
+
+        public void SetTimeshiftSchedule(IReadOnlyList<TimelineProgramme> programmes, DateTime cursor)
+        {
+            try { Timeline.SetTimeshiftSchedule(programmes, cursor); } catch { }
+            ApplyBarHeight();
+        }
+
         public void SetVolume(double val)
         {
-            SliderVolume.Volume = val;
+            try { Timeline.SetVolume(val); } catch { }
         }
         string FormatTime(double sec)
         {
@@ -213,84 +263,7 @@ namespace LibmpvIptvClient
         void BtnStop_Click(object sender, RoutedEventArgs e) => Stop?.Invoke();
         void BtnRew_Click(object sender, RoutedEventArgs e) => Rew?.Invoke();
         void BtnFwd_Click(object sender, RoutedEventArgs e) => Fwd?.Invoke();
-        void SliderSeek_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            try
-            {
-                var p = e.GetPosition(SliderSeek);
-                var ratio = Math.Max(0, Math.Min(1, SliderSeek.ActualWidth > 0 ? p.X / SliderSeek.ActualWidth : 0));
-                var sec = ratio * (SliderSeek.Maximum - SliderSeek.Minimum) + SliderSeek.Minimum;
-                _seeking = true;
-                SliderSeek.Value = sec;
-                SeekStart?.Invoke();
-            }
-            catch
-            {
-                _seeking = true;
-                SeekStart?.Invoke();
-            }
-        }
-        void SliderSeek_PreviewMouseUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            _seeking = false;
-            SeekEnd?.Invoke(SliderSeek.Value);
-        }
-        void SliderSeek_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
-        {
-            try
-            {
-                var p = e.GetPosition(SliderSeek);
-                var ratio = Math.Max(0, Math.Min(1, SliderSeek.ActualWidth > 0 ? p.X / SliderSeek.ActualWidth : 0));
-                var sec = ratio * (SliderSeek.Maximum - SliderSeek.Minimum) + SliderSeek.Minimum;
-                if (_timeshiftOn)
-                {
-                    var t = _tsMin.AddSeconds(Math.Max(0, sec));
-                    SliderSeek.ToolTip = t.ToString("yyyy-MM-dd HH:mm:ss");
-                }
-                else
-                {
-                    SliderSeek.ToolTip = FormatTime(sec);
-                }
-            }
-            catch { }
-        }
-        void SliderSeek_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
-        {
-            try { SliderSeek.ClearValue(ToolTipProperty); } catch { }
-        }
-        void SliderSeek_ValueChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            if (_seeking)
-            {
-                if (_timeshiftOn)
-                {
-                    var t = _tsMin.AddSeconds(Math.Max(0, SliderSeek.Value));
-                    LblElapsed.Text = t.ToString("yyyy-MM-dd HH:mm:ss");
-                }
-                else
-                {
-                    LblElapsed.Text = FormatTime(SliderSeek.Value);
-                }
-            }
-        }
-        void SliderVolume_VolumeChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
-        {
-            VolumeChanged?.Invoke(SliderVolume.Volume);
-        }
-        bool _muted = false;
-        void BtnMute_Click(object sender, RoutedEventArgs e)
-        {
-            _muted = !_muted;
-            IconMute.Data = _muted
-                ? System.Windows.Media.Geometry.Parse(MuteData)
-                : System.Windows.Media.Geometry.Parse(VolumeData);
-            // 静音时按钮背景变为浅红色
-            BtnMute.Background = _muted
-                ? new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromArgb(0x33, 0xFF, 0x45, 0x3A))
-                : null;
-            VolumeChanged?.Invoke(SliderVolume.Volume);
-            MuteChanged?.Invoke(_muted);
-        }
+
         public void SetFcc(bool v) { /* Removed */ }
         public void SetUdp(bool v) { LibmpvIptvClient.Diagnostics.Logger.Debug($"[Overlay] UDP optimization toggled: {v}"); }
         
@@ -410,16 +383,7 @@ namespace LibmpvIptvClient
         void BtnPreview_Click(object sender, RoutedEventArgs e) => PreviewRequested?.Invoke();
         public void SetSpeed(double v)
         {
-            System.Diagnostics.Debug.WriteLine($"[OverlayControls.SetSpeed] ENTER v={v}, LblSpeed is null: {LblSpeed == null}");
-            try 
-            { 
-                LblSpeed.Text = $"{v:0.##}x"; 
-                System.Diagnostics.Debug.WriteLine($"[OverlayControls.SetSpeed] Set LblSpeed.Text to {LblSpeed.Text}");
-            } 
-            catch (Exception ex) 
-            { 
-                System.Diagnostics.Debug.WriteLine($"[OverlayControls.SetSpeed] Exception: {ex.GetType().Name}: {ex.Message}");
-            }
+            try { LblSpeed.Text = $"{v:0.##}x"; } catch { }
         }
         public void SetSpeedEnabled(bool enabled)
         {
@@ -509,18 +473,20 @@ namespace LibmpvIptvClient
         }
         void OnPreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
         {
+            // Wheel over the programme strip scrolls it horizontally; anywhere else it keeps controlling volume.
+            if (Timeline.HandleWheel(e)) return;
+
             int step = 5;
             int dir = e.Delta > 0 ? 1 : -1;
             // 静音时滚动，取消静音
             if (_muted)
             {
                 _muted = false;
-                IconMute.Data = System.Windows.Media.Geometry.Parse(VolumeData);
-                BtnMute.Background = null;
+                Timeline.SetMuted(false);
                 MuteChanged?.Invoke(_muted);
             }
-            var v = Math.Max(0, Math.Min(100, SliderVolume.Volume + dir * step));
-            SliderVolume.Volume = v;
+            var v = Math.Max(0, Math.Min(100, Timeline.VolumeSlider.Volume + dir * step));
+            Timeline.VolumeSlider.Volume = v;
             // 显示百分比提示
             ShowVolumeTooltip(v);
             e.Handled = true;
@@ -530,7 +496,7 @@ namespace LibmpvIptvClient
         public void ShowVolumeTooltip(double value)
         {
             // 通过 ToolTip 显示百分比
-            BtnMute.ToolTip = $"音量: {(int)value}%";
+            Timeline.MuteButton.ToolTip = $"音量: {(int)value}%";
             // 自动隐藏
             if (_volumeTooltipTimer != null)
             {
@@ -541,7 +507,7 @@ namespace LibmpvIptvClient
             _volumeTooltipTimer.Tick += (s, e2) =>
             {
                 _volumeTooltipTimer?.Stop();
-                BtnMute.ToolTip = "静音";
+                Timeline.MuteButton.ToolTip = "静音";
             };
             _volumeTooltipTimer.Start();
         }

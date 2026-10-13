@@ -286,7 +286,8 @@ namespace LibmpvIptvClient
         /// fullscreen as well as enter it.</summary>
         internal void ToggleFullscreenSwitchFromManager() => ToggleFullscreen(!_shell.WindowStateActions.IsFullscreen);
         internal MpvInterop? PlayerInterop => _mpv;
-        internal System.Windows.Controls.Slider SeekSliderForManager => SliderSeek;
+        /// <summary>The windowed bar's meter, exposed to <see cref="Architecture.Presentation.View.MainWindowSeekInteractionManager"/>.</summary>
+        internal TimeshiftTimeline TimelineWindowedForManager => TimelineWindowed;
         internal LibmpvIptvClient.Architecture.Presentation.View.MainWindowEpgManager? EpgManagerForManager => _epgManager;
         internal DateTime PlayStartTimeForManager { get => _playStartTime; set => _playStartTime = value; }
         internal bool FirstFrameLoggedForManager { get => _firstFrameLogged; set => _firstFrameLogged = value; }

@@ -114,6 +114,10 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             FullscreenOverlayTheme.UseDarkPalette(_overlayWpf, _shell.WindowStateActions.IsFullscreen);
             
             BindOverlay(playPause, stop, rew, fwd, openSourceMenu);
+
+            // The bar grows taller once the EPG timeline is populated, so keep the windowed placement anchored to
+            // the video area (fullscreen already repositions itself from the 120 ms overlay poll).
+            try { _overlayWpf.SizeChanged += (s, e) => PositionOverlay(); } catch { }
             
             _overlayWpf.Topmost = true;
             try { _overlayWpf.CurrentAspect = _shell.CurrentAspect; } catch { }
@@ -292,6 +296,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 TimeshiftToggled: (on) => {
                     _shell.IsTimeshiftActive = on;
                     try { _overlayWpf?.SetTimeshift(on); } catch { }
+                    try { _window.SetWindowedTimelineTimeshift(on); } catch { }
                 },
                 ShortcutKeyPressed: (key, modifiers) => {
                     var action = _shell.ShortcutActions.ResolveAction(key, modifiers);
@@ -303,6 +308,25 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                     return false;
                 }
             ));
+
+            // The EPG timeline card click is not part of the shared binding context, so it is wired here and
+            // mirrors the timeshift branch of SeekEnd above (keep the timeshift mode when it is already active).
+            _overlayWpf.ProgrammeSelected += (start) =>
+            {
+                try
+                {
+                    var channel = _shell.CurrentChannel;
+                    if (channel == null) return;
+                    LibmpvIptvClient.Diagnostics.Logger.Info($"节目单跳转到 {start:yyyy-MM-dd HH:mm:ss}");
+                    if (_shell.IsTimeshiftActive)
+                    {
+                        _shell.TimeshiftCursorSec = Math.Max(0, (start - _shell.TimeshiftMin).TotalSeconds);
+                        _shell.TimeshiftStart = start;
+                    }
+                    _shell.ChannelPlaybackActions.PlayCatchupAt(channel, start, keepTimeshiftMode: _shell.IsTimeshiftActive);
+                }
+                catch { }
+            };
         }
 
         private void SyncInitialState()

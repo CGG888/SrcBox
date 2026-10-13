@@ -492,6 +492,122 @@ namespace LibmpvIptvClient
             return new MpvPlayerEngineAdapter(_mpv);
         }
 
+        /// <summary>
+        /// Builds the EPG-timeline snapshot for the bottom overlay bar: the current programme's window drives the
+        /// meter, the channel's schedule becomes the scrollable card strip. Runs on every playback tick, but the
+        /// strip signature stays stable until the channel or the schedule itself changes, so the cards do not flicker.
+        /// </summary>
+        void PushOverlayTimelineState()
+        {
+            try
+            {
+                // Both bottom bars host the same timeline control: the fullscreen floating overlay and the
+                // in-layout windowed bar. Either may be absent in a given layout, so build the snapshot once
+                // and hand it to whichever controls exist (see ApplyTimelineState).
+                var channel = _shell.CurrentChannel;
+                var epg = _shell.EpgService ?? _epgService;
+                if (channel == null || epg == null) { ApplyTimelineState(null); return; }
+
+                var programs = epg.GetPrograms(channel.TvgId, channel.TvgName, channel.Name);
+                if (programs == null || programs.Count == 0) { ApplyTimelineState(null); return; }
+
+                bool timeshiftActive = _shell.IsTimeshiftActive;
+                var now = DateTime.Now;
+                // Playable window: the live timeshift buffer when timeshift is on, otherwise the configured catch-up depth.
+                var windowFrom = timeshiftActive
+                    ? _shell.TimeshiftMin
+                    : now.AddHours(-Math.Max(1, AppSettings.Current.Timeshift.DurationHours));
+                var windowTo = timeshiftActive ? _shell.TimeshiftMax : now;
+                bool catchupAvailable = !string.IsNullOrEmpty(channel.CatchupSource)
+                    || (AppSettings.Current.Timeshift.Enabled && !string.IsNullOrEmpty(AppSettings.Current.Timeshift.UrlFormat));
+
+                DateTime cursor;
+                bool anchored;
+                if (timeshiftActive)
+                {
+                    cursor = _shell.TimeshiftMin.AddSeconds(_shell.TimeshiftCursorSec);
+                    anchored = true;
+                }
+                else if (_shell.PlaybackMode == PlaybackMode.Replay || _shell.PlaybackMode == PlaybackMode.RecordingPlayback)
+                {
+                    cursor = _shell.GetPlaybackLocalTime() ?? now;
+                    anchored = true;
+                }
+                else
+                {
+                    // Plain live: the meter keeps the engine's own 0..duration mapping, only the strip follows "now".
+                    cursor = now;
+                    anchored = false;
+                }
+
+                var list = new List<TimelineProgramme>(programs.Count);
+                DateTime previousDay = DateTime.MinValue;
+                foreach (var p in programs)
+                {
+                    if (p.End <= p.Start) continue;
+                    bool withDate = previousDay == DateTime.MinValue || p.Start.Date != previousDay;
+                    list.Add(new TimelineProgramme
+                    {
+                        Name = p.Title ?? string.Empty,
+                        Start = p.Start,
+                        End = p.End,
+                        TimeText = TimelineStripMetrics.FormatClock(p.Start, withDate),
+                        CanPlay = catchupAvailable && p.End > windowFrom && p.Start < windowTo,
+                        IsCurrent = cursor >= p.Start && cursor < p.End,
+                        IsLive = now >= p.Start && now < p.End
+                    });
+                    previousDay = p.Start.Date;
+                }
+
+                if (list.Count == 0) { ApplyTimelineState(null); return; }
+
+                ApplyTimelineState(new OverlayTimelineState
+                {
+                    Programmes = list,
+                    Cursor = cursor,
+                    ProgrammeAnchored = anchored,
+                    Signature = (channel.TvgId ?? channel.Name ?? string.Empty) + "|" + OverlayTimelineState.BuildSignature(list)
+                });
+            }
+            catch (Exception ex)
+            {
+                Diagnostics.Logger.Debug($"[Overlay] timeline sync failed: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Fans one timeline snapshot out to every bar that is currently built. The call is idempotent per state:
+        /// each control rebuilds its strip only when the signature changes, so the every-tick push stays cheap.
+        /// </summary>
+        void ApplyTimelineState(OverlayTimelineState? state)
+        {
+            try { TimelineWindowed?.SetTimelineState(state); } catch { }
+            try { _overlayManager?.OverlayWpf?.SetTimelineState(state); } catch { }
+        }
+
+        /// <summary>Per-tick progress: the fullscreen overlay and the windowed bar both host a timeline.</summary>
+        void ApplyTimeToBars(double current, double duration)
+        {
+            try { _overlayManager?.OverlayWpf?.SetTime(current, duration); } catch { }
+            try { TimelineWindowed?.SetTime(current, duration); } catch { }
+        }
+
+        /// <summary>Timeshift window bounds for both hosted timelines.</summary>
+        void ApplyTimeshiftRangeToBars(DateTime min, DateTime max)
+        {
+            try { _overlayManager?.OverlayWpf?.SetTimeshiftRange(min, max); } catch { }
+            try { TimelineWindowed?.SetTimeshiftRange(min, max); } catch { }
+        }
+
+        /// <summary>
+        /// Timeshift wall-clock labels. Only the fullscreen overlay owns the elapsed/duration labels; the windowed
+        /// bar draws the same information from the shell's own bindings, so nothing is pushed to it here.
+        /// </summary>
+        void ApplyTimeshiftLabelsToBars(DateTime cursor, DateTime now, bool seeking)
+        {
+            try { _overlayManager?.OverlayWpf?.SetTimeshiftLabels(cursor, now, seeking); } catch { }
+        }
+
         void InitializeViewModel(IPlayerEngine playerEngine)
         {
             _epgService = new EpgService();
@@ -510,9 +626,10 @@ namespace LibmpvIptvClient
                 _epgService,
                 playerEngine,
                 _userDataStore,
-                (cur, tot) => { try { _overlayManager.OverlayWpf?.SetTime(cur, tot); } catch { } },
-                (min, max) => { try { _overlayManager.OverlayWpf?.SetTimeshiftRange(min, max); } catch { } },
-                (cursor, max, seeking) => { try { _overlayManager.OverlayWpf?.SetTimeshiftLabels(cursor, max, seeking); } catch { } }
+                (cur, tot) => ApplyTimeToBars(cur, tot),
+                (min, max) => ApplyTimeshiftRangeToBars(min, max),
+                (cursor, max, seeking) => ApplyTimeshiftLabelsToBars(cursor, max, seeking),
+                () => { try { PushOverlayTimelineState(); } catch { } }
             );
 
             _shell.Volume = AppSettings.Current.Volume;

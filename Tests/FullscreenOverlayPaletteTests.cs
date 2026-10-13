@@ -67,6 +67,30 @@ namespace LibmpvIptvClient.Tests
             }
         }
 
+        /// <summary>
+        /// The EPG timeline that replaced the plain seek bar paints programme states (current / live / out)
+        /// and its detail row from the active theme, so those keys have to stay dynamic for the same reason
+        /// as the keys above: the fullscreen palette swaps the dictionary while the bar is already open.
+        /// The timeline is not itself a floating bar (the host Border paints the scrim), so only the brushes
+        /// it really uses are asserted here.
+        /// </summary>
+        [TestMethod]
+        public void OverlayTimeline_ResolvesItsStateBrushesDynamically()
+        {
+            var usages = Xaml("TimeshiftTimeline.xaml").Descendants()
+                .Attributes()
+                .Select(a => ((string?) a.Value ?? string.Empty).Trim())
+                .ToList();
+
+            foreach (var key in new[] { "AccentBrush", "CardBackgroundBrush", "StatusTimeshiftBrush", "TextSecondaryBrush", "BorderBrushCommon", "TextPrimaryBrush" })
+            {
+                Assert.AreEqual(0, usages.Count(v => v == $"{{StaticResource {key}}}"),
+                    $"the EPG timeline must not freeze {key} with StaticResource: the fullscreen palette swaps the dictionary at runtime");
+                Assert.IsTrue(usages.Count(v => v == $"{{DynamicResource {key}}}") > 0,
+                    $"the EPG timeline must resolve {key} dynamically so both themes paint the programme cards");
+            }
+        }
+
         private static XDocument Xaml(string file)
         {
             var path = Path.Combine(AppContext.BaseDirectory, "Controls", "Components", file);

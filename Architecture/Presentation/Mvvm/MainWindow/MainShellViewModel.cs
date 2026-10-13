@@ -129,6 +129,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         private Action<double, double>? _overlayTimeSync;
         private Action<DateTime, DateTime>? _overlayRangeSync;
         private Action<DateTime, DateTime, bool>? _overlayTimeshiftLabelSync;
+        private Action? _overlayTimelineSync;
         private System.Net.Http.HttpClient? _httpClient;
 
         public void SetHttpClient(System.Net.Http.HttpClient client) => _httpClient = client;
@@ -139,7 +140,8 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             UserDataStore userDataStore,
             Action<double, double>? overlayTimeSync = null, 
             Action<DateTime, DateTime>? overlayRangeSync = null,
-            Action<DateTime, DateTime, bool>? overlayTimeshiftLabelSync = null)
+            Action<DateTime, DateTime, bool>? overlayTimeshiftLabelSync = null,
+            Action? overlayTimelineSync = null)
         {
             _epgService = epgService;
             _playerEngine = playerEngine;
@@ -147,6 +149,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             _overlayTimeSync = overlayTimeSync;
             _overlayRangeSync = overlayRangeSync;
             _overlayTimeshiftLabelSync = overlayTimeshiftLabelSync;
+            _overlayTimelineSync = overlayTimelineSync;
         }
 
         public IPlayerEngine? PlayerEngine => _playerEngine;
@@ -251,6 +254,9 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             if (IsTimeshiftActive)
             {
                 TimeshiftMax = DateTime.Now;
+                // Both hosted timelines (fullscreen overlay + windowed bottom bar) anchor their meter to the
+                // timeshift window, so the bounds have to travel with every tick, not just while seeking.
+                try { _overlayRangeSync?.Invoke(TimeshiftMin, TimeshiftMax); } catch { }
                 var posMpv = timePos ?? 0;
                 var currentPlaybackTime = TimeshiftStart.AddSeconds(posMpv);
                 var current = (currentPlaybackTime - TimeshiftMin).TotalSeconds;
@@ -266,7 +272,6 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                     try 
                     { 
                         DurationText = TimeshiftMax.ToString("yyyy-MM-dd HH:mm:ss");
-                        _overlayRangeSync?.Invoke(TimeshiftMin, TimeshiftMax);
                     } catch { }
                 }
 
@@ -315,6 +320,9 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                     _overlayTimeSync?.Invoke(timePos.Value, duration.Value);
                 }
             }
+            // Feeds the overlay's EPG timeline (meter window, programme strip, detail row). Runs after the
+            // branches above so CurrentPlayingProgram / TimeshiftCursorSec are already up to date.
+            try { _overlayTimelineSync?.Invoke(); } catch { }
             UpdateHistoryProgress();
         }
 
