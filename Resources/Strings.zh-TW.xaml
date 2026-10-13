@@ -218,6 +218,8 @@
 
   <!-- Overlay tooltips -->
   <sys:String x:Key="Overlay_Mute">靜音</sys:String>
+  <sys:String x:Key="Timeline_PrevSegment">上一節目時段</sys:String>
+  <sys:String x:Key="Timeline_NextSegment">下一節目時段</sys:String>
   <sys:String x:Key="Overlay_SwitchSource">切換來源</sys:String>
   <sys:String x:Key="Overlay_AspectRatio">畫面比例</sys:String>
   <sys:String x:Key="Overlay_Timeshift">時移</sys:String>

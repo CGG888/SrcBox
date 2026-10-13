@@ -6,7 +6,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
              mc:Ignorable="d"
-             d:DesignWidth="900" d:DesignHeight="112">
+             d:DesignWidth="900" d:DesignHeight="58">
   <UserControl.Resources>
     <!-- 自制控件样式：本控件同时被全屏浮层与窗口模式底栏宿主，不能依赖宿主的资源作用域 -->
     <Style x:Key="OverlayButtonBase" TargetType="{x:Type ButtonBase}">
@@ -40,65 +40,71 @@
     </Style>
     <Style x:Key="OverlayIconButton" TargetType="Button" BasedOn="{StaticResource OverlayButtonBase}"/>
 
-    <!-- EPG 节目卡：宽度由 TimelineProgramme.CardWidth 决定，状态由绑定标志驱动 -->
+    <!-- 左右翻页按钮：与刻度行同高的小圆角方块，压在节目条两端 -->
+    <Style x:Key="TimelineNavButton" TargetType="Button" BasedOn="{StaticResource OverlayButtonBase}">
+      <Setter Property="Width" Value="18"/>
+      <Setter Property="Height" Value="16"/>
+      <Setter Property="Margin" Value="0"/>
+      <Setter Property="FontSize" Value="12"/>
+      <Setter Property="FontWeight" Value="Bold"/>
+      <Setter Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+    </Style>
+
+    <!--
+      节目段：宽度由宿主按时间比例（percent）算出后写在 ContentPresenter 上，高度固定 24，
+      保证整条时间线不超过原进度条的高度量级。状态由绑定标志驱动，主题画刷一律 DynamicResource。
+    -->
     <DataTemplate x:Key="TimelineProgrammeTemplate" DataType="{x:Type local:TimelineProgramme}">
-      <Grid x:Name="CardRoot" Width="{Binding CardWidth}" Height="52" Margin="0,0,2,0" Cursor="Hand" ToolTip="{Binding Name}">
-        <Border x:Name="CardSurface" CornerRadius="6" BorderThickness="1"
+      <Grid x:Name="BlockRoot" Height="18" Margin="0,0,1,0" Cursor="Hand" ToolTip="{Binding TooltipText}">
+        <Border x:Name="BlockSurface" CornerRadius="3" BorderThickness="1"
                 Background="{DynamicResource CardBackgroundBrush}"
                 BorderBrush="{DynamicResource BorderBrushCommon}"/>
-        <!-- 主题安全的强调色/直播色叠加：用独立 Border + Opacity，避免转换器拼色 -->
-        <Border x:Name="CardAccentTint" CornerRadius="6" Opacity="0" Background="{DynamicResource AccentBrush}"/>
-        <Border x:Name="CardLiveTint" CornerRadius="6" Opacity="0" Background="{DynamicResource StatusTimeshiftBrush}"/>
-        <Rectangle x:Name="CardOutLine" RadiusX="6" RadiusY="6" StrokeThickness="1" Visibility="Collapsed"
+        <Border x:Name="BlockLiveTint" CornerRadius="3" Opacity="0" Background="{DynamicResource StatusTimeshiftBrush}"/>
+        <Border x:Name="BlockAccentTint" CornerRadius="3" Opacity="0" Background="{DynamicResource AccentBrush}"/>
+        <Rectangle x:Name="BlockDash" RadiusX="3" RadiusY="3" StrokeThickness="1" Visibility="Collapsed"
                    Stroke="{DynamicResource TextSecondaryBrush}" StrokeDashArray="2 2"/>
-        <StackPanel Margin="8,5,8,5">
-          <TextBlock x:Name="TxtCardTime" Text="{Binding TimeText}" FontSize="10"
-                     Foreground="{DynamicResource TextSecondaryBrush}"/>
-          <TextBlock x:Name="TxtCardName" Text="{Binding Name}" FontSize="11" FontWeight="SemiBold"
-                     Margin="0,1,0,0" LineHeight="14" LineStackingStrategy="BlockLineHeight"
-                     TextWrapping="Wrap" TextTrimming="CharacterEllipsis" MaxHeight="28"
-                     Foreground="{DynamicResource TextPrimaryBrush}"/>
-        </StackPanel>
+        <TextBlock x:Name="BlockName" Text="{Binding Name}" Margin="4,0,3,0" VerticalAlignment="Center"
+                   FontSize="10.5" TextTrimming="CharacterEllipsis"
+                   Foreground="{DynamicResource TextPrimaryBrush}"/>
       </Grid>
       <DataTemplate.Triggers>
-        <!-- 当前正在播放的节目 -->
-        <DataTrigger Binding="{Binding IsCurrent}" Value="True">
-          <Setter TargetName="CardSurface" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
-          <Setter TargetName="CardSurface" Property="BorderThickness" Value="1.5"/>
-          <Setter TargetName="CardAccentTint" Property="Opacity" Value="0.18"/>
-          <Setter TargetName="TxtCardName" Property="Foreground" Value="{DynamicResource AccentBrush}"/>
-        </DataTrigger>
         <!-- 正在直播的节目 -->
         <DataTrigger Binding="{Binding IsLive}" Value="True">
-          <Setter TargetName="CardLiveTint" Property="Opacity" Value="0.22"/>
-          <Setter TargetName="CardSurface" Property="BorderBrush" Value="{DynamicResource StatusTimeshiftBrush}"/>
+          <Setter TargetName="BlockLiveTint" Property="Opacity" Value="0.22"/>
+          <Setter TargetName="BlockSurface" Property="BorderBrush" Value="{DynamicResource StatusTimeshiftBrush}"/>
         </DataTrigger>
-        <!-- 不可用时移：虚线、弱化、不可点击（放在最后以覆盖上面的状态） -->
+        <!-- 当前播放游标所在的节目：描边标出，文字保持主色以保证盖在进度填充上仍然可读 -->
+        <DataTrigger Binding="{Binding IsCurrent}" Value="True">
+          <Setter TargetName="BlockSurface" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+          <Setter TargetName="BlockAccentTint" Property="Opacity" Value="0.16"/>
+          <Setter TargetName="BlockName" Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
+          <Setter TargetName="BlockName" Property="FontWeight" Value="SemiBold"/>
+        </DataTrigger>
+        <!-- 不可回看：虚线 + 弱化，且不可点击（放在最后以覆盖上面的状态） -->
         <DataTrigger Binding="{Binding CanPlay}" Value="False">
-          <Setter TargetName="CardOutLine" Property="Visibility" Value="Visible"/>
-          <Setter TargetName="CardSurface" Property="Background" Value="Transparent"/>
-          <Setter TargetName="CardSurface" Property="BorderBrush" Value="Transparent"/>
-          <Setter TargetName="CardAccentTint" Property="Opacity" Value="0"/>
-          <Setter TargetName="CardLiveTint" Property="Opacity" Value="0"/>
-          <Setter TargetName="TxtCardName" Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
-          <Setter TargetName="TxtCardTime" Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
-          <Setter TargetName="CardRoot" Property="Opacity" Value="0.55"/>
-          <Setter TargetName="CardRoot" Property="Cursor" Value="Arrow"/>
+          <Setter TargetName="BlockDash" Property="Visibility" Value="Visible"/>
+          <Setter TargetName="BlockSurface" Property="Background" Value="Transparent"/>
+          <Setter TargetName="BlockSurface" Property="BorderBrush" Value="Transparent"/>
+          <Setter TargetName="BlockLiveTint" Property="Opacity" Value="0"/>
+          <Setter TargetName="BlockAccentTint" Property="Opacity" Value="0"/>
+          <Setter TargetName="BlockName" Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
+          <Setter TargetName="BlockName" Property="FontWeight" Value="Normal"/>
+          <Setter TargetName="BlockRoot" Property="Opacity" Value="0.55"/>
+          <Setter TargetName="BlockRoot" Property="Cursor" Value="Arrow"/>
         </DataTrigger>
       </DataTemplate.Triggers>
     </DataTemplate>
   </UserControl.Resources>
 
   <!--
-    行结构：0 进度条 + 音量 / 1 刻度 / 2 节目条 / 3 节目详情 / 4 宿主内容区。
-    CompactMode 只保留第 0 行（进度条），其余行折叠，宿主随之回到 80/64 px 的矮栏。
+    行结构：0 紧凑进度条（无 EPG 数据时的回退，与旧版 64px 底栏一致）/ 1 节目时间线 / 2 宿主内容区。
+    CompactMode 只保留第 0 行，其余折叠，宿主随之回到 64 px 的矮栏。
+    列 1 是内嵌音量组，窗口模式隐藏它改用底栏自带的音量控件。
   -->
   <Grid x:Name="TimelineRoot">
     <Grid.RowDefinitions>
       <RowDefinition x:Name="RowMeter" Height="Auto"/>
-      <RowDefinition x:Name="RowScale" Height="Auto"/>
-      <RowDefinition x:Name="RowStrip" Height="Auto"/>
-      <RowDefinition x:Name="RowDetail" Height="Auto"/>
+      <RowDefinition x:Name="RowBand" Height="Auto"/>
       <RowDefinition x:Name="RowBottom" Height="Auto"/>
     </Grid.RowDefinitions>
     <Grid.ColumnDefinitions>
@@ -106,7 +112,7 @@
       <ColumnDefinition Width="120"/>
     </Grid.ColumnDefinitions>
 
-    <!-- 进度条：Minimum/Maximum 由当前节目窗口或 0..时长 驱动 -->
+    <!-- 进度条：Minimum/Maximum 由当前节目窗口或 0..时长 驱动；节目时间线可见时它被折叠但仍保存计量值 -->
     <Slider Grid.Row="0" Grid.Column="0" x:Name="SliderSeek" Height="20" Style="{StaticResource UnifiedThickSlider}"
             Minimum="0" Maximum="100"
             ValueChanged="SliderSeek_ValueChanged"
@@ -116,7 +122,7 @@
             MouseLeave="SliderSeek_MouseLeave"/>
 
     <!-- 音量区（窗口模式隐藏本组，改用底栏自带的静音/音量控件） -->
-    <Grid x:Name="VolumeGroup" Grid.Row="0" Grid.RowSpan="2" Grid.Column="1" Margin="12,5,0,0" VerticalAlignment="Center">
+    <Grid x:Name="VolumeGroup" Grid.Row="0" Grid.RowSpan="3" Grid.Column="1" Margin="12,2,0,0" VerticalAlignment="Center">
       <Grid.ColumnDefinitions>
         <ColumnDefinition Width="Auto"/>
         <ColumnDefinition Width="*"/>
@@ -131,49 +137,62 @@
                              VerticalAlignment="Center"/>
     </Grid>
 
-    <!-- 刻度：当前节目起止 + 四分点 -->
-    <Grid x:Name="MeterScale" Grid.Row="1" Grid.Column="0" Margin="0,3,0,0" Visibility="Collapsed">
-      <Grid.ColumnDefinitions>
-        <ColumnDefinition Width="*"/>
-        <ColumnDefinition Width="*"/>
-        <ColumnDefinition Width="*"/>
-        <ColumnDefinition Width="*"/>
-        <ColumnDefinition Width="*"/>
-      </Grid.ColumnDefinitions>
-      <TextBlock x:Name="TxtScaleStart" Grid.Column="0" HorizontalAlignment="Left" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}"/>
-      <TextBlock x:Name="TxtScaleQuarter" Grid.Column="1" HorizontalAlignment="Center" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}"/>
-      <TextBlock x:Name="TxtScaleHalf" Grid.Column="2" HorizontalAlignment="Center" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}"/>
-      <TextBlock x:Name="TxtScaleThreeQuarter" Grid.Column="3" HorizontalAlignment="Center" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}"/>
-      <TextBlock x:Name="TxtScaleEnd" Grid.Column="4" HorizontalAlignment="Right" FontSize="10" Foreground="{DynamicResource TextSecondaryBrush}"/>
+    <!-- 节目时间线：16px 标题/翻页行 + 13px 刻度行 + 20px 节目段行 = 49px（原进度条是 20px） -->
+    <Grid x:Name="Band" Grid.Row="1" Grid.Column="0" Visibility="Collapsed">
+      <Grid.RowDefinitions>
+        <RowDefinition Height="16"/>
+        <RowDefinition Height="13"/>
+        <RowDefinition Height="20"/>
+      </Grid.RowDefinitions>
+
+      <Grid Grid.Row="0">
+        <Grid.ColumnDefinitions>
+          <ColumnDefinition Width="Auto"/>
+          <ColumnDefinition Width="*"/>
+          <ColumnDefinition Width="Auto"/>
+          <ColumnDefinition Width="Auto"/>
+        </Grid.ColumnDefinitions>
+        <Button x:Name="BtnPrevSegment" Grid.Column="0" Style="{StaticResource TimelineNavButton}"
+                Content="&#x2039;" ToolTip="{DynamicResource Timeline_PrevSegment}" Click="BtnPrevSegment_Click"/>
+        <TextBlock x:Name="TxtProgrammeName" Grid.Column="1" Margin="2,0,8,0" VerticalAlignment="Center"
+                   FontSize="10.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
+                   Foreground="{DynamicResource TextPrimaryBrush}"/>
+        <TextBlock x:Name="TxtWindowRange" Grid.Column="2" VerticalAlignment="Center" Margin="0,0,8,0"
+                   FontSize="10.5" MaxWidth="190" TextTrimming="CharacterEllipsis"
+                   Foreground="{DynamicResource TextSecondaryBrush}"/>
+        <Button x:Name="BtnNextSegment" Grid.Column="3" Style="{StaticResource TimelineNavButton}"
+                Content="&#x203A;" ToolTip="{DynamicResource Timeline_NextSegment}" Click="BtnNextSegment_Click"/>
+      </Grid>
+
+      <!-- 刻度：候选步长 5/10/15/30/60 分钟，取第一个让窗口不超过 12 格的步长 -->
+      <Canvas x:Name="RulerCanvas" Grid.Row="1" ClipToBounds="True" IsHitTestVisible="False"/>
+
+      <!-- 节目段轨道 -->
+      <Grid Grid.Row="2">
+        <Canvas x:Name="TrackCanvas" ClipToBounds="True" Background="Transparent"
+                SizeChanged="TrackCanvas_SizeChanged"
+                PreviewMouseLeftButtonDown="TrackCanvas_MouseLeftButtonDown"
+                PreviewMouseMove="TrackCanvas_MouseMove"
+                PreviewMouseLeftButtonUp="TrackCanvas_MouseLeftButtonUp"
+                MouseLeave="TrackCanvas_MouseLeave"/>
+
+        <!-- 播放头 / 当前节目填充 / 直播边缘：由 code-behind 定位，画刷保持 DynamicResource 以便换肤 -->
+        <Canvas x:Name="OverlayCanvas" ClipToBounds="True" IsHitTestVisible="False">
+          <Border x:Name="CurrentFrame" CornerRadius="3" BorderThickness="2" Visibility="Collapsed"
+                  Background="Transparent" BorderBrush="{DynamicResource AccentBrush}"/>
+          <Border x:Name="ProgressFill" CornerRadius="2" Visibility="Collapsed" Opacity="0.35"
+                  Background="{DynamicResource AccentBrush}"/>
+          <Rectangle x:Name="LiveEdge" Width="2" Visibility="Collapsed"
+                     Fill="{DynamicResource StatusTimeshiftBrush}"/>
+          <Rectangle x:Name="Playhead" Width="2" Visibility="Collapsed"
+                     Fill="{DynamicResource AccentBrush}"/>
+          <Rectangle x:Name="PlayheadHandle" Width="7" Height="7" RadiusX="1" RadiusY="1" Visibility="Collapsed"
+                     Fill="{DynamicResource AccentBrush}"/>
+        </Canvas>
+      </Grid>
     </Grid>
 
-    <!-- 节目条：横向可滚动，滚轮横滚 -->
-    <ScrollViewer x:Name="StripScroll" Grid.Row="2" Grid.ColumnSpan="2" Margin="0,8,0,0" Height="56"
-                  HorizontalScrollBarVisibility="Hidden" VerticalScrollBarVisibility="Disabled"
-                  Focusable="False" Visibility="Collapsed"
-                  PreviewMouseLeftButtonDown="StripScroll_PreviewMouseLeftButtonDown"
-                  PreviewMouseLeftButtonUp="StripScroll_PreviewMouseLeftButtonUp"
-                  ScrollChanged="StripScroll_ScrollChanged">
-      <ItemsControl x:Name="StripItems" VerticalAlignment="Center" Focusable="False"
-                    ItemTemplate="{StaticResource TimelineProgrammeTemplate}">
-        <ItemsControl.ItemsPanel>
-          <ItemsPanelTemplate>
-            <StackPanel Orientation="Horizontal"/>
-          </ItemsPanelTemplate>
-        </ItemsControl.ItemsPanel>
-      </ItemsControl>
-    </ScrollViewer>
-
-    <!-- 节目详情 -->
-    <StackPanel x:Name="PnlProgrammeDetail" Grid.Row="3" Grid.ColumnSpan="2" Orientation="Horizontal"
-                Margin="0,5,0,0" Visibility="Collapsed">
-      <TextBlock x:Name="LblProgrammeName" FontSize="13" FontWeight="SemiBold"
-                 TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextPrimaryBrush}"/>
-      <TextBlock x:Name="LblProgrammeRange" FontSize="11" Margin="8,0,0,0" VerticalAlignment="Center"
-                 Foreground="{DynamicResource TextSecondaryBrush}"/>
-    </StackPanel>
-
-    <!-- 宿主内容区（全屏浮层放按钮行；窗口模式不使用） -->
-    <ContentPresenter x:Name="BottomArea" Grid.Row="4" Grid.ColumnSpan="2"/>
+    <!-- 宿主内容区（窗口模式不使用；全屏浮层把按钮行放在控件外部） -->
+    <ContentPresenter x:Name="BottomArea" Grid.Row="2" Grid.ColumnSpan="2"/>
   </Grid>
 </UserControl>

@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Linq;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
@@ -10,28 +9,32 @@ using System.Windows.Controls;
 using UserControl = System.Windows.Controls.UserControl;
 using Button = System.Windows.Controls.Button;
 using Point = System.Windows.Point;
+using Rectangle = System.Windows.Shapes.Rectangle;
+using Shape = System.Windows.Shapes.Shape;
+using TextBlock = System.Windows.Controls.TextBlock;
 
 namespace LibmpvIptvClient
 {
     /// <summary>
-    /// Reusable EPG timeline bar: the programme-relative meter (with quarter ticks), the scrollable programme
-    /// strip, the detail row and the timeshift/volume interaction. It is hosted by the fullscreen floating
-    /// overlay (<see cref="OverlayControls"/>) and by the in-layout bottom bar of <see cref="MainWindow"/>, so
-    /// the two bars cannot drift apart again. The host owns the height: it listens to <see cref="LayoutChanged"/>
-    /// and applies <see cref="RequiredHeight"/>.
+    /// Reusable programme timeline bar: a compact rtp2httpd-style EPG band (programme segments carrying their
+    /// names, a ruler with real time labels and prev/next segment buttons on both ends) plus the plain meter it
+    /// falls back to when the channel has no schedule. It is hosted by the fullscreen floating overlay
+    /// (<see cref="OverlayControls"/>) and by the in-layout bottom bar of <see cref="MainWindow"/>, so the two
+    /// bars cannot drift apart again. The host owns the height: it listens to <see cref="LayoutChanged"/> and
+    /// applies <see cref="RequiredHeight"/>.
     /// </summary>
     public partial class TimeshiftTimeline : UserControl
     {
-        /// <summary>Raised when the user starts seeking on the meter; the host locks its tick-driven value updates.</summary>
+        /// <summary>Raised when the user starts dragging the band; the host locks its tick-driven value updates until the release.</summary>
         public event Action? SeekStart;
 
         /// <summary>Raised with the meter's own units (seconds from the meter minimum) when the user releases.</summary>
         public event Action<double>? SeekEnd;
 
-        /// <summary>Raised when a playable programme card is clicked; the payload is the programme start (wall clock).</summary>
+        /// <summary>Raised when a playable programme segment is clicked; the payload is the programme start (wall clock).</summary>
         public event Action<DateTime>? ProgrammeSelected;
 
-        /// <summary>Raised whenever the preferred height changes (timeline shown/hidden, compact toggled).</summary>
+        /// <summary>Raised whenever the preferred height changes (band shown/hidden, compact toggled).</summary>
         public event Action? LayoutChanged;
 
         /// <summary>Raised when the volume slider moved (the host mirrors it into the shell).</summary>
@@ -40,21 +43,53 @@ namespace LibmpvIptvClient
         /// <summary>Raised when the mute button was pressed (the host mirrors it into the shell).</summary>
         public event Action<bool>? MuteChanged;
 
+        /// <summary>Height of the plain meter row (the classic compact bottom bar).</summary>
         private const double MeterRowHeight = 20;
-        private const double ScaleRowHeight = 16;
-        private const double StripRowHeight = 64;
-        private const double DetailRowHeight = 26;
-        private const double StripRecentreHoldSeconds = 5;
-        private const double StripWheelStep = 60;
 
-        private readonly List<TimelineProgramme> _stripCards = new List<TimelineProgramme>();
-        private string _stripSignature = string.Empty;
-        private DateTime _stripHoldUntil = DateTime.MinValue;
-        private DateTime _lastCentredCardStart = DateTime.MinValue;
-        private double _programmaticOffset = double.NaN;
-        private bool _recentrePending;
-        private bool _timelineVisible;
-        private bool _compactMode;
+        // The band is deliberately the height of the old seek bar (20 px) plus one short label row and one
+        // short tick row: 16 (name + prev/next) + 13 (ruler) + 20 (segments) = 49.
+        private const double NavRowHeight = 16;
+        private const double RulerRowHeight = 13;
+        private const double TrackRowHeight = 20;
+
+        /// <summary>Total height of the programme band (used for <see cref="RequiredHeight"/>).</summary>
+        public const double BandRowHeight = NavRowHeight + RulerRowHeight + TrackRowHeight;
+
+        private const double BlockHeight = 18;
+        private const double MinimumLabelWidth = 40;
+        private const double LabelCollisionWidth = 34;
+        private const double WheelPanMinutes = 15;
+
+        private readonly List<TimelineProgramme> _programmes = new List<TimelineProgramme>();
+        private readonly Dictionary<long, TimelineProgramme> _programmeCache = new Dictionary<long, TimelineProgramme>();
+        private DataTemplate? _blockTemplate;
+
+        private bool _compactMode = true;
+        private string _scheduleSignature = string.Empty;
+
+        private DateTime _cursor = DateTime.Now;
+        private TimelineProgramme? _currentProgramme;
+
+        // Viewport (recomputed from the band width on every render).
+        private DateTime _windowStart = DateTime.Now;
+        private TimeSpan _windowSpan = TimeSpan.FromMinutes(TimelineBandMetrics.WideWindowHalfMinutes * 2);
+        private int _tickMinutes = TimelineBandMetrics.TickMinuteOptions[2];
+        private string _bandKey = string.Empty;
+
+        // Manual window: set by the prev/next buttons, a pan drag or the wheel, released on a schedule change.
+        private bool _manualWindow;
+        private DateTime _manualAnchor = DateTime.Now;
+
+        // Pointer state.
+        private bool _pointerDown;
+        private bool _dragMoved;
+        private bool _dragIsSeek;
+        private bool _seekStarted;
+        private double _dragStartX;
+        private double _dragStartPercent;
+        private DateTime _dragStartAnchor;
+        private DateTime? _previewTime;
+
         private bool _meterHasProgrammeWindow;
         private DateTime _meterWindowStart;
         private bool _seeking;
@@ -125,22 +160,14 @@ namespace LibmpvIptvClient
             }
         }
 
-        /// <summary>Compact = meter only (the old 80/64 px bar); false = ticks + strip + detail.</summary>
+        /// <summary>Compact = the plain meter only (the old 64 px bar); false = the programme band.</summary>
         public bool IsCompactMode => _compactMode;
 
+        /// <summary>True while the user has panned the window away from the playback cursor.</summary>
+        public bool IsManualWindow => _manualWindow;
+
         /// <summary>Height the host should reserve for the timeline itself right now.</summary>
-        public double RequiredHeight
-        {
-            get
-            {
-                if (_compactMode) return MeterRowHeight;
-                double h = MeterRowHeight;
-                if (MeterScale.Visibility == Visibility.Visible) h += ScaleRowHeight;
-                if (StripScroll.Visibility == Visibility.Visible) h += StripRowHeight;
-                if (PnlProgrammeDetail.Visibility == Visibility.Visible) h += DetailRowHeight;
-                return h;
-            }
-        }
+        public double RequiredHeight => _compactMode ? MeterRowHeight : BandRowHeight;
 
         /// <summary>The meter element; hosts use it for pointer-relative seek math.</summary>
         public FrameworkElement SeekBar => SliderSeek;
@@ -164,9 +191,17 @@ namespace LibmpvIptvClient
             }
         }
 
+        /// <summary>Drops the manual window so the band follows the playback cursor again.</summary>
+        public void ResetView()
+        {
+            if (!_manualWindow) return;
+            _manualWindow = false;
+            Render();
+        }
+
         /// <summary>
-        /// Applies a full EPG timeline snapshot. Callers push this every playback tick; the strip itself is only
-        /// rebuilt when <see cref="OverlayTimelineState.Signature"/> changes so it does not flicker.
+        /// Applies a full EPG timeline snapshot. Callers push this every playback tick; the band itself is only
+        /// rebuilt when the window or the schedule identity changes so it does not flicker.
         /// </summary>
         public void SetTimelineState(OverlayTimelineState? state)
         {
@@ -174,18 +209,22 @@ namespace LibmpvIptvClient
             {
                 if (state == null || state.Programmes == null || state.Programmes.Count == 0)
                 {
-                    // No schedule to show: fall back to the short meter-only bar (the old 80/64 px height).
+                    // No schedule to show: fall back to the short meter-only bar (the old 64 px height).
                     SetCompactMode(true);
-                    HideTimeline();
+                    HideBand();
                     return;
                 }
 
-                // EPG data arrived: the full timeline (ticks + strip + detail) replaces the compact meter.
+                bool scheduleChanged = !string.Equals(state.Signature, _scheduleSignature, StringComparison.Ordinal);
+                SyncProgrammes(state.Programmes, scheduleChanged);
+                _scheduleSignature = state.Signature ?? string.Empty;
+                if (scheduleChanged) _manualWindow = false;
+
+                _cursor = state.Cursor;
+
                 SetCompactMode(false);
-                EnsureStripBuilt(state.Programmes, state.Signature);
-                ApplyStripState(state.Programmes);
-                ShowTimelineRows();
-                ApplyMeterWindow(state, state.Programmes);
+                ApplyMeterWindow(state);
+                Render();
             }
             catch (Exception ex)
             {
@@ -194,8 +233,8 @@ namespace LibmpvIptvClient
         }
 
         /// <summary>
-        /// Convenience entry point for hosts that only have the programme list and a cursor: the strip signature is
-        /// derived from the list itself (identical lists therefore never rebuild the cards).
+        /// Convenience entry point for hosts that only have the programme list and a cursor: the schedule signature
+        /// is derived from the list itself (identical lists therefore never rebuild the segments).
         /// </summary>
         public void SetTimeshiftSchedule(IReadOnlyList<TimelineProgramme> programmes, DateTime cursor)
         {
@@ -244,8 +283,6 @@ namespace LibmpvIptvClient
                 SliderSeek.Minimum = min;
                 SliderSeek.Maximum = max;
                 if (!_seeking) SliderSeek.Value = Math.Max(min, Math.Min(max, cursorSeconds));
-                UpdateMeterScale(start, end);
-                UpdateProgrammeDetail(start, end);
             }
             catch (Exception ex)
             {
@@ -291,11 +328,11 @@ namespace LibmpvIptvClient
         /// <summary>Host hook: the meter moved while the user drags it; <paramref name="seconds"/> is in meter units.</summary>
         protected virtual void OnSeekValueChanged(double seconds) { }
 
-        /// <summary>Sets the programme title shown in the detail row.</summary>
+        /// <summary>Sets the programme title shown at the head of the band.</summary>
         public void SetProgrammeName(string name)
         {
             _programmeName = name ?? string.Empty;
-            try { LblProgrammeName.Text = _programmeName; } catch { }
+            try { TxtProgrammeName.Text = _programmeName; } catch { }
         }
 
         /// <summary>Sets the embedded volume slider without raising <see cref="VolumeChanged"/>.</summary>
@@ -329,126 +366,243 @@ namespace LibmpvIptvClient
         }
 
         // ---------------------------------------------------------------------
-        // Timeline layout
+        // Band layout
         // ---------------------------------------------------------------------
 
-        /// <summary>Rebuilds the strip items only when the schedule identity changed; keeps the existing cards otherwise.</summary>
-        bool EnsureStripBuilt(IReadOnlyList<TimelineProgramme> programmes, string? signature)
+        /// <summary>Keeps one <see cref="TimelineProgramme"/> instance per programme start so the block triggers stay live.</summary>
+        void SyncProgrammes(IReadOnlyList<TimelineProgramme> incoming, bool scheduleChanged)
         {
-            var sig = string.IsNullOrEmpty(signature) ? OverlayTimelineState.BuildSignature(programmes) : signature!;
-            bool rebuild = sig != _stripSignature || _stripCards.Count != programmes.Count;
-            if (!rebuild) return false;
+            if (scheduleChanged) _programmeCache.Clear();
+            _programmes.Clear();
 
-            _stripSignature = sig;
-            _stripCards.Clear();
-            for (int i = 0; i < programmes.Count; i++) _stripCards.Add(programmes[i]);
-            StripItems.ItemsSource = null;
-            StripItems.ItemsSource = _stripCards;
-            _lastCentredCardStart = DateTime.MinValue;
-            _recentrePending = true;
-            StripScroll.UpdateLayout();
-            RecentreStrip(_stripCards);
-            return true;
-        }
-
-        /// <summary>Copies the mutating flags from the freshly built snapshot onto the retained cards.</summary>
-        void ApplyStripState(IReadOnlyList<TimelineProgramme> programmes)
-        {
-            int count = Math.Min(_stripCards.Count, programmes.Count);
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < incoming.Count; i++)
             {
-                var src = programmes[i];
-                var dst = _stripCards[i];
-                if (ReferenceEquals(src, dst)) continue;
-                dst.CanPlay = src.CanPlay;
-                dst.IsLive = src.IsLive;
-                dst.IsCurrent = src.IsCurrent;
+                var src = incoming[i];
+                if (src == null || src.End <= src.Start) continue;
+
+                long key = src.Start.Ticks;
+                if (!_programmeCache.TryGetValue(key, out var dst))
+                {
+                    dst = new TimelineProgramme { Start = src.Start, End = src.End };
+                    _programmeCache[key] = dst;
+                }
+                dst.End = src.End;
                 dst.Name = src.Name;
-                if (!string.Equals(dst.TimeText, src.TimeText, StringComparison.Ordinal)) dst.TimeText = src.TimeText;
+                dst.TimeText = src.TimeText;
+                dst.CanPlay = src.CanPlay;
+                dst.IsCurrent = src.IsCurrent;
+                dst.IsLive = src.IsLive;
+                _programmes.Add(dst);
             }
-            RecentreStrip(_stripCards);
         }
 
-        /// <summary>
-        /// Centres the current programme card unless the user scrolled the strip within the last few seconds
-        /// (mirrors the web remote's tsHoldBand behaviour).
-        /// </summary>
-        void RecentreStrip(IReadOnlyList<TimelineProgramme> cards)
-        {
-            if (cards == null || cards.Count == 0) return;
-            if (DateTime.Now < _stripHoldUntil) return;
-
-            TimelineProgramme? current = null;
-            for (int i = 0; i < cards.Count; i++)
-            {
-                if (cards[i].IsCurrent) { current = cards[i]; break; }
-            }
-            if (current == null) return;
-            if (!_recentrePending && current.Start == _lastCentredCardStart) return;
-
-            _lastCentredCardStart = current.Start;
-            _recentrePending = false;
-            ScrollCardIntoView(current);
-        }
-
-        void ScrollCardIntoView(TimelineProgramme card)
+        /// <summary>Recomputes the viewport and repaints the band.</summary>
+        void Render()
         {
             try
             {
-                double offset = 0;
-                foreach (var c in _stripCards)
+                if (_compactMode) return;
+                double width = TrackCanvas.ActualWidth;
+                if (width <= 0) return;
+
+                int half = TimelineBandMetrics.WindowHalfMinutesFor(width);
+                var span = TimeSpan.FromMinutes(half * 2);
+                var anchor = _manualWindow ? _manualAnchor : _cursor;
+                int tick = TimelineBandMetrics.TickMinutesFor(span);
+                var start = TimelineBandMetrics.SnapToTick(anchor - TimeSpan.FromTicks(span.Ticks / 2), tick);
+
+                _windowSpan = span;
+                _tickMinutes = tick;
+                _windowStart = start;
+
+                string key = start.Ticks + "|" + span.Ticks + "|" + tick + "|" + _scheduleSignature + "|" + _programmes.Count;
+                if (!string.Equals(key, _bandKey, StringComparison.Ordinal))
                 {
-                    if (ReferenceEquals(c, card)) break;
-                    offset += c.CardWidth + TimelineStripMetrics.CardGap;
+                    _bandKey = key;
+                    RebuildRuler();
+                    RebuildBlocks();
                 }
-                double centred = offset - Math.Max(0, (StripScroll.ViewportWidth - card.CardWidth) / 2);
-                double maxOffset = Math.Max(0, StripScroll.ExtentWidth - StripScroll.ViewportWidth);
-                double target = Math.Max(0, Math.Min(maxOffset, centred));
-                // Remember our own target so ScrollChanged does not mistake it for a manual scroll.
-                _programmaticOffset = target;
-                StripScroll.ScrollToHorizontalOffset(target);
+                UpdateMarkers();
             }
-            catch { }
-        }
-
-        void ShowTimelineRows()
-        {
-            if (_compactMode)
+            catch (Exception ex)
             {
-                // The host decides whether the compact bar has room for the strip: never grow on our own.
-                StripScroll.Visibility = Visibility.Collapsed;
-                PnlProgrammeDetail.Visibility = Visibility.Collapsed;
-                return;
-            }
-
-            StripScroll.Visibility = Visibility.Visible;
-            PnlProgrammeDetail.Visibility = Visibility.Visible;
-            if (!_timelineVisible)
-            {
-                _timelineVisible = true;
-                RaiseLayoutChanged();
+                LibmpvIptvClient.Diagnostics.Logger.Debug($"[Timeline] render failed: {ex.Message}");
             }
         }
 
-        void HideTimeline()
+        void RebuildRuler()
         {
-            _meterHasProgrammeWindow = false;
-            MeterScale.Visibility = Visibility.Collapsed;
-            // Without a programme window the meter falls back to the plain 0..duration mapping.
-            try { SliderSeek.Minimum = 0; } catch { }
-            if (!_timelineVisible) return;
+            RulerCanvas.Children.Clear();
+            double width = TrackCanvas.ActualWidth;
+            double height = RulerCanvas.ActualHeight;
+            if (width <= 0 || height <= 0 || _tickMinutes <= 0) return;
 
-            _timelineVisible = false;
-            StripScroll.Visibility = Visibility.Collapsed;
-            PnlProgrammeDetail.Visibility = Visibility.Collapsed;
-            _stripCards.Clear();
-            _stripSignature = string.Empty;
-            _stripHoldUntil = DateTime.MinValue;
-            _lastCentredCardStart = DateTime.MinValue;
-            _recentrePending = false;
-            _programmaticOffset = double.NaN;
-            StripItems.ItemsSource = null;
-            RaiseLayoutChanged();
+            int count = (int) Math.Round(_windowSpan.TotalMinutes / _tickMinutes);
+            if (count <= 0) return;
+            double spacing = width / count;
+
+            for (int i = 0; i <= count; i++)
+            {
+                var time = _windowStart.AddMinutes(i * _tickMinutes);
+                double x = TimelineBandMetrics.PercentFor(_windowStart, _windowSpan, time) * width;
+
+                var notch = new Rectangle { Width = 1, Height = 3 };
+                notch.SetResourceReference(Shape.FillProperty, "BorderBrushCommon");
+                Canvas.SetLeft(notch, Math.Round(x));
+                Canvas.SetTop(notch, height - 3);
+                RulerCanvas.Children.Add(notch);
+
+                if (spacing < LabelCollisionWidth) continue;
+
+                var caption = TimelineBandMetrics.FormatTickLabel(time, _windowStart);
+                var label = new TextBlock
+                {
+                    Text = caption,
+                    FontSize = 9.5,
+                    Width = Math.Max(spacing, caption.Length * 6.2),
+                    TextAlignment = TextAlignment.Center
+                };
+                label.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+                double left = x - label.Width / 2;
+                left = Math.Max(0, Math.Min(width - label.Width, left));
+                Canvas.SetLeft(label, left);
+                Canvas.SetTop(label, 0);
+                RulerCanvas.Children.Add(label);
+            }
+        }
+
+        void RebuildBlocks()
+        {
+            TrackCanvas.Children.Clear();
+            double width = TrackCanvas.ActualWidth;
+            double height = TrackCanvas.ActualHeight;
+            if (width <= 0 || height <= 0) return;
+
+            var plate = new Border
+            {
+                CornerRadius = new CornerRadius(3),
+                BorderThickness = new Thickness(1),
+                Width = width,
+                Height = height
+            };
+            plate.SetResourceReference(Border.BackgroundProperty, "CardBackgroundBrush");
+            plate.SetResourceReference(Border.BorderBrushProperty, "BorderBrushCommon");
+            Canvas.SetLeft(plate, 0);
+            Canvas.SetTop(plate, 0);
+            TrackCanvas.Children.Add(plate);
+
+            _blockTemplate ??= Resources["TimelineProgrammeTemplate"] as DataTemplate;
+            if (_blockTemplate == null) return;
+
+            for (int i = 0; i < _programmes.Count; i++)
+            {
+                var p = _programmes[i];
+                double leftPercent = TimelineBandMetrics.PercentFor(_windowStart, _windowSpan, p.Start);
+                double rightPercent = TimelineBandMetrics.PercentFor(_windowStart, _windowSpan, p.End);
+                if (rightPercent <= 0d || leftPercent >= 1d) continue;
+
+                double left = TimelineBandMetrics.ClampPercent(leftPercent) * width;
+                double right = TimelineBandMetrics.ClampPercent(rightPercent) * width;
+                double blockWidth = Math.Max(TimelineBandMetrics.MinimumBlockWidth, right - left);
+
+                var presenter = new ContentPresenter
+                {
+                    Content = p,
+                    ContentTemplate = _blockTemplate,
+                    Width = blockWidth,
+                    Height = BlockHeight
+                };
+                Canvas.SetLeft(presenter, left);
+                Canvas.SetTop(presenter, (height - BlockHeight) / 2);
+                TrackCanvas.Children.Add(presenter);
+            }
+        }
+
+        /// <summary>Repositions the playhead, the current programme frame/fill and the live edge.</summary>
+        void UpdateMarkers()
+        {
+            double width = TrackCanvas.ActualWidth;
+            double height = TrackCanvas.ActualHeight;
+            if (width <= 0 || height <= 0 || _windowSpan.Ticks <= 0) return;
+
+            var windowEnd = _windowStart + _windowSpan;
+            TxtWindowRange.Text = TimelineBandMetrics.FormatWindowRange(_windowStart, _windowSpan);
+            TxtProgrammeName.Text = _programmeName;
+
+            // Playhead: follows the drag preview while seeking, the playback cursor otherwise.
+            var probe = _previewTime ?? _cursor;
+            double playPercent = TimelineBandMetrics.PercentFor(_windowStart, _windowSpan, probe);
+            bool playVisible = probe >= _windowStart && probe <= windowEnd;
+            double playX = TimelineBandMetrics.ClampPercent(playPercent) * width;
+            Playhead.Visibility = playVisible ? Visibility.Visible : Visibility.Collapsed;
+            PlayheadHandle.Visibility = Playhead.Visibility;
+            Playhead.Height = height;
+            Canvas.SetLeft(Playhead, Math.Round(playX) - 1);
+            Canvas.SetTop(Playhead, 0);
+            PlayheadHandle.Height = 6;
+            Canvas.SetLeft(PlayheadHandle, Math.Round(playX) - 3.5);
+            Canvas.SetTop(PlayheadHandle, 0);
+
+            // Current programme: an accent frame plus a progress fill up to the playhead.
+            var current = _currentProgramme;
+            if (current == null || current.End <= current.Start)
+            {
+                CurrentFrame.Visibility = Visibility.Collapsed;
+                ProgressFill.Visibility = Visibility.Collapsed;
+            }
+            else
+            {
+                double blockStart = TimelineBandMetrics.PercentFor(_windowStart, _windowSpan, current.Start);
+                double blockEnd = TimelineBandMetrics.PercentFor(_windowStart, _windowSpan, current.End);
+                double left = TimelineBandMetrics.ClampPercent(blockStart) * width;
+                double right = TimelineBandMetrics.ClampPercent(blockEnd) * width;
+                bool visible = blockEnd > 0d && blockStart < 1d && right > left;
+
+                if (!visible)
+                {
+                    CurrentFrame.Visibility = Visibility.Collapsed;
+                    ProgressFill.Visibility = Visibility.Collapsed;
+                }
+                else
+                {
+                    double frameWidth = Math.Max(2d, right - left);
+                    CurrentFrame.Width = frameWidth;
+                    CurrentFrame.Height = height;
+                    Canvas.SetLeft(CurrentFrame, left);
+                    Canvas.SetTop(CurrentFrame, 0);
+                    CurrentFrame.Visibility = Visibility.Visible;
+
+                    double fillTo = TimelineBandMetrics.ClampPercent(Math.Max(blockStart, Math.Min(blockEnd, playPercent)));
+                    double fillWidth = fillTo * width - left;
+                    if (fillWidth >= 1d)
+                    {
+                        ProgressFill.Width = fillWidth;
+                        ProgressFill.Height = Math.Max(1d, height - 4);
+                        Canvas.SetLeft(ProgressFill, left + 1);
+                        Canvas.SetTop(ProgressFill, 2);
+                        ProgressFill.Visibility = Visibility.Visible;
+                    }
+                    else
+                    {
+                        ProgressFill.Visibility = Visibility.Collapsed;
+                    }
+                }
+            }
+
+            // Live edge: where "now" sits inside the window.
+            var now = DateTime.Now;
+            if (now >= _windowStart && now <= windowEnd)
+            {
+                double nowX = TimelineBandMetrics.ClampPercent(TimelineBandMetrics.PercentFor(_windowStart, _windowSpan, now)) * width;
+                LiveEdge.Height = height;
+                Canvas.SetLeft(LiveEdge, Math.Round(nowX) - 1);
+                Canvas.SetTop(LiveEdge, 0);
+                LiveEdge.Visibility = Visibility.Visible;
+            }
+            else
+            {
+                LiveEdge.Visibility = Visibility.Collapsed;
+            }
         }
 
         void ApplyCompactMode(bool compact)
@@ -457,22 +611,34 @@ namespace LibmpvIptvClient
             _compactMode = compact;
             try
             {
-                RowScale.Height = compact ? new GridLength(0) : GridLength.Auto;
-                RowStrip.Height = compact ? new GridLength(0) : GridLength.Auto;
-                RowDetail.Height = compact ? new GridLength(0) : GridLength.Auto;
+                RowBand.Height = compact ? new GridLength(0) : GridLength.Auto;
                 if (compact)
                 {
-                    StripScroll.Visibility = Visibility.Collapsed;
-                    PnlProgrammeDetail.Visibility = Visibility.Collapsed;
+                    Band.Visibility = Visibility.Collapsed;
+                    SliderSeek.Visibility = Visibility.Visible;
                 }
-                else if (_timelineVisible)
+                else
                 {
-                    StripScroll.Visibility = Visibility.Visible;
-                    PnlProgrammeDetail.Visibility = Visibility.Visible;
+                    Band.Visibility = Visibility.Visible;
+                    SliderSeek.Visibility = Visibility.Collapsed;
                 }
             }
             catch { }
             if (changed) RaiseLayoutChanged();
+        }
+
+        void HideBand()
+        {
+            _meterHasProgrammeWindow = false;
+            _currentProgramme = null;
+            _programmes.Clear();
+            _programmeCache.Clear();
+            _scheduleSignature = string.Empty;
+            _bandKey = string.Empty;
+            _manualWindow = false;
+            try { RulerCanvas.Children.Clear(); } catch { }
+            try { TrackCanvas.Children.Clear(); } catch { }
+            try { SliderSeek.Minimum = 0; } catch { }
         }
 
         void RaiseLayoutChanged()
@@ -481,20 +647,26 @@ namespace LibmpvIptvClient
         }
 
         /// <summary>Scopes the meter to the currently playing programme while keeping Value in the units SeekEnd reports.</summary>
-        void ApplyMeterWindow(OverlayTimelineState state, IReadOnlyList<TimelineProgramme> programmes)
+        void ApplyMeterWindow(OverlayTimelineState state)
         {
-            TimelineProgramme? current = null;
-            for (int i = 0; i < programmes.Count; i++)
+            _currentProgramme = null;
+            int index = TimelineBandMetrics.FindProgrammeIndex(_programmes, state.Cursor);
+            if (index < 0)
             {
-                var p = programmes[i];
-                if (state.Cursor >= p.Start && state.Cursor < p.End) { current = p; break; }
+                for (int i = 0; i < _programmes.Count; i++)
+                {
+                    if (_programmes[i].IsCurrent) { index = i; break; }
+                }
             }
-            if (current == null) current = programmes.FirstOrDefault(p => p.IsCurrent);
+            if (index >= 0) _currentProgramme = _programmes[index];
 
+            var current = _currentProgramme;
+            // The name is shown whatever the meter anchors to: live playback is deliberately unanchored (the host
+            // still wants the plain 0..duration meter), but the band's caption must name what is on right now.
+            if (current != null && !string.IsNullOrEmpty(current.Name)) _programmeName = current.Name;
             if (current == null || current.End <= current.Start || !state.ProgrammeAnchored)
             {
                 _meterHasProgrammeWindow = false;
-                MeterScale.Visibility = Visibility.Collapsed;
                 return;
             }
 
@@ -508,7 +680,7 @@ namespace LibmpvIptvClient
             }
             else
             {
-                // Plain playback: the programme window becomes the meter's own 0..duration range.
+                // Plain playback / replay: the programme window becomes the meter's own 0..duration range.
                 min = 0;
                 max = (current.End - current.Start).TotalSeconds;
                 value = (state.Cursor - current.Start).TotalSeconds;
@@ -516,7 +688,6 @@ namespace LibmpvIptvClient
             if (max <= min)
             {
                 _meterHasProgrammeWindow = false;
-                MeterScale.Visibility = Visibility.Collapsed;
                 return;
             }
 
@@ -525,29 +696,14 @@ namespace LibmpvIptvClient
             SliderSeek.Minimum = min;
             SliderSeek.Maximum = max;
             if (!_seeking) SliderSeek.Value = Math.Max(min, Math.Min(max, value));
-            UpdateMeterScale(current.Start, current.End);
-            UpdateProgrammeDetail(current.Start, current.End);
-            if (!string.IsNullOrEmpty(current.Name)) _programmeName = current.Name;
         }
 
-        /// <summary>Five ticks: programme start / 1/4 / 1/2 / 3/4 / end (endpoints always carry the date).</summary>
-        void UpdateMeterScale(DateTime start, DateTime end)
+        /// <summary>Wall-clock seconds for the meter, in the units <see cref="SeekEnd"/> is documented with.</summary>
+        double MeterSecondsFor(DateTime wall)
         {
-            var span = end - start;
-            bool withDate = span >= TimeSpan.FromHours(12) || start.Date != end.Date;
-            TxtScaleStart.Text = TimelineStripMetrics.FormatClock(start, true);
-            TxtScaleQuarter.Text = TimelineStripMetrics.FormatClock(start.AddTicks(span.Ticks / 4), withDate);
-            TxtScaleHalf.Text = TimelineStripMetrics.FormatClock(start.AddTicks(span.Ticks / 2), withDate);
-            TxtScaleThreeQuarter.Text = TimelineStripMetrics.FormatClock(start.AddTicks(span.Ticks * 3 / 4), withDate);
-            TxtScaleEnd.Text = TimelineStripMetrics.FormatClock(end, true);
-            MeterScale.Visibility = Visibility.Visible;
-        }
-
-        void UpdateProgrammeDetail(DateTime start, DateTime end)
-        {
-            LblProgrammeName.Text = _programmeName;
-            LblProgrammeRange.Text = TimelineStripMetrics.FormatClock(start, true)
-                + " - " + TimelineStripMetrics.FormatClock(end, true);
+            if (_timeshiftOn && _tsMin != default(DateTime)) return Math.Max(0, (wall - _tsMin).TotalSeconds);
+            if (_currentProgramme != null) return Math.Max(0, (wall - _currentProgramme.Start).TotalSeconds);
+            return Math.Max(0, (wall - _meterWindowStart).TotalSeconds);
         }
 
         /// <summary>Wall clock for a meter value, whatever range the meter currently reports.</summary>
@@ -565,7 +721,213 @@ namespace LibmpvIptvClient
             return ts.Hours > 0 ? ts.ToString(@"h\:mm\:ss") : ts.ToString(@"m\:ss");
         }
 
-        // ---- meter interaction ----
+        // ---------------------------------------------------------------------
+        // Band interaction
+        // ---------------------------------------------------------------------
+
+        /// <summary>True when a drag on the band can actually seek (timeshift or programme-relative replay).</summary>
+        bool SeekEnabled => _timeshiftOn || _meterHasProgrammeWindow;
+
+        void MarkManualWindow(DateTime anchor)
+        {
+            _manualWindow = true;
+            _manualAnchor = anchor;
+        }
+
+        void BtnPrevSegment_Click(object sender, RoutedEventArgs e) => PageSegment(-1);
+
+        void BtnNextSegment_Click(object sender, RoutedEventArgs e) => PageSegment(1);
+
+        /// <summary>
+        /// Moves the visible window to the previous/next programme without touching the playback position;
+        /// clicking a segment is still the only way to seek.
+        /// </summary>
+        void PageSegment(int direction)
+        {
+            try
+            {
+                var anchor = _manualWindow ? _manualAnchor : _cursor;
+                var target = TimelineBandMetrics.PageAnchor(_programmes, anchor, _windowSpan, direction);
+                MarkManualWindow(target);
+                Render();
+            }
+            catch (Exception ex)
+            {
+                LibmpvIptvClient.Diagnostics.Logger.Debug($"[Timeline] segment page failed: {ex.Message}");
+            }
+        }
+
+        void TrackCanvas_SizeChanged(object sender, SizeChangedEventArgs e) => Render();
+
+        void TrackCanvas_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            if (_compactMode) return;
+            double width = TrackCanvas.ActualWidth;
+            if (width <= 0) return;
+
+            var p = e.GetPosition(TrackCanvas);
+            _pointerDown = true;
+            _dragMoved = false;
+            _seekStarted = false;
+            _dragStartX = p.X;
+            _dragStartAnchor = _manualWindow ? _manualAnchor : _cursor;
+            _dragStartPercent = TimelineBandMetrics.ClampPercent(p.X / width);
+
+            int index = TimelineBandMetrics.FindProgrammeIndexAtPercent(_programmes, _windowStart, _windowSpan, _dragStartPercent);
+            _dragIsSeek = index >= 0 && SeekEnabled;
+            _previewTime = _dragIsSeek
+                ? TimelineBandMetrics.TimeAtPercent(_windowStart, _windowSpan, _dragStartPercent)
+                : (DateTime?) null;
+
+            try { TrackCanvas.CaptureMouse(); } catch { }
+            e.Handled = true;
+        }
+
+        void TrackCanvas_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            try
+            {
+                if (!_pointerDown)
+                {
+                    UpdateTrackTooltip(e);
+                    return;
+                }
+
+                double width = TrackCanvas.ActualWidth;
+                if (width <= 0) return;
+                var p = e.GetPosition(TrackCanvas);
+                double dx = p.X - _dragStartX;
+                if (!_dragMoved && Math.Abs(dx) < TimelineBandMetrics.DragThresholdPx) return;
+                _dragMoved = true;
+
+                if (_dragIsSeek)
+                {
+                    if (!_seekStarted)
+                    {
+                        _seekStarted = true;
+                        SeekStart?.Invoke();
+                    }
+                    var target = TimelineBandMetrics.TimeAtPercent(_windowStart, _windowSpan,
+                                                                   TimelineBandMetrics.ClampPercent(p.X / width));
+                    var now = DateTime.Now;
+                    if (target > now) target = now; // never seek into the future
+                    _previewTime = target;
+                    UpdateMarkers();
+                }
+                else
+                {
+                    // Panning the window: the pointer moves the timeline, not the playback position.
+                    double minutes = -dx / width * _windowSpan.TotalMinutes;
+                    MarkManualWindow(_dragStartAnchor + TimeSpan.FromMinutes(minutes));
+                    Render();
+                }
+            }
+            catch { }
+        }
+
+        void TrackCanvas_MouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
+        {
+            try
+            {
+                if (!_pointerDown) return;
+                _pointerDown = false;
+                try { TrackCanvas.ReleaseMouseCapture(); } catch { }
+
+                if (_dragIsSeek)
+                {
+                    if (_seekStarted && _previewTime.HasValue)
+                    {
+                        var target = _previewTime.Value;
+                        _previewTime = null;
+                        SeekValue = MeterSecondsFor(target);
+                        UpdateMarkers();
+                        SeekEnd?.Invoke(SeekValue);
+                    }
+                    else
+                    {
+                        // A tap: select the programme instead of seeking into it.
+                        _previewTime = null;
+                        UpdateMarkers();
+                        int index = TimelineBandMetrics.FindProgrammeIndexAtPercent(_programmes, _windowStart, _windowSpan, _dragStartPercent);
+                        if (index >= 0)
+                        {
+                            var programme = _programmes[index];
+                            if (programme.CanPlay) ProgrammeSelected?.Invoke(programme.Start);
+                        }
+                    }
+                }
+                else if (_dragMoved)
+                {
+                    // A pan drag moved the window; the pointer release has nothing left to commit.
+                }
+            }
+            catch { }
+            finally
+            {
+                _dragMoved = false;
+                _dragIsSeek = false;
+                _seekStarted = false;
+                _previewTime = null;
+                e.Handled = true;
+            }
+        }
+
+        void TrackCanvas_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            try { TrackCanvas.ClearValue(ToolTipProperty); } catch { }
+        }
+
+        void UpdateTrackTooltip(System.Windows.Input.MouseEventArgs e)
+        {
+            try
+            {
+                double width = TrackCanvas.ActualWidth;
+                if (width <= 0) return;
+                var p = e.GetPosition(TrackCanvas);
+                var time = TimelineBandMetrics.TimeAtPercent(_windowStart, _windowSpan,
+                                                             TimelineBandMetrics.ClampPercent(p.X / width));
+                int index = TimelineBandMetrics.FindProgrammeIndex(_programmes, time);
+                if (index >= 0 && !string.IsNullOrEmpty(_programmes[index].Name))
+                {
+                    TrackCanvas.ToolTip = _programmes[index].Name + "  " + time.ToString("HH:mm");
+                }
+                else
+                {
+                    TrackCanvas.ToolTip = time.ToString("HH:mm");
+                }
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// Wheel over the band pans the visible window; anywhere else keeps the host's old volume-wheel
+        /// behaviour. Returns true when the wheel was consumed by the band.
+        /// </summary>
+        public bool HandleWheel(System.Windows.Input.MouseWheelEventArgs e)
+        {
+            try
+            {
+                if (_compactMode || Band.Visibility != Visibility.Visible) return false;
+                var p = e.GetPosition(TrackCanvas);
+                if (p.X < 0 || p.Y < 0 || p.X > TrackCanvas.ActualWidth || p.Y > TrackCanvas.ActualHeight) return false;
+
+                var anchor = _manualWindow ? _manualAnchor : _cursor;
+                var delta = TimeSpan.FromMinutes(e.Delta > 0 ? -WheelPanMinutes : WheelPanMinutes);
+                MarkManualWindow(anchor + delta);
+                Render();
+                e.Handled = true;
+                return true;
+            }
+            catch { return false; }
+        }
+
+        void OnPreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
+        {
+            // The bubbling preview event stops here; the host's own handler runs first (tunneling) for the overlay.
+            try { HandleWheel(e); } catch { }
+        }
+
+        // ---- plain meter interaction (compact fallback) ----
 
         void SliderSeek_PreviewMouseDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
@@ -618,85 +980,6 @@ namespace LibmpvIptvClient
             return ratio * (SliderSeek.Maximum - SliderSeek.Minimum) + SliderSeek.Minimum;
         }
 
-        // ---- timeline strip interaction ----
-
-        void MarkStripManualScroll()
-        {
-            _stripHoldUntil = DateTime.Now.AddSeconds(StripRecentreHoldSeconds);
-            _recentrePending = true;
-            _programmaticOffset = double.NaN;
-        }
-
-        void StripScroll_ScrollChanged(object sender, ScrollChangedEventArgs e)
-        {
-            if (Math.Abs(e.HorizontalChange) < 0.01) return;
-            if (!double.IsNaN(_programmaticOffset) && Math.Abs(StripScroll.HorizontalOffset - _programmaticOffset) < 0.5) return;
-            // The user scrolled the strip: keep their position for a few seconds instead of snapping back.
-            MarkStripManualScroll();
-        }
-
-        void StripScroll_PreviewMouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            MarkStripManualScroll();
-        }
-
-        void StripScroll_PreviewMouseLeftButtonUp(object sender, System.Windows.Input.MouseButtonEventArgs e)
-        {
-            try
-            {
-                var card = ResolveTimelineCard(e.OriginalSource);
-                if (card == null || !card.CanPlay) return;
-                e.Handled = true;
-                ProgrammeSelected?.Invoke(card.Start);
-            }
-            catch { }
-        }
-
-        static TimelineProgramme? ResolveTimelineCard(object? source)
-        {
-            var element = source as System.Windows.DependencyObject;
-            while (element != null)
-            {
-                if (element is System.Windows.FrameworkElement fe && fe.DataContext is TimelineProgramme tp) return tp;
-                element = element is System.Windows.Media.Visual || element is System.Windows.Media.Media3D.Visual3D
-                    ? System.Windows.Media.VisualTreeHelper.GetParent(element)
-                    : null;
-            }
-            return null;
-        }
-
-        /// <summary>True when the pointer of a wheel event sits inside the visible programme strip.</summary>
-        bool IsPointerOverStrip(System.Windows.Input.MouseWheelEventArgs e)
-        {
-            try
-            {
-                if (StripScroll.Visibility != Visibility.Visible) return false;
-                var p = e.GetPosition(StripScroll);
-                return p.X >= 0 && p.Y >= 0 && p.X <= StripScroll.ActualWidth && p.Y <= StripScroll.ActualHeight;
-            }
-            catch { return false; }
-        }
-
-        /// <summary>
-        /// Wheel over the strip scrolls it horizontally, anywhere else keeps the host's old volume-wheel behaviour.
-        /// Returns true when the wheel was consumed by the strip.
-        /// </summary>
-        public bool HandleWheel(System.Windows.Input.MouseWheelEventArgs e)
-        {
-            if (!_timelineVisible || !IsPointerOverStrip(e)) return false;
-            MarkStripManualScroll();
-            double delta = e.Delta > 0 ? -StripWheelStep : StripWheelStep;
-            StripScroll.ScrollToHorizontalOffset(Math.Max(0, StripScroll.HorizontalOffset + delta));
-            e.Handled = true;
-            return true;
-        }
-
-        void OnPreviewMouseWheel(object sender, System.Windows.Input.MouseWheelEventArgs e)
-        {
-            // The bubbling preview event stops here; the host's own handler runs first (tunneling) for the overlay.
-            try { HandleWheel(e); } catch { }
-        }
-
         // ---- volume interaction ----
 
         void SliderVolume_VolumeChanged(object sender, RoutedPropertyChangedEventArgs<double> e)
@@ -713,7 +996,7 @@ namespace LibmpvIptvClient
     }
 
     /// <summary>
-    /// One programme card of the EPG timeline. The hosts build these snapshots and the control keeps
+    /// One programme segment of the EPG timeline. The hosts build these snapshots and the control keeps
     /// the instances it already laid out, so the state flags must be observable (INotifyPropertyChanged).
     /// </summary>
     public sealed class TimelineProgramme : INotifyPropertyChanged
@@ -733,14 +1016,24 @@ namespace LibmpvIptvClient
             set { if (_name != value) { _name = value; OnPropertyChanged(nameof(Name)); } }
         }
 
-        /// <summary>Precomputed card caption: "HH:mm", or "MM-DD HH:mm" when the day changes.</summary>
+        /// <summary>Precomputed caption: "HH:mm", or "MM-DD HH:mm" when the day changes.</summary>
         public string TimeText
         {
             get => _timeText;
             set { if (_timeText != value) { _timeText = value; OnPropertyChanged(nameof(TimeText)); } }
         }
 
-        /// <summary>False marks the card as unavailable for timeshift (dashed, muted, not clickable).</summary>
+        /// <summary>Tooltip of a segment: the programme name plus its full range.</summary>
+        public string TooltipText
+        {
+            get
+            {
+                var range = TimelineStripMetrics.FormatClock(Start, true) + " - " + TimelineStripMetrics.FormatClock(End, true);
+                return string.IsNullOrEmpty(_name) ? range : _name + "  " + range;
+            }
+        }
+
+        /// <summary>False marks the segment as unavailable for timeshift (dashed, muted, not clickable).</summary>
         public bool CanPlay
         {
             get => _canPlay;
@@ -761,6 +1054,7 @@ namespace LibmpvIptvClient
             set { if (_isLive != value) { _isLive = value; OnPropertyChanged(nameof(IsLive)); } }
         }
 
+        /// <summary>Duration proportional width in DIPs; kept for hosts that still lay segments out in a strip.</summary>
         public double CardWidth => TimelineStripMetrics.CardWidth(End - Start);
 
         public event PropertyChangedEventHandler? PropertyChanged;
@@ -785,18 +1079,18 @@ namespace LibmpvIptvClient
             => withDate ? value.ToString("M-dd HH:mm") : value.ToString("HH:mm");
     }
 
-    /// <summary>Snapshot pushed from the shell each playback tick to feed the timeline strip.</summary>
+    /// <summary>Snapshot pushed from the shell each playback tick to feed the timeline band.</summary>
     public sealed class OverlayTimelineState
     {
         public IReadOnlyList<TimelineProgramme> Programmes { get; set; } = Array.Empty<TimelineProgramme>();
 
-        /// <summary>Wall-clock cursor that the meter and the current-card highlight follow.</summary>
+        /// <summary>Wall-clock cursor that the playhead and the current-segment highlight follow.</summary>
         public DateTime Cursor { get; set; }
 
         /// <summary>True when the meter may be anchored to the current programme's start/end instead of mpv's duration.</summary>
         public bool ProgrammeAnchored { get; set; }
 
-        /// <summary>Strip content identity (programme starts); any change rebuilds the cards.</summary>
+        /// <summary>Band content identity (channel + programme starts); any change rebuilds the segments.</summary>
         public string Signature { get; set; } = string.Empty;
 
         public static string BuildSignature(IReadOnlyList<TimelineProgramme>? programmes)

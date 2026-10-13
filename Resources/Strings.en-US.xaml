@@ -227,6 +227,8 @@
 
   <!-- Overlay tooltips -->
   <sys:String x:Key="Overlay_Mute">Mute</sys:String>
+  <sys:String x:Key="Timeline_PrevSegment">Previous programme slot</sys:String>
+  <sys:String x:Key="Timeline_NextSegment">Next programme slot</sys:String>
   <sys:String x:Key="Overlay_SwitchSource">Switch source</sys:String>
   <sys:String x:Key="Overlay_AspectRatio">Aspect ratio</sys:String>
   <sys:String x:Key="Overlay_Timeshift">Timeshift</sys:String>

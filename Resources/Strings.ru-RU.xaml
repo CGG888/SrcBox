@@ -218,6 +218,8 @@
 
   <!-- Overlay tooltips -->
   <sys:String x:Key="Overlay_Mute">Без звука</sys:String>
+  <sys:String x:Key="Timeline_PrevSegment">Предыдущий интервал</sys:String>
+  <sys:String x:Key="Timeline_NextSegment">Следующий интервал</sys:String>
   <sys:String x:Key="Overlay_SwitchSource">Сменить источник</sys:String>
   <sys:String x:Key="Overlay_AspectRatio">Соотношение</sys:String>
   <sys:String x:Key="Overlay_Timeshift">Таймшифт</sys:String>

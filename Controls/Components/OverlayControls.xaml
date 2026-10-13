@@ -95,15 +95,15 @@
   <Border Background="{DynamicResource TopOverlayScrimBrush}" CornerRadius="8" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1">
       <Grid Margin="12,6">
         <Grid.RowDefinitions>
-            <RowDefinition Height="*"/>  <!-- 0: 节目时间线（进度条/刻度/节目条/详情） -->
-            <RowDefinition Height="*"/>  <!-- 1: 按钮 -->
+            <RowDefinition Height="Auto"/>  <!-- 0: 节目时间线（进度条/刻度/节目条） -->
+            <RowDefinition Height="Auto"/>  <!-- 1: 按钮 -->
         </Grid.RowDefinitions>
 
         <!-- 节目时间线：与窗口模式共用同一个控件 -->
-        <local:TimeshiftTimeline x:Name="Timeline" Grid.Row="0"/>
+        <local:TimeshiftTimeline x:Name="Timeline" Grid.Row="0" VerticalAlignment="Bottom"/>
 
         <!-- 按钮行 -->
-        <Grid x:Name="ButtonRowHost" Grid.Row="1" VerticalAlignment="Center">
+        <Grid x:Name="ButtonRowHost" Grid.Row="1" Margin="0,4,0,0" VerticalAlignment="Center">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/> <!-- 左 -->
                 <ColumnDefinition Width="*"/>    <!-- 中 -->

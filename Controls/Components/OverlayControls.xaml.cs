@@ -35,9 +35,13 @@ namespace LibmpvIptvClient
         private bool _timeshiftOn = false;
         private bool _muted = false;
 
-        // Height of the overlay window: the compact bar when there is no EPG schedule, the timeline bar otherwise.
-        private const double CompactBarHeight = 80;
-        private const double TimelineBarHeight = 168;
+        // Height of the overlay window is derived from the hosted timeline: meter/band + the button row + the
+        // 12,6 outer margin. Nothing here is a hard-coded bar height any more, so the floating bar can never be
+        // taller than its content.
+        private const double ButtonRowHeight = 28;
+        private const double OverlayChromeHeight = 12;
+        private const double ButtonRowMargin = 4;
+        private const double FallbackMeterHeight = 20;
 
         public OverlayControls()
         {
@@ -56,6 +60,9 @@ namespace LibmpvIptvClient
                 Timeline.VolumeChanged += v => VolumeChanged?.Invoke(v);
                 Timeline.MuteChanged += m => { _muted = m; MuteChanged?.Invoke(m); };
                 Timeline.LayoutChanged += ApplyBarHeight;
+                // The button row is measured once it has been laid out; re-fit when its natural height changes.
+                ButtonRowHost.SizeChanged += (s, e) => ApplyBarHeight();
+                Loaded += (s, e) => ApplyBarHeight();
             }
             catch { }
 
@@ -68,7 +75,11 @@ namespace LibmpvIptvClient
             try
             {
                 double required = Timeline?.RequiredHeight ?? 0;
-                Height = required > 0 && !Timeline!.IsCompactMode ? TimelineBarHeight : CompactBarHeight;
+                if (required <= 0) required = FallbackMeterHeight;
+                double row = ButtonRowHost?.ActualHeight ?? 0;
+                if (row <= 0) row = ButtonRowHeight;
+                var wanted = required + row + OverlayChromeHeight + ButtonRowMargin;
+                if (Math.Abs(Height - wanted) > 0.5) Height = wanted;
             }
             catch { }
         }

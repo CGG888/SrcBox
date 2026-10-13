@@ -274,6 +274,8 @@
 
   <!-- 覆盖层工具提示 -->
   <sys:String x:Key="Overlay_Mute">静音</sys:String>
+  <sys:String x:Key="Timeline_PrevSegment">上一节目时段</sys:String>
+  <sys:String x:Key="Timeline_NextSegment">下一节目时段</sys:String>
   <sys:String x:Key="Overlay_SwitchSource">切换源</sys:String>
   <sys:String x:Key="Overlay_AspectRatio">画面比例</sys:String>
   <sys:String x:Key="Overlay_Timeshift">时移</sys:String>
