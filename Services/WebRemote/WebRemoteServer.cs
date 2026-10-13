@@ -22,6 +22,7 @@ namespace LibmpvIptvClient.Services.WebRemote
     {
         private TcpListener? _tcpListener;
         private X509Certificate2? _tlsCertificate;
+        private readonly object _certificateLock = new();
         private CancellationTokenSource? _cts;
         private readonly List<WebSocket> _clients = new();
         private readonly object _clientsLock = new();
@@ -108,12 +109,7 @@ namespace LibmpvIptvClient.Services.WebRemote
             _authenticatedClients.Clear();
             _cts = new CancellationTokenSource();
 
-            if (WebRemoteCertificateService.TryGetServerCertificate(out var certificate))
-            {
-                _tlsCertificate = certificate;
-                IsTlsAvailable = true;
-            }
-            else
+            if (EnsureTlsCertificate() == null)
             {
                 Logger.Warn("[WebRemote] No certificate available, the remote will answer plain http only");
             }
@@ -152,6 +148,29 @@ namespace LibmpvIptvClient.Services.WebRemote
             IsRunning = false;
             IsTlsAvailable = false;
             Logger.Debug("[WebRemote] Server stopped");
+        }
+
+        /// <summary>
+        /// The https certificate, resolved at Start and re-resolved on demand: a profile whose key store
+        /// was unavailable when the app started recovers on the next https visit instead of staying http
+        /// only until the app is restarted.
+        /// </summary>
+        private X509Certificate2? EnsureTlsCertificate()
+        {
+            var cached = _tlsCertificate;
+            if (cached != null) return cached;
+
+            lock (_certificateLock)
+            {
+                if (_tlsCertificate != null) return _tlsCertificate;
+
+                if (!WebRemoteCertificateService.TryGetServerCertificate(out var certificate)) return null;
+
+                _tlsCertificate = certificate;
+                IsTlsAvailable = true;
+                Logger.Info("[WebRemote] Certificate obtained for an incoming https client");
+                return certificate;
+            }
         }
 
         private async Task AcceptClientsAsync(TcpListener listener, CancellationToken ct)
@@ -198,7 +217,8 @@ namespace LibmpvIptvClient.Services.WebRemote
                     Stream stream = networkStream;
                     if (useTls)
                     {
-                        if (_tlsCertificate == null)
+                        var certificate = EnsureTlsCertificate();
+                        if (certificate == null)
                         {
                             Logger.Warn("[WebRemote] TLS client rejected: no certificate available");
                             return;
@@ -207,7 +227,7 @@ namespace LibmpvIptvClient.Services.WebRemote
                         var ssl = new SslStream(networkStream, false);
                         await ssl.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
                         {
-                            ServerCertificate = _tlsCertificate,
+                            ServerCertificate = certificate,
                             ClientCertificateRequired = false,
                             EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
                             CertificateRevocationCheckMode = X509RevocationMode.NoCheck

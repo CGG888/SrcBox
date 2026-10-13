@@ -3,8 +3,10 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Net.Security;
 using System.Net.Sockets;
 using System.Security.Cryptography.X509Certificates;
+using System.Threading.Tasks;
 using LibmpvIptvClient.Services.WebRemote;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -224,6 +226,54 @@ namespace LibmpvIptvClient.Tests
             first.Root.Dispose();
             second.Server.Dispose();
             second.Root.Dispose();
+        }
+
+        /// <summary>
+        /// Guards the choice of key storage flags: a certificate that imports but cannot complete a
+        /// handshake is exactly the failure this whole path exists to prevent, so the certificate the
+        /// service actually hands to the server is put through a real TLS handshake here.
+        /// </summary>
+        [TestMethod]
+        public async Task EnsureCore_CertificateCompletesATlsHandshake()
+        {
+            var material = WebRemoteCertificateService.EnsureCore(_directory);
+            using var certificate = material.Server;
+            using var root = material.Root;
+
+            var listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+
+            try
+            {
+                var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+
+                var serverTask = Task.Run(async () =>
+                {
+                    using var accepted = await listener.AcceptTcpClientAsync();
+                    using var serverSsl = new SslStream(accepted.GetStream(), false);
+                    await serverSsl.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
+                    {
+                        ServerCertificate = certificate
+                    });
+                });
+
+                using var tcp = new TcpClient();
+                await tcp.ConnectAsync(IPAddress.Loopback, port);
+                using var clientSsl = new SslStream(tcp.GetStream(), false, (_, _, _, _) => true);
+                await clientSsl.AuthenticateAsClientAsync(new SslClientAuthenticationOptions
+                {
+                    TargetHost = "localhost"
+                });
+
+                Assert.IsTrue(clientSsl.IsAuthenticated, "the web remote certificate did not complete a TLS handshake");
+                Assert.AreEqual(certificate.Subject, clientSsl.RemoteCertificate?.Subject);
+
+                await serverTask;
+            }
+            finally
+            {
+                listener.Stop();
+            }
         }
 
         [TestMethod]

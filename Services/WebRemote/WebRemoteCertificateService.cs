@@ -260,6 +260,13 @@ namespace LibmpvIptvClient.Services.WebRemote
             var root = LoadPfx(rootPath);
             if (root == null || !root.HasPrivateKey || root.NotAfter <= DateTime.Now.AddDays(RenewBeforeDays))
             {
+                if (File.Exists(rootPath) && root == null)
+                {
+                    // Silence here used to hide the reason a phone suddenly rejected the remote: the old CA
+                    // was still on disk, but unusable, so a different one was issued.
+                    Logger.Warn("[WebRemote] The stored CA could not be loaded, a new one is issued: phones must trust the new certificate once");
+                }
+
                 root?.Dispose();
                 root = CreateRootCertificate();
                 SavePfx(root, rootPath);
@@ -353,13 +360,51 @@ namespace LibmpvIptvClient.Services.WebRemote
         }
 
         /// <summary>
+        /// PKCS#12 import strategies, tried in order. The plain exportable import stays first so a healthy
+        /// profile behaves exactly as before; the other two are container backed as well, because SChannel
+        /// refuses an ephemeral key ("the platform does not support ephemeral keys"), and they cover a
+        /// profile whose key container store rejects the default import with
+        /// "the specified network password is not correct".
+        /// </summary>
+        private static readonly X509KeyStorageFlags[] ImportLadder =
+        {
+            X509KeyStorageFlags.Exportable,
+            X509KeyStorageFlags.Exportable | X509KeyStorageFlags.PersistKeySet,
+            X509KeyStorageFlags.DefaultKeySet,
+        };
+
+        /// <summary>
+        /// The only place PKCS#12 material is turned into a certificate. Every strategy is attempted and
+        /// the full path is logged, so a failure on a user machine names the file and the reason instead
+        /// of surfacing as a bare "certificate unavailable".
+        /// </summary>
+        private static X509Certificate2 ImportPkcs12(byte[] pkcs12, string source)
+        {
+            Exception? first = null;
+            foreach (var flags in ImportLadder)
+            {
+                try
+                {
+                    return new X509Certificate2(pkcs12, "", flags);
+                }
+                catch (Exception ex)
+                {
+                    first ??= ex;
+                    Logger.Debug($"[WebRemote] PKCS#12 import ({flags}) failed for {source}: {ex.GetType().Name}: {ex.Message}");
+                }
+            }
+
+            throw new CryptographicException($"Unable to import {source} with any key storage flag: {first?.Message}", first);
+        }
+
+        /// <summary>
         /// SChannel needs the private key in a key container, so every certificate is round tripped
         /// through PKCS#12 before it is handed out.
         /// </summary>
         private static X509Certificate2 RoundTrip(X509Certificate2 certificate)
         {
             var pfx = certificate.Export(X509ContentType.Pfx, "");
-            return new X509Certificate2(pfx, "", X509KeyStorageFlags.Exportable);
+            return ImportPkcs12(pfx, $"the '{certificate.Subject}' certificate");
         }
 
         private static X509Certificate2? LoadPfx(string path)
@@ -367,11 +412,11 @@ namespace LibmpvIptvClient.Services.WebRemote
             try
             {
                 if (!File.Exists(path)) return null;
-                return new X509Certificate2(path, "", X509KeyStorageFlags.Exportable);
+                return ImportPkcs12(File.ReadAllBytes(path), path);
             }
             catch (Exception ex)
             {
-                Logger.Error($"[WebRemote] Failed to load certificate {Path.GetFileName(path)}: {ex.Message}");
+                Logger.Error($"[WebRemote] Failed to load certificate {path}: {ex.GetType().Name}: {ex.Message}");
                 return null;
             }
         }
