@@ -148,6 +148,10 @@ namespace LibmpvIptvClient.Tests
             StringAssert.Contains(html, "voiceDiag('result'");
             StringAssert.Contains(html, "function voiceShowFallbackHint");
             StringAssert.Contains(html, "function voiceShowHintForFailure");
+            // The desktop log has to name the browser that is asking, because the speech service behind
+            // SpeechRecognition belongs to the browser vendor, not to this application.
+            StringAssert.Contains(html, "navigator.userAgentData");
+            StringAssert.Contains(html, "ua: (navigator.userAgent");
         }
 
         [DataTestMethod]

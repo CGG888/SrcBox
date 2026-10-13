@@ -3296,7 +3296,11 @@ stage: stage, detail: detail || '',
 protocol: location.protocol, secure: window.isSecureContext === true,
 sr: typeof VoiceSR, srName: VoiceSR ? (VoiceSR.name || 'anonymous') : '',
 media: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia),
-httpsPort: HTTPS_PORT
+httpsPort: HTTPS_PORT,
+ua: (navigator.userAgent || '').slice(0, 160),
+brands: (navigator.userAgentData && navigator.userAgentData.brands
+? navigator.userAgentData.brands.map(function(b) { return b.brand + '/' + b.version; }).join(',')
+: '')
 });
 } catch (e) { }
 }
