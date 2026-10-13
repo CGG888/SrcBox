@@ -1417,7 +1417,7 @@ body.dark-theme .rp-num-btn { background-color: var(--neu-surface2); }
 body.dark-theme .channel-item.active, body.dark-theme .source-item.active,
 body.dark-theme .epg-item.current { background-color: var(--neu-surface2); }
 body.dark-theme .rp-ok { background-color: var(--neu-primary); }
-body.dark-theme .btn.active, body.dark-theme .rp-num-btn.rp-num-ok { background-color: var(--neu-primary); }
+body.dark-theme .rp-num-btn.rp-num-ok { background-color: var(--neu-primary); }
 body.dark-theme .modal-box .mbtns .mok { background-color: var(--neu-primary); }
 body.dark-theme .volume-bar, body.dark-theme .rp-vol-track, body.dark-theme .rp-num-display,
 body.dark-theme .epg-date-display, body.dark-theme .modal-box input, body.dark-theme .modal-box select,
@@ -1460,9 +1460,11 @@ body.dark-theme, body.theme-dark { color: var(--neu-text); }
 .controls + .controls { margin-top: 10px; }
 .btn { min-height: 52px; padding: 12px 6px; border: none; border-radius: var(--neu-radius); cursor: pointer; transition: all 0.15s; background: var(--neu-surface); color: var(--neu-text); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; box-shadow: var(--neu-shadow-out-sm); touch-action: manipulation; }
 .btn:active { transform: scale(0.98); background: var(--neu-surface); box-shadow: var(--neu-shadow-in); }
-.btn.active { background: var(--neu-primary); color: var(--neu-primary-fg); box-shadow: var(--neu-shadow-in); }
+/* A latched mode (timeshift) keeps the plain face: the pressed-in shadow marks it as on and turning
+   it off restores the raised face, without repainting the button in the accent colour. */
+.btn.active { background: var(--neu-surface); color: var(--neu-text); box-shadow: var(--neu-shadow-in); }
 .btn span { font-size: 10px; color: var(--neu-text); }
-.btn.active span { color: var(--neu-primary-fg); }
+.btn.active span { color: var(--neu-text); }
 .icon { width: 20px; height: 20px; fill: currentColor; }
 .volume-icon { width: 20px; height: 20px; font-size: 20px; fill: currentColor; color: var(--neu-text-muted); flex-shrink: 0; }
 .volume-control { background: var(--neu-surface); border: none; border-radius: var(--neu-radius); padding: 12px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; box-shadow: var(--neu-shadow-out); }
@@ -2141,8 +2143,11 @@ function updateTimeshiftBtn() {
     // Play icon (triangle) when off, Pause icon (two bars) when on
     path.setAttribute('d', isTimeshiftEnabled ? 'M6 19h4V5H6v14zm8-14v14h4V5h-4z' : 'M8 5v14l11-7z');
   }
+  // One label for both states: the pressed-in face plus the pause glyph already mark the latched
+  // state, so the text must not grow a second glyph and the button keeps its plain colour.
   var text = document.getElementById('btnTimeshiftText');
-  if (text) text.textContent = isTimeshiftEnabled ? T.btn_timeshift_on : T.btn_timeshift_off;
+  if (text) text.textContent = T.btn_timeshift;
+  if (btn) btn.title = isTimeshiftEnabled ? T.btn_timeshift_on : T.btn_timeshift_off;
 }
 
 // EPG replay/timeshift/remind
