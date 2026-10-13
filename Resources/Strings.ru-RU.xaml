@@ -22,7 +22,7 @@
   <sys:String x:Key="UI_TabRecording">Запись</sys:String>
   <sys:String x:Key="UI_TabAbout">О программе</sys:String>
   <sys:String x:Key="UI_TabEpgLogo">Программа и логотипы</sys:String>
-  <sys:String x:Key="UI_TabUpdateMirrors">CDN</sys:String>
+  <sys:String x:Key="UI_TabUpdateMirrors">Зеркала CDN</sys:String>
   <sys:String x:Key="App_Name">SrcBox</sys:String>
 
   <sys:String x:Key="UI_Language">Язык</sys:String>
@@ -258,7 +258,7 @@
   <sys:String x:Key="Msg_Record_Uploaded">Загружено на WebDAV</sys:String>
 
   <!-- EPG page -->
-  <sys:String x:Key="UI_Epg_Url">EPG URL</sys:String>
+  <sys:String x:Key="UI_Epg_Url">URL-адрес EPG</sys:String>
   <sys:String x:Key="UI_Epg_LogoUrl">URL логотипов</sys:String>
   <sys:String x:Key="UI_Epg_TimeshiftHours">Диапазон таймшифта (часы)</sys:String>
 
@@ -393,7 +393,7 @@
   <!-- M3U Edit -->
   <sys:String x:Key="M3U_EditTitle">Редактировать M3U URL</sys:String>
   <sys:String x:Key="M3U_Name">Имя:</sys:String>
-  <sys:String x:Key="M3U_Url">URL:</sys:String>
+  <sys:String x:Key="M3U_Url">URL-адрес:</sys:String>
   <sys:String x:Key="Common_Delete">Удалить</sys:String>
 
   <!-- Playback/Stream -->
@@ -463,7 +463,7 @@
 
   <!-- HTTP/RTSP Header Settings -->
   <sys:String x:Key="UI_HttpHeader_Section">Настройки HTTP/RTSP Header</sys:String>
-  <sys:String x:Key="UI_HttpHeader_Headers">HTTP Headers</sys:String>
+  <sys:String x:Key="UI_HttpHeader_Headers">HTTP-заголовки</sys:String>
   <sys:String x:Key="UI_HttpHeader_HeadersHint">Многострочный текст, по одному Header в строке. Формат: User-Agent: xxx или Referer: https://xxx. Применяется к HTTP/HTTPS потокам.</sys:String>
   <sys:String x:Key="UI_RtspTransport">Транспорт RTSP</sys:String>
   <sys:String x:Key="UI_RtspUserAgent">RTSP User-Agent</sys:String>
@@ -615,10 +615,10 @@
   <!-- Settings Items -->
   <sys:String x:Key="UI_NetworkPlayback">Сетевое воспроизведение</sys:String>
   <sys:String x:Key="UI_RtspSettings">Настройки RTSP</sys:String>
-  <sys:String x:Key="UI_Issues">Issues</sys:String>
+  <sys:String x:Key="UI_Issues">Проблемы</sys:String>
   <sys:String x:Key="UI_RtspTransport_TCP">TCP</sys:String>
   <sys:String x:Key="UI_RtspTransport_UDP">UDP</sys:String>
-  <sys:String x:Key="UI_RtspTransport_HTTP">HTTP Tunnel</sys:String>
+  <sys:String x:Key="UI_RtspTransport_HTTP">HTTP-туннель</sys:String>
 
   <!-- Settings Decoder ComboBox -->
   <sys:String x:Key="UI_Decoder_Auto">Автоматически</sys:String>

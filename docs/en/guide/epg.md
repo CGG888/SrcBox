@@ -62,6 +62,45 @@ The player uses **chain multi-level matching** strategy, trying in this order:
    - Reminder: shows a “Reminder” button (same size/rounded corners as chips); appears only for future programs and supports “remind-only / auto-play”
    - Currently Playing: the entire row is highlighted; when replaying, a green left stripe is shown for better visibility
 
+## EPG Timeline (the seek bar)
+
+The progress bar at the bottom of the player window and in the fullscreen overlay is an **EPG timeline** by default: instead of a bare slider it draws the current channel's schedule as a timeline of programme blocks.
+
+![EPG timeline in the window bar](../../screenshots/timeline-windowed-light.png)
+
+![EPG timeline in the fullscreen overlay](../../screenshots/timeline-fullscreen-light.png)
+
+### Elements
+
+| Element | Description |
+|------|------|
+| Programme block | One block per programme, width proportional to its duration; long titles are truncated (hover for the full name) and the programme on air is filled up to the played position |
+| Ruler | The top row of time ticks; click anywhere to jump to that time, hover to see the time and the programme under the pointer |
+| Badges | `Live` follows the live edge, `Replay` is a past programme you can start, `Timeshift` falls inside the current buffer window, `Reminder` is a future programme |
+| Playhead | The current playback position; while timeshifting the live edge is marked as well |
+| Paging | The ◀ / ▶ buttons at both ends page by programme; they only move the browsed window and never skip playback |
+
+### Actions
+
+| Action | Result |
+|------|------|
+| Click a past programme | Jumps to the start of that programme (catchup re-requests the replay URL, timeshift seeks inside the current session) |
+| Click a future programme | Same as the “Reminder” button in the guide — books a reminder (notify only / auto play) |
+| Click anywhere on the ruler | Jumps to that time; ignored when neither catchup nor timeshift is available |
+| Drag the playhead | Continuous seeking; while timeshifting it is clamped to the current buffer window, so no request is made for a time that has not been buffered yet |
+| Hover the timeline | Shows a dashed cursor and a bubble (time + programme + hint) |
+
+### Switching to the standard seek bar
+
+Settings → **Playback** → **Seek bar style**:
+
+- **EPG timeline** (default): the programme-aware bar described above
+- **Standard seek bar**: only a bar with the played/total time, no programme names or ticks — handy in narrow windows or when programme info is not needed
+
+![Standard seek bar](../../screenshots/seekbar-standard-light.png)
+
+> When a channel has no EPG, the window bar falls back to the standard seek bar automatically.
+
 ## Relationship with Catchup / Timeshift
 
 ### Catchup

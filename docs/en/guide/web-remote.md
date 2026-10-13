@@ -85,6 +85,12 @@ Skipping the certificate is fine too: on Android use the browser menu → "Add t
 
 **Uninstalling the certificate**: on iPhone, remove the SrcBox profile under Settings → General → VPN & Device Management and then turn off full trust in Certificate Trust Settings; on Android, remove the SrcBox certificate under Settings → Security → Encryption & credentials → Trusted credentials → User; on Windows, delete SrcBox under Trusted Root Certification Authorities → Certificates in `certmgr.msc`. After uninstalling, switch back to `http://` or install the certificate again. The **Regenerate** button in the settings page issues a new root and server certificate, which immediately invalidates the old ones, so the phone has to install the certificate again.
 
+### HTTPS availability and certificate renewal
+
+- **Startup self-check**: when SrcBox starts it performs one TLS handshake against itself over the loopback address. Only if HTTPS really works does the page and the QR code hand out an `https://` address. If HTTPS cannot work in the current environment (for example the process is restricted by security policy, or the certificate directory is not writable), the page and the QR code fall back to `http://` while the certificate downloads (`/cert`, `/cert.pem`, `/cert.mobileconfig`) stay available — the phone will never be sent to an `https://` URL that cannot open.
+- **Automatic renewal after a network change**: the server certificate carries the current adapter addresses in its SAN. When the IP changes (DHCP lease renewal, switching Wi-Fi or Ethernet), SrcBox **re-issues the server certificate** for the new address list without a restart, so the phone stops showing `ERR_CERT_COMMON_NAME_INVALID`; the root certificate is unchanged and the CA already installed on the phone keeps working.
+- **Use HTTPS for the voice remote**: the phone microphone is only available in a secure context (`https://` or `localhost`). On `http://192.168.x.x` the page reports that it is not a secure context and the voice panel cannot record; install the certificate as described above and open the page over `https://`.
+
 ### Install to Home Screen (PWA)
 
 The remote page is a PWA (`manifest.json` + service worker), so it can be installed to the phone's home screen and opened full screen like a native app:
@@ -184,6 +190,33 @@ The interface uses a Neumorphism style: it is light by default, and the 🌙 / �
 | LIVE | Red | Currently live |
 | Replay | Purple | Currently replaying |
 | Reminder | Blue `#1e90ff` | Reminder set |
+
+### Voice Remote (offline)
+
+The **microphone button** on the page opens the "Voice control" panel:
+
+![Voice control panel](../../screenshots/web-remote-voice-light.png)
+
+- Tap the big microphone button to start talking and tap it again to stop; **recording happens on the phone** (16 kHz mono) and the chunks are uploaded to the player
+- The player recognises the audio with a **local offline model** (SenseVoice-Small, int8, about 228 MB, **no network**) — neither the audio nor the result leaves your machine
+- The transcript and matching channels are echoed in the panel (say "3 台" and it lists `CCTV3`); the panel stays open after a command so you can keep talking
+- The input box at the bottom of the panel sends a **typed command** with the same effect as speech
+
+Things you can say:
+
+| Phrase | Result |
+|------|------|
+| `湖南卫视` / `CCTV3` / `3 台` | Switch by channel name or number (homophones such as "2 太 / 2 胎" are understood too) |
+| `下一个台` / `上一个台` | Next / previous channel |
+| `换源` | Switch to the next source of the current channel |
+| `音量 40` / `音量加` / `静音` | Set the volume, raise it, or mute |
+| `快进 30 秒` / `后退 15 秒` | Relative seek (works while catching up or timeshifting) |
+| `回看今天的新闻联播` | Find that programme in the current channel's guide and play it from the archive |
+| `现在在播什么` | Read out what is on now |
+
+Download the model the first time under **Settings → Web remote → Offline voice** (with progress and retry); wake words, custom phrase rules and the volume step live on the same page.
+
+> The phone microphone is only available in a secure context (`https://` or `localhost`): on `http://192.168.x.x` the page reports that it is not a secure context and recording cannot start — install the certificate as described under *HTTPS and Certificates* above and open the page over `https://`.
 
 ### Source Management (expandable)
 

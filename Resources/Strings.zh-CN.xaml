@@ -511,7 +511,7 @@
 
   <!-- HTTP/RTSP Header Settings -->
   <sys:String x:Key="UI_HttpHeader_Section">HTTP/RTSP Header 设置</sys:String>
-  <sys:String x:Key="UI_HttpHeader_Headers">HTTP Headers</sys:String>
+  <sys:String x:Key="UI_HttpHeader_Headers">HTTP 请求头</sys:String>
   <sys:String x:Key="UI_HttpHeader_HeadersHint">多行文本，每行一个 Header，格式：User-Agent: xxx 或 Referer: https://xxx。适用于 HTTP/HTTPS 流。</sys:String>
   <sys:String x:Key="UI_RtspTransport">RTSP 传输模式</sys:String>
   <sys:String x:Key="UI_RtspUserAgent">RTSP User-Agent</sys:String>
@@ -622,10 +622,10 @@
   <!-- Settings Items -->
   <sys:String x:Key="UI_NetworkPlayback">网络播放</sys:String>
   <sys:String x:Key="UI_RtspSettings">RTSP 设置</sys:String>
-  <sys:String x:Key="UI_Issues">Issues</sys:String>
+  <sys:String x:Key="UI_Issues">问题反馈</sys:String>
   <sys:String x:Key="UI_RtspTransport_TCP">TCP</sys:String>
   <sys:String x:Key="UI_RtspTransport_UDP">UDP</sys:String>
-  <sys:String x:Key="UI_RtspTransport_HTTP">HTTP Tunnel</sys:String>
+  <sys:String x:Key="UI_RtspTransport_HTTP">HTTP 隧道</sys:String>
 
   <!-- Settings Decoder ComboBox -->
   <sys:String x:Key="UI_Decoder_Auto">自动</sys:String>
