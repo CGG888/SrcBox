@@ -194,19 +194,6 @@ namespace LibmpvIptvClient.Services
             }
         }
 
-        /// <summary>
-        /// Snaps a hover instant down onto a ruler step and keeps it inside the visible window, so the hover
-        /// cursor sits exactly on the tick it reports and never draws past the track edges.
-        /// </summary>
-        public static DateTime SnapHover(DateTime time, int tickMinutes, DateTime windowStart, TimeSpan windowSpan)
-        {
-            var snapped = TimelineBandMetrics.SnapToTick(time, tickMinutes);
-            var end = windowStart + windowSpan;
-            if (snapped < windowStart) return windowStart;
-            if (snapped > end) return end;
-            return snapped;
-        }
-
         /// <summary>Formats a target instant as HH:mm, carrying the date when it runs into another day.</summary>
         public static string FormatClock(DateTime value, DateTime reference)
             => value.Date == reference.Date ? value.ToString("HH:mm") : value.ToString("MM-dd HH:mm");

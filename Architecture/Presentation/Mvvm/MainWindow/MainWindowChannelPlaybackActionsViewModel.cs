@@ -733,6 +733,48 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         }
 
         /// <summary>
+        /// Applies a timeline meter release. The value is seconds counted from the meter's own minimum,
+        /// which means three different things: seconds inside the timeshift buffer while timeshifting,
+        /// seconds inside the loaded archive stream in replay, and seconds inside the live stream
+        /// otherwise. Only the last one can go to mpv directly - its time-pos is relative to the start of
+        /// whatever stream is loaded, which is the live edge only for live playback. Both timeline hosts
+        /// (windowed bar and fullscreen overlay) route their release through here so the conversions
+        /// cannot drift apart again.
+        /// </summary>
+        public void SeekToMeterValue(double value)
+        {
+            var secs = Math.Max(0, value);
+
+            if (_shell.IsTimeshiftActive && _shell.CurrentChannel != null)
+            {
+                var target = _shell.TimeshiftMin.AddSeconds(secs);
+                // The buffer only holds what has already aired, so a drag past its right edge would ask
+                // the relay for a slot it cannot serve yet. TimeshiftMax is default(DateTime) until the
+                // first buffer report arrives, and then there is nothing to clamp against.
+                if (_shell.TimeshiftMax > _shell.TimeshiftMin && target > _shell.TimeshiftMax) target = _shell.TimeshiftMax;
+                _shell.TimeshiftCursorSec = Math.Max(0, (target - _shell.TimeshiftMin).TotalSeconds);
+                _shell.TimeshiftStart = target;
+                try { LibmpvIptvClient.Diagnostics.Logger.Info($"时移定位到 {target:yyyy-MM-dd HH:mm:ss}"); } catch { }
+                PlayCatchupAt(_shell.CurrentChannel, target, keepTimeshiftMode: true);
+                return;
+            }
+
+            if (_shell.PlaybackMode == PlaybackMode.Replay && _shell.CurrentChannel != null && _shell.CurrentPlayingProgram != null)
+            {
+                // The meter is programme-relative in replay: the shell computes it as "wall clock of the
+                // playing frame minus the programme start", so the inverse is the programme start plus the
+                // value. It stays correct after a seek because the value already carries the distance
+                // between the stream anchor (PlaybackFocusTime) and the programme start.
+                var target = _shell.CurrentPlayingProgram.Start.AddSeconds(secs);
+                try { LibmpvIptvClient.Diagnostics.Logger.Info($"回看定位到 {target:yyyy-MM-dd HH:mm:ss}"); } catch { }
+                PlayCatchupAt(_shell.CurrentChannel, target);
+                return;
+            }
+
+            _shell.PlayerEngine?.SeekAbsolute(secs);
+        }
+
+        /// <summary>
         /// Appends the user's extra playback query parameters (issue #13, e.g. rtp2httpd's
         /// "r2h-seek-mode=range(UTC+8/3600)") to a url that is about to be handed to the player.
         /// </summary>

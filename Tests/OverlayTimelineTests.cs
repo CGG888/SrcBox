@@ -225,23 +225,25 @@ namespace LibmpvIptvClient.Tests
         }
 
         /// <summary>
-        /// The hover cursor snaps down onto the ruler step so the bubble reports the instant the cursor draws,
-        /// and it is clamped to the visible window so it can never point past either edge of the band.
+        /// The hover instant is derived from the pointer position alone, so it must stay inside the visible
+        /// window even when the pointer sits outside the canvas: the percent is clamped before the time is
+        /// computed. The cursor deliberately does not snap to a ruler step (it tracks the pointer 1:1).
         /// </summary>
         [TestMethod]
-        public void HoverCursorSnapsToTheRulerStepAndStaysInsideTheWindow()
+        public void HoverInstantTracksThePointerAndStaysInsideTheWindow()
         {
             var windowStart = new DateTime(2026, 10, 13, 19, 0, 0);
             var span = TimeSpan.FromMinutes(180);
 
-            Assert.AreEqual(new DateTime(2026, 10, 13, 19, 20, 0),
-                Services.TimelineSegmentActions.SnapHover(new DateTime(2026, 10, 13, 19, 27, 0), 10, windowStart, span));
+            Assert.AreEqual(windowStart.AddMinutes(27),
+                TimelineBandMetrics.TimeAtPercent(windowStart, span, TimelineBandMetrics.ClampPercent(0.15)),
+                "a pointer inside the canvas reports the instant under it");
             Assert.AreEqual(windowStart,
-                Services.TimelineSegmentActions.SnapHover(new DateTime(2026, 10, 13, 18, 0, 0), 10, windowStart, span),
-                "hovering left of the window clamps onto its start");
+                TimelineBandMetrics.TimeAtPercent(windowStart, span, TimelineBandMetrics.ClampPercent(-0.5)),
+                "a pointer left of the canvas clamps onto the window start");
             Assert.AreEqual(windowStart.Add(span),
-                Services.TimelineSegmentActions.SnapHover(new DateTime(2026, 10, 13, 23, 59, 0), 10, windowStart, span),
-                "hovering right of the window clamps onto its end");
+                TimelineBandMetrics.TimeAtPercent(windowStart, span, TimelineBandMetrics.ClampPercent(1.5)),
+                "a pointer right of the canvas clamps onto the window end");
         }
 
         /// <summary>

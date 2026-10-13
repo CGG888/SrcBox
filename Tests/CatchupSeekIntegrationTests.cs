@@ -138,8 +138,46 @@ namespace LibmpvIptvClient.Tests
             Assert.AreEqual(610, shell.SeekValue, 0.01, "seek 后界面位置应前进而不是回零");
         }
 
-        // ---------------- rtp2httpd (stackia/rtp2httpd) ----------------
-        // 直播地址是 rtp2httpd 的 /rtsp/<上游>:554/... 代理地址，catchup-source 是"纯参数段
+        // 两个进度条（窗口底栏 / 全屏悬浮条）都把量程值交给 SeekToMeterValue：回看时量程是"节目相对"
+        // 秒数，必须换算回墙钟再重发回看地址。全屏悬浮条曾经把这个秒数直接交给 mpv 相对 seek。
+        [TestMethod]
+        public void ReplayMeterSeek_ConvertsProgrammeRelativeSecondsBackToWallClock()
+        {
+            var engine = new FakePlayerEngine();
+            var shell = MakeShell(engine, out _);
+            shell.CurrentPlayingProgram = new EpgProgram { Title = "P", Start = ProgStart, End = ProgEnd };
+            shell.PlaybackMode = PlaybackMode.Replay;
+            shell.PlaybackFocusTime = ProgStart.AddMinutes(10);   // 已 seek 到节目内第 10 分钟
+            engine.Played.Clear();
+
+            shell.ChannelPlaybackActions.SeekToMeterValue(15 * 60);   // 量程上第 15 分钟 = 节目内 15:00
+
+            Assert.AreEqual(1, engine.Played.Count, "回看量程 seek 必须重发回看地址");
+            Assert.AreEqual(0, engine.RelativeSeeks.Count, "回看量程 seek 不得退化为 mpv 相对 seek");
+            StringAssert.Contains(engine.Played[0], "starttime=" + ExpectedUtc(ProgStart.AddMinutes(15)));
+        }
+
+        // 时移量程同样来自进度条，但量程右端是已缓存窗口的末端：拖过它不能请求尚未产生的时段。
+        [TestMethod]
+        public void TimeshiftMeterSeek_ClampsToTheBufferedWindow()
+        {
+            var engine = new FakePlayerEngine();
+            var shell = MakeShell(engine, out _);
+            shell.IsTimeshiftActive = true;
+            Assert.IsTrue(shell.IsTimeshiftActive, "有引擎+回看源时应当允许开启时移");
+            Assert.IsTrue(shell.TimeshiftMax > shell.TimeshiftMin, "进入时移后应有缓存窗口");
+            engine.Played.Clear();
+
+            var bufferedSeconds = (shell.TimeshiftMax - shell.TimeshiftMin).TotalSeconds;
+
+            shell.ChannelPlaybackActions.SeekToMeterValue(bufferedSeconds + 600);   // 拖过右端 10 分钟
+
+            Assert.AreEqual(1, engine.Played.Count);
+            StringAssert.Contains(engine.Played[0], "starttime=" + ExpectedUtc(shell.TimeshiftMax),
+                "越过缓存右端的拖动必须落在右端: " + engine.Played[0]);
+        }
+
+        // ---------------- rtp2httpd (stackia/rtp2httpd) ----------------        // 直播地址是 rtp2httpd 的 /rtsp/<上游>:554/... 代理地址，catchup-source 是"纯参数段
         // playseek"，只有把它拼到直播地址上，rtp2httpd 才会返回回看流（否则退回直播）。
 
         const string Rtp2httpdLive =

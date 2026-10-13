@@ -276,19 +276,11 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 {
                     _shell.IsSeeking = false;
                     if (_shell.PlayerEngine == null) return;
-                    if (_shell.IsTimeshiftActive && _shell.CurrentChannel != null)
-                    {
-                        var secs = Math.Max(0, val);
-                        _shell.TimeshiftCursorSec = secs;
-                        var t = _shell.TimeshiftMin.AddSeconds(secs);
-                        try { LibmpvIptvClient.Diagnostics.Logger.Info($"时移定位到 {t:yyyy-MM-dd HH:mm:ss}"); } catch { }
-                        _shell.ChannelPlaybackActions.PlayCatchupAt(_shell.CurrentChannel, t, keepTimeshiftMode: true);
-                        _shell.TimeshiftStart = t;
-                    }
-                    else
-                    {
-                        _shell.PlayerEngine?.SeekAbsolute(val);
-                    }
+                    _shell.SeekValue = Math.Max(0, val);
+                    // The meter carries seconds inside the timeshift buffer or inside the loaded archive
+                    // stream, never raw mpv seconds: the conversion is shared with the windowed bar so a
+                    // replay seek from the overlay lands on the same instant as one from the bottom bar.
+                    _shell.ChannelPlaybackActions.SeekToMeterValue(val);
                 },
                 VolumeChanged: (val) => _shell.Volume = val,
                 MuteChanged: (on) => { _shell.IsMuted = on; },
