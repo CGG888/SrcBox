@@ -397,6 +397,16 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             SwitchSourceCycle(true);
         }
 
+        /// <summary>
+        /// Switches the current channel onto one specific variant. Exposed so the web remote and voice
+        /// control reuse the exact menu behaviour (remember the pick, sanitize the url, play it) instead of
+        /// replaying that logic.
+        /// </summary>
+        public void SwitchSourceTo(Source? target)
+        {
+            if (target != null) SwitchSource(target);
+        }
+
         public void SwitchSourceCycle(bool next)
         {
             if (_shell.CurrentChannel == null) return;

@@ -6,6 +6,7 @@ using LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow;
 using LibmpvIptvClient.Diagnostics;
 using LibmpvIptvClient.Models;
 using LibmpvIptvClient.Services;
+using LibmpvIptvClient.Services.WebRemote.Voice;
 
 namespace LibmpvIptvClient.Services.WebRemote
 {
@@ -64,6 +65,11 @@ namespace LibmpvIptvClient.Services.WebRemote
                 _server.GetRecordingsCallback = GetRecordings;
                 _server.StopRecordingCallback = StopRecording;
                 _server.DeleteRecordingCallback = DeleteRecording;
+                _server.VoiceCommandCallback = VoiceCommand;
+                // The voice endpoint is meant for a phone-side shortcut, which cannot log in over the
+                // websocket: it carries this token instead. An empty WebRemote password would leave the
+                // endpoint open to the LAN, so a random one is minted once and kept in the settings.
+                _server.SetVoiceToken(EnsureVoiceToken());
 
                 // The HTTPS listener always comes up with the HTTP one: it is what makes PWA install work on a phone.
                 _server.Start(config.HttpPort, config.RequirePassword, config.Password);
@@ -640,7 +646,15 @@ namespace LibmpvIptvClient.Services.WebRemote
                 if (key == "__next__") { _shell?.MenuActions.SwitchSourceCycle(true); return; }
                 var src = AppSettings.Current.SavedSources?.FirstOrDefault(s =>
                     s.Name == key || s.Url == key);
-                if (src != null) _shell?.MenuActions.LoadM3u(src);
+                if (src != null)
+                {
+                    _shell?.MenuActions.LoadM3u(src);
+                    return;
+                }
+
+                // Not a saved playlist: it may be one of the current channel's streams, which is what a
+                // tapped voice candidate for "换到线路二" carries.
+                SelectVoiceStream(key);
             });
         }
 
@@ -721,6 +735,273 @@ namespace LibmpvIptvClient.Services.WebRemote
                     Logger.Error($"[WebRemote] DoReplayProgram error: {ex.Message}");
                 }
             });
+        }
+
+        // Voice control
+        /// <summary>
+        /// Runs one spoken sentence or one direct action through the shared router. The router owns the
+        /// language work; this method is the only place that knows how the shell's data maps onto it and
+        /// that marshals a resulting callback onto the UI thread.
+        /// </summary>
+        private static VoiceCommandReply VoiceCommand(VoiceCommandContext context, string action, string target)
+        {
+            if (context == null) return new VoiceCommandReply { Spoken = "" };
+            context.Channels = GetVoiceChannels;
+            context.Playlists = GetVoicePlaylists;
+            context.CurrentStreams = GetVoiceStreams;
+            context.CurrentChannel = GetVoiceCurrentChannel;
+            context.Volume = () => _shell?.Volume ?? 0;
+            context.IsMuted = () => _shell?.IsMuted ?? false;
+            context.EpgNow = GetVoiceNow;
+            context.CatchupPrograms = GetVoiceCatchup;
+            context.UserRules = GetVoiceRules;
+            var voice = AppSettings.Current.WebRemote?.Voice;
+            if (voice != null)
+            {
+                context.VolumeStep = voice.VolumeStep;
+                context.AutoReplaySingle = voice.AutoReplaySingle;
+                if (string.IsNullOrWhiteSpace(context.Lang) && !string.IsNullOrWhiteSpace(voice.Lang)) context.Lang = voice.Lang;
+            }
+
+            context.OnSwitchChannel = ChangeChannel;
+            context.OnSelectedStream = SelectVoiceStream;
+            context.OnNextStream = StepVoiceStream;
+            context.OnLoadPlaylist = SelectSource;
+            context.OnReplayProgram = DoReplayProgram;
+            context.OnVolume = v => OnUi(() =>
+            {
+                if (_shell == null) return;
+                _shell.Volume = v;
+                _shell.IsMuted = v <= 0;
+            });
+            context.OnToggleMute = () => OnUi(() =>
+            {
+                if (_shell != null) _shell.IsMuted = !_shell.IsMuted;
+            });
+            context.OnSeek = DoSeek;
+            context.OnPlay = DoPlay;
+            context.OnPause = DoPause;
+            context.OnStop = DoStop;
+            context.OnFullscreen = ToggleFullscreen;
+            context.OnExit = ExitApp;
+
+            return string.IsNullOrWhiteSpace(action)
+                ? VoiceCommandRouter.Route(context)
+                : VoiceCommandRouter.Execute(context, action, target);
+        }
+
+        /// <summary>Runs <paramref name="work"/> on the dispatcher; tests and the router call this without a WPF app.</summary>
+        private static void OnUi(Action work)
+        {
+            var dispatcher = System.Windows.Application.Current?.Dispatcher;
+            if (dispatcher == null) work();
+            else dispatcher.Invoke(work);
+        }
+
+        /// <summary>Every channel with its remote number, in the same order the page shows them.</summary>
+        private static IReadOnlyList<VoiceChannel> GetVoiceChannels()
+        {
+            var result = new List<VoiceChannel>();
+            var numbers = BuildChannelNumbers();
+            if (_shell == null) return result;
+
+            foreach (var group in _shell.ChannelGroups?.ToList() ?? new List<ChannelGroupItem>())
+                foreach (var channel in group.Items ?? new List<Channel>())
+                    result.Add(ToVoiceChannel(channel, group.Name ?? "", numbers));
+
+            // Favourites are numbered last and are legitimately playable, so voice may pick them too.
+            foreach (var channel in _shell.Favorites ?? new List<Channel>())
+                result.Add(ToVoiceChannel(channel, GetLocalizedFavGroupName(), numbers));
+
+            return result;
+        }
+
+        private static VoiceChannel ToVoiceChannel(Channel channel, string group, Dictionary<string, int> numbers)
+        {
+            var id = channel.Id ?? channel.TvgId ?? "";
+            return new VoiceChannel
+            {
+                Id = id,
+                Name = channel.Name ?? "",
+                Group = group,
+                Number = !string.IsNullOrEmpty(id) && numbers.TryGetValue(id, out var number) ? number : 0
+            };
+        }
+
+        private static VoiceChannel? GetVoiceCurrentChannel()
+        {
+            var channel = _shell?.CurrentChannel;
+            if (channel == null) return null;
+            var id = channel.Id ?? channel.TvgId ?? "";
+            return new VoiceChannel
+            {
+                Id = id,
+                Name = channel.Name ?? "",
+                Group = "",
+                Number = BuildChannelNumbers().TryGetValue(id, out var number) ? number : 0
+            };
+        }
+
+        /// <summary>Stream variants of the current channel: this is what "换个源" walks through.</summary>
+        private static IReadOnlyList<VoiceStream> GetVoiceStreams()
+        {
+            var result = new List<VoiceStream>();
+            if (_shell?.CurrentSources == null) return result;
+
+            var sources = _shell.CurrentSources;
+            for (var i = 0; i < sources.Count; i++)
+            {
+                var source = sources[i];
+                var url = source.Url ?? "";
+                result.Add(new VoiceStream
+                {
+                    Id = url,
+                    Name = !string.IsNullOrWhiteSpace(source.Name) ? source.Name : $"{i + 1}/{sources.Count}",
+                    Extra = HostOf(url)
+                });
+            }
+            return result;
+        }
+
+        /// <summary>Switches the current channel onto one of its streams by name or url.</summary>
+        private static void SelectVoiceStream(string key)
+        {
+            if (string.IsNullOrEmpty(key) || _shell == null) return;
+            OnUi(() =>
+            {
+                try
+                {
+                    var sources = _shell.CurrentSources;
+                    if (sources == null) return;
+                    var match = sources.FirstOrDefault(s =>
+                        string.Equals(s.Url, key, StringComparison.OrdinalIgnoreCase)
+                        || string.Equals(s.Name, key, StringComparison.OrdinalIgnoreCase));
+                    if (match == null) return;
+                    Logger.Debug($"[WebRemote] Voice selected stream {match.Name}");
+                    _shell.MenuActions.SwitchSourceTo(match);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"[WebRemote] SelectVoiceStream error: {ex.Message}");
+                }
+            });
+        }
+
+        /// <summary>Steps to the next (+1) or previous (-1) stream, wrapping around.</summary>
+        private static void StepVoiceStream(int delta)
+        {
+            if (delta == 0 || _shell == null) return;
+            OnUi(() =>
+            {
+                try
+                {
+                    var sources = _shell.CurrentSources;
+                    if (sources == null || sources.Count < 2) return;
+
+                    // The playing variant is identified by its url, the same way the menu cycle does it.
+                    var currentUrl = _shell.SourceLoader.SanitizeUrl(_shell.CurrentUrl ?? "");
+                    var index = sources.FindIndex(s => _shell.SourceLoader.SanitizeUrl(s.Url ?? "") == currentUrl);
+                    var next = ((index + delta) % sources.Count + sources.Count) % sources.Count;
+                    Logger.Debug($"[WebRemote] Voice stream step {delta}: {index + 1} -> {next + 1}/{sources.Count}");
+                    _shell.MenuActions.SwitchSourceTo(sources[next]);
+                }
+                catch (Exception ex)
+                {
+                    Logger.Error($"[WebRemote] StepVoiceStream error: {ex.Message}");
+                }
+            });
+        }
+
+        private static IReadOnlyList<VoicePlaylist> GetVoicePlaylists()
+        {
+            var list = AppSettings.Current.SavedSources ?? new List<M3uSource>();
+            return list.Select(s => new VoicePlaylist
+            {
+                Id = s.Url ?? "",
+                Name = s.Name ?? "",
+                Extra = HostOf(s.Url)
+            }).ToList();
+        }
+
+        private static IReadOnlyList<VoiceRule> GetVoiceRules()
+            => AppSettings.Current.WebRemote?.Voice?.CustomRules ?? new List<VoiceRule>();
+
+        /// <summary>What a channel is showing now, resolved through the same channel lookup the EPG uses.</summary>
+        private static VoiceProgram? GetVoiceNow(string channelId)
+        {
+            if (_shell?.EpgService == null || string.IsNullOrEmpty(channelId)) return null;
+            try
+            {
+                var channel = FindChannel(channelId);
+                var program = _shell.EpgService.GetCurrentProgram(channelId, channel?.TvgName, channel?.Name);
+                if (program == null) return null;
+                return new VoiceProgram
+                {
+                    Title = program.Title ?? "",
+                    Start = program.Start,
+                    End = program.End,
+                    ChannelName = channel?.Name ?? ""
+                };
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug($"[WebRemote] voice EPG now failed: {ex.Message}");
+                return null;
+            }
+        }
+
+        /// <summary>Programmes of one channel inside a catch-up window, for "回看昨天的新闻联播".</summary>
+        private static IReadOnlyList<VoiceProgram> GetVoiceCatchup(string channelId, DateTime start, DateTime end)
+        {
+            if (_shell?.EpgService == null || string.IsNullOrEmpty(channelId)) return new List<VoiceProgram>();
+            try
+            {
+                var channel = FindChannel(channelId);
+                var programs = _shell.EpgService.GetPrograms(channelId, channel?.TvgName, channel?.Name);
+                if (programs == null) return new List<VoiceProgram>();
+                return programs
+                    .Where(p => p.End > start && p.Start < end)
+                    .Select(p => new VoiceProgram
+                    {
+                        Title = p.Title ?? "",
+                        Start = p.Start,
+                        End = p.End,
+                        ChannelName = channel?.Name ?? ""
+                    })
+                    .ToList();
+            }
+            catch (Exception ex)
+            {
+                Logger.Debug($"[WebRemote] voice catch-up lookup failed: {ex.Message}");
+                return new List<VoiceProgram>();
+            }
+        }
+
+        private static Channel? FindChannel(string channelId)
+            => (_shell?.Channels ?? Enumerable.Empty<Channel>())
+                .FirstOrDefault(c => c.Id == channelId || c.TvgId == channelId);
+
+        /// <summary>Host part of a stream url, shown as the secondary line of a spoken source pick.</summary>
+        private static string HostOf(string? url)
+        {
+            if (string.IsNullOrWhiteSpace(url)) return "";
+            return Uri.TryCreate(url, UriKind.Absolute, out var parsed) ? parsed.Host : "";
+        }
+
+        /// <summary>Reuses the configured web remote password, or mints a stable random token once.</summary>
+        private static string EnsureVoiceToken()
+        {
+            var config = AppSettings.Current.WebRemote;
+            if (config == null) return "";
+            if (!string.IsNullOrEmpty(config.Voice?.Token)) return config.Voice!.Token!;
+            if (config.RequirePassword && !string.IsNullOrEmpty(config.Password)) return config.Password;
+
+            var token = Guid.NewGuid().ToString("N")[..12];
+            config.Voice ??= new VoiceConfig();
+            config.Voice.Token = token;
+            try { AppSettings.Current.Save(); }
+            catch (Exception ex) { Logger.Debug($"[WebRemote] voice token save failed: {ex.Message}"); }
+            return token;
         }
 
         // Reminder management

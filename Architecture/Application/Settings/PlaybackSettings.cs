@@ -5,6 +5,7 @@ using System.IO;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 using LibmpvIptvClient.Helpers;
+using LibmpvIptvClient.Services.WebRemote.Voice;
 
 namespace LibmpvIptvClient
 {
@@ -516,6 +517,46 @@ namespace LibmpvIptvClient
         /// the web remote.</summary>
         public bool ShowChannelNumber { get; set; } = true;
         public int MaxEpgItems { get; set; } = 50;
+
+        /// <summary>Spoken control: the page microphone button and the /api/voice endpoint.</summary>
+        public VoiceConfig Voice { get; set; } = new VoiceConfig();
+    }
+
+    /// <summary>
+    /// Settings for the spoken-command pipeline. The grammar and the scoring live in VoiceCommandRouter;
+    /// this is only what the user can tune, plus the token a phone-side shortcut authenticates with.
+    /// </summary>
+    public class VoiceConfig
+    {
+        /// <summary>Shows the microphone button on the page and answers the endpoint.</summary>
+        public bool Enabled { get; set; } = true;
+
+        /// <summary>Keeps the microphone open after one command instead of push-to-talk.</summary>
+        public bool HandsFree { get; set; } = false;
+
+        /// <summary>Reads the reply out loud through speech synthesis.</summary>
+        public bool SpeakBack { get; set; } = true;
+
+        /// <summary>Recognition language; empty follows the page language.</summary>
+        public string Lang { get; set; } = "";
+
+        /// <summary>Starts a catch-up programme directly when the sentence matches exactly one.</summary>
+        public bool AutoReplaySingle { get; set; } = true;
+
+        /// <summary>Percent one bare "大声点" moves the volume when the sentence names no amount.</summary>
+        public double VolumeStep { get; set; } = 10;
+
+        /// <summary>Secret for GET /api/voice; minted on first start, empty turns the check off.</summary>
+        public string Token { get; set; } = "";
+
+        /// <summary>
+        /// Words that open the hands-free microphone ("remote", "遥控器"). Empty keeps the built-in
+        /// list; the page ignores an utterance when none of them is heard, so ambient speech is safe.
+        /// </summary>
+        public List<string> WakeWords { get; set; } = new List<string>();
+
+        /// <summary>User phrasings, tried before the built-in table, in list order.</summary>
+        public List<VoiceRule> CustomRules { get; set; } = new List<VoiceRule>();
     }
 
     public class TimeOverrideConfig

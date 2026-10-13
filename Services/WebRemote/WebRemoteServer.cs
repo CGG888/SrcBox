@@ -14,6 +14,7 @@ using System.Text.Json.Serialization;
 using System.Threading;
 using System.Threading.Tasks;
 using LibmpvIptvClient.Diagnostics;
+using LibmpvIptvClient.Services.WebRemote.Voice;
 
 namespace LibmpvIptvClient.Services.WebRemote
 {
@@ -75,6 +76,21 @@ namespace LibmpvIptvClient.Services.WebRemote
         public Func<List<WebRemoteRecording>>? GetRecordingsCallback { get; set; }
         public Action<string>? StopRecordingCallback { get; set; }
         public Action<string>? DeleteRecordingCallback { get; set; }
+
+        /// <summary>
+        /// Voice pipeline entry point. The router itself lives in VoiceCommandRouter and is shared by the
+        /// websocket action and the /api/voice endpoint, so both paths understand exactly the same
+        /// sentences and the same user rules. A non-empty action runs that action directly.
+        /// </summary>
+        public Func<VoiceCommandContext, string, string, VoiceCommandReply>? VoiceCommandCallback { get; set; }
+
+        /// <summary>Shared secret for /api/voice; empty disables the endpoint's token check (LAN only).</summary>
+        private string _voiceToken = "";
+
+        /// <summary>The token a phone-side shortcut has to pass as ?token=; empty when unset.</summary>
+        public string VoiceToken => _voiceToken;
+
+        public void SetVoiceToken(string? token) => _voiceToken = token ?? "";
 
         /// <summary>
         /// Starts the remote on a single port that speaks both plain http and https: the first byte of
@@ -293,6 +309,14 @@ namespace LibmpvIptvClient.Services.WebRemote
                     return;
                 }
 
+                // Voice endpoint: a phone-side assistant (ColorOS shortcut, Tasker, an Apple shortcut)
+                // can drive the player without opening the page at all. Read-only GET, LAN clients only.
+                if (requestPath == "/api/voice")
+                {
+                    await ServeVoiceApiAsync(tcpClient, stream, firstLine, ct);
+                    return;
+                }
+
                 Logger.Debug("[WebRemote] Sending HTML page");
                 var lang = ParseAcceptLanguage(request);
                 var html = GetRemoteHtml(lang, IsTlsAvailable ? Port : 0);
@@ -413,6 +437,130 @@ namespace LibmpvIptvClient.Services.WebRemote
             await stream.WriteAsync(bodyBuf, ct);
         }
 
+        /// <summary>
+        /// LAN-only check for /api/voice. The endpoint has no websocket handshake to carry the session, so
+        /// it relies on the token plus this address filter: a peer that is not on a private/loopback range
+        /// is refused outright.
+        /// </summary>
+        internal static bool IsPrivateAddress(string? remoteAddress)
+            => !IPAddress.TryParse(remoteAddress, out var ip) || IPAddress.IsLoopback(ip) || IsPrivateRange(ip);
+
+        private static bool IsPrivateRange(IPAddress ip)
+        {
+            if (ip.AddressFamily == AddressFamily.InterNetwork)
+            {
+                var bytes = ip.GetAddressBytes();
+                // APIPA and CGNAT join the three RFC1918 blocks the address helper already knows.
+                if (bytes[0] == 169 && bytes[1] == 254) return true;
+                if (bytes[0] == 100 && bytes[1] >= 64 && bytes[1] <= 127) return true;
+                return WebRemoteAddressHelper.IsPrivateRange(ip.ToString());
+            }
+
+            // IPv6: unique local (fc00::/7) and link local (fe80::/10) are the LAN equivalents.
+            if (ip.AddressFamily == AddressFamily.InterNetworkV6)
+            {
+                if (ip.IsIPv6LinkLocal || ip.IsIPv6SiteLocal) return true;
+                var b = ip.GetAddressBytes();
+                return (b[0] & 0xFE) == 0xFC;
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// GET /api/voice?text=换到1台&amp;token=... runs one spoken sentence, and
+        /// GET /api/voice?action=channel&amp;target=1 does the same without natural language, which is how a
+        /// phone assistant maps a fixed phrase onto a fixed channel. ?dry=1 returns the candidates instead
+        /// of acting, so a shortcut can show a menu.
+        /// </summary>
+        private async Task ServeVoiceApiAsync(TcpClient tcpClient, Stream stream, string requestLine, CancellationToken ct)
+        {
+            try
+            {
+                var remote = tcpClient.Client.RemoteEndPoint as IPEndPoint;
+                if (!IsPrivateAddress(remote?.Address.ToString()))
+                {
+                    Logger.Warn("[WebRemote] /api/voice refused: non private address");
+                    await WriteVoiceJsonAsync(stream, 403, "Forbidden", new { success = false, error = "forbidden" }, ct);
+                    return;
+                }
+
+                var query = QueryValues(requestLine);
+                var token = query.TryGetValue("token", out var tokenValue) ? tokenValue : "";
+                var requireToken = !string.IsNullOrEmpty(_voiceToken);
+                if (requireToken && !string.Equals(token, _voiceToken, StringComparison.Ordinal))
+                {
+                    Logger.Warn("[WebRemote] /api/voice rejected: token mismatch");
+                    await WriteVoiceJsonAsync(stream, 401, "Unauthorized", new { success = false, error = "unauthorized" }, ct);
+                    return;
+                }
+
+                if (VoiceCommandCallback == null)
+                {
+                    await WriteVoiceJsonAsync(stream, 503, "Service Unavailable", new { success = false, error = "not_ready" }, ct);
+                    return;
+                }
+
+                var text = query.TryGetValue("text", out var textValue) ? textValue : "";
+                var action = query.TryGetValue("action", out var actionValue) ? actionValue : "";
+                var target = query.TryGetValue("target", out var targetValue) ? targetValue : "";
+                if (string.IsNullOrWhiteSpace(text) && string.IsNullOrWhiteSpace(action))
+                {
+                    await WriteVoiceJsonAsync(stream, 400, "Bad Request", new { success = false, error = "missing_text" }, ct);
+                    return;
+                }
+
+                var dry = query.TryGetValue("dry", out var dryValue)
+                          && (dryValue == "1" || dryValue.Equals("true", StringComparison.OrdinalIgnoreCase));
+                var context = new VoiceCommandContext
+                {
+                    Text = string.IsNullOrWhiteSpace(text) ? target : text,
+                    Lang = query.TryGetValue("lang", out var langValue) && !string.IsNullOrWhiteSpace(langValue)
+                        ? langValue
+                        : ParseAcceptLanguage(query.TryGetValue("accept", out var acceptValue) ? acceptValue : ""),
+                    DryRun = dry
+                };
+
+                var reply = VoiceCommandCallback(context, action, target);
+                await WriteVoiceJsonAsync(stream, 200, "OK", reply, ct);
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"[WebRemote] /api/voice error: {ex.Message}");
+            }
+            finally { tcpClient.Close(); }
+        }
+
+        private static async Task WriteVoiceJsonAsync(Stream stream, int status, string reason, object payload, CancellationToken ct)
+        {
+            var json = JsonSerializer.Serialize(payload,
+                new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
+            var header = $"HTTP/1.1 {status} {reason}\r\nContent-Type: application/json; charset=utf-8\r\nContent-Length: {Encoding.UTF8.GetByteCount(json)}\r\nCache-Control: no-store\r\nConnection: close\r\n\r\n";
+            await stream.WriteAsync(Encoding.UTF8.GetBytes(header), ct);
+            await stream.WriteAsync(Encoding.UTF8.GetBytes(json), ct);
+        }
+
+        /// <summary>Parses the query string of a request line into decoded key/value pairs.</summary>
+        internal static Dictionary<string, string> QueryValues(string requestLine)
+        {
+            var result = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
+            var line = requestLine ?? "";
+            var mark = line.IndexOf('?');
+            if (mark < 0) return result;
+            var query = line[(mark + 1)..];
+            var space = query.IndexOf(' ');
+            if (space >= 0) query = query[..space];
+            foreach (var pair in query.Split('&', StringSplitOptions.RemoveEmptyEntries))
+            {
+                var eq = pair.IndexOf('=');
+                if (eq <= 0) continue;
+                var key = Uri.UnescapeDataString(pair[..eq].Replace('+', ' '));
+                var value = Uri.UnescapeDataString(pair[(eq + 1)..].Replace('+', ' '));
+                if (key.Length > 0) result[key] = value;
+            }
+            return result;
+        }
+
         private async Task ServeManifestAsync(TcpClient? tcpClient, Stream stream, CancellationToken ct)
         {
             try
@@ -452,7 +600,7 @@ namespace LibmpvIptvClient.Services.WebRemote
             {
                 var sw = @"
 // SrcBox Web Remote Service Worker
-var CACHE_NAME = 'srcbox-remote-v6';
+var CACHE_NAME = 'srcbox-remote-v7';
 var STATIC_ASSETS = [
   '/',
   '/manifest.json'
@@ -934,6 +1082,47 @@ self.addEventListener('fetch', function(event) {
                         }
                         break;
 
+                    case "voiceCommand":
+                        {
+                            var voiceText = json.TryGetProperty("text", out var voiceTextElem)
+                                ? voiceTextElem.GetString() ?? ""
+                                : "";
+                            var voiceLang = json.TryGetProperty("lang", out var voiceLangElem)
+                                ? voiceLangElem.GetString() ?? ""
+                                : "";
+                            var voiceAction = json.TryGetProperty("command", out var voiceActionElem)
+                                ? voiceActionElem.GetString() ?? ""
+                                : "";
+                            var voiceTarget = json.TryGetProperty("target", out var voiceTargetElem)
+                                ? voiceTargetElem.GetString() ?? ""
+                                : "";
+                            if (string.IsNullOrWhiteSpace(voiceLang)) voiceLang = ParseAcceptLanguage("");
+                            Logger.Debug($"[WebRemote] voiceCommand: \"{voiceText}\" ({voiceLang})");
+
+                            if (VoiceCommandCallback == null)
+                            {
+                                result = new VoiceCommandReply
+                                {
+                                    Success = false,
+                                    Verb = "unknown",
+                                    Text = voiceText,
+                                    Spoken = WebRemoteStrings.Get(voiceLang) is { } vs
+                                             && vs.TryGetValue("voice_unsupported", out var unsupported)
+                                        ? unsupported
+                                        : "Voice control is not available"
+                                };
+                                break;
+                            }
+
+                            var voiceContext = new VoiceCommandContext
+                            {
+                                Text = string.IsNullOrWhiteSpace(voiceText) ? voiceTarget : voiceText,
+                                Lang = voiceLang
+                            };
+                            result = VoiceCommandCallback(voiceContext, voiceAction, voiceTarget);
+                        }
+                        break;
+
                     case "getReminders":
                         {
                             var reminders = GetRemindersCallback?.Invoke() ?? new List<WebRemoteReminder>();
@@ -1010,7 +1199,27 @@ self.addEventListener('fetch', function(event) {
             Stop();
         }
 
-        internal static string GetRemoteHtml(string lang = "zh-CN", int httpsPort = 0, bool? showChannelList = null, bool? showEpgList = null)
+        /// <summary>Voice settings baked into the page when the caller passes no override.</summary>
+        private static string DefaultVoiceJson => BuildVoiceJson(AppSettings.Current?.WebRemote?.Voice);
+
+        /// <summary>
+        /// Serializes the voice settings the page needs. Only these fields cross to the client; the
+        /// custom rules and the endpoint token stay on the server.
+        /// </summary>
+        internal static string BuildVoiceJson(VoiceConfig? voice)
+        {
+            var payload = new Dictionary<string, object?>
+            {
+                ["enabled"] = voice?.Enabled ?? true,
+                ["speak"] = voice?.SpeakBack ?? true,
+                ["handsFree"] = voice?.HandsFree ?? false,
+                ["lang"] = voice?.Lang ?? "",
+                ["wake"] = voice?.WakeWords ?? new List<string>()
+            };
+            return JsonSerializer.Serialize(payload);
+        }
+
+        internal static string GetRemoteHtml(string lang = "zh-CN", int httpsPort = 0, bool? showChannelList = null, bool? showEpgList = null, string? voiceJson = null)
         {
             var strings = WebRemoteStrings.Get(lang);
             // The section switches come from the Web Remote settings; the parameters let tests override them.
@@ -1075,7 +1284,9 @@ self.addEventListener('fetch', function(event) {
                 .Replace("__HTTPS_PORT__", httpsPort.ToString())
                 // Section switches are baked in so a section hidden in the settings is never shown
                 .Replace("__SHOW_CHANNELS__", showChannels ? "true" : "false")
-                .Replace("__SHOW_EPG__", showEpg ? "true" : "false");
+                .Replace("__SHOW_EPG__", showEpg ? "true" : "false")
+                // Voice settings for the page; the tests and any caller that does not care get the defaults
+                .Replace("__VOICE_JSON__", string.IsNullOrWhiteSpace(voiceJson) ? DefaultVoiceJson : voiceJson);
             return tpl;
         }
 
@@ -1315,6 +1526,28 @@ body.dark-theme, body.theme-dark { color: var(--neu-text); }
 .modal-box .mbtns .mcancel { background: var(--neu-surface2); color: var(--neu-text); }
 .modal-box .mbtns .mok { background: var(--neu-primary); color: var(--neu-primary-fg); }
 .modal-box .rem-info { font-size: 13px; color: var(--neu-text); margin-bottom: 8px; }
+/* Voice control overlay: reuses the neumorphic tokens so it matches both themes */
+.voice-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: var(--neu-bg); opacity: 0.98; display: none; align-items: center; justify-content: center; z-index: 10050; padding: 16px; padding-top: calc(16px + env(safe-area-inset-top, 0px)); padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px)); box-sizing: border-box; }
+.voice-overlay.show { display: flex; }
+.voice-box { background: var(--neu-surface); border-radius: var(--neu-radius); padding: 18px; width: 100%; max-width: 420px; box-shadow: var(--neu-shadow-out); max-height: calc(100dvh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); overflow-y: auto; -webkit-overflow-scrolling: touch; box-sizing: border-box; }
+.voice-head { display: flex; align-items: center; justify-content: space-between; font-size: 15px; color: var(--neu-text); margin-bottom: 12px; }
+.voice-x { border: none; background: var(--neu-surface2); color: var(--neu-text); border-radius: 50%; width: 30px; height: 30px; font-size: 14px; cursor: pointer; box-shadow: var(--neu-shadow-out-sm); touch-action: manipulation; }
+.voice-mic { display: block; margin: 4px auto 12px auto; width: 96px; height: 96px; border-radius: 50%; border: none; font-size: 40px; line-height: 1; background: var(--neu-surface); color: var(--neu-text); box-shadow: var(--neu-shadow-out); cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+.voice-mic:active, .voice-mic.listening { box-shadow: var(--neu-shadow-in); }
+.voice-mic.listening { background: var(--neu-primary); color: var(--neu-primary-fg); animation: voicePulse 1.4s ease-in-out infinite; }
+@keyframes voicePulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+.voice-status { text-align: center; font-size: 13px; color: var(--neu-text); margin-bottom: 10px; min-height: 18px; }
+.voice-heard { text-align: center; font-size: 12px; color: var(--neu-text-muted); margin-bottom: 10px; word-break: break-word; }
+.voice-options { display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px; }
+.voice-option { text-align: left; border: none; border-radius: 10px; padding: 10px 12px; background: var(--neu-surface); color: var(--neu-text); font-size: 13px; cursor: pointer; box-shadow: var(--neu-shadow-out-sm); touch-action: manipulation; }
+.voice-option:active { box-shadow: var(--neu-shadow-in-sm); }
+.voice-option .vo-sub { display: block; font-size: 11px; color: var(--neu-text-muted); margin-top: 2px; }
+.voice-row { display: flex; gap: 8px; margin-bottom: 10px; }
+.voice-row input { flex: 1; min-width: 0; padding: 10px 12px; border: none; border-radius: 10px; background: var(--neu-surface); color: var(--neu-text); font-size: 13px; box-shadow: var(--neu-shadow-in-sm); box-sizing: border-box; -webkit-appearance: none; appearance: none; }
+.voice-row button { padding: 10px 14px; border: none; border-radius: 10px; background: var(--neu-primary); color: var(--neu-primary-fg); font-size: 13px; cursor: pointer; box-shadow: var(--neu-shadow-out-sm); touch-action: manipulation; }
+.voice-foot { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--neu-text-muted); }
+.voice-foot button { padding: 6px 10px; border: none; border-radius: 8px; background: var(--neu-surface2); color: var(--neu-text-muted); font-size: 11px; cursor: pointer; box-shadow: var(--neu-shadow-out-sm); touch-action: manipulation; white-space: nowrap; }
+.voice-foot button.on { background: var(--neu-primary); color: var(--neu-primary-fg); }
 ::-webkit-scrollbar { width: 6px; }
 ::-webkit-scrollbar-track { background: transparent; }
 ::-webkit-scrollbar-thumb { background: var(--neu-border); border-radius: 3px; }
@@ -1435,6 +1668,7 @@ body.remote-mode .rp-text-btn { min-height: clamp(36px, calc(var(--safe-vh) * 6.
 <button class=""theme-toggle"" id=""themeToggle"" onclick=""toggleTheme()"">__THEME__</button>
 <button class=""theme-toggle install-toggle"" id=""installFab"" onclick=""showInstallModal()"" style=""display:none;""></button>
 <button class=""theme-toggle"" id=""fsFab"" onclick=""toggleBrowserFullscreen()"" style=""display:none;"">⛶</button>
+<button class=""theme-toggle"" id=""voiceFab"" onclick=""toggleVoice()"" style=""display:none;"">🎙</button>
 </div>
 </div>
 
@@ -1623,6 +1857,28 @@ body.remote-mode .rp-text-btn { min-height: clamp(36px, calc(var(--safe-vh) * 6.
 </div>
 </div>
 
+<!-- Voice control: push-to-talk, hands-free wake word and a typed fallback -->
+<div class=""voice-overlay"" id=""voiceOverlay"">
+<div class=""voice-box"">
+<div class=""voice-head"">
+<span id=""voiceTitle""></span>
+<button class=""voice-x"" onclick=""closeVoice()"">✕</button>
+</div>
+<button class=""voice-mic"" id=""voiceMicBtn"" onclick=""voiceMicTap()"">🎙</button>
+<div class=""voice-status"" id=""voiceStatus""></div>
+<div class=""voice-heard"" id=""voiceHeard""></div>
+<div class=""voice-options"" id=""voiceOptions""></div>
+<div class=""voice-row"">
+<input type=""text"" id=""voiceInput"" onkeydown=""if(event.key==='Enter')submitVoiceInput()"" />
+<button id=""voiceSendBtn"" onclick=""submitVoiceInput()""></button>
+</div>
+<div class=""voice-foot"">
+<button id=""voiceHandsFree"" onclick=""toggleHandsFree()""></button>
+<span class=""voice-examples"" id=""voiceExamples""></span>
+</div>
+</div>
+</div>
+
 <script>
 const T = __T_JSON__;
 const HTTPS_PORT = __HTTPS_PORT__;
@@ -1630,6 +1886,8 @@ const SHOW_CHANNELS = __SHOW_CHANNELS__;
 const SHOW_EPG = __SHOW_EPG__;
 const FAV_GROUP = '__FAV_GROUP__';
 const FAV_STAR = '__FAV_STAR__';
+// Voice settings are baked in by the server so the page never has to ask for them
+const VOICE = __VOICE_JSON__;
 let ws; let currentChannelId = ''; let currentVolume = 70; let previousVolume = 70;
 let isMuted = false; let channelList = []; let isDarkTheme = true; let isAuthenticated = false;
 
@@ -1646,6 +1904,34 @@ var chSection = document.querySelector('.channel-section');
 if (chSection && !SHOW_CHANNELS) chSection.style.display = 'none';
 var epgSection = document.querySelector('.epg-section');
 if (epgSection && !SHOW_EPG) epgSection.style.display = 'none';
+applyVoiceText();
+}
+
+// Language the recogniser should listen in: the configured override, else what the page speaks.
+function voiceLang() {
+if (VOICE.lang) return VOICE.lang;
+var l = (navigator.language || 'zh-CN').toLowerCase();
+if (l.indexOf('zh-tw') === 0 || l.indexOf('zh-hk') === 0 || l.indexOf('zh-hant') === 0) return 'zh-TW';
+if (l.indexOf('zh') === 0) return 'zh-CN';
+if (l.indexOf('ru') === 0) return 'ru-RU';
+if (l.indexOf('en') === 0) return 'en-US';
+return 'zh-CN';
+}
+
+function applyVoiceText() {
+var t = function(id, text) { var el = document.getElementById(id); if (el) el.textContent = text; };
+t('voiceTitle', T.voice_title);
+t('voiceSendBtn', T.voice_send);
+var fab = document.getElementById('voiceFab');
+if (fab) { fab.title = T.voice_title; fab.style.display = VOICE.enabled ? '' : 'none'; }
+var input = document.getElementById('voiceInput');
+if (input) input.placeholder = T.voice_input_placeholder;
+t('voiceExamples', T.voice_examples);
+t('voiceHandsFree', T.voice_handsfree);
+var hf = document.getElementById('voiceHandsFree');
+if (hf) hf.className = voiceHandsFree ? 'on' : '';
+var status = document.getElementById('voiceStatus');
+if (status && !voiceBusy) status.textContent = voiceHandsFree ? T.voice_listening : T.voice_hold;
 }
 
 function connect() {
@@ -1657,6 +1943,7 @@ ws.onerror = function() { document.getElementById('channelName').textContent = T
 ws.onmessage = function(e) {
 try {
 const data = JSON.parse(e.data);
+if (data.type === 'voice') { handleVoiceReply(data); return; }
 if (data.requireAuth !== undefined && !data.success && !isAuthenticated) {
 document.getElementById('passwordOverlay').style.display = 'flex';
 } else if (data.success !== undefined && data.requireAuth !== undefined) {
@@ -2189,7 +2476,221 @@ function doInstall() {
   closeInstallModal();
 }
 
+// ---------------------------------------------------------------- voice control
+// Recognition runs on the phone (Web Speech API) and the meaning is resolved by the server, so the
+// grammar, the channel names and the custom rules have exactly one implementation.
+var VoiceSR = window.SpeechRecognition || window.webkitSpeechRecognition;
+var voiceRec = null;
+var voiceListening = false;
+var voiceBusy = false;
+var voiceHandsFree = false;
+var voiceLastOptions = [];
+
+function voiceSupported() { return !!VoiceSR && window.isSecureContext !== false; }
+
+function voiceWakeWords() {
+var list = (VOICE.wake && VOICE.wake.length) ? VOICE.wake : ['遥控器', '小箱', 'srcbox', 'remote', 'пульт'];
+return list;
+}
+
+function voiceNormalize(s) {
+return (s || '').toLowerCase().replace(/[\s,，。.、!！?？:：;；\u0027\u0022\u201c\u201d\u2018\u2019()（）·-]/g, '');
+}
+
+// Returns the sentence without the wake word, or null when the wake word was not spoken.
+function voiceStripWake(text) {
+var n = voiceNormalize(text);
+var words = voiceWakeWords();
+for (var i = 0; i < words.length; i++) {
+var w = voiceNormalize(words[i]);
+if (!w) continue;
+var idx = n.indexOf(w);
+if (idx >= 0) return n.substring(0, idx) + n.substring(idx + w.length);
+}
+return null;
+}
+
+function voiceSet(id, text) { var el = document.getElementById(id); if (el) el.textContent = text || ''; }
+function setVoiceStatus(text) { voiceSet('voiceStatus', text); }
+function setVoiceHeard(text) { voiceSet('voiceHeard', text ? ((T.voice_heard || '') + ': ' + text) : ''); }
+function voiceMicClass(on) {
+var el = document.getElementById('voiceMicBtn');
+if (el) el.className = on ? 'voice-mic listening' : 'voice-mic';
+}
+
+function voiceMakeRecognition() {
+if (voiceRec || !VoiceSR) return voiceRec;
+var rec = new VoiceSR();
+rec.interimResults = false;
+rec.maxAlternatives = 1;
+rec.onresult = function(e) {
+var text = '';
+for (var i = e.resultIndex; i < e.results.length; i++) {
+if (e.results[i].isFinal) text += e.results[i][0].transcript;
+}
+if (!text) return;
+if (!voiceHandsFree) { sendVoice(text); return; }
+var stripped = voiceStripWake(text);
+if (stripped === null) return; // ambient speech: hands-free only reacts to the wake word
+setVoiceHeard(stripped || text);
+if (stripped) sendVoice(stripped); else setVoiceStatus(T.voice_listening);
+};
+rec.onerror = function(ev) {
+voiceListening = false; voiceMicClass(false);
+var code = ev && ev.error ? ev.error : '';
+if (code === 'not-allowed' || code === 'service-not-allowed') {
+voiceHandsFree = false; voiceRefreshHandsFree();
+setVoiceStatus(T.voice_secure_needed);
+} else if (code === 'no-speech' || code === 'aborted') {
+if (!voiceBusy) setVoiceStatus(voiceHandsFree ? T.voice_listening : T.voice_hold);
+} else {
+setVoiceStatus(T.voice_error);
+}
+};
+rec.onend = function() {
+voiceListening = false; voiceMicClass(false);
+if (voiceHandsFree) { setTimeout(function() { if (voiceHandsFree && !voiceListening) startVoiceListening(); }, 400); return; }
+if (!voiceBusy) setVoiceStatus(T.voice_hold);
+};
+voiceRec = rec;
+return rec;
+}
+
+function startVoiceListening() {
+if (!voiceSupported()) { setVoiceStatus(window.isSecureContext === false ? T.voice_secure_needed : T.voice_unsupported); return; }
+var rec = voiceMakeRecognition();
+if (!rec) { setVoiceStatus(T.voice_unsupported); return; }
+rec.lang = voiceLang();
+// Continuous mode only for hands-free: one-shot recognition is what iOS and Android both do reliably.
+rec.continuous = voiceHandsFree;
+try { rec.start(); } catch (err) { return; }
+voiceListening = true; voiceMicClass(true);
+setVoiceStatus(T.voice_listening);
+}
+
+function stopVoiceListening() {
+voiceHandsFree = false; voiceRefreshHandsFree();
+if (voiceRec && voiceListening) { try { voiceRec.stop(); } catch (err) { } }
+voiceListening = false; voiceMicClass(false);
+setVoiceStatus(T.voice_hold);
+}
+
+function voiceRefreshHandsFree() {
+var b = document.getElementById('voiceHandsFree');
+if (b) b.className = voiceHandsFree ? 'on' : '';
+}
+
+function voiceMicTap() {
+if (voiceListening) { stopVoiceListening(); return; }
+startVoiceListening();
+}
+
+function toggleHandsFree() {
+if (voiceListening) { stopVoiceListening(); return; }
+if (!voiceSupported()) { setVoiceStatus(window.isSecureContext === false ? T.voice_secure_needed : T.voice_unsupported); return; }
+voiceHandsFree = true; voiceRefreshHandsFree();
+startVoiceListening();
+}
+
+function toggleVoice() {
+var ov = document.getElementById('voiceOverlay');
+if (!ov) return;
+if (ov.classList.contains('show')) { closeVoice(); return; }
+openVoice();
+}
+
+function openVoice() {
+var ov = document.getElementById('voiceOverlay');
+if (ov) ov.classList.add('show');
+voiceBusy = false;
+setVoiceStatus(VOICE.enabled === false ? T.voice_unsupported : T.voice_hold);
+setVoiceHeard('');
+renderVoiceOptions([]);
+applyVoiceText();
+// The settings may ask for an always-open microphone; still only start it from this user gesture.
+if (VOICE.handsFree && voiceSupported() && !voiceListening) {
+voiceHandsFree = true; voiceRefreshHandsFree();
+startVoiceListening();
+}
+}
+
+function closeVoice() {
+var ov = document.getElementById('voiceOverlay');
+if (ov) ov.classList.remove('show');
+stopVoiceListening();
+if (window.speechSynthesis) { try { window.speechSynthesis.cancel(); } catch (err) { } }
+}
+
+function submitVoiceInput() {
+var input = document.getElementById('voiceInput');
+var text = input ? input.value.replace(/^\s+|\s+$/g, '') : '';
+if (!text) return;
+if (input) input.value = '';
+sendVoice(text);
+}
+
+function sendVoice(text) {
+if (!text) return;
+voiceBusy = true;
+setVoiceStatus(T.voice_thinking);
+setVoiceHeard(text);
+renderVoiceOptions([]);
+send('voiceCommand', { text: text, lang: voiceLang() });
+}
+
+function handleVoiceReply(reply) {
+voiceBusy = false;
+if (reply.spoken) { setVoiceStatus(reply.spoken); speakVoice(reply.spoken); }
+else setVoiceStatus(reply.success ? T.voice_hold : T.voice_not_understood);
+renderVoiceOptions(reply.options || []);
+if (reply.executed) loadStatus();
+}
+
+function renderVoiceOptions(options) {
+voiceLastOptions = options || [];
+var box = document.getElementById('voiceOptions');
+if (!box) return;
+box.innerHTML = '';
+for (var i = 0; i < voiceLastOptions.length; i++) {
+(function(idx) {
+var o = voiceLastOptions[idx];
+var b = document.createElement('button');
+b.className = 'voice-option';
+b.textContent = o.title || o.id || '';
+if (o.subtitle) {
+var sub = document.createElement('span');
+sub.className = 'vo-sub';
+sub.textContent = o.subtitle;
+b.appendChild(sub);
+}
+b.onclick = function() { pickVoiceOption(idx); };
+box.appendChild(b);
+})(i);
+}
+}
+
+// A tapped candidate replays an action the page already implements, so nothing new can execute here.
+function pickVoiceOption(idx) {
+var o = voiceLastOptions[idx];
+if (!o) return;
+if (o.action) send(o.action, o.payload || {});
+renderVoiceOptions([]);
+closeVoice();
+setTimeout(function() { loadStatus(); }, 400);
+}
+
+function speakVoice(text) {
+if (!VOICE.speak || !text || !window.speechSynthesis) return;
+try {
+window.speechSynthesis.cancel();
+var u = new SpeechSynthesisUtterance(text);
+u.lang = voiceLang();
+window.speechSynthesis.speak(u);
+} catch (err) { }
+}
+
 // Initialize the install entry before connecting: a failed WebSocket connect must not hide it.
+applyVoiceText();
 initInstall();
 connect();
 
