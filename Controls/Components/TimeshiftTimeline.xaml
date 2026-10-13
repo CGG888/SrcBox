@@ -137,7 +137,10 @@
           <Setter TargetName="BlockTimeshiftBar" Property="Opacity" Value="0"/>
           <Setter TargetName="BlockName" Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
           <Setter TargetName="BlockName" Property="FontWeight" Value="Normal"/>
-          <Setter TargetName="BlockRoot" Property="Opacity" Value="0.55"/>
+          <!-- Dim the plate, not the label: fading the whole block pushed the expired title below 4.5:1
+               contrast in the light theme, so the name keeps its full strength and the sunken plate carries
+               the "not playable" signal (together with the dashed outline). -->
+          <Setter TargetName="BlockSurface" Property="Opacity" Value="0.55"/>
           <Setter TargetName="BlockRoot" Property="Cursor" Value="Arrow"/>
         </DataTrigger>
       </DataTemplate.Triggers>
@@ -229,7 +232,7 @@
 
       <!-- 节目段轨道 -->
       <Grid Grid.Row="3">
-        <Canvas x:Name="TrackCanvas" ClipToBounds="True" Background="Transparent"
+        <Canvas x:Name="TrackCanvas" ClipToBounds="True" Background="Transparent" Cursor="SizeWE"
                 SizeChanged="TrackCanvas_SizeChanged"
                 PreviewMouseLeftButtonDown="TrackCanvas_MouseLeftButtonDown"
                 PreviewMouseMove="TrackCanvas_MouseMove"
