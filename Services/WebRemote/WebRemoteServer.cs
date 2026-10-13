@@ -135,6 +135,13 @@ namespace LibmpvIptvClient.Services.WebRemote
             try
             {
                 _tcpListener = new TcpListener(IPAddress.Any, port);
+
+                // An instance that is killed or crashes leaves the connections it was serving on this port in
+                // TIME_WAIT for a few minutes, and then a plain TcpListener refuses to bind (WSAEADDRINUSE):
+                // the app keeps running with the phone locked out and a single error line in the log. Reusing
+                // the address is what a server that has to survive a restart does.
+                _tcpListener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+
                 _tcpListener.Start();
                 IsRunning = true;
                 _ = Task.Run(() => AcceptClientsAsync(_tcpListener, _cts.Token));
