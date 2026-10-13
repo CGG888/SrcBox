@@ -70,6 +70,8 @@ namespace LibmpvIptvClient.Services.WebRemote
         public Action<double>? SeekCallback { get; set; }
         public Action<double>? SetSpeedCallback { get; set; }
         public Action<bool>? SetTimeshiftCallback { get; set; }
+        public Action<double>? SeekTimeshiftCallback { get; set; }
+        public Func<WebRemoteTimeshift?>? GetTimeshiftCallback { get; set; }
         public Action<string, string, string, string>? ReplayProgramCallback { get; set; }
         public Func<List<WebRemoteReminder>>? GetRemindersCallback { get; set; }
         public Func<string, string, string, string, string, int, int?, string>? AddReminderCallback { get; set; }
@@ -1108,6 +1110,20 @@ self.addEventListener('fetch', function(event) {
                         result = new { success = true };
                         break;
 
+                    // Absolute scrub from the page: "seconds" is the offset from the start of the
+                    // timeshift window. The window travels in getTimeshift so an open scrubber can
+                    // follow the playback position without re-reading the whole status (and its EPG)
+                    // on every tick.
+                    case "seekTimeshift":
+                        if (json.TryGetProperty("seconds", out var tsSeek))
+                            SeekTimeshiftCallback?.Invoke(tsSeek.GetDouble());
+                        result = new { success = true };
+                        break;
+
+                    case "getTimeshift":
+                        result = new { timeshift = GetTimeshiftCallback?.Invoke() ?? new WebRemoteTimeshift() };
+                        break;
+
                     case "replayProgram":
                         {
                             string? rpChannelId = null, rpTitle = null, rpStart = null, rpEnd = null;
@@ -1465,6 +1481,36 @@ body.dark-theme, body.theme-dark { color: var(--neu-text); }
 .btn.active { background: var(--neu-surface); color: var(--neu-text); box-shadow: var(--neu-shadow-in); }
 .btn span { font-size: 10px; color: var(--neu-text); }
 .btn.active span { color: var(--neu-text); }
+/* Timeshift scrubber: the seekable window drawn as an EPG-timed track the user can drag. It only
+   shows up while timeshift runs, and the remote pad view hides it with the rest of the controls. */
+.ts-scrubber { margin-top: 12px; }
+.ts-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11px; color: var(--neu-text-muted); margin-bottom: 6px; }
+.ts-clock { font-size: 12px; font-weight: 600; color: var(--neu-text); font-variant-numeric: tabular-nums; }
+.ts-track { position: relative; height: 34px; border: none; border-radius: 10px; background: var(--neu-surface); box-shadow: var(--neu-shadow-in-sm); cursor: pointer; overflow: hidden; touch-action: none; }
+.ts-track:focus-visible { outline: 2px solid var(--neu-primary); outline-offset: 2px; }
+.ts-axis { position: absolute; inset: 0; }
+.ts-seg { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--neu-border); }
+.ts-seg.current { background: var(--neu-primary); opacity: 0.15; }
+.ts-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--neu-primary); opacity: 0.3; }
+.ts-knob { position: absolute; top: 0; bottom: 0; left: 0; width: 3px; margin-left: -1px; background: var(--neu-primary); }
+.ts-scale { display: flex; justify-content: space-between; margin-top: 4px; font-size: 10px; color: var(--neu-text-muted); font-variant-numeric: tabular-nums; }
+/* The EPG band: the same programmes as the track, drawn as a swipeable timeline of readable blocks.
+   Each block is as wide as its slot (flex-grow in minutes, with a floor so short items stay legible),
+   carries its own start time and title, and the block holding the cursor is highlighted and kept
+   centred while a playhead marks the exact position. Tapping a block seeks to that slot's start, so
+   the phone gets both coarse (tap a programme) and fine (drag the track) control. */
+.ts-band { position: relative; margin-top: 8px; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.ts-band::-webkit-scrollbar { display: none; }
+.ts-band-inner { position: relative; display: flex; align-items: stretch; gap: 4px; min-height: 56px; }
+.ts-block { flex: 1 1 0; min-width: 84px; padding: 6px 8px 8px; border: none; border-radius: 10px; background: var(--neu-surface); color: var(--neu-text); box-shadow: var(--neu-shadow-out-sm); text-align: left; cursor: pointer; touch-action: manipulation; display: flex; flex-direction: column; gap: 2px; }
+.ts-block.current { box-shadow: var(--neu-shadow-in); }
+.ts-block-time { font-size: 10px; color: var(--neu-text-muted); font-variant-numeric: tabular-nums; }
+.ts-block-name { font-size: 12px; font-weight: 600; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ts-block.current .ts-block-name { color: var(--neu-primary); }
+.ts-playhead { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--neu-primary); box-shadow: 0 0 6px var(--neu-primary); pointer-events: none; }
+.ts-detail { display: flex; flex-direction: column; gap: 2px; margin-top: 6px; }
+.ts-detail-main { font-size: 13px; font-weight: 600; color: var(--neu-text); }
+.ts-detail-sub { font-size: 11px; color: var(--neu-text-muted); font-variant-numeric: tabular-nums; }
 .icon { width: 20px; height: 20px; fill: currentColor; }
 .volume-icon { width: 20px; height: 20px; font-size: 20px; fill: currentColor; color: var(--neu-text-muted); flex-shrink: 0; }
 .volume-control { background: var(--neu-surface); border: none; border-radius: var(--neu-radius); padding: 12px; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; box-shadow: var(--neu-shadow-out); }
@@ -1793,6 +1839,17 @@ body.remote-mode .rp-text-btn { min-height: clamp(36px, calc(var(--safe-vh) * 6.
 <button class=""btn"" onclick=""seek(10)""><svg class=""icon"" viewBox=""0 0 24 24""><path d=""M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z""/></svg><span>+10s</span></button>
 <button class=""btn"" id=""btnTimeshift"" onclick=""toggleTimeshift()""><svg class=""icon"" viewBox=""0 0 24 24""><path id=""timeshiftPath"" d=""M8 5v14l11-7z""/></svg><span id=""btnTimeshiftText"">__BTN_TIMESHIFT__</span></button>
 </div>
+<div class=""ts-scrubber"" id=""tsScrubber"" style=""display:none;"">
+<div class=""ts-head""><span id=""tsLabel""></span><span class=""ts-clock"" id=""tsClock""></span></div>
+<div class=""ts-track"" id=""tsTrack"" role=""slider"" tabindex=""0"" aria-valuemin=""0"" aria-valuemax=""100"" aria-valuenow=""0"">
+<div class=""ts-axis"" id=""tsAxis""></div>
+<div class=""ts-fill"" id=""tsFill""></div>
+<div class=""ts-knob"" id=""tsKnob""></div>
+</div>
+<div class=""ts-scale""><span id=""tsFrom""></span><span id=""tsTo""></span></div>
+<div class=""ts-band"" id=""tsBand""><div class=""ts-band-inner"" id=""tsBandInner""></div></div>
+<div class=""ts-detail""><span class=""ts-detail-main"" id=""tsDetailMain""></span><span class=""ts-detail-sub"" id=""tsDetailSub""></span></div>
+</div>
 </div>
 
 <!-- Reminder Modal -->
@@ -1936,6 +1993,8 @@ const FAV_STAR = '__FAV_STAR__';
 const VOICE = __VOICE_JSON__;
 let ws; let currentChannelId = ''; let currentVolume = 70; let previousVolume = 70;
 let isMuted = false; let channelList = []; let isDarkTheme = true; let isAuthenticated = false;
+// Programmes of the channel the EPG section shows: the timeshift scrubber draws its axis from them
+let epgPrograms = [];
 
 function applyStaticText() {
 document.getElementById('statusMode').textContent = T.status_stopped;
@@ -1944,6 +2003,10 @@ document.title = T.title;
 var rpMode = document.getElementById('rpMode'); if (rpMode) rpMode.textContent = T.status_stopped;
 var rpNumHint = document.getElementById('rpNumHint'); if (rpNumHint) rpNumHint.textContent = T.num_hint || '';
 renderNumDisplay();
+// The scrubber labels come from the string table, so the track needs no placeholder of its own
+var tsTrack = document.getElementById('tsTrack');
+if (tsTrack) { tsTrack.title = T.ts_drag_hint; tsTrack.setAttribute('aria-label', T.ts_drag_hint); }
+var tsLabel = document.getElementById('tsLabel'); if (tsLabel) tsLabel.textContent = T.ts_scrub;
 applyRemoteView();
 // Sections switched off in the settings stay hidden; their data keeps loading in the background
 var chSection = document.querySelector('.channel-section');
@@ -2016,6 +2079,7 @@ else if (data.channel !== undefined || data.mode !== undefined) updateStatus(dat
 else if (data.sources !== undefined) renderSources(data);
 else if (data.reminders !== undefined) renderReminders(data);
 else if (data.recordings !== undefined) renderRecordings(data);
+else if (data.timeshift !== undefined) updateTimeshift(data.timeshift);
 } catch (err) { console.error(err); }
 };
 }
@@ -2150,6 +2214,250 @@ function updateTimeshiftBtn() {
   if (btn) btn.title = isTimeshiftEnabled ? T.btn_timeshift_on : T.btn_timeshift_off;
 }
 
+// --- Timeshift scrubber -----------------------------------------------------
+// The window is whatever the server last reported: the full status after any action and, while the
+// scrubber is open, the small getTimeshift reply every second. A drag only repaints the track; the
+// seek is sent once on release as the offset from the window start, so dragging cannot hammer the
+// player with one load per pixel. The server clamps that offset into the live window.
+let tsWindow = { active: false, from: 0, to: 0, position: 0 };
+let tsDragging = false, tsDragSeconds = 0, tsTicker = null;
+
+function tsTotalSeconds() { return Math.max(0, (tsWindow.to - tsWindow.from) / 1000); }
+function tsClockText(ms, withDate) {
+  var d = new Date(ms), h = d.getHours(), m = d.getMinutes();
+  var hm = (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
+  if (!withDate) return hm;
+  return (d.getMonth() + 1) + '-' + (d.getDate() < 10 ? '0' : '') + d.getDate() + ' ' + hm;
+}
+function tsProgramAt(ms) {
+  var found = null;
+  epgPrograms.forEach(function(p) {
+    var s = p.startISO ? new Date(p.startISO).getTime() : 0;
+    var e = p.endISO ? new Date(p.endISO).getTime() : 0;
+    if (!s || !e) return;
+    if (ms >= s && ms < e) found = p;
+  });
+  return found;
+}
+// One segment per programme that overlaps the window, labelled with its start time: that is the EPG
+// time axis the user drags along.
+function renderTimeshiftAxis() {
+  var axis = document.getElementById('tsAxis');
+  if (!axis) return;
+  axis.innerHTML = '';
+  if (!tsWindow.active || tsWindow.to <= tsWindow.from) return;
+  var from = tsWindow.from, to = tsWindow.to;
+  epgPrograms.forEach(function(p) {
+    var s = p.startISO ? new Date(p.startISO).getTime() : 0;
+    var e = p.endISO ? new Date(p.endISO).getTime() : 0;
+    if (!s || !e || e <= from || s >= to) return;
+    var start = Math.max(s, from), end = Math.min(e, to);
+    var seg = document.createElement('div');
+    seg.className = p.isCurrent ? 'ts-seg current' : 'ts-seg';
+    seg.style.left = ((start - from) / (to - from) * 100) + '%';
+    seg.style.width = ((end - start) / (to - from) * 100) + '%';
+    seg.title = (p.name || '') + ' ' + (p.start || '') + ' - ' + (p.end || '');
+    axis.appendChild(seg);
+  });
+}
+// The EPG band under the track: one block per programme that overlaps the window (plus half an hour
+// either side so the neighbours are visible). Blocks grow with their slot length so the band reads
+// like a TV EPG bar, and the block under the cursor is highlighted and centred without scrolling the
+// page. Rebuilt only when the window or the programme list changes.
+var tsBandSignature = null, tsBlockSpans = [], tsCentredBlock = null;
+function renderTimeshiftBand() {
+  var inner = document.getElementById('tsBandInner');
+  if (!inner) return;
+  if (!tsWindow.active || tsWindow.to <= tsWindow.from) { inner.innerHTML = ''; tsBandSignature = null; tsBlockSpans = []; tsCentredBlock = null; return; }
+  var pad = 30 * 60 * 1000;
+  var list = epgPrograms.filter(function(p) {
+    var s = p.startISO ? new Date(p.startISO).getTime() : 0;
+    var e = p.endISO ? new Date(p.endISO).getTime() : 0;
+    return !!s && !!e && e > tsWindow.from - pad && s < tsWindow.to + pad;
+  });
+  var signature = tsWindow.from + '|' + tsWindow.to + '|' + list.map(function(p) { return p.startISO; }).join(',');
+  if (signature === tsBandSignature) return;
+  tsBandSignature = signature;
+  tsCentredBlock = null;
+  tsBlockSpans = [];
+  inner.innerHTML = '';
+  var playhead = document.createElement('div');
+  playhead.className = 'ts-playhead';
+  playhead.id = 'tsPlayhead';
+  if (!list.length) {
+    var empty = document.createElement('div');
+    empty.className = 'ts-block';
+    var emptyName = document.createElement('div');
+    emptyName.className = 'ts-block-name';
+    emptyName.textContent = T.ts_program_unknown || '';
+    empty.appendChild(emptyName);
+    inner.appendChild(empty);
+    inner.appendChild(playhead);
+    return;
+  }
+  var prevDay = null;
+  list.forEach(function(p) {
+    var s = new Date(p.startISO).getTime(), e = new Date(p.endISO).getTime();
+    // The band can cross midnight, so a block carries the date when its day differs from the one
+    // before it (and on the first block), exactly like a TV EPG bar.
+    var day = new Date(s).toDateString();
+    var showDate = prevDay === null || day !== prevDay;
+    prevDay = day;
+    var block = document.createElement('button');
+    block.type = 'button';
+    block.className = 'ts-block';
+    block.style.flexGrow = String(Math.max(1, Math.round((e - s) / 60000)));
+    block.setAttribute('data-start', String(s));
+    block.setAttribute('data-end', String(e));
+    var time = document.createElement('div');
+    time.className = 'ts-block-time';
+    time.textContent = tsClockText(s, showDate);
+    var name = document.createElement('div');
+    name.className = 'ts-block-name';
+    name.textContent = p.name || '';
+    block.appendChild(time);
+    block.appendChild(name);
+    inner.appendChild(block);
+    tsBlockSpans.push({ el: block, start: s, end: e });
+  });
+  inner.appendChild(playhead);
+}
+// Move the playhead to the cursor and mark the slot it falls in, centring that slot in the band.
+function positionPlayhead(ms) {
+  var head = document.getElementById('tsPlayhead');
+  if (!head || !tsBlockSpans.length) return;
+  var inner = document.getElementById('tsBandInner');
+  var innerRect = inner.getBoundingClientRect();
+  var x = null, current = null;
+  for (var i = 0; i < tsBlockSpans.length; i++) {
+    var span = tsBlockSpans[i];
+    var hit = ms >= span.start && ms < span.end;
+    span.el.classList.toggle('current', hit);
+    if (!hit) continue;
+    var rect = span.el.getBoundingClientRect();
+    x = (rect.left - innerRect.left) + (ms - span.start) / (span.end - span.start) * rect.width;
+    current = { span: span, rect: rect };
+  }
+  if (x === null || !current) return;
+  head.style.left = x + 'px';
+  var band = document.getElementById('tsBand');
+  if (!band || band.clientWidth === 0 || band.scrollWidth <= band.clientWidth) return;
+  var key = String(current.span.start);
+  if (key === tsCentredBlock) return;
+  tsCentredBlock = key;
+  var bandRect = band.getBoundingClientRect();
+  var target = band.scrollLeft + (current.rect.left - bandRect.left) - (band.clientWidth - current.rect.width) / 2;
+  band.scrollLeft = Math.max(0, Math.min(target, band.scrollWidth - band.clientWidth));
+}
+function paintTimeshift(seconds) {
+  var total = tsTotalSeconds();
+  var pct = total > 0 ? Math.max(0, Math.min(100, seconds / total * 100)) : 0;
+  var fill = document.getElementById('tsFill'); if (fill) fill.style.width = pct + '%';
+  var knob = document.getElementById('tsKnob'); if (knob) knob.style.left = pct + '%';
+  var track = document.getElementById('tsTrack'); if (track) track.setAttribute('aria-valuenow', String(Math.round(pct)));
+  var atMs = tsWindow.from + seconds * 1000;
+  var clock = document.getElementById('tsClock');
+  if (clock) clock.textContent = tsClockText(atMs, true);
+  // A timeshift window can span days, so the ends carry the date as well as the time.
+  var fromEl = document.getElementById('tsFrom'); if (fromEl) fromEl.textContent = tsClockText(tsWindow.from, true);
+  var toEl = document.getElementById('tsTo'); if (toEl) toEl.textContent = tsClockText(tsWindow.to, true);
+  // Tie the position to the EPG: name and slot of the programme that runs at the cursor.
+  var prog = tsProgramAt(atMs);
+  var main = document.getElementById('tsDetailMain');
+  var sub = document.getElementById('tsDetailSub');
+  if (main) main.textContent = (prog && prog.name) ? prog.name : (T.ts_program_unknown || '');
+  if (sub) {
+    var s = prog && prog.startISO ? new Date(prog.startISO).getTime() : 0;
+    var e = prog && prog.endISO ? new Date(prog.endISO).getTime() : 0;
+    sub.textContent = (s && e) ? tsClockText(s, true) + ' - ' + tsClockText(e, true) : tsClockText(atMs, true);
+  }
+  positionPlayhead(atMs);
+}
+function updateTimeshift(t) {
+  var box = document.getElementById('tsScrubber');
+  var usable = !!(t && t.active && t.fromMs && t.toMs && t.toMs > t.fromMs);
+  tsWindow.active = usable;
+  if (!usable) {
+    tsWindow.from = 0; tsWindow.to = 0; tsWindow.position = 0;
+    if (box) box.style.display = 'none';
+    stopTimeshiftTicker();
+    return;
+  }
+  tsWindow.from = t.fromMs; tsWindow.to = t.toMs;
+  tsWindow.position = Math.max(0, Math.min(tsTotalSeconds(), t.positionSec || 0));
+  if (box) box.style.display = 'block';
+  renderTimeshiftAxis();
+  renderTimeshiftBand();
+  paintTimeshift(tsDragging ? tsDragSeconds : tsWindow.position);
+  startTimeshiftTicker();
+}
+function startTimeshiftTicker() {
+  if (tsTicker) return;
+  tsTicker = setInterval(function() {
+    if (tsDragging || document.hidden) return;
+    send('getTimeshift');
+  }, 1000);
+}
+function stopTimeshiftTicker() { if (tsTicker) { clearInterval(tsTicker); tsTicker = null; } }
+function tsSecondsFromEvent(ev) {
+  var track = document.getElementById('tsTrack');
+  if (!track) return 0;
+  var rect = track.getBoundingClientRect();
+  var clientX = (ev.clientX === undefined && ev.touches && ev.touches.length) ? ev.touches[0].clientX : ev.clientX;
+  var ratio = rect.width > 0 ? (clientX - rect.left) / rect.width : 0;
+  return Math.max(0, Math.min(1, ratio)) * tsTotalSeconds();
+}
+(function bindTimeshiftScrubber() {
+  var track = document.getElementById('tsTrack');
+  if (!track) return;
+  function seekToDrag() {
+    if (!tsDragging) return;
+    tsDragging = false;
+    send('seekTimeshift', { seconds: Math.round(tsDragSeconds) });
+    setTimeout(loadStatus, 400);
+  }
+  track.addEventListener('pointerdown', function(ev) {
+    if (!tsWindow.active) return;
+    tsDragging = true;
+    tsDragSeconds = tsSecondsFromEvent(ev);
+    paintTimeshift(tsDragSeconds);
+    if (track.setPointerCapture) { try { track.setPointerCapture(ev.pointerId); } catch (err) { } }
+    ev.preventDefault();
+  });
+  track.addEventListener('pointermove', function(ev) {
+    if (!tsDragging) return;
+    tsDragSeconds = tsSecondsFromEvent(ev);
+    paintTimeshift(tsDragSeconds);
+    ev.preventDefault();
+  });
+  track.addEventListener('pointerup', seekToDrag);
+  track.addEventListener('pointercancel', seekToDrag);
+  // Arrow keys step ten seconds, matching the -10s / +10s buttons beside the track
+  track.addEventListener('keydown', function(ev) {
+    if (!tsWindow.active) return;
+    var base = tsWindow.position;
+    if (ev.key === 'ArrowLeft') { tsDragSeconds = Math.max(0, base - 10); tsDragging = true; seekToDrag(); }
+    else if (ev.key === 'ArrowRight') { tsDragSeconds = Math.min(tsTotalSeconds(), base + 10); tsDragging = true; seekToDrag(); }
+    else return;
+    ev.preventDefault();
+  });
+  // Tapping a programme card seeks to that programme's start, which is the EPG link the user asked
+  // for: the card names the slot, so picking it jumps the timeshift cursor straight there instead of
+  // hunting for the right spot on the track.
+  var strip = document.getElementById('tsBand');
+  if (strip) strip.addEventListener('click', function(ev) {
+    if (!tsWindow.active) return;
+    var card = ev.target && ev.target.closest ? ev.target.closest('.ts-block[data-start]') : null;
+    if (!card) return;
+    var startMs = Number(card.getAttribute('data-start'));
+    var seconds = Math.max(0, Math.min(tsTotalSeconds(), (startMs - tsWindow.from) / 1000));
+    send('seekTimeshift', { seconds: Math.round(seconds) });
+    tsDragSeconds = seconds;
+    paintTimeshift(seconds);
+    setTimeout(loadStatus, 400);
+  });
+})();
+
 // EPG replay/timeshift/remind
 async function doReplayProgram(channelId, programTitle, start, end) { send('replayProgram', { channelId: channelId, programTitle: programTitle, start: start, end: end }); await loadStatus(); }
 function showAddReminderModal(channelId, channelName, programTitle, start, end, action) {
@@ -2238,6 +2546,8 @@ currentVolume = s.muted ? previousVolume : (s.volume || 0);
 isMuted = s.muted || false;
 isTimeshiftEnabled = s.timeshiftEnabled || false;
 updateTimeshiftBtn();
+// The scrubber belongs to the full view: it appears as soon as the status reports a window
+updateTimeshift(s.timeshift);
 updateVolumeUI(); updateChannelActive();
 if (currentChannelId) loadEpg(currentChannelId, currentEpgDate);
 // Update date display to today if no date selected
@@ -2300,6 +2610,9 @@ grid.appendChild(div);
 }
 function renderEpg(data) {
 var list = document.getElementById('epgList'); var channelName = document.getElementById('epgChannelName');
+epgPrograms = data.programs || [];
+renderTimeshiftAxis();
+renderTimeshiftBand();
 if (!data.programs || !data.programs.length) { list.innerHTML = '<div class=""loading"">' + T.epg_empty + '</div>'; return; }
 var channel = channelList.find(function(c) { return c.id === data.channelId; });
 channelName.textContent = channel ? channel.name : T.status_stopped;
@@ -2394,6 +2707,9 @@ if (rpVolFill) rpVolFill.style.width = (isMuted ? 0 : currentVolume) + '%';
 // they are visible again. Reading the layout after the class toggle already reflects the new view.
 locateInList(document.getElementById('channelGrid'), document.querySelector('.channel-item.active'));
 locateInList(document.getElementById('epgList'), document.querySelector('.epg-item.current'));
+// Same for the timeshift strip: it may have been rendered while the full view was hidden, when the
+// strip had no measurable width and therefore could not be centred on the cursor's programme.
+if (tsWindow.active) { tsCentredBlock = null; renderTimeshiftBand(); paintTimeshift(tsDragging ? tsDragSeconds : tsWindow.position); }
 }
 async function togglePlayPause() { if (isPlayingState) { await pause(); } else { await play(); } }
 async function volumeStep(delta) {
@@ -2837,6 +3153,11 @@ if ('serviceWorker' in navigator) {
         public bool Active { get; set; }
         public string? Cursor { get; set; }
         public string? Range { get; set; }
+        // The seekable window in epoch milliseconds plus the play position as an offset from the window
+        // start: the page draws its scrubber timeline from these numbers instead of parsing the labels.
+        public long? FromMs { get; set; }
+        public long? ToMs { get; set; }
+        public double? PositionSec { get; set; }
     }
 
     public class WebRemoteChannelGroup

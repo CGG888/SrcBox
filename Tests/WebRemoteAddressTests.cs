@@ -179,12 +179,19 @@ namespace LibmpvIptvClient.Tests
             foreach (var marker in new[]
                      {
                          "--neu-grad:", "--neu-grad-well:", "--neu-hi:", "--neu-shadow-out-sm:",
-                         "body.dark-theme .rp-ok", "body.dark-theme .btn.active",
-                         "body.dark-theme .rp-num-btn.rp-num-ok", ".rp-footer .rp-text-btn.rp-exit"
+                         "body.dark-theme .rp-ok", "body.dark-theme .rp-num-btn.rp-num-ok",
+                         ".rp-footer .rp-text-btn.rp-exit"
                      })
             {
                 Assert.IsTrue(html.Contains(marker), $"remote html is missing {marker}");
             }
+
+            // A latched timeshift button keeps its plain face and marks the state with the pressed-in
+            // shadow alone, so it must not pick up an accent fill in either theme.
+            StringAssert.Contains(html,
+                ".btn.active { background: var(--neu-surface); color: var(--neu-text); box-shadow: var(--neu-shadow-in); }");
+            Assert.IsFalse(html.Contains("body.dark-theme .btn.active"),
+                "the latched timeshift button is still repainted by a dark-theme override");
         }
 
         [TestMethod]

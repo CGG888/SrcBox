@@ -73,6 +73,8 @@ namespace LibmpvIptvClient.Services.WebRemote
                 _server.SeekCallback = DoSeek;
                 _server.SetSpeedCallback = DoSetSpeed;
                 _server.SetTimeshiftCallback = DoSetTimeshift;
+                _server.SeekTimeshiftCallback = DoSeekTimeshift;
+                _server.GetTimeshiftCallback = GetTimeshift;
                 _server.ReplayProgramCallback = DoReplayProgram;
                 _server.GetRemindersCallback = GetReminders;
                 _server.AddReminderCallback = AddReminder;
@@ -280,21 +282,33 @@ namespace LibmpvIptvClient.Services.WebRemote
                 }
             }
 
-            if (_shell.IsTimeshiftActive)
-            {
-                status.Timeshift = new WebRemoteTimeshift
-                {
-                    Active = true,
-                    Cursor = _shell.TimeshiftCursorSec > 0 ? TimeSpan.FromSeconds(_shell.TimeshiftCursorSec).ToString(@"hh\:mm\:ss") : null,
-                    Range = $"{_shell.TimeshiftMin:HH:mm} - {_shell.TimeshiftMax:HH:mm}"
-                };
-            }
+            status.Timeshift = BuildTimeshift();
 
             // Report the player's current timeshift mode, not the "Enable Timeshift" setting:
             // the remote button mirrors IsTimeshiftActive (same as the desktop overlay toggle),
             // otherwise it would look switched on as soon as the page opens.
             status.TimeshiftEnabled = _shell.IsTimeshiftActive;
             return status;
+        }
+
+        /// <summary>
+        /// The timeshift window the page draws its scrubber from. It builds no channel or EPG data, so
+        /// the open scrubber can poll it once a second to follow the playback position.
+        /// </summary>
+        private static WebRemoteTimeshift? GetTimeshift() => BuildTimeshift();
+
+        private static WebRemoteTimeshift? BuildTimeshift()
+        {
+            if (_shell == null || !_shell.IsTimeshiftActive) return null;
+            return new WebRemoteTimeshift
+            {
+                Active = true,
+                Cursor = _shell.TimeshiftCursorSec > 0 ? TimeSpan.FromSeconds(_shell.TimeshiftCursorSec).ToString(@"hh\:mm\:ss") : null,
+                Range = $"{_shell.TimeshiftMin:HH:mm} - {_shell.TimeshiftMax:HH:mm}",
+                FromMs = new DateTimeOffset(_shell.TimeshiftMin).ToUnixTimeMilliseconds(),
+                ToMs = new DateTimeOffset(_shell.TimeshiftMax).ToUnixTimeMilliseconds(),
+                PositionSec = _shell.TimeshiftCursorSec
+            };
         }
 
         private static List<WebRemoteChannelGroup> GetChannels()
@@ -724,6 +738,21 @@ namespace LibmpvIptvClient.Services.WebRemote
             {
                 if (_shell == null) return;
                 _shell.IsTimeshiftActive = enabled;
+            });
+        }
+
+        // Absolute scrub from the page: "offsetSeconds" counts from the start of the timeshift window.
+        // The desktop shortcut path clamps the offset into the window and re-enters catchup playback at
+        // the target while keeping timeshift mode on, so hand it the difference instead of repeating it.
+        private static void DoSeekTimeshift(double offsetSeconds)
+        {
+            System.Windows.Application.Current?.Dispatcher.Invoke(() =>
+            {
+                if (_shell == null || !_shell.IsTimeshiftActive) return;
+                var total = Math.Max(0, (_shell.TimeshiftMax - _shell.TimeshiftMin).TotalSeconds);
+                var target = Math.Max(0, Math.Min(offsetSeconds, total));
+                var delta = (int)Math.Round(target - _shell.TimeshiftCursorSec);
+                if (delta != 0) _shell.ShortcutActions.SeekBySeconds(delta);
             });
         }
 

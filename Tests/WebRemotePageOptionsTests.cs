@@ -59,6 +59,22 @@ namespace LibmpvIptvClient.Tests
         }
 
         [TestMethod]
+        public void RemoteHtml_OffersTheTimeshiftScrubber()
+        {
+            var html = WebRemoteServer.GetRemoteHtml("en-US");
+
+            foreach (var marker in new[]
+                     {
+                         "id=\"tsScrubber\"", "id=\"tsTrack\"", "id=\"tsAxis\"", "id=\"tsFill\"",
+                         "send('seekTimeshift'", "send('getTimeshift'", "function updateTimeshift(",
+                         "renderTimeshiftAxis"
+                     })
+            {
+                Assert.IsTrue(html.Contains(marker), $"remote html is missing {marker}");
+            }
+        }
+
+        [TestMethod]
         public void RemoteHtml_LeavesNoUnresolvedPlaceholder()
         {
             var html = WebRemoteServer.GetRemoteHtml("en-US", 8900, true, true);
