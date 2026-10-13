@@ -1413,9 +1413,12 @@ body.dark-theme, body.theme-dark { color: var(--neu-text); }
    indicator, so every edge that holds content adds the matching env() inset. Browsers without env()
    keep the plain padding declared first. */
 .container { max-width: 100%; margin: 0 auto; padding: 12px; padding-top: calc(12px + env(safe-area-inset-top, 0px)); padding-right: calc(12px + env(safe-area-inset-right, 0px)); padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px)); padding-left: calc(12px + env(safe-area-inset-left, 0px)); }
-.header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; padding: 8px 12px; background: var(--neu-surface); color: var(--neu-text); border: none; border-radius: var(--neu-radius); box-shadow: var(--neu-shadow-out); }
-.header h1 { font-size: 16px; margin: 0; display: flex; align-items: center; gap: 8px; color: var(--neu-text); }
-.live-badge { background: var(--neu-danger); color: var(--neu-primary-fg); padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: bold; animation: pulse 2s infinite; }
+/* Header: title on the left, one tidy row of controls on the right. The title is the only
+   flexible part, so a long name ellipsizes instead of squeezing the buttons. */
+.header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; padding: 8px 12px; background: var(--neu-surface); color: var(--neu-text); border: none; border-radius: var(--neu-radius); box-shadow: var(--neu-shadow-out); }
+.header h1 { flex: 1 1 auto; min-width: 0; font-size: 16px; margin: 0; display: flex; align-items: center; gap: 8px; color: var(--neu-text); }
+.header-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.live-badge { flex: 0 0 auto; background: var(--neu-danger); color: var(--neu-primary-fg); padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: bold; animation: pulse 2s infinite; }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
 .theme-toggle { background: var(--neu-surface); border: none; border-radius: var(--neu-radius); padding: 8px 12px; cursor: pointer; font-size: 14px; color: var(--neu-text); transition: all 0.2s; box-shadow: var(--neu-shadow-out-sm); touch-action: manipulation; }
 .theme-toggle:hover { box-shadow: var(--neu-shadow-out); }
@@ -1574,7 +1577,13 @@ body.dark-theme, body.theme-dark { color: var(--neu-text); }
 .remote-pad { display: none; }
 body.remote-mode .remote-pad { display: block; }
 body.remote-mode .now-playing, body.remote-mode .controls-wrapper, body.remote-mode .volume-control, body.remote-mode .channel-section, body.remote-mode .epg-section, body.remote-mode #reminderSection, body.remote-mode #recordingSection { display: none; }
-.header-actions { display: flex; align-items: center; gap: 8px; }
+.header-actions { flex: 0 0 auto; display: flex; align-items: center; gap: 6px; }
+/* Every control in the header shares one height; icon-only controls (theme / fullscreen /
+   voice) are square so the row keeps a single rhythm next to the wider text buttons. */
+.header-actions > button { min-height: 36px; padding: 0 12px; display: inline-flex; align-items: center; justify-content: center; font-size: 14px; line-height: 1; white-space: nowrap; }
+.header-actions > button.icon-toggle { width: 36px; min-width: 36px; padding: 0; font-size: 16px; }
+.header-actions .view-toggle { padding: 0 14px; font-weight: 600; }
+.header-actions .install-toggle { padding: 0 10px; font-size: 13px; }
 .view-toggle { background: var(--neu-surface); border: none; border-radius: var(--neu-radius); padding: 8px 12px; cursor: pointer; font-size: 14px; color: var(--neu-text); transition: all 0.2s; box-shadow: var(--neu-shadow-out-sm); touch-action: manipulation; }
 .ch-number { display: inline-block; min-width: 22px; margin-right: 6px; padding: 1px 6px; border-radius: 8px; background: var(--neu-surface2); color: var(--neu-text-muted); font-size: 11px; font-weight: 700; text-align: center; box-shadow: var(--neu-shadow-in-sm); }
 .channel-item.active .ch-number { background: var(--neu-primary); color: var(--neu-primary-fg); }
@@ -1682,13 +1691,13 @@ body.remote-mode .rp-text-btn { min-height: clamp(36px, calc(var(--safe-vh) * 6.
 </div>
 <div class=""container"">
 <div class=""header"">
-<h1>__TITLE_BAR__ <span class=""live-badge"" id=""liveBadge"" style=""display:none;"">__LIVE__</span></h1>
+<h1><span class=""header-title"">__TITLE_BAR__</span> <span class=""live-badge"" id=""liveBadge"" style=""display:none;"">__LIVE__</span></h1>
 <div class=""header-actions"">
 <button class=""view-toggle"" id=""viewToggle"" onclick=""toggleRemoteView()"" data-standard=""__VIEW_STANDARD__"" data-full=""__VIEW_FULL__"">__VIEW_STANDARD__</button>
-<button class=""theme-toggle"" id=""themeToggle"" onclick=""toggleTheme()"">__THEME__</button>
+<button class=""theme-toggle icon-toggle"" id=""themeToggle"" onclick=""toggleTheme()"" title=""__THEME__"" aria-label=""__THEME__"">🌙</button>
 <button class=""theme-toggle install-toggle"" id=""installFab"" onclick=""showInstallModal()"" style=""display:none;""></button>
-<button class=""theme-toggle"" id=""fsFab"" onclick=""toggleBrowserFullscreen()"" style=""display:none;"">⛶</button>
-<button class=""theme-toggle"" id=""voiceFab"" onclick=""toggleVoice()"" style=""display:none;"">🎙</button>
+<button class=""theme-toggle icon-toggle"" id=""fsFab"" onclick=""toggleBrowserFullscreen()"" style=""display:none;"">⛶</button>
+<button class=""theme-toggle icon-toggle"" id=""voiceFab"" onclick=""toggleVoice()"" style=""display:none;"">🎙</button>
 </div>
 </div>
 
@@ -1913,7 +1922,7 @@ let isMuted = false; let channelList = []; let isDarkTheme = true; let isAuthent
 
 function applyStaticText() {
 document.getElementById('statusMode').textContent = T.status_stopped;
-document.getElementById('themeToggle').textContent = isDarkTheme ? T.theme_dark : T.theme_light;
+renderThemeToggle();
 document.title = T.title;
 var rpMode = document.getElementById('rpMode'); if (rpMode) rpMode.textContent = T.status_stopped;
 var rpNumHint = document.getElementById('rpNumHint'); if (rpNumHint) rpNumHint.textContent = T.num_hint || '';
@@ -2150,10 +2159,18 @@ async function doAddReminder() {
   closeReminderModal();
 }
 
+// The theme button is icon-only in the header: the glyph carries the state and the full
+// label stays on title/aria for screen readers.
+function renderThemeToggle() {
+var btn = document.getElementById('themeToggle'); if (!btn) return;
+var label = isDarkTheme ? (T.theme_dark || '') : (T.theme_light || '');
+btn.textContent = isDarkTheme ? '🌙' : '☀️';
+btn.title = label; btn.setAttribute('aria-label', label);
+}
 function toggleTheme() {
 isDarkTheme = !isDarkTheme;
 document.body.classList.toggle('dark-theme', isDarkTheme);
-document.getElementById('themeToggle').textContent = isDarkTheme ? T.theme_dark : T.theme_light;
+renderThemeToggle();
 try { localStorage.setItem('remote-theme', isDarkTheme ? 'dark' : 'light'); } catch (e) { }
 updateThemeColorMeta();
 }
@@ -2161,7 +2178,7 @@ function loadTheme() {
 var saved = null; try { saved = localStorage.getItem('remote-theme'); } catch (e) { }
 isDarkTheme = saved === 'dark';
 document.body.classList.toggle('dark-theme', isDarkTheme);
-document.getElementById('themeToggle').textContent = isDarkTheme ? T.theme_dark : T.theme_light;
+renderThemeToggle();
 updateThemeColorMeta();
 }
 function updateThemeColorMeta() {
