@@ -169,6 +169,62 @@ namespace LibmpvIptvClient.Tests
         }
 
         /// <summary>
+        /// The resolved click verdict (the one the two bars actually use) books a slot that has not started yet:
+        /// that is what makes a tap on the EPG timeline do exactly what the EPG list's reminder button does. A slot
+        /// that already aired but sits outside the archive is not bookable, and the live slot keeps its own action
+        /// so the ruler row does not turn a plain time click into a booking.
+        /// </summary>
+        [TestMethod]
+        public void ResolvedFutureSlotBooksLikeTheEpgListButton()
+        {
+            var now = new DateTime(2026, 10, 13, 20, 0, 0);
+            var replayFloor = now.AddHours(-72);
+            var labels = new Services.TimelineSegmentLabels("Live", "Replay", "Timeshift", "Booked");
+
+            var start = now.AddHours(2);
+            var future = Services.TimelineSegmentActions.Resolve(start, start.AddHours(1), now, true, replayFloor, false, now, now, labels);
+            Assert.AreEqual(Services.TimelineSegmentAction.Book, future.Action);
+            Assert.AreEqual(start, future.Target, "the booking is for the slot start, not for the click instant");
+            Assert.IsFalse(future.KeepTimeshiftMode, "booking never leaves the ticker in the timeshift state");
+            Assert.IsTrue(future.CanAct, "the click opens the reminder dialog, so it is an action");
+            StringAssert.Contains(future.Hint, "Booked");
+            StringAssert.Contains(future.Hint, "22:00-23:00");
+
+            var stale = Services.TimelineSegmentActions.Resolve(now.AddHours(-100), now.AddHours(-99), now, true, replayFloor, false, now, now, labels);
+            Assert.AreEqual(Services.TimelineSegmentAction.None, stale.Action,
+                "a slot older than the archive has nothing to play and nothing to book");
+            Assert.IsFalse(stale.CanAct);
+
+            var live = Services.TimelineSegmentActions.Resolve(now.AddMinutes(-5), now.AddMinutes(25), now, true, replayFloor, false, now, now, labels);
+            Assert.AreEqual(Services.TimelineSegmentAction.GoLive, live.Action,
+                "the slot on air keeps returning to the live edge instead of booking");
+        }
+
+        /// <summary>
+        /// Both bars (windowed bottom bar and fullscreen overlay) ask the control for the verdict, and the control
+        /// asks the same control for the ruler row, so the control itself has to answer a future slot with the
+        /// booking action.
+        /// </summary>
+        [TestMethod]
+        public void TimelineControlResolvesAFutureSegmentAsABooking()
+        {
+            WpfTestHost.EnsureAppResources();
+            WpfTestHost.Invoke(() =>
+            {
+                var timeline = new TimeshiftTimeline();
+                var start = DateTime.Now.AddHours(3);
+                var verdict = timeline.ResolveSegment(new TimelineProgramme
+                {
+                    Name = "later",
+                    Start = start,
+                    End = start.AddHours(1)
+                });
+                Assert.AreEqual(Services.TimelineSegmentAction.Book, verdict.Action);
+                Assert.AreEqual(start, verdict.Target);
+            });
+        }
+
+        /// <summary>
         /// The hover cursor snaps down onto the ruler step so the bubble reports the instant the cursor draws,
         /// and it is clamped to the visible window so it can never point past either edge of the band.
         /// </summary>

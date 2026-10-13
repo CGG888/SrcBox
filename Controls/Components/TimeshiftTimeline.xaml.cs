@@ -877,9 +877,10 @@ namespace LibmpvIptvClient
 
             var verdict = programme == null
                 ? default
-                : TimelineSegmentActions.VerdictFor(mode, programme.Start, programme.End, _segmentLabels);
-            // The hint is the click outcome: "点击：回放 20:00-20:30". The verdict already spells the outcome,
-            // including the live slot, which returns to the live edge instead of replaying its span.
+                : ResolveAt(programme.Start, programme.End);
+            // The hint is the click outcome: "点击：回放 20:00-20:30" or "点击：预约 20:00-20:30". The verdict
+            // already spells the outcome, including the live slot, which returns to the live edge instead of
+            // replaying its span.
             string hint = verdict.CanAct ? verdict.Hint : _segmentLabels.Scheduled;
             TxtHoverHint.Text = hint ?? string.Empty;
 
@@ -907,17 +908,19 @@ namespace LibmpvIptvClient
         // ---------------------------------------------------------------------
 
         /// <summary>
-        /// Resolves what a tap on a segment means (go live / seek timeshift / replay / nothing) using the
-        /// classification inputs the shell pushed with the snapshot and the wall clock at tap time.
+        /// Resolves what a tap on a segment means (go live / seek timeshift / replay / book the future slot) using
+        /// the classification inputs the shell pushed with the snapshot and the wall clock at tap time.
         /// </summary>
         public TimelineSegmentVerdict ResolveSegment(TimelineProgramme? programme)
         {
             if (programme == null) return default;
-            var now = DateTime.Now;
-            var mode = TimelineSegmentActions.Classify(programme.Start, programme.End, now, _stateReplayAvailable,
-                                                       _stateReplayFloor, _timeshiftOn, _tsMin, _tsMax);
-            return TimelineSegmentActions.VerdictFor(mode, programme.Start, programme.End, _segmentLabels);
+            return ResolveAt(programme.Start, programme.End);
         }
+
+        /// <summary>Shared verdict for a slot window at the current wall clock (the ruler evaluates one instant).</summary>
+        TimelineSegmentVerdict ResolveAt(DateTime start, DateTime end)
+            => TimelineSegmentActions.Resolve(start, end, DateTime.Now, _stateReplayAvailable,
+                                              _stateReplayFloor, _timeshiftOn, _tsMin, _tsMax, _segmentLabels);
 
         void ApplyCompactMode(bool compact)
         {
@@ -1091,7 +1094,9 @@ namespace LibmpvIptvClient
 
         /// <summary>
         /// A click on the ruler picks the wall clock under the pointer and asks the host to jump there. In the
-        /// live state that means switching timeshift on, which is why the ruler stays hit-testable.
+        /// live state that means switching timeshift on, which is why the ruler stays hit-testable. The time row is
+        /// part of the same timeline as the programme row underneath: an instant inside a slot that has not started
+        /// yet is a booking, so it takes the segment path instead of dragging the buffer onto the future.
         /// </summary>
         void RulerCanvas_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
         {
@@ -1105,6 +1110,15 @@ namespace LibmpvIptvClient
                 var time = TimelineBandMetrics.TimeAtPercent(_windowStart, _windowSpan,
                                                              TimelineBandMetrics.ClampPercent(p.X / width));
                 e.Handled = true;
+
+                int index = TimelineBandMetrics.FindProgrammeIndex(_programmes, time);
+                var programme = index >= 0 ? _programmes[index] : null;
+                if (programme != null && ResolveAt(programme.Start, programme.End).Action == TimelineSegmentAction.Book)
+                {
+                    ProgrammeSelected?.Invoke(programme);
+                    return;
+                }
+
                 TimeSeekRequested?.Invoke(time);
             }
             catch (Exception ex)

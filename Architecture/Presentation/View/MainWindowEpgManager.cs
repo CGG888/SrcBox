@@ -457,28 +457,65 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
         {
             try
             {
-                if (_shell.CurrentChannel == null) return;
                 if (sender is System.Windows.Controls.Button btn && btn.DataContext is EpgProgram ctx)
-                {
-                    if (!_shell.EpgReminderActions.CanCreateReminder(ctx, DateTime.Now)) return;
-                    var oldBooked = ctx.IsBooked;
-                    ctx.IsBooked = true;
-                    try { _window.ListEpg.Items.Refresh(); } catch { }
-                    var dlg = new ReminderDialog(_shell.CurrentChannel.Name, ctx.Title, ctx.Start) { Owner = _window, WindowStartupLocation = WindowStartupLocation.CenterOwner, Topmost = _shell.WindowStateActions.IsFullscreen };
-                    if (dlg.ShowDialog() == true)
-                    {
-                        var r = _shell.EpgReminderActions.BuildReminder(_shell.CurrentChannel, ctx, dlg.PreAlertSeconds, dlg.Action, dlg.PlayMode, dlg.RecordMode, dlg.RecordDurationMin);
-                        _shell.EpgReminderActions.SaveReminder(r);
-                        _shell.EpgReminderActions.NotifyReminder(r, _shell.CurrentChannel?.Logo);
-                    }
-                    else
-                    {
-                        ctx.IsBooked = oldBooked;
-                        try { _window.ListEpg.Items.Refresh(); } catch { }
-                    }
-                }
+                    BookProgramme(_shell.CurrentChannel, ctx);
             }
             catch { }
+        }
+
+        /// <summary>
+        /// Books the programme a tap on the EPG timeline picked: the time row and the programme row of both bars
+        /// hand their slot over here, so a tap on the timeline and a tap on the list's reminder button run the very
+        /// same flow. The timeline only carries a light snapshot model, so the guide's own row is looked up by its
+        /// slot first - that is what makes both surfaces mark the same <see cref="EpgProgram.IsBooked"/>.
+        /// </summary>
+        public void BookTimelineProgramme(Channel? channel, TimelineProgramme? programme)
+        {
+            if (channel == null || programme == null) return;
+            var program = FindProgramme(channel, programme.Start, programme.End)
+                          ?? new EpgProgram { Title = programme.Name, Start = programme.Start, End = programme.End };
+            BookProgramme(channel, program);
+        }
+
+        /// <summary>
+        /// The one booking flow: a future programme gets the reminder dialog (the only place the alert lead time and
+        /// the record options are chosen), the reminder is saved and toasted, and a cancelled dialog rolls the
+        /// marker back.
+        /// </summary>
+        internal void BookProgramme(Channel? channel, EpgProgram? program)
+        {
+            if (channel == null || program == null) return;
+            if (!_shell.EpgReminderActions.CanCreateReminder(program, DateTime.Now)) return;
+            var oldBooked = program.IsBooked;
+            program.IsBooked = true;
+            try { _window.ListEpg.Items.Refresh(); } catch { }
+            var dlg = new ReminderDialog(channel.Name, program.Title, program.Start) { Owner = _window, WindowStartupLocation = WindowStartupLocation.CenterOwner, Topmost = _shell.WindowStateActions.IsFullscreen };
+            if (dlg.ShowDialog() == true)
+            {
+                var r = _shell.EpgReminderActions.BuildReminder(channel, program, dlg.PreAlertSeconds, dlg.Action, dlg.PlayMode, dlg.RecordMode, dlg.RecordDurationMin);
+                _shell.EpgReminderActions.SaveReminder(r);
+                _shell.EpgReminderActions.NotifyReminder(r, channel.Logo);
+            }
+            else
+            {
+                program.IsBooked = oldBooked;
+                try { _window.ListEpg.Items.Refresh(); } catch { }
+            }
+        }
+
+        /// <summary>The guide row behind a timeline slot, matched on the exact span first and on the start instant next.</summary>
+        EpgProgram? FindProgramme(Channel channel, DateTime start, DateTime end)
+        {
+            try
+            {
+                var service = _shell.EpgService ?? _epgService;
+                var programs = service?.GetPrograms(channel.TvgId, channel.TvgName, channel.Name);
+                if (programs == null) return null;
+                foreach (var p in programs) if (p.Start == start && p.End == end) return p;
+                foreach (var p in programs) if (p.Start == start) return p;
+            }
+            catch { }
+            return null;
         }
 
         private List<EpgProgram> GeneratePlaceholderEpg()

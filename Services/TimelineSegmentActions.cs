@@ -36,7 +36,13 @@ namespace LibmpvIptvClient.Services
         SeekTimeshift = 2,
 
         /// <summary>Start catchup playback at the segment start.</summary>
-        PlayReplay = 3
+        PlayReplay = 3,
+
+        /// <summary>
+        /// A slot that has not started yet: nothing to play, so the host books it with the same reminder flow the
+        /// EPG list's reminder button uses.
+        /// </summary>
+        Book = 4
     }
 
     /// <summary>What releasing the pointer over the band does: commit a seek, select a segment, or nothing.</summary>
@@ -62,6 +68,8 @@ namespace LibmpvIptvClient.Services
         bool KeepTimeshiftMode,
         string Hint)
     {
+        /// <summary>True when the click does anything at all: playback for the three live states, a booking for a
+        /// future slot. The state word alone is not enough there, the hover hint has to spell the booking out.</summary>
         public bool CanAct => Action != TimelineSegmentAction.None;
     }
 
@@ -144,7 +152,7 @@ namespace LibmpvIptvClient.Services
         /// <summary>
         /// The click verdict of a segment, in the order the user expects it: the live slot goes back to the
         /// live edge, a slot inside the running buffer seeks the timeshift session, anything else that is
-        /// still replayable starts catchup playback, and the rest is a future booking that does nothing yet.
+        /// still replayable starts catchup playback, and a slot that has not started yet is a booking.
         /// </summary>
         public static TimelineSegmentVerdict Resolve(DateTime start, DateTime end, DateTime now,
                                                      bool replayAvailable, DateTime replayFloor,
@@ -152,6 +160,15 @@ namespace LibmpvIptvClient.Services
                                                      TimelineSegmentLabels? labels = null)
         {
             var mode = Classify(start, end, now, replayAvailable, replayFloor, timeshiftActive, timeshiftMin, timeshiftMax);
+            // A slot that has not started yet cannot be played, but it can be booked. The clock at click time
+            // decides, not the mode the strip cached a tick ago: the cached "Unavailable" is shared with the slots
+            // that are simply too old to replay, and only the future ones are bookable.
+            if (mode == TimelineSegmentMode.Unavailable && start > now)
+            {
+                var captions = labels ?? TimelineSegmentLabels.Default;
+                return new TimelineSegmentVerdict(TimelineSegmentAction.Book, start, false,
+                    "点击：" + captions.Scheduled + " " + FormatSpan(start, end));
+            }
             return VerdictFor(mode, start, end, labels);
         }
 

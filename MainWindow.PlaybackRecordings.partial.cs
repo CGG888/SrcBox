@@ -44,10 +44,10 @@ namespace LibmpvIptvClient
         }
 
         /// <summary>
-        /// The one place a timeline segment click turns into playback, shared by the windowed bottom bar and the
-        /// fullscreen overlay. Order: the live slot returns to the live edge, a slot inside the running timeshift
-        /// buffer seeks that buffer, anything else still replayable starts catchup playback, and a future slot
-        /// does nothing (its badge already announced the booking).
+        /// The one place a timeline segment click turns into playback or a booking, shared by the windowed bottom
+        /// bar and the fullscreen overlay. Order: the live slot returns to the live edge, a slot inside the running
+        /// timeshift buffer seeks that buffer, anything else still replayable starts catchup playback, and a slot
+        /// that has not started yet books the programme exactly like the EPG list's reminder button.
         /// </summary>
         internal void ActivateTimelineSegment(TimelineProgramme? programme, Services.TimelineSegmentVerdict verdict)
         {
@@ -61,6 +61,10 @@ namespace LibmpvIptvClient
 
                 switch (verdict.Action)
                 {
+                    case Services.TimelineSegmentAction.Book:
+                        _epgManager?.BookTimelineProgramme(channel, programme);
+                        break;
+
                     case Services.TimelineSegmentAction.GoLive:
                         // Leave the buffer and follow the live edge again. The shell owns that transition, so
                         // mirroring it here is enough for both bars.
@@ -94,6 +98,15 @@ namespace LibmpvIptvClient
             {
                 var channel = _shell.CurrentChannel;
                 if (channel == null) return;
+
+                // A future instant is a booking and is turned away by the ruler before it ever reaches this method
+                // (see TimeshiftTimeline.RulerCanvas_MouseLeftButtonDown); a stray one must not drag the buffer
+                // forward, where there is nothing to seek to.
+                if (target > DateTime.Now)
+                {
+                    Diagnostics.Logger.Info($"时间轴跳转被忽略（未来时间点）{target:yyyy-MM-dd HH:mm:ss}");
+                    return;
+                }
 
                 if (!_shell.IsTimeshiftActive) _shell.IsTimeshiftActive = true;
 
