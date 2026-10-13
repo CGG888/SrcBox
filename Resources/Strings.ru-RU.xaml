@@ -150,6 +150,7 @@
   <sys:String x:Key="EPG_NextDay">Следующий день</sys:String>
   <sys:String x:Key="EPG_Status_Live">Прямой эфир</sys:String>
   <sys:String x:Key="EPG_Status_Playback">Запись</sys:String>
+  <sys:String x:Key="EPG_Status_Expired">Срок истёк</sys:String>
   <sys:String x:Key="EPG_Status_Record">Запись (локальная)</sys:String>
   <sys:String x:Key="EPG_Status_Timeshift">Таймшифт</sys:String>
   <sys:String x:Key="EPG_Status_Scheduled">Запланировано</sys:String>

@@ -159,6 +159,7 @@
   <sys:String x:Key="EPG_NextDay">Next day</sys:String>
   <sys:String x:Key="EPG_Status_Live">Live</sys:String>
   <sys:String x:Key="EPG_Status_Playback">Replay</sys:String>
+  <sys:String x:Key="EPG_Status_Expired">Expired</sys:String>
   <sys:String x:Key="EPG_Status_Record">Recording</sys:String>
   <sys:String x:Key="EPG_Status_Timeshift">Timeshift</sys:String>
   <sys:String x:Key="EPG_Status_LocalFile">Local</sys:String>

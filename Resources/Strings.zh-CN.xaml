@@ -153,6 +153,7 @@
   <sys:String x:Key="EPG_NextDay">后一天</sys:String>
   <sys:String x:Key="EPG_Status_Live">直播</sys:String>
   <sys:String x:Key="EPG_Status_Playback">回放</sys:String>
+  <sys:String x:Key="EPG_Status_Expired">已过期</sys:String>
   <sys:String x:Key="EPG_Status_Record">录播</sys:String>
   <sys:String x:Key="EPG_Status_Scheduled">预约</sys:String>
   <sys:String x:Key="EPG_Status_PlaybackWithIcon">▶ 回放</sys:String>

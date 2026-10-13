@@ -135,21 +135,11 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
             int durationHours)
         {
             var max = DateTime.Now;
-            var min = max.AddHours(-Math.Max(0, durationHours));
-
-            if (currentChannel != null)
-            {
-                try
-                {
-                    var programs = epgService?.GetPrograms(currentChannel.TvgId, currentChannel.TvgName, currentChannel.Name);
-                    if (programs != null && programs.Count > 0)
-                    {
-                        var earliest = programs.Min(p => p.Start);
-                        if (earliest < min) min = earliest;
-                    }
-                }
-                catch { }
-            }
+            // The configured span is the range, clamped to the depth the operator actually serves.
+            // Widening it to the earliest programme of the EPG (as this used to do) offered dates the
+            // relay does not archive: the seek then produced a one second window and playback stopped.
+            var hours = Math.Max(1, Math.Min(LibmpvIptvClient.Services.ArchiveWindow.MaxHours, durationHours));
+            var min = max.AddHours(-hours);
 
             var start = max;
             var cursor = Math.Max(0, (max - min).TotalSeconds);

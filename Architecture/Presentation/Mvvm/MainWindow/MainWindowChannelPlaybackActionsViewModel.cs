@@ -671,6 +671,15 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 }
                 catch { }
 
+                // The catch-up url carries a [start, end] window. A seek that lands in the last second
+                // of a programme collapses it to about a second and the relay answers with a stream that
+                // ends immediately, so playback stopped a few seconds after the seek. Keep it usable.
+                var floorEnd = start.AddSeconds(60);
+                if (end < floorEnd) end = floorEnd < DateTime.Now ? floorEnd : DateTime.Now;
+                // A seek at the live edge can leave the clamp above with an end before the start, which
+                // the relay reads as an empty window; never hand it a reversed range.
+                if (end <= start) end = start.AddSeconds(60);
+
                 url = ProcessUrlPlaceholders(url, start, end, AppSettings.Current.Timeshift.AppendEpgTime);
                 try { url = LibmpvIptvClient.Services.UrlTimeRewriter.RewriteIfEnabled(AppSettings.Current, url, start, end, keepTimeshiftMode || _shell.IsTimeshiftActive); } catch { }
                 

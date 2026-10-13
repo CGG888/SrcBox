@@ -558,8 +558,9 @@ namespace LibmpvIptvClient.Services.WebRemote
                         EndISO = p.End.ToString("yyyy-MM-ddTHH:mm:ss"),
                         Date = p.Start.ToString("MM-dd"),
                         IsCurrent = p.Start <= now && p.End > now,
-                        // Replay only works on channels with a catch-up source or timeshift url
-                        CanReplay = channelObj?.HasTimeshift == true,
+                        // Replay needs a catch-up source or a timeshift url, and the programme has to
+                        // be inside the configured replay span: older programmes are not archived.
+                        CanReplay = channelObj?.HasTimeshift == true && Services.ArchiveWindow.IsReplayable(p.End),
                         Badge = badgeType,
                         BadgeHtml = badgeHtml
                     };
