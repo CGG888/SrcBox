@@ -2374,12 +2374,15 @@ function renderTimeshiftBand() {
     return;
   }
   var prevDay = null;
+  // A schedule that spans days needs every block dated, otherwise a scrolled strip shows bare clock
+  // times with no way to tell which day is on screen; a single day only needs the day boundary.
+  var multiDay = new Date(list[0].startISO).toDateString() !== new Date(list[list.length - 1].endISO).toDateString();
   list.forEach(function(p) {
     var s = new Date(p.startISO).getTime(), e = new Date(p.endISO).getTime();
     // The band can cross midnight, so a block carries the date when its day differs from the one
     // before it (and on the first block), exactly like a TV EPG bar.
     var day = new Date(s).toDateString();
-    var showDate = prevDay === null || day !== prevDay;
+    var showDate = multiDay || prevDay === null || day !== prevDay;
     prevDay = day;
     var block = document.createElement('button');
     block.type = 'button';
