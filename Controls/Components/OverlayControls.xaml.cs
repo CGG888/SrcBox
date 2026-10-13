@@ -279,8 +279,14 @@ namespace LibmpvIptvClient
         /// </summary>
         public void ApplySeekBarStyle()
         {
-            SetBarMode(_hasSchedule && AppSettings.Current.SeekBar != SeekBarStyle.Standard);
+            SetBarMode(WantsTimeline);
         }
+
+        /// <summary>
+        /// True when both inputs the bar mode depends on agree: the configured style asks for the EPG timeline and
+        /// the pushed snapshot carried a schedule for it to draw.
+        /// </summary>
+        bool WantsTimeline => _hasSchedule && AppSettings.Current.SeekBar != SeekBarStyle.Standard;
 
         /// <summary>The hosted EPG timeline; the windowed bar's peer of this window talks to the same type.</summary>
         public TimeshiftTimeline TimelineControl => Timeline;
@@ -298,11 +304,17 @@ namespace LibmpvIptvClient
         public void SetTimelineState(OverlayTimelineState? state)
         {
             _hasSchedule = state != null && state.Programmes != null && state.Programmes.Count > 0;
-            if (!_hasSchedule && _showTimeline && AppSettings.Current.SeekBar != SeekBarStyle.Standard)
-            {
-                SetBarMode(false);
-            }
+
+            // The band has to know the schedule before the host measures the bar it is about to show.
             try { Timeline.SetTimelineState(state); } catch { }
+
+            // Re-evaluate the mode on EVERY snapshot, in both directions. This window is created before the first
+            // schedule exists (no channel has been played yet), so it starts on the standard bar; promoting here is
+            // what brings the EPG timeline back the moment the schedule lands. Without it the overlay could only
+            // ever be demoted to the standard bar, and the only remaining promoter was applying the settings, which
+            // made the style look theme dependent (saving a theme change was the one action that fixed it).
+            if (WantsTimeline != _showTimeline) SetBarMode(WantsTimeline);
+
             ApplyBarHeight();
         }
 

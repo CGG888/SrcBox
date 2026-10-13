@@ -48,5 +48,25 @@ namespace LibmpvIptvClient.Tests
             });
             if (error != null) throw error;
         }
+
+        static bool _appResources;
+
+        /// <summary>
+        /// Creates the headless <see cref="System.Windows.Application"/> of this host and merges the app-level style
+        /// dictionary. Controls that pull a style with {StaticResource} need it: both seek bars use
+        /// UnifiedThickSlider, which lives in Styles/PlayerStyles.xaml. Call it on the host dispatcher, before
+        /// constructing such a control.
+        /// </summary>
+        public static void EnsureAppResources()
+        {
+            if (_appResources) return;
+            var app = System.Windows.Application.Current
+                ?? new System.Windows.Application { ShutdownMode = System.Windows.ShutdownMode.OnExplicitShutdown };
+            app.Resources.MergedDictionaries.Add(new System.Windows.ResourceDictionary
+            {
+                Source = new Uri("pack://application:,,,/SrcBox;component/Styles/PlayerStyles.xaml", UriKind.Absolute)
+            });
+            _appResources = true;
+        }
     }
 }
