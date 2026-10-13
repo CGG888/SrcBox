@@ -40,8 +40,11 @@ namespace LibmpvIptvClient.Services.WebRemote
         public int Port { get; private set; }
 
         /// <summary>
-        /// True when a server certificate is loaded, so TLS clients are accepted on the same port as
-        /// plain http clients.
+        /// True when this process can really answer https on the shared port, which is what the settings
+        /// panel turns into the QR code address. It is set by the startup self-check (and by any handshake
+        /// that succeeds later), never merely because a certificate object exists: a certificate whose
+        /// private key never reached the user key store is refused by SChannel on every connection, and an
+        /// https address that cannot answer is worse than the plain http one it hides.
         /// </summary>
         public bool IsTlsAvailable { get; private set; }
 
@@ -66,6 +69,13 @@ namespace LibmpvIptvClient.Services.WebRemote
         /// line used to grow the head buffer without bound; anything above this is answered with 431.
         /// </summary>
         internal const int MaxRequestHeadBytes = 64 * 1024;
+
+        /// <summary>
+        /// How long the startup https self-check waits for its loopback round trip before the remote is
+        /// advertised as plain http. A certificate SChannel refuses fails within milliseconds; the cap only
+        /// exists so a wedged handshake cannot hold up startup.
+        /// </summary>
+        private static readonly TimeSpan TlsSelfCheckTimeout = TimeSpan.FromSeconds(2);
 
         /// <summary>Path prefix of the channel logo endpoint.</summary>
         internal const string LogoPathPrefix = "/logo/";
@@ -148,7 +158,8 @@ namespace LibmpvIptvClient.Services.WebRemote
             _authenticatedClients.Clear();
             _cts = new CancellationTokenSource();
 
-            if (EnsureTlsCertificate() == null)
+            var certificate = EnsureTlsCertificate();
+            if (certificate == null)
             {
                 Logger.Warn("[WebRemote] No certificate available, the remote will answer plain http only");
             }
@@ -166,6 +177,11 @@ namespace LibmpvIptvClient.Services.WebRemote
                 _tcpListener.Start();
                 IsRunning = true;
                 _ = Task.Run(() => AcceptClientsAsync(_tcpListener, _cts.Token));
+
+                // Advertise https only after our own listener proved it can serve it: the access URL and
+                // the QR code come from this flag, and a phone cannot open an address the process refuses.
+                if (certificate != null) IsTlsAvailable = VerifyTlsServing();
+
                 Logger.Debug($"[WebRemote] Server started on port {port}{(IsTlsAvailable ? " (http + https)" : " (http only)")}");
             }
             catch (Exception ex)
@@ -206,8 +222,73 @@ namespace LibmpvIptvClient.Services.WebRemote
         {
             if (!WebRemoteCertificateService.TryGetServerCertificate(out var certificate)) return null;
 
-            IsTlsAvailable = true;
             return certificate;
+        }
+
+        /// <summary>
+        /// Runs one real https round trip against our own listener before the access URL is built. The
+        /// handshake goes through the same accept path a phone uses, so a certificate SChannel refuses (an
+        /// ephemeral key in a process without a user key store, which is what a sandboxed or locked-down
+        /// account ends up with) is detected here rather than on the phone, and the panel keeps offering the
+        /// http address that does work.
+        /// </summary>
+        private bool VerifyTlsServing()
+        {
+            try
+            {
+                var probe = Task.Run(() =>
+                {
+                    try
+                    {
+                        using var client = new TcpClient();
+                        client.Connect(IPAddress.Loopback, Port);
+                        using var ssl = new SslStream(client.GetStream(), false, (_, _, _, _) => true)
+                        {
+                            ReadTimeout = (int)TlsSelfCheckTimeout.TotalMilliseconds
+                        };
+                        ssl.AuthenticateAsClient(new SslClientAuthenticationOptions
+                        {
+                            TargetHost = "localhost",
+                            EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                            CertificateRevocationCheckMode = X509RevocationMode.NoCheck
+                        });
+
+                        // The smallest real answer the server has: it proves the request path runs on the
+                        // TLS stream too, and reading it to the end lets the server close the connection
+                        // instead of noticing a client that went away mid reply.
+                        ssl.Write(Encoding.ASCII.GetBytes("GET /cert HTTP/1.0\r\nHost: localhost\r\n\r\n"));
+                        ssl.Flush();
+
+                        using var response = new MemoryStream();
+                        var buffer = new byte[4096];
+                        int read;
+                        while (response.Length < MaxRequestHeadBytes && (read = ssl.Read(buffer, 0, buffer.Length)) > 0)
+                        {
+                            response.Write(buffer, 0, read);
+                        }
+
+                        var bytes = response.ToArray();
+                        return ssl.IsAuthenticated
+                               && bytes.Length >= 5
+                               && Encoding.ASCII.GetString(bytes, 0, 5) == "HTTP/";
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Warn($"[WebRemote] https self-check failed, advertising http only: {ex.GetBaseException().Message}");
+                        return false;
+                    }
+                });
+
+                if (probe.Wait(TlsSelfCheckTimeout)) return probe.Result;
+
+                Logger.Warn($"[WebRemote] https self-check timed out after {TlsSelfCheckTimeout.TotalSeconds:F0}s, advertising http only");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn($"[WebRemote] https self-check could not run, advertising http only: {ex.GetBaseException().Message}");
+                return false;
+            }
         }
 
         /// <summary>
@@ -309,6 +390,10 @@ namespace LibmpvIptvClient.Services.WebRemote
                             LogTlsHandshakeFailure(ex);
                             return;
                         }
+
+                        // A handshake that completed proves the certificate is servable in this process
+                        // after all, whatever the startup self-check raced with.
+                        IsTlsAvailable = true;
                         stream = ssl;
                     }
 
