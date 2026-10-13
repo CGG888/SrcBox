@@ -553,6 +553,13 @@ namespace LibmpvIptvClient
         /// <summary>Keeps the microphone open after one command instead of push-to-talk.</summary>
         public bool HandsFree { get; set; } = false;
 
+        /// <summary>
+        /// Recognizes the phone's recording inside this player instead of the phone's browser: the page
+        /// records and uploads, and the offline model on this PC turns it into text. Needs the model
+        /// downloaded once; without it the page falls back to its own recognition.
+        /// </summary>
+        public bool OfflineEnabled { get; set; } = false;
+
         /// <summary>Reads the reply out loud through speech synthesis.</summary>
         public bool SpeakBack { get; set; } = true;
 

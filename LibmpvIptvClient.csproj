@@ -29,6 +29,9 @@
     <PackageReference Include="QRCoder" Version="1.8.0" />
     <PackageReference Include="System.Text.Encoding.CodePages" Version="8.0.0" />
     <PackageReference Include="Downloader" Version="4.1.1" />
+    <!-- Offline speech recognition for the web remote's push-to-talk: ONNX Runtime plus the Paraformer/
+         SenseVoice front end. The model itself is downloaded on first use, not shipped. -->
+    <PackageReference Include="ManySpeech.AliParaformerAsr" Version="1.1.9" />
   </ItemGroup>
   <ItemGroup>
     <!-- The test project copies source assets (dictionaries, overlay XAML) next to its own binaries;

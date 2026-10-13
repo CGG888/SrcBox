@@ -83,6 +83,7 @@ namespace LibmpvIptvClient.Services.WebRemote
                 _server.StopRecordingCallback = StopRecording;
                 _server.DeleteRecordingCallback = DeleteRecording;
                 _server.VoiceCommandCallback = VoiceCommand;
+                _server.VoiceAudioCallback = RecognizeVoiceAudio;
                 // The voice endpoint is meant for a phone-side shortcut, which cannot log in over the
                 // websocket: it carries this token instead. An empty WebRemote password would leave the
                 // endpoint open to the LAN, so a random one is minted once and kept in the settings.
@@ -846,6 +847,46 @@ namespace LibmpvIptvClient.Services.WebRemote
             return string.IsNullOrWhiteSpace(action)
                 ? VoiceCommandRouter.Route(context)
                 : VoiceCommandRouter.Execute(context, action, target);
+        }
+
+        /// <summary>
+        /// Turns one recording uploaded by the phone into text with the offline model. A null result means
+        /// "not available" - the feature is off, the model is missing or the engine failed - and the page
+        /// turns that into one clear sentence instead of a button that looks dead.
+        /// </summary>
+        internal static async Task<string?> RecognizeVoiceAudio(VoiceAudioClip clip)
+        {
+            if (clip == null || clip.Samples.Length == 0) return null;
+
+            var voice = AppSettings.Current?.WebRemote?.Voice;
+            if (voice == null || !voice.OfflineEnabled)
+            {
+                Logger.Debug("[WebRemote] voiceAudio ignored: offline speech is switched off");
+                return null;
+            }
+
+            var directory = VoiceModelStore.Resolve(null);
+            if (!VoiceModelStore.IsInstalled(directory))
+            {
+                Logger.Info($"[WebRemote] voiceAudio ignored: model missing in {directory}");
+                return null;
+            }
+
+            try
+            {
+                var started = Environment.TickCount64;
+                var text = await OfflineSpeechRecognizer
+                    .For(directory)
+                    .TranscribeAsync(clip)
+                    .ConfigureAwait(false);
+                Logger.Info($"[WebRemote] voiceAudio recognised in {Environment.TickCount64 - started}ms: \"{text}\"");
+                return string.IsNullOrWhiteSpace(text) ? null : text;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"[WebRemote] voiceAudio failed: {ex.Message}");
+                return null;
+            }
         }
 
         /// <summary>Runs <paramref name="work"/> on the dispatcher; tests and the router call this without a WPF app.</summary>

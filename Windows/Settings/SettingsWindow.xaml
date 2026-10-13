@@ -867,6 +867,8 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                       </Grid.RowDefinitions>
                       <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -929,6 +931,18 @@
 
                       <TextBlock Grid.Row="20" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" TextWrapping="Wrap">
                         <Run Text="{DynamicResource UI_WebRemote_VoiceApiHint}"/>
+                      </TextBlock>
+
+                      <!-- 离线语音（手机录音，本机识别） -->
+                      <CheckBox x:Name="CbWebRemoteVoiceOffline" Grid.Row="21" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebRemote_VoiceOffline}" Margin="0,16,0,8"/>
+
+                      <StackPanel Grid.Row="22" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,8">
+                        <TextBlock x:Name="TbWebRemoteVoiceModelStatus" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" VerticalAlignment="Center" MaxWidth="420" TextWrapping="Wrap" Margin="0,0,12,0"/>
+                        <Button x:Name="BtnWebRemoteVoiceModelDownload" Content="{DynamicResource UI_WebRemote_VoiceModelDownload}" Height="24" MinWidth="110" VerticalAlignment="Center" HorizontalAlignment="Left" Click="BtnWebRemoteVoiceModelDownload_Click"/>
+                      </StackPanel>
+
+                      <TextBlock Grid.Row="23" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" TextWrapping="Wrap">
+                        <Run Text="{DynamicResource UI_WebRemote_VoiceOfflineHint}"/>
                       </TextBlock>
                     </Grid>
                   </StackPanel>

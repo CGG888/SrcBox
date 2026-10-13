@@ -535,6 +535,13 @@
   <sys:String x:Key="UI_WebRemote_VoiceRules">Свои фразы (по одной в строке)</sys:String>
   <sys:String x:Key="UI_WebRemote_VoiceRulesHint">Формат: фразы=действие:цель, например «новости=channel:CCTV-13» или «повтор новостей=replay:CCTV-13». Фразы разделяются |; ! в начале — точное совпадение, ~ — регулярное выражение. Действия: channel / selectSource / replay / play / pause / stop / mute / volume / seek / fullscreen / exit.</sys:String>
   <sys:String x:Key="UI_WebRemote_VoiceToken">Токен интерфейса (создаётся автоматически)</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceOffline">Офлайн-распознавание (на этом ПК)</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceOfflineHint">Телефон только записывает и отправляет звук, распознавание идёт на этом ПК. Скачайте модель речи один раз — дальше всё работает офлайн и бесплатно.</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDownload">Скачать модель</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelMissing">Модель речи не скачана (около {0} МБ)</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDownloading">Скачивание {0}%</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelReady">Модель речи готова</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelFailed">Не удалось скачать: {0}</sys:String>
   <sys:String x:Key="UI_WebRemote_VoiceApiHint">Ассистент телефона может вызвать http://IP-ПК:порт/api/voice?text=канал 1&amp;token=токен выше и управлять плеером без открытия страницы. Пустой токен отключает проверку, а адрес принимается только из локальной сети.</sys:String>
   <sys:String x:Key="UI_TabWebRemote">Пульт</sys:String>
   <sys:String x:Key="UI_WebRemote_Access">Подключение по QR</sys:String>

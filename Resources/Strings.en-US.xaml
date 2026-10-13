@@ -307,6 +307,13 @@
   <sys:String x:Key="UI_WebRemote_VoiceRules">Custom phrases (one per line)</sys:String>
   <sys:String x:Key="UI_WebRemote_VoiceRulesHint">Format: phrases=action:target, for example "news=channel:CCTV-13" or "replay the news=replay:CCTV-13". Separate phrases with |; a leading ! means exact match and ~ means a regular expression. Actions: channel / selectSource / replay / play / pause / stop / mute / volume / seek / fullscreen / exit.</sys:String>
   <sys:String x:Key="UI_WebRemote_VoiceToken">Endpoint token (generated automatically)</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceOffline">Offline recognition (runs on this PC)</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceOfflineHint">The phone only records and uploads; recognition runs on this PC. Download the speech model once, then it keeps working offline for free.</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDownload">Download model</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelMissing">Speech model not downloaded (about {0} MB)</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDownloading">Downloading {0}%</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelReady">Speech model is ready</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelFailed">Download failed: {0}</sys:String>
   <sys:String x:Key="UI_WebRemote_VoiceApiHint">A phone assistant can call http://PC-IP:port/api/voice?text=channel 1&amp;token=the token above to control playback without opening the page. An empty token disables the check, and the endpoint only accepts LAN addresses.</sys:String>
   <sys:String x:Key="UI_TabWebRemote">Remote</sys:String>
   <sys:String x:Key="UI_WebRemote_Access">Scan to connect</sys:String>

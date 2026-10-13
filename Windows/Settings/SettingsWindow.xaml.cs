@@ -1270,6 +1270,7 @@ namespace LibmpvIptvClient
                 SpeakBack = CbWebRemoteVoiceSpeak?.IsChecked != false,
                 Lang = TbWebRemoteVoiceLang?.Text?.Trim() ?? "",
                 VolumeStep = System.Math.Clamp(step, 1, 50),
+                OfflineEnabled = CbWebRemoteVoiceOffline?.IsChecked == true,
                 WakeWords = wakeWords,
                 CustomRules = VoiceRuleText.Parse(TbWebRemoteVoiceRules?.Text),
                 // The token stays as stored: a shortcut on the phone already carries the issued value.
@@ -1291,6 +1292,59 @@ namespace LibmpvIptvClient
 
             var token = WebRemoteManager.CurrentVoiceToken;
             if (TbWebRemoteVoiceToken != null) TbWebRemoteVoiceToken.Text = string.IsNullOrWhiteSpace(token) ? voice.Token ?? "" : token;
+            if (CbWebRemoteVoiceOffline != null) CbWebRemoteVoiceOffline.IsChecked = voice.OfflineEnabled;
+
+            RefreshVoiceModelStatus();
+        }
+
+        /// <summary>Shows whether the offline model is on disk; the button next to it fills the gap.</summary>
+        private void RefreshVoiceModelStatus()
+        {
+            if (TbWebRemoteVoiceModelStatus == null) return;
+
+            try
+            {
+                TbWebRemoteVoiceModelStatus.Text = VoiceModelStore.IsInstalled(null)
+                    ? Helpers.Localizer.S("UI_WebRemote_VoiceModelReady", "语音模型已就绪")
+                    : string.Format(
+                        Helpers.Localizer.S("UI_WebRemote_VoiceModelMissing", "语音模型未下载（约 {0} MB）"),
+                        VoiceModelStore.TotalMegabytes);
+            }
+            catch (Exception ex)
+            {
+                TbWebRemoteVoiceModelStatus.Text = ex.Message;
+            }
+        }
+
+        /// <summary>
+        /// Downloads the offline model. The button stays disabled while it runs so a second click cannot
+        /// start a competing download into the same files.
+        /// </summary>
+        private async void BtnWebRemoteVoiceModelDownload_Click(object sender, RoutedEventArgs e)
+        {
+            if (BtnWebRemoteVoiceModelDownload == null || TbWebRemoteVoiceModelStatus == null) return;
+
+            BtnWebRemoteVoiceModelDownload.IsEnabled = false;
+            try
+            {
+                var progress = new Progress<double>(percent => TbWebRemoteVoiceModelStatus.Text = string.Format(
+                    Helpers.Localizer.S("UI_WebRemote_VoiceModelDownloading", "下载中 {0}%"), percent));
+
+                await VoiceModelStore.DownloadAsync(null, progress, System.Threading.CancellationToken.None);
+
+                // Downloading the model is the whole point of the switch, so turning it on saves a step.
+                if (CbWebRemoteVoiceOffline != null) CbWebRemoteVoiceOffline.IsChecked = true;
+                RefreshVoiceModelStatus();
+            }
+            catch (Exception ex)
+            {
+                TbWebRemoteVoiceModelStatus.Text = string.Format(
+                    Helpers.Localizer.S("UI_WebRemote_VoiceModelFailed", "下载失败：{0}"), ex.Message);
+            }
+            finally
+            {
+                BtnWebRemoteVoiceModelDownload.IsEnabled = true;
+            }
         }
 
         /// <summary>Saves and applies the current Web Remote UI state (used when the switch is toggled).</summary>

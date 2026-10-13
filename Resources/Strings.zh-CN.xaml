@@ -355,6 +355,13 @@
   <sys:String x:Key="UI_WebRemote_VoiceRules">自定义语义（一行一条）</sys:String>
   <sys:String x:Key="UI_WebRemote_VoiceRulesHint">格式：短语=动作:目标，例如「看新闻=channel:CCTV-13」「回看新闻=replay:CCTV-13」。多个短语用 | 分隔；句首加 ! 表示完全匹配，加 ~ 表示正则。动作可用 channel / selectSource / replay / play / pause / stop / mute / volume / seek / fullscreen / exit。</sys:String>
   <sys:String x:Key="UI_WebRemote_VoiceToken">接口令牌（自动生成）</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceOffline">离线语音识别（识别在本机完成）</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceOfflineHint">手机只负责录音并上传，识别在本机完成；需要先下载语音模型，之后永久离线免费可用。</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDownload">下载模型</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelMissing">语音模型未下载（约 {0} MB）</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDownloading">下载中 {0}%</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelReady">语音模型已就绪</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelFailed">下载失败：{0}</sys:String>
   <sys:String x:Key="UI_WebRemote_VoiceApiHint">手机助手可调用 http://电脑IP:端口/api/voice?text=换到1台&amp;token=上面的令牌 实现不开网页的语音控制；令牌留空则无需校验（仅限本机网段访问）。</sys:String>
   <sys:String x:Key="UI_TabWebRemote">遥控器</sys:String>
   <sys:String x:Key="UI_WebRemote_Access">扫码访问</sys:String>

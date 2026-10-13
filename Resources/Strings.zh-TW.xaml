@@ -534,6 +534,13 @@
   <sys:String x:Key="UI_WebRemote_VoiceRules">自訂語意（一行一條）</sys:String>
   <sys:String x:Key="UI_WebRemote_VoiceRulesHint">格式：短語=動作:目標，例如「看新聞=channel:CCTV-13」「回看新聞=replay:CCTV-13」。多個短語以 | 分隔；句首加 ! 表示完全符合，加 ~ 表示正規表達式。動作可用 channel / selectSource / replay / play / pause / stop / mute / volume / seek / fullscreen / exit。</sys:String>
   <sys:String x:Key="UI_WebRemote_VoiceToken">介面權杖（自動產生）</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceOffline">離線語音辨識（辨識在本機完成）</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceOfflineHint">手機只負責錄音並上傳，辨識在本機完成；需先下載語音模型，之後永久離線免費可用。</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDownload">下載模型</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelMissing">語音模型未下載（約 {0} MB）</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDownloading">下載中 {0}%</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelReady">語音模型已就緒</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelFailed">下載失敗：{0}</sys:String>
   <sys:String x:Key="UI_WebRemote_VoiceApiHint">手機助理可呼叫 http://電腦IP:埠/api/voice?text=換到1台&amp;token=上面的權杖，實現不開網頁的語音控制；權杖留空則無需驗證（僅限本機網段存取）。</sys:String>
   <sys:String x:Key="UI_TabWebRemote">遙控器</sys:String>
   <sys:String x:Key="UI_WebRemote_Access">掃碼存取</sys:String>
