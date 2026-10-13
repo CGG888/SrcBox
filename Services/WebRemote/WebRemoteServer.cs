@@ -2063,7 +2063,10 @@ var fab = document.getElementById('voiceFab');
 if (fab) { fab.title = T.voice_title; fab.style.display = VOICE.enabled ? '' : 'none'; }
 var input = document.getElementById('voiceInput');
 if (input) input.placeholder = T.voice_input_placeholder;
-t('voiceExamples', T.voice_examples);
+// Only the lead-in (试试：) stays a sentence; the phrases are rendered as tappable preset buttons.
+var examples = T.voice_examples || '';
+var examplesColon = examples.indexOf('：') >= 0 ? examples.indexOf('：') : examples.indexOf(':');
+t('voiceExamples', examplesColon >= 0 ? examples.substring(0, examplesColon + 1) : examples);
 t('voiceHandsFree', T.voice_handsfree);
 var hf = document.getElementById('voiceHandsFree');
 if (hf) hf.className = voiceHandsFree ? 'on' : '';
@@ -2119,7 +2122,9 @@ else if (data.timeshift !== undefined) updateTimeshift(data.timeshift);
 };
 }
 
-function send(action, data) { if (!data) data = {}; if (ws && ws.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ action, ...data })); }
+// Returns whether the frame actually reached an open socket: the voice panel has to tell a dropped
+// connection apart from a player that simply did not answer, and a silent drop looks like both.
+function send(action, data) { if (!data) data = {}; if (ws && ws.readyState === WebSocket.OPEN) { ws.send(JSON.stringify({ action, ...data })); return true; } return false; }
 function loadStatus() { send('getStatus'); }
 function doAuth() { const pwd = document.getElementById('pwdInput').value; if (!pwd) return; send('auth', { password: pwd }); }
 function loadChannels() { send('getChannels'); }
@@ -3043,6 +3048,7 @@ var VoiceSR = window.SpeechRecognition || window.webkitSpeechRecognition;
 var voiceRec = null;
 var voiceListening = false;
 var voiceBusy = false;
+var voiceReplyTimeout = null;
 var voiceHandsFree = false;
 var voiceLastOptions = [];
 
@@ -3098,16 +3104,19 @@ if (stripped) sendVoice(stripped); else setVoiceStatus(T.voice_listening);
 rec.onerror = function(ev) {
 voiceListening = false; voiceMicClass(false);
 var code = ev && ev.error ? ev.error : '';
+voiceBusy = false; clearTimeout(voiceReplyTimeout);
+var msg = T.voice_error;
 if (code === 'not-allowed' || code === 'service-not-allowed') {
 voiceHandsFree = false; voiceRefreshHandsFree();
-setVoiceStatus(T.voice_secure_needed);
+msg = T.voice_secure_needed;
 } else if (code === 'no-speech' || code === 'aborted') {
-if (!voiceBusy) setVoiceStatus(voiceHandsFree ? T.voice_listening : T.voice_hold);
+msg = voiceHandsFree ? T.voice_listening : T.voice_hold;
 } else if (code === 'network' || code === 'language-not-supported') {
-setVoiceStatus(T.voice_offline_hint);
-} else {
-setVoiceStatus(T.voice_error);
+msg = T.voice_offline_hint;
 }
+// The raw code is the only thing that tells 'no microphone' apart from 'no speech service', and it is
+// what the user has to read out when the recognition keeps failing on their phone.
+setVoiceStatus(code ? (msg + ' (' + code + ')') : msg);
 };
 rec.onend = function() {
 voiceListening = false; voiceMicClass(false);
@@ -3125,7 +3134,12 @@ if (!rec) { setVoiceStatus(T.voice_unsupported); return; }
 rec.lang = voiceLang();
 // Continuous mode only for hands-free: one-shot recognition is what iOS and Android both do reliably.
 rec.continuous = voiceHandsFree;
-try { rec.start(); } catch (err) { return; }
+try { rec.start(); } catch (err) {
+// A recognition that refuses to start (already running, microphone still locked) must not look like a
+// dead button: name the failure instead of returning silently.
+setVoiceStatus(T.voice_error + (err && err.name ? ' (' + err.name + ')' : ''));
+return;
+}
 voiceListening = true; voiceMicClass(true);
 setVoiceStatus(T.voice_listening);
 }
@@ -3193,14 +3207,28 @@ sendVoice(text);
 
 function sendVoice(text) {
 if (!text) return;
-voiceBusy = true;
-setVoiceStatus(T.voice_thinking);
 setVoiceHeard(text);
 renderVoiceOptions([]);
-send('voiceCommand', { text: text, lang: voiceLang() });
+if (!send('voiceCommand', { text: text, lang: voiceLang() })) {
+// The socket reconnects on its own every three seconds; say so instead of swallowing the command.
+voiceBusy = false;
+setVoiceStatus(T.connecting);
+return;
+}
+voiceBusy = true;
+setVoiceStatus(T.voice_thinking);
+// Without this the panel would wait for a reply that may never come and stay on 'working' forever,
+// which is exactly what a command that never reached the router looks like.
+clearTimeout(voiceReplyTimeout);
+voiceReplyTimeout = setTimeout(function() {
+if (!voiceBusy) return;
+voiceBusy = false;
+setVoiceStatus(T.voice_no_reply);
+}, 8000);
 }
 
 function handleVoiceReply(reply) {
+clearTimeout(voiceReplyTimeout);
 voiceBusy = false;
 if (reply.spoken) { setVoiceStatus(reply.spoken); speakVoice(reply.spoken); }
 else setVoiceStatus(reply.success ? T.voice_hold : T.voice_not_understood);
@@ -3208,10 +3236,38 @@ renderVoiceOptions(reply.options || []);
 if (reply.executed) loadStatus();
 }
 
+// The presets the settings advertise, split out of the examples sentence. A tapped preset runs exactly
+// the same path as a spoken sentence, so the four commands stay usable on a phone whose browser has no
+// speech service (or no recogniser at all) - the failure the panel keeps reporting.
+function voicePresetPhrases() {
+var s = T.voice_examples || '';
+var colon = s.indexOf('：') >= 0 ? s.indexOf('：') : s.indexOf(':');
+if (colon >= 0) s = s.substring(colon + 1);
+return s.split(/、|,|;|；/).map(function(p) { return p.replace(/^\s+|\s+$/g, ''); }).filter(function(p) { return !!p; });
+}
+
+function renderVoicePresets() {
+var box = document.getElementById('voiceOptions');
+if (!box) return;
+box.innerHTML = '';
+var list = voicePresetPhrases();
+for (var i = 0; i < list.length; i++) {
+(function(phrase) {
+var b = document.createElement('button');
+b.className = 'voice-option';
+b.textContent = phrase;
+b.onclick = function() { sendVoice(phrase); };
+box.appendChild(b);
+})(list[i]);
+}
+}
+
 function renderVoiceOptions(options) {
 voiceLastOptions = options || [];
 var box = document.getElementById('voiceOptions');
 if (!box) return;
+// Nothing to choose from means the panel shows the presets again, never an empty box.
+if (!voiceLastOptions.length) { renderVoicePresets(); return; }
 box.innerHTML = '';
 for (var i = 0; i < voiceLastOptions.length; i++) {
 (function(idx) {

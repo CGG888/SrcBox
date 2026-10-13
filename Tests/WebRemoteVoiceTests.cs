@@ -91,6 +91,21 @@ namespace LibmpvIptvClient.Tests
             Assert.AreEqual(allowed, WebRemoteServer.IsPrivateAddress(address), address);
         }
 
+        [TestMethod]
+        public void RemoteHtml_KeepsThePresetsTappableAndThePanelRecoverable()
+        {
+            var html = WebRemoteServer.GetRemoteHtml("zh-CN");
+
+            // The advertised presets have to be tappable commands, not only a sentence: on a phone whose
+            // browser cannot reach an online speech service the recogniser never produces any text.
+            StringAssert.Contains(html, "function renderVoicePresets()");
+            StringAssert.Contains(html, "renderVoicePresets();");
+            // A command that never reached the player must not leave the panel on "working" forever.
+            StringAssert.Contains(html, "voiceReplyTimeout");
+            StringAssert.Contains(html, "T.voice_no_reply");
+            StringAssert.Contains(html, "if (!send('voiceCommand'");
+        }
+
         [DataTestMethod]
         [DataRow("zh-CN")]
         [DataRow("en-US")]
@@ -100,7 +115,7 @@ namespace LibmpvIptvClient.Tests
         {
             var strings = WebRemoteStrings.Get(lang);
 
-            foreach (var key in new[] { "voice_title", "voice_listening", "voice_unsupported", "voice_not_understood", "voice_examples" })
+            foreach (var key in new[] { "voice_title", "voice_listening", "voice_unsupported", "voice_not_understood", "voice_examples", "voice_no_reply" })
                 Assert.IsTrue(strings.ContainsKey(key) && !string.IsNullOrWhiteSpace(strings[key]), $"{lang}: {key}");
         }
     }
