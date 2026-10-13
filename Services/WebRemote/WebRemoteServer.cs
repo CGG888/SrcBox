@@ -3058,6 +3058,8 @@ var voiceRec = null;
 var voiceListening = false;
 var voiceBusy = false;
 var voiceReplyTimeout = null;
+var voiceStallTimeout = null;
+var voiceLastError = '';
 var voiceHandsFree = false;
 var voiceLastOptions = [];
 
@@ -3107,6 +3109,9 @@ for (var i = e.resultIndex; i < e.results.length; i++) {
 if (e.results[i].isFinal) text += e.results[i][0].transcript;
 }
 if (!text) return;
+// A transcript proves the phone's speech service answered, so the stall watchdog must not fire afterwards.
+clearTimeout(voiceStallTimeout); voiceStallTimeout = null;
+voiceDiag('result', text.slice(0, 40));
 if (!voiceHandsFree) { sendVoice(text); return; }
 var stripped = voiceStripWake(text);
 if (stripped === null) return; // ambient speech: hands-free only reacts to the wake word
@@ -3116,7 +3121,9 @@ if (stripped) sendVoice(stripped); else setVoiceStatus(T.voice_listening);
 rec.onerror = function(ev) {
 voiceListening = false; voiceMicClass(false);
 var code = ev && ev.error ? ev.error : '';
+voiceLastError = code;
 voiceBusy = false; clearTimeout(voiceReplyTimeout);
+clearTimeout(voiceStallTimeout); voiceStallTimeout = null;
 var msg = T.voice_error;
 if (code === 'not-allowed' || code === 'service-not-allowed') {
 voiceHandsFree = false; voiceRefreshHandsFree();
@@ -3138,6 +3145,8 @@ voiceDiag('started', '');
 };
 rec.onend = function() {
 voiceListening = false; voiceMicClass(false);
+clearTimeout(voiceStallTimeout); voiceStallTimeout = null;
+voiceDiag('end', voiceLastError);
 if (voiceHandsFree) { setTimeout(function() { if (voiceHandsFree && !voiceListening) startVoiceListening(); }, 400); return; }
 if (!voiceBusy) setVoiceStatus(T.voice_hold);
 };
@@ -3153,20 +3162,40 @@ if (!rec) { setVoiceStatus(T.voice_unsupported); voiceRefreshHint(); return; }
 rec.lang = voiceLang();
 // Continuous mode only for hands-free: one-shot recognition is what iOS and Android both do reliably.
 rec.continuous = voiceHandsFree;
+voiceLastError = '';
 try { rec.start(); } catch (err) {
-// A recognition that refuses to start (already running, microphone still locked) must not look like a
-// dead button: name the failure instead of returning silently.
-setVoiceStatus(T.voice_error + (err && err.name ? ' (' + err.name + ')' : ''));
-voiceDiag('start-error', err && err.name ? err.name : 'error');
-voiceRefreshHint();
+var name = err && err.name ? err.name : 'error';
+voiceDiag('start-error', name);
+// A session that never ended - the phone's speech service stopped answering after 'started' - leaves the
+// recogniser in the started state, so every later tap throws InvalidStateError. Drop that object, build a
+// fresh one and try once: that is what turns a permanently dead button back into a working one.
+if (name === 'InvalidStateError') {
+voiceDetachRecognition(rec);
+try { rec.abort(); } catch (e1) { }
+voiceRec = null; voiceListening = false; voiceMicClass(false);
+var fresh = voiceMakeRecognition();
+if (fresh) {
+fresh.lang = voiceLang(); fresh.continuous = voiceHandsFree;
+try {
+fresh.start();
+voiceListening = true; voiceMicClass(true); setVoiceStatus(T.voice_listening);
+armVoiceStall('retry');
+return;
+} catch (err2) { voiceDiag('start-error', err2 && err2.name ? err2.name : 'error'); }
+}
+}
+setVoiceStatus(T.voice_error + (name ? ' (' + name + ')' : ''));
+voiceShowHintForFailure();
 return;
 }
 voiceListening = true; voiceMicClass(true);
 setVoiceStatus(T.voice_listening);
+armVoiceStall('tap');
 }
 
 function stopVoiceListening() {
 voiceHandsFree = false; voiceRefreshHandsFree();
+clearTimeout(voiceStallTimeout); voiceStallTimeout = null;
 if (voiceRec && voiceListening) { try { voiceRec.stop(); } catch (err) { } }
 voiceListening = false; voiceMicClass(false);
 setVoiceStatus(T.voice_hold);
@@ -3274,18 +3303,74 @@ httpsPort: HTTPS_PORT
 
 // A plain http page can never open the microphone in Chrome. Saying so and offering the https switch in the
 // panel is the only route from 'nothing happens' to a working voice button.
-function voiceRefreshHint() {
+function voiceShowHint(text, withHttpsButton) {
 var box = document.getElementById('voiceHint');
 if (!box) return;
-if (window.isSecureContext !== false) { box.style.display = 'none'; return; }
 var txt = document.getElementById('voiceHintText');
-if (txt) txt.textContent = T.voice_secure_needed || '';
+if (txt) txt.textContent = text || '';
 var go = document.getElementById('voiceHttpsBtn');
 if (go) {
-if (HTTPS_PORT > 0) { go.textContent = T.install_https_open || 'https'; go.style.display = ''; }
+if (withHttpsButton && HTTPS_PORT > 0) { go.textContent = T.install_https_open || 'https'; go.style.display = ''; }
 else go.style.display = 'none';
 }
 box.style.display = '';
+}
+
+function voiceHideHint() {
+var box = document.getElementById('voiceHint');
+if (box) box.style.display = 'none';
+}
+
+function voiceRefreshHint() {
+if (window.isSecureContext === false) { voiceShowHint(T.voice_secure_needed || '', true); return; }
+voiceHideHint();
+}
+
+// A secure page whose speech service never answers looks exactly like a dead button. Say what is wrong and
+// point at the two paths that still work: a tapped preset and the keyboard dictation field below.
+function voiceShowFallbackHint() { voiceShowHint(T.voice_offline_hint || '', false); }
+
+function voiceShowHintForFailure() {
+if (window.isSecureContext === false) { voiceRefreshHint(); return; }
+voiceShowFallbackHint();
+}
+
+// A recogniser that is thrown away must not report back: its late onend would overwrite the explanation the
+// user is reading with the idle label.
+function voiceDetachRecognition(rec) {
+if (!rec) return;
+try { rec.onresult = null; rec.onerror = null; rec.onend = null; rec.onstart = null; } catch (e) { }
+}
+
+// A recogniser that starts but never delivers a result and never fires onend is what a phone without a
+// reachable speech service produces. Give up after a while, release the object so the next tap can start a
+// fresh session, and tell the user instead of leaving the panel on listening forever.
+function armVoiceStall(detail) {
+clearTimeout(voiceStallTimeout);
+voiceStallTimeout = setTimeout(function() {
+if (!voiceListening) return;
+voiceDiag('stall', detail || '');
+var dying = voiceRec;
+voiceRec = null; voiceDetachRecognition(dying);
+try { if (dying) dying.abort(); } catch (e) { }
+voiceListening = false; voiceMicClass(false);
+setVoiceStatus(T.voice_offline_hint);
+voiceShowFallbackHint();
+voiceProbeMicrophone();
+}, 12000);
+}
+
+// Opens the microphone once. It proves in the log - and in the phone status bar the user is watching -
+// whether permission and hardware are fine, which is the difference between no microphone and no service.
+function voiceProbeMicrophone() {
+var md = navigator.mediaDevices;
+if (!md || !md.getUserMedia) { voiceDiag('mic', 'no-mediadevices'); return; }
+md.getUserMedia({ audio: true }).then(function(stream) {
+voiceDiag('mic', 'granted');
+setTimeout(function() { try { stream.getTracks().forEach(function(t) { t.stop(); }); } catch (e) { } }, 1200);
+}, function(err) {
+voiceDiag('mic', err && err.name ? err.name : 'error');
+});
 }
 
 // The presets the settings advertise, split out of the examples sentence. A tapped preset runs exactly

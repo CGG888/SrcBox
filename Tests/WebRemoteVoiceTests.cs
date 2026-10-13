@@ -125,6 +125,31 @@ namespace LibmpvIptvClient.Tests
             StringAssert.Contains(html, "voiceDiag('started', '')");
         }
 
+        [TestMethod]
+        public void RemoteHtml_RecoversWhenTheSpeechServiceNeverAnswers()
+        {
+            var html = WebRemoteServer.GetRemoteHtml("zh-CN");
+
+            // A session that never ended - the phone's speech service stops answering after 'started' - leaves
+            // the recogniser in the started state, so every later tap throws InvalidStateError: the page has
+            // to notice that, drop the dead object and start a fresh one.
+            StringAssert.Contains(html, "name === 'InvalidStateError'");
+            StringAssert.Contains(html, "function voiceDetachRecognition");
+            StringAssert.Contains(html, "voiceRec = null;");
+            // A service that starts but never answers must end the session and say so instead of leaving the
+            // panel on 'listening' forever, and the microphone itself has to be provable on its own (that is
+            // what raises the phone's microphone indicator).
+            StringAssert.Contains(html, "function armVoiceStall");
+            StringAssert.Contains(html, "voiceDiag('stall'");
+            StringAssert.Contains(html, "function voiceProbeMicrophone");
+            StringAssert.Contains(html, "voiceDiag('mic'");
+            // A transcript has to reach the desktop log, and the fallback advice has to be reachable on a
+            // secure origin too (the phone case, where the https hint is hidden by design).
+            StringAssert.Contains(html, "voiceDiag('result'");
+            StringAssert.Contains(html, "function voiceShowFallbackHint");
+            StringAssert.Contains(html, "function voiceShowHintForFailure");
+        }
+
         [DataTestMethod]
         [DataRow("zh-CN")]
         [DataRow("en-US")]
