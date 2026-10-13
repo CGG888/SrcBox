@@ -12,6 +12,9 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
         private readonly MainShellViewModel _shell;
         private readonly MainWindowOverlayManager _overlayManager;
 
+        /// <summary>The stream the first-frame clock currently belongs to.</summary>
+        private string _playbackUrl = "";
+
         public MainWindowPlaybackTickManager(MainWindow window, MainShellViewModel shell, MainWindowOverlayManager overlayManager)
         {
             _window = window;
@@ -29,12 +32,24 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                     var w1 = _window.PlayerInterop.GetInt("width") ?? 0;
                     var h1 = _window.PlayerInterop.GetInt("height") ?? 0;
                     var fps1 = _window.PlayerInterop.GetDouble("estimated-vf-fps") ?? _window.PlayerInterop.GetDouble("fps") ?? 0;
+
+                    // Every new stream restarts the clock. The start time used to be left at default(DateTime),
+                    // so the warning below fired on any zap and reported the distance from year 1 (~63.9
+                    // billion seconds), and the "first frame" flag stayed set from the previous channel.
+                    var url = _shell.CurrentUrl ?? "";
+                    if (!string.Equals(url, _playbackUrl, StringComparison.Ordinal))
+                    {
+                        _playbackUrl = url;
+                        _window.FirstFrameLoggedForManager = false;
+                        _window.PlayStartTimeForManager = url.Length == 0 ? default : DateTime.Now;
+                    }
+
                     if (!_window.FirstFrameLoggedForManager && w1 > 0 && h1 > 0)
                     {
                         Logger.Info("首帧出现");
                         _window.FirstFrameLoggedForManager = true;
                     }
-                    if (!_window.FirstFrameLoggedForManager)
+                    if (!_window.FirstFrameLoggedForManager && _window.PlayStartTimeForManager != default)
                     {
                         var waited = (DateTime.Now - _window.PlayStartTimeForManager).TotalSeconds;
                         if (waited > Math.Max(3, AppSettings.Current.SourceTimeoutSec))
