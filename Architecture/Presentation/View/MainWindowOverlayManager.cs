@@ -309,21 +309,15 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                 }
             ));
 
-            // The EPG timeline card click is not part of the shared binding context, so it is wired here and
-            // mirrors the timeshift branch of SeekEnd above (keep the timeshift mode when it is already active).
-            _overlayWpf.ProgrammeSelected += (start) =>
+            // The EPG timeline card click is not part of the shared binding context. Both bars resolve the
+            // segment through the same classifier and hand the verdict to MainWindow.ActivateTimelineSegment,
+            // so the windowed bar and the fullscreen overlay cannot drift apart again.
+            _overlayWpf.ProgrammeSelected += (programme) =>
             {
                 try
                 {
-                    var channel = _shell.CurrentChannel;
-                    if (channel == null) return;
-                    LibmpvIptvClient.Diagnostics.Logger.Info($"节目单跳转到 {start:yyyy-MM-dd HH:mm:ss}");
-                    if (_shell.IsTimeshiftActive)
-                    {
-                        _shell.TimeshiftCursorSec = Math.Max(0, (start - _shell.TimeshiftMin).TotalSeconds);
-                        _shell.TimeshiftStart = start;
-                    }
-                    _shell.ChannelPlaybackActions.PlayCatchupAt(channel, start, keepTimeshiftMode: _shell.IsTimeshiftActive);
+                    var verdict = _overlayWpf.TimelineControl?.ResolveSegment(programme) ?? default;
+                    _window.ActivateTimelineSegment(programme, verdict);
                 }
                 catch { }
             };

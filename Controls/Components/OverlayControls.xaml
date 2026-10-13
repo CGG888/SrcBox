@@ -93,7 +93,8 @@
     </Window.Resources>
 
   <Border Background="{DynamicResource TopOverlayScrimBrush}" CornerRadius="8" BorderBrush="{DynamicResource BorderBrushCommon}" BorderThickness="1">
-      <Grid Margin="12,6">
+      <!-- 显式节奏：4px 外边距 + 时间线 + 8px + 按钮行 + 8px（由 ApplyBarHeight 按实测行高设置窗口高度） -->
+      <Grid Margin="12,4">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>  <!-- 0: 节目时间线（进度条/刻度/节目条） -->
             <RowDefinition Height="Auto"/>  <!-- 1: 按钮 -->
@@ -102,7 +103,7 @@
         <!-- 节目时间线：与窗口模式共用同一个控件 -->
         <local:TimeshiftTimeline x:Name="Timeline" Grid.Row="0" VerticalAlignment="Bottom"/>
 
-        <!-- 按钮行 -->
+        <!-- 按钮行：与时间线和底边各留 8px，保持视觉居中 -->
         <Grid x:Name="ButtonRowHost" Grid.Row="1" Margin="0,4,0,0" VerticalAlignment="Center">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto"/> <!-- 左 -->

@@ -1400,7 +1400,7 @@
                 </Grid.RowDefinitions>
 
                 <!-- 节目时间线：同一控件也承载全屏浮层的进度条/节目条 -->
-                <local:TimeshiftTimeline x:Name="TimelineWindowed" Grid.Row="0" Margin="0,6,0,0"/>
+                <local:TimeshiftTimeline x:Name="TimelineWindowed" Grid.Row="0" Margin="0,4,0,0"/>
 
                 <!-- 按钮行 -->
                 <Grid Grid.Row="1" VerticalAlignment="Center">

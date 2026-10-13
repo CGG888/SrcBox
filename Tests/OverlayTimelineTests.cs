@@ -93,6 +93,100 @@ namespace LibmpvIptvClient.Tests
         }
 
         /// <summary>
+        /// The segment mode of the band (live / replay / timeshift / scheduled) is one pure decision, so both
+        /// host bars and the unit tests read the same answer. The rules: the live slot stays live, a slot inside
+        /// the running buffer is timeshift, an aired slot inside the replayable span is replay, and the rest
+        /// (future slots, expired slots, channels without an archive) is unavailable.
+        /// </summary>
+        [TestMethod]
+        public void SegmentModeFollowsTheClockTheBufferAndTheArchive()
+        {
+            var now = new DateTime(2026, 10, 13, 20, 0, 0);
+            var replayFloor = now.AddHours(-24);
+            var tsMin = now.AddHours(-2);
+            var tsMax = now;
+
+            // No timeshift session: the live slot is live, the aired slot is replay, the future slot is not playable.
+            Assert.AreEqual(Services.TimelineSegmentMode.Live,
+                Services.TimelineSegmentActions.Classify(now.AddMinutes(-30), now.AddMinutes(30), now, true, replayFloor, false, tsMin, tsMax));
+            Assert.AreEqual(Services.TimelineSegmentMode.Replay,
+                Services.TimelineSegmentActions.Classify(now.AddHours(-3), now.AddHours(-2), now, true, replayFloor, false, tsMin, tsMax));
+            Assert.AreEqual(Services.TimelineSegmentMode.Unavailable,
+                Services.TimelineSegmentActions.Classify(now.AddHours(1), now.AddHours(2), now, true, replayFloor, false, tsMin, tsMax));
+            Assert.AreEqual(Services.TimelineSegmentMode.Unavailable,
+                Services.TimelineSegmentActions.Classify(now.AddHours(-40), now.AddHours(-39), now, true, replayFloor, false, tsMin, tsMax));
+
+            // With a running buffer, everything the buffer still covers becomes timeshift (that part already aired).
+            Assert.AreEqual(Services.TimelineSegmentMode.Timeshift,
+                Services.TimelineSegmentActions.Classify(now.AddMinutes(-90), now.AddMinutes(-30), now, true, replayFloor, true, tsMin, tsMax));
+            Assert.AreEqual(Services.TimelineSegmentMode.Replay,
+                Services.TimelineSegmentActions.Classify(now.AddHours(-6), now.AddHours(-5), now, true, replayFloor, true, tsMin, tsMax),
+                "a slot outside the buffer stays a plain replay");
+            Assert.AreEqual(Services.TimelineSegmentMode.Live,
+                Services.TimelineSegmentActions.Classify(now.AddMinutes(-5), now.AddMinutes(25), now, true, replayFloor, true, tsMin, tsMax),
+                "the slot that is on air right now stays live even while the buffer runs behind it");
+
+            // A channel without an archive can only serve the live slot; the past is not replayable.
+            Assert.AreEqual(Services.TimelineSegmentMode.Unavailable,
+                Services.TimelineSegmentActions.Classify(now.AddHours(-3), now.AddHours(-2), now, false, replayFloor, false, tsMin, tsMax));
+            Assert.AreEqual(Services.TimelineSegmentMode.Unavailable,
+                Services.TimelineSegmentActions.Classify(now, now, now, true, replayFloor, false, tsMin, tsMax),
+                "a slot with no length is never playable");
+        }
+
+        /// <summary>
+        /// The click verdict of a segment: the live slot goes back to the live edge, the buffered slot seeks the
+        /// timeshift session (and keeps it alive), an aired slot starts catchup, and the future slot does nothing.
+        /// </summary>
+        [TestMethod]
+        public void SegmentVerdictPicksTheActionTheUserExpects()
+        {
+            var start = new DateTime(2026, 10, 13, 20, 30, 0);
+            var end = start.AddHours(1);
+            var labels = new Services.TimelineSegmentLabels("Live", "Replay", "Timeshift", "Booked");
+
+            var live = Services.TimelineSegmentActions.VerdictFor(Services.TimelineSegmentMode.Live, start, end, labels);
+            Assert.AreEqual(Services.TimelineSegmentAction.GoLive, live.Action);
+            Assert.IsFalse(live.KeepTimeshiftMode, "returning to the live edge leaves the timeshift session");
+
+            var timeshift = Services.TimelineSegmentActions.VerdictFor(Services.TimelineSegmentMode.Timeshift, start, end, labels);
+            Assert.AreEqual(Services.TimelineSegmentAction.SeekTimeshift, timeshift.Action);
+            Assert.IsTrue(timeshift.KeepTimeshiftMode, "seeking inside the buffer must keep the session alive");
+            Assert.AreEqual(start, timeshift.Target);
+            StringAssert.Contains(timeshift.Hint, "Timeshift");
+            StringAssert.Contains(timeshift.Hint, "20:30-21:30");
+
+            var replay = Services.TimelineSegmentActions.VerdictFor(Services.TimelineSegmentMode.Replay, start, end, labels);
+            Assert.AreEqual(Services.TimelineSegmentAction.PlayReplay, replay.Action);
+            Assert.IsFalse(replay.KeepTimeshiftMode);
+
+            var future = Services.TimelineSegmentActions.VerdictFor(Services.TimelineSegmentMode.Unavailable, start, end, labels);
+            Assert.AreEqual(Services.TimelineSegmentAction.None, future.Action);
+            Assert.IsFalse(future.CanAct, "a future slot has nothing to play yet");
+            Assert.AreEqual("Booked", future.Hint);
+        }
+
+        /// <summary>
+        /// The hover cursor snaps down onto the ruler step so the bubble reports the instant the cursor draws,
+        /// and it is clamped to the visible window so it can never point past either edge of the band.
+        /// </summary>
+        [TestMethod]
+        public void HoverCursorSnapsToTheRulerStepAndStaysInsideTheWindow()
+        {
+            var windowStart = new DateTime(2026, 10, 13, 19, 0, 0);
+            var span = TimeSpan.FromMinutes(180);
+
+            Assert.AreEqual(new DateTime(2026, 10, 13, 19, 20, 0),
+                Services.TimelineSegmentActions.SnapHover(new DateTime(2026, 10, 13, 19, 27, 0), 10, windowStart, span));
+            Assert.AreEqual(windowStart,
+                Services.TimelineSegmentActions.SnapHover(new DateTime(2026, 10, 13, 18, 0, 0), 10, windowStart, span),
+                "hovering left of the window clamps onto its start");
+            Assert.AreEqual(windowStart.Add(span),
+                Services.TimelineSegmentActions.SnapHover(new DateTime(2026, 10, 13, 23, 59, 0), 10, windowStart, span),
+                "hovering right of the window clamps onto its end");
+        }
+
+        /// <summary>
         /// The strip is only rebuilt when this signature changes, so it must depend on the programme starts and
         /// nothing else: an identical schedule has to keep the signature (no flicker) and a shifted one must not.
         /// </summary>

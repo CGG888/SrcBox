@@ -28,22 +28,50 @@ namespace LibmpvIptvClient
         }
 
         /// <summary>
-        /// Windowed timeline card click. Mirrors the fullscreen overlay's ProgrammeSelected handler so both bars
-        /// behave identically: stay in timeshift mode when it is already active, otherwise plain catchup.
+        /// Windowed bar segment click. Both bars route here through <see cref="ActivateTimelineSegment"/>, so the
+        /// windowed and fullscreen timelines can never disagree about what a click means.
         /// </summary>
-        void TimelineWindowed_ProgrammeSelected(DateTime start)
+        void TimelineWindowed_ProgrammeSelected(TimelineProgramme programme)
+        {
+            var timeline = TimelineWindowed;
+            ActivateTimelineSegment(programme, timeline?.ResolveSegment(programme) ?? default);
+        }
+
+        /// <summary>
+        /// The one place a timeline segment click turns into playback, shared by the windowed bottom bar and the
+        /// fullscreen overlay. Order: the live slot returns to the live edge, a slot inside the running timeshift
+        /// buffer seeks that buffer, anything else still replayable starts catchup playback, and a future slot
+        /// does nothing (its badge already announced the booking).
+        /// </summary>
+        internal void ActivateTimelineSegment(TimelineProgramme? programme, Services.TimelineSegmentVerdict verdict)
         {
             try
             {
                 var channel = _shell.CurrentChannel;
-                if (channel == null) return;
-                Diagnostics.Logger.Info($"节目单跳转到 {start:yyyy-MM-dd HH:mm:ss}");
-                if (_shell.IsTimeshiftActive)
+                if (channel == null || programme == null) return;
+
+                var target = verdict.Target == default(DateTime) ? programme.Start : verdict.Target;
+                Diagnostics.Logger.Info($"节目单跳转 {verdict.Action} -> {target:yyyy-MM-dd HH:mm:ss}");
+
+                switch (verdict.Action)
                 {
-                    _shell.TimeshiftCursorSec = Math.Max(0, (start - _shell.TimeshiftMin).TotalSeconds);
-                    _shell.TimeshiftStart = start;
+                    case Services.TimelineSegmentAction.GoLive:
+                        // Leave the buffer and follow the live edge again. The shell owns that transition, so
+                        // mirroring it here is enough for both bars.
+                        if (_shell.IsTimeshiftActive) _shell.IsTimeshiftActive = false;
+                        else _shell.ChannelPlaybackActions.PlayChannel(channel);
+                        break;
+
+                    case Services.TimelineSegmentAction.SeekTimeshift:
+                        _shell.TimeshiftCursorSec = Math.Max(0, (target - _shell.TimeshiftMin).TotalSeconds);
+                        _shell.TimeshiftStart = target;
+                        _shell.ChannelPlaybackActions.PlayCatchupAt(channel, target, keepTimeshiftMode: true);
+                        break;
+
+                    case Services.TimelineSegmentAction.PlayReplay:
+                        _shell.ChannelPlaybackActions.PlayCatchupAt(channel, target, keepTimeshiftMode: false);
+                        break;
                 }
-                _shell.ChannelPlaybackActions.PlayCatchupAt(channel, start, keepTimeshiftMode: _shell.IsTimeshiftActive);
             }
             catch { }
         }

@@ -30,17 +30,16 @@ namespace LibmpvIptvClient
         public bool IsAnyMenuOpen => IsSourcesMenuOpen || IsRatioMenuOpen;
         public string CurrentAspect { get; set; } = "default";
         public event Action<bool>? TimeshiftToggled;
-        /// <summary>Raised when a playable programme card is clicked; the payload is the programme start (wall clock).</summary>
-        public event Action<DateTime>? ProgrammeSelected;
+        /// <summary>Raised when a programme segment is clicked; the host resolves the intent at click time.</summary>
+        public event Action<TimelineProgramme>? ProgrammeSelected;
         private bool _timeshiftOn = false;
         private bool _muted = false;
 
-        // Height of the overlay window is derived from the hosted timeline: meter/band + the button row + the
-        // 12,6 outer margin. Nothing here is a hard-coded bar height any more, so the floating bar can never be
-        // taller than its content.
+        // Height of the overlay window is derived from the hosted timeline and the measured button row, with an
+        // explicit 8 px rhythm: timeline -> 8 px -> button row -> 8 px. Nothing here is a hard-coded bar height
+        // any more, so the floating bar can never be taller than its content and the buttons never hug the edge.
         private const double ButtonRowHeight = 28;
-        private const double OverlayChromeHeight = 12;
-        private const double ButtonRowMargin = 4;
+        private const double BarGap = 8;
         private const double FallbackMeterHeight = 20;
 
         public OverlayControls()
@@ -56,7 +55,7 @@ namespace LibmpvIptvClient
             {
                 Timeline.SeekStart += () => SeekStart?.Invoke();
                 Timeline.SeekEnd += v => SeekEnd?.Invoke(v);
-                Timeline.ProgrammeSelected += start => ProgrammeSelected?.Invoke(start);
+                Timeline.ProgrammeSelected += programme => ProgrammeSelected?.Invoke(programme);
                 Timeline.VolumeChanged += v => VolumeChanged?.Invoke(v);
                 Timeline.MuteChanged += m => { _muted = m; MuteChanged?.Invoke(m); };
                 Timeline.LayoutChanged += ApplyBarHeight;
@@ -78,7 +77,9 @@ namespace LibmpvIptvClient
                 if (required <= 0) required = FallbackMeterHeight;
                 double row = ButtonRowHost?.ActualHeight ?? 0;
                 if (row <= 0) row = ButtonRowHeight;
-                var wanted = required + row + OverlayChromeHeight + ButtonRowMargin;
+                // 8 px between the timeline and the button row, 8 px between the button row and the bar's edge,
+                // so the buttons sit centred in the gap on both sides.
+                var wanted = required + BarGap + row + BarGap;
                 if (Math.Abs(Height - wanted) > 0.5) Height = wanted;
             }
             catch { }

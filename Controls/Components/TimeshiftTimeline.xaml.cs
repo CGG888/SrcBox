@@ -4,9 +4,16 @@ using System.ComponentModel;
 using System.Text;
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
+using LibmpvIptvClient.Services;
 // The project's global usings pull in System.Windows.Forms and System.Drawing, which collide with WPF's
 // namesakes; alias the WPF meaning so the control reads like the rest of the WPF code.
+using Application = System.Windows.Application;
+using Brush = System.Windows.Media.Brush;
+using Size = System.Windows.Size;
 using UserControl = System.Windows.Controls.UserControl;
+using Line = System.Windows.Shapes.Line;
+using Ellipse = System.Windows.Shapes.Ellipse;
 using Button = System.Windows.Controls.Button;
 using Point = System.Windows.Point;
 using Rectangle = System.Windows.Shapes.Rectangle;
@@ -21,7 +28,8 @@ namespace LibmpvIptvClient
     /// falls back to when the channel has no schedule. It is hosted by the fullscreen floating overlay
     /// (<see cref="OverlayControls"/>) and by the in-layout bottom bar of <see cref="MainWindow"/>, so the two
     /// bars cannot drift apart again. The host owns the height: it listens to <see cref="LayoutChanged"/> and
-    /// applies <see cref="RequiredHeight"/>.
+    /// applies <see cref="RequiredHeight"/>. Every segment state (live / replay / timeshift / scheduled) comes
+    /// from <see cref="Services.TimelineSegmentActions"/>, the single classifier shared with the two hosts.
     /// </summary>
     public partial class TimeshiftTimeline : UserControl
     {
@@ -31,8 +39,11 @@ namespace LibmpvIptvClient
         /// <summary>Raised with the meter's own units (seconds from the meter minimum) when the user releases.</summary>
         public event Action<double>? SeekEnd;
 
-        /// <summary>Raised when a playable programme segment is clicked; the payload is the programme start (wall clock).</summary>
-        public event Action<DateTime>? ProgrammeSelected;
+        /// <summary>
+        /// Raised when a segment of the band is tapped. The payload is the whole segment so the host can apply
+        /// the shared <see cref="Services.TimelineSegmentActions"/> verdict (go live / seek timeshift / replay).
+        /// </summary>
+        public event Action<TimelineProgramme>? ProgrammeSelected;
 
         /// <summary>Raised whenever the preferred height changes (band shown/hidden, compact toggled).</summary>
         public event Action? LayoutChanged;
@@ -46,19 +57,34 @@ namespace LibmpvIptvClient
         /// <summary>Height of the plain meter row (the classic compact bottom bar).</summary>
         private const double MeterRowHeight = 20;
 
-        // The band is deliberately the height of the old seek bar (20 px) plus one short label row and one
-        // short tick row: 16 (name + prev/next) + 13 (ruler) + 20 (segments) = 49.
+        // The band is deliberately the height of the old seek bar (20 px) plus a short label row, a short tick
+        // row and a 1 px groove divider: 16 (name + prev/next) + 13 (ruler) + 1 (divider) + 25 (segments) = 55.
         private const double NavRowHeight = 16;
         private const double RulerRowHeight = 13;
-        private const double TrackRowHeight = 20;
+        private const double DividerRowHeight = 1;
+        private const double TrackRowHeight = 25;
 
         /// <summary>Total height of the programme band (used for <see cref="RequiredHeight"/>).</summary>
-        public const double BandRowHeight = NavRowHeight + RulerRowHeight + TrackRowHeight;
+        public const double BandRowHeight = NavRowHeight + RulerRowHeight + DividerRowHeight + TrackRowHeight;
 
-        private const double BlockHeight = 18;
+        private const double BlockHeight = 24;
         private const double MinimumLabelWidth = 40;
         private const double LabelCollisionWidth = 34;
         private const double WheelPanMinutes = 15;
+
+        /// <summary>Blocks wider than this may wrap the programme name onto a second line.</summary>
+        private const double WideBlockWidth = 140d;
+
+        // Hover cursor (the dashed tick follower). It is a plain Canvas whose children are repositioned, never
+        // rebuilt, so following the pointer costs no visual-tree churn.
+        private const double HoverBubbleHeight = 13d;
+        private const double HoverBubblePad = 6d;
+
+        /// <summary>
+        /// How far the hover canvas has to reach above the track to cover the whole band (nav + ruler + divider).
+        /// The canvas stretches over the track row only, so the line starts here and the bubble overflows here.
+        /// </summary>
+        private const double HoverLineTop = -(NavRowHeight + RulerRowHeight + DividerRowHeight);
 
         private readonly List<TimelineProgramme> _programmes = new List<TimelineProgramme>();
         private readonly Dictionary<long, TimelineProgramme> _programmeCache = new Dictionary<long, TimelineProgramme>();
@@ -98,6 +124,17 @@ namespace LibmpvIptvClient
         private DateTime _tsMin;
         private DateTime _tsMax;
         private string _programmeName = string.Empty;
+
+        // Segment classification inputs. The shell pushes them with every snapshot so the control can label each
+        // segment (live / replay / timeshift / scheduled) without re-deriving the archive windows itself.
+        private DateTime _stateNow = DateTime.Now;
+        private bool _stateReplayAvailable = true;
+        private DateTime _stateReplayFloor = DateTime.Now.AddHours(-ArchiveWindow.ReplayHours);
+        private TimelineSegmentLabels _segmentLabels = TimelineSegmentLabels.Default;
+
+        // Hover cursor state.
+        private bool _hoverCursorVisible;
+        private DateTime _hoverCursorTime = DateTime.Now;
 
         private const string VolumeData = "M2,5 L2,11 L5,11 L9,15 L9,1 L5,5 Z M11,5 Q13,8 11,11 M14,3 Q17,8 14,13";
         private const string MuteData = "M2,5 L2,11 L5,11 L9,15 L9,1 L5,5 Z M11,3 L15,13 M15,3 L11,13";
@@ -216,10 +253,22 @@ namespace LibmpvIptvClient
                 }
 
                 bool scheduleChanged = !string.Equals(state.Signature, _scheduleSignature, StringComparison.Ordinal);
+                // The classification inputs land before the sync: the per-segment mode and badge are derived here
+                // so both hosts (and the template triggers) read exactly the same labels.
+                _stateNow = state.Now == default(DateTime) ? DateTime.Now : state.Now;
+                _stateReplayAvailable = state.ReplayAvailable;
+                _stateReplayFloor = state.ReplayFloor == default(DateTime)
+                    ? _stateNow.AddHours(-ArchiveWindow.ReplayHours)
+                    : state.ReplayFloor;
+                _segmentLabels = state.SegmentLabels ?? TimelineSegmentLabels.Default;
+
                 SyncProgrammes(state.Programmes, scheduleChanged);
                 _scheduleSignature = state.Signature ?? string.Empty;
                 if (scheduleChanged) DropManualWindow("schedule changed");
 
+                // Rebuilds are already triggered on a schedule change; a tick can only flip a segment state that
+                // the hosts recompute, so the render key watches the mode tally instead of every field.
+                _bandKey = string.Empty;
                 _cursor = state.Cursor;
 
                 SetCompactMode(false);
@@ -295,12 +344,15 @@ namespace LibmpvIptvClient
         {
             _tsMin = min;
             _tsMax = max;
+            // The buffer decides which segments are timeshiftable, so its bounds re-classify the band.
+            ReclassifyAll();
         }
 
         /// <summary>Mirrors the shell's timeshift state onto the control's own bookkeeping.</summary>
         public void SetTimeshift(bool on)
         {
             _timeshiftOn = on;
+            ReclassifyAll();
         }
 
         /// <summary>Progress in seconds; ignored while the meter is anchored to a programme or the user is seeking.</summary>
@@ -394,6 +446,45 @@ namespace LibmpvIptvClient
                 dst.IsLive = src.IsLive;
                 _programmes.Add(dst);
             }
+
+            ReclassifyAll();
+        }
+
+        /// <summary>
+        /// Re-derives the per-segment mode (live / replay / timeshift / scheduled) and its badge from the pushed
+        /// classification inputs. Both hosts paint the same labels because the decision is one pure function.
+        /// </summary>
+        void ReclassifyAll()
+        {
+            for (int i = 0; i < _programmes.Count; i++)
+            {
+                var p = _programmes[i];
+                var mode = TimelineSegmentActions.Classify(p.Start, p.End, _stateNow, _stateReplayAvailable,
+                                                           _stateReplayFloor, _timeshiftOn, _tsMin, _tsMax);
+                p.SegmentMode = mode;
+                p.BadgeText = mode == TimelineSegmentMode.Unavailable
+                    ? _segmentLabels.Scheduled
+                    : TimelineSegmentActions.GetBadgeText(mode, _segmentLabels);
+                p.Replayable = mode == TimelineSegmentMode.Replay;
+                p.Timeshiftable = mode == TimelineSegmentMode.Timeshift;
+            }
+        }
+
+        /// <summary>Mode tally of the band; any change means a segment changed state and the band repaints.</summary>
+        string BuildModeTally()
+        {
+            int live = 0, replay = 0, timeshift = 0, unavailable = 0;
+            for (int i = 0; i < _programmes.Count; i++)
+            {
+                switch (_programmes[i].SegmentMode)
+                {
+                    case TimelineSegmentMode.Live: live++; break;
+                    case TimelineSegmentMode.Replay: replay++; break;
+                    case TimelineSegmentMode.Timeshift: timeshift++; break;
+                    default: unavailable++; break;
+                }
+            }
+            return live + "/" + replay + "/" + timeshift + "/" + unavailable;
         }
 
         /// <summary>Recomputes the viewport and repaints the band.</summary>
@@ -415,7 +506,9 @@ namespace LibmpvIptvClient
                 _tickMinutes = tick;
                 _windowStart = start;
 
-                string key = start.Ticks + "|" + span.Ticks + "|" + tick + "|" + _scheduleSignature + "|" + _programmes.Count;
+                string tally = BuildModeTally();
+                string key = start.Ticks + "|" + span.Ticks + "|" + tick + "|" + _scheduleSignature + "|" + _programmes.Count
+                             + "|" + WidthLeague(width) + "|" + tally;
                 if (!string.Equals(key, _bandKey, StringComparison.Ordinal))
                 {
                     _bandKey = key;
@@ -429,6 +522,9 @@ namespace LibmpvIptvClient
                 LibmpvIptvClient.Diagnostics.Logger.Debug($"[Timeline] render failed: {ex.Message}");
             }
         }
+
+        /// <summary>Viewport league of a band width; the window span only changes when it crosses a breakpoint.</summary>
+        static int WidthLeague(double width) => TimelineBandMetrics.WindowHalfMinutesFor(width);
 
         void RebuildRuler()
         {
@@ -446,10 +542,15 @@ namespace LibmpvIptvClient
                 var time = _windowStart.AddMinutes(i * _tickMinutes);
                 double x = TimelineBandMetrics.PercentFor(_windowStart, _windowSpan, time) * width;
 
-                var notch = new Rectangle { Width = 1, Height = 3 };
-                notch.SetResourceReference(Shape.FillProperty, "BorderBrushCommon");
+                // Graded notches: full hour 8 px, half hour 5 px, plain minute step 3 px at 30 %.
+                bool onHour = time.Minute == 0;
+                bool onHalfHour = time.Minute == 30;
+                double notchHeight = onHour ? 8d : onHalfHour ? 5d : 3d;
+
+                var notch = new Rectangle { Width = 1, Height = notchHeight, Opacity = onHour ? 0.9 : onHalfHour ? 0.6 : 0.3 };
+                notch.SetResourceReference(Shape.FillProperty, onHour ? "TextPrimaryBrush" : "BorderBrushCommon");
                 Canvas.SetLeft(notch, Math.Round(x));
-                Canvas.SetTop(notch, height - 3);
+                Canvas.SetTop(notch, height - notchHeight);
                 RulerCanvas.Children.Add(notch);
 
                 if (spacing < LabelCollisionWidth) continue;
@@ -458,11 +559,12 @@ namespace LibmpvIptvClient
                 var label = new TextBlock
                 {
                     Text = caption,
-                    FontSize = 9.5,
+                    FontSize = onHour ? 10 : 9.5,
+                    FontWeight = onHour ? FontWeights.SemiBold : FontWeights.Normal,
                     Width = Math.Max(spacing, caption.Length * 6.2),
                     TextAlignment = TextAlignment.Center
                 };
-                label.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondaryBrush");
+                label.SetResourceReference(TextBlock.ForegroundProperty, onHour ? "TextPrimaryBrush" : "TextSecondaryBrush");
                 double left = x - label.Width / 2;
                 left = Math.Max(0, Math.Min(width - label.Width, left));
                 Canvas.SetLeft(label, left);
@@ -505,17 +607,28 @@ namespace LibmpvIptvClient
                 double right = TimelineBandMetrics.ClampPercent(rightPercent) * width;
                 double blockWidth = Math.Max(TimelineBandMetrics.MinimumBlockWidth, right - left);
 
+                // Wide segments may wrap the name onto a second line; narrow ones keep the single trimmed line.
+                p.WideBlock = blockWidth >= WideBlockWidth;
+
                 var presenter = new ContentPresenter
                 {
                     Content = p,
                     ContentTemplate = _blockTemplate,
                     Width = blockWidth,
-                    Height = BlockHeight
+                    Height = BlockHeight,
+                    VerticalAlignment = VerticalAlignment.Top
                 };
                 Canvas.SetLeft(presenter, left);
-                Canvas.SetTop(presenter, (height - BlockHeight) / 2);
+                Canvas.SetTop(presenter, BlockTop(height));
                 TrackCanvas.Children.Add(presenter);
             }
+        }
+
+        /// <summary>Top offset that centres a block in the track row without ever clipping it.</summary>
+        static double BlockTop(double trackHeight)
+        {
+            double top = (trackHeight - BlockHeight) / 2d;
+            return top < 0d ? 0d : Math.Round(top);
         }
 
         /// <summary>Repositions the playhead, the current programme frame/fill and the live edge.</summary>
@@ -528,6 +641,7 @@ namespace LibmpvIptvClient
             var windowEnd = _windowStart + _windowSpan;
             TxtWindowRange.Text = TimelineBandMetrics.FormatWindowRange(_windowStart, _windowSpan);
             TxtProgrammeName.Text = _programmeName;
+            UpdateModeChip();
 
             // Playhead: follows the drag preview while seeking, the playback cursor otherwise.
             var probe = _previewTime ?? _cursor;
@@ -603,6 +717,166 @@ namespace LibmpvIptvClient
             {
                 LiveEdge.Visibility = Visibility.Collapsed;
             }
+
+            UpdateHoverCursor();
+        }
+
+        /// <summary>
+        /// Nav-row chip naming what the cursor is doing (live / replay / timeshift) plus the scheduled chip for a
+        /// future slot. The caption doubles as the band's mode readout, so it needs no tooltip of its own.
+        /// </summary>
+        void UpdateModeChip()
+        {
+            try
+            {
+                var mode = _currentProgramme?.SegmentMode ?? TimelineSegmentMode.Live;
+                if (mode == TimelineSegmentMode.Unavailable)
+                {
+                    // Unavailable splits into two captions: a future slot announces its booking, an expired slot
+                    // has nothing left to offer. Neither claims the live/replay/timeshift words.
+                    TxtModeChip.Text = _currentProgramme != null && _currentProgramme.Start > _stateNow
+                        ? _segmentLabels.Scheduled
+                        : _segmentLabels.Replay;
+                    SetBrush(ModeChip, Border.BackgroundProperty, "SegmentScheduledBrush");
+                    ModeChip.Visibility = Visibility.Visible;
+                    return;
+                }
+
+                string caption = TimelineSegmentActions.GetStatusLabel(mode, _segmentLabels);
+                TxtModeChip.Text = caption;
+                SetBrush(ModeChip, Border.BackgroundProperty, BrushKeyFor(mode));
+                ModeChip.Visibility = string.IsNullOrEmpty(caption) ? Visibility.Collapsed : Visibility.Visible;
+            }
+            catch { }
+        }
+
+        static string BrushKeyFor(TimelineSegmentMode mode) => mode switch
+        {
+            TimelineSegmentMode.Live => "SegmentLiveOnAirBrush",
+            TimelineSegmentMode.Timeshift => "SegmentTimeshiftBrush",
+            TimelineSegmentMode.Replay => "SegmentReplayBrush",
+            _ => "SegmentScheduledBrush"
+        };
+
+        /// <summary>Applies a theme brush by key, staying silent when a host runs without the palette merged.</summary>
+        static void SetBrush(System.Windows.DependencyObject target, System.Windows.DependencyProperty property, string key)
+        {
+            try
+            {
+                if (Application.Current?.TryFindResource(key) is Brush brush) target.SetValue(property, brush);
+            }
+            catch { }
+        }
+
+        // ---------------------------------------------------------------------
+        // Hover cursor (dashed tick follower + click-outcome bubble)
+        // ---------------------------------------------------------------------
+
+        /// <summary>Places the hover cursor on the tick it reports; no-op while hidden or while dragging.</summary>
+        void UpdateHoverCursor()
+        {
+            try
+            {
+                if (!_hoverCursorVisible || _pointerDown || _compactMode)
+                {
+                    HideHoverCursor();
+                    return;
+                }
+
+                double width = TrackCanvas.ActualWidth;
+                double trackHeight = TrackCanvas.ActualHeight;
+                if (width <= 0 || trackHeight <= 0 || _windowSpan.Ticks <= 0) { HideHoverCursor(); return; }
+                if (_hoverCursorTime < _windowStart || _hoverCursorTime > _windowStart + _windowSpan) { HideHoverCursor(); return; }
+
+                double percent = TimelineBandMetrics.ClampPercent(
+                    TimelineBandMetrics.PercentFor(_windowStart, _windowSpan, _hoverCursorTime));
+                double x = Math.Round(percent * width) + 0.5d;
+
+                // The hover layer shares the track's coordinate system: the dashed line spans the track, the
+                // hollow dot sits on its top edge and the bubble overflows upward into the ruler row.
+                HoverCursorLine.X1 = x;
+                HoverCursorLine.X2 = x;
+                HoverCursorLine.Y1 = HoverLineTop;
+                HoverCursorLine.Y2 = trackHeight;
+                HoverCursorLine.Visibility = Visibility.Visible;
+
+                Canvas.SetLeft(HoverCursorDot, x - HoverCursorDot.Width / 2d);
+                Canvas.SetTop(HoverCursorDot, HoverLineTop);
+                HoverCursorDot.Visibility = Visibility.Visible;
+
+                UpdateHoverBubble(x, width);
+            }
+            catch { }
+        }
+
+        void HideHoverCursor()
+        {
+            try
+            {
+                HoverCursorLine.Visibility = Visibility.Collapsed;
+                HoverCursorDot.Visibility = Visibility.Collapsed;
+                HoverBubble.Visibility = Visibility.Collapsed;
+            }
+            catch { }
+        }
+
+        /// <summary>Fills and places the bubble above the track: time, programme, state and the click outcome.</summary>
+        void UpdateHoverBubble(double x, double width)
+        {
+            var time = _hoverCursorTime;
+            int index = TimelineBandMetrics.FindProgrammeIndex(_programmes, time);
+            var programme = index >= 0 ? _programmes[index] : null;
+            var mode = programme?.SegmentMode ?? TimelineSegmentMode.Unavailable;
+
+            TxtHoverTime.Text = TimelineSegmentActions.FormatClock(time, _windowStart);
+            // Some EPG feeds ship placeholder entries with no title; fall back to the state word so the bubble
+            // always answers "what is at this instant" instead of showing a bare clock.
+            string name = programme?.Name ?? string.Empty;
+            if (name.Length == 0) name = TimelineSegmentActions.GetStatusLabel(mode, _segmentLabels);
+            TxtHoverName.Text = name;
+
+            var verdict = programme == null
+                ? default
+                : TimelineSegmentActions.VerdictFor(mode, programme.Start, programme.End, _segmentLabels);
+            // The hint is the click outcome: "点击：回放 20:00-20:30". The verdict already spells the outcome,
+            // including the live slot, which returns to the live edge instead of replaying its span.
+            string hint = verdict.CanAct ? verdict.Hint : _segmentLabels.Scheduled;
+            TxtHoverHint.Text = hint ?? string.Empty;
+
+            // The bubble overflows upward into the ruler row and flips to whichever side has room, so it is
+            // never clipped by the band edges.
+            // Clearing the explicit width first is what lets the bubble re-measure: once Width is assigned the
+            // Border reports that value as its DesiredSize, so a second hover would keep the first hover's size.
+            HoverBubble.Width = double.NaN;
+            HoverBubble.Measure(new Size(double.PositiveInfinity, HoverBubbleHeight));
+            double bubbleWidth = Math.Min(Math.Max(HoverBubble.DesiredSize.Width, 40d), Math.Max(40d, width - 4d));
+            double left = x + HoverBubblePad;
+            if (left + bubbleWidth > width - 2d) left = x - HoverBubblePad - bubbleWidth;
+            left = Math.Max(2d, Math.Min(width - 2d - bubbleWidth, left));
+
+            HoverBubble.Width = bubbleWidth;
+            Canvas.SetLeft(HoverBubble, Math.Round(left));
+            // The hover layer shares the track row's origin, so the bubble sits in the 13px ruler row and ends
+            // exactly where the track begins: any higher and the bar clip cuts the text off.
+            Canvas.SetTop(HoverBubble, Math.Round(-HoverBubbleHeight - 1d));
+            HoverBubble.Visibility = Visibility.Visible;
+        }
+
+        // ---------------------------------------------------------------------
+        // Public API: segment activation
+        // ---------------------------------------------------------------------
+
+        /// <summary>
+        /// Resolves what a tap on a segment means (go live / seek timeshift / replay / nothing) using the
+        /// classification inputs the shell pushed with the snapshot and the wall clock at tap time.
+        /// </summary>
+        public TimelineSegmentVerdict ResolveSegment(TimelineProgramme? programme)
+        {
+            if (programme == null) return default;
+            var now = DateTime.Now;
+            var mode = TimelineSegmentActions.Classify(programme.Start, programme.End, now, _stateReplayAvailable,
+                                                       _stateReplayFloor, _timeshiftOn, _tsMin, _tsMax);
+            return TimelineSegmentActions.VerdictFor(mode, programme.Start, programme.End, _segmentLabels);
         }
 
         void ApplyCompactMode(bool compact)
@@ -611,11 +885,16 @@ namespace LibmpvIptvClient
             _compactMode = compact;
             try
             {
+                // The rows carry explicit heights so the host's RequiredHeight and the real layout cannot drift.
                 RowBand.Height = compact ? new GridLength(0) : GridLength.Auto;
+                RowBand.MinHeight = compact ? 0d : BandRowHeight;
+                RulerCanvas.Height = RulerRowHeight;
                 if (compact)
                 {
                     Band.Visibility = Visibility.Collapsed;
                     SliderSeek.Visibility = Visibility.Visible;
+                    _hoverCursorVisible = false;
+                    HideHoverCursor();
                 }
                 else
                 {
@@ -635,6 +914,8 @@ namespace LibmpvIptvClient
             _programmeCache.Clear();
             _scheduleSignature = string.Empty;
             _bandKey = string.Empty;
+            _hoverCursorVisible = false;
+            HideHoverCursor();
             DropManualWindow("band hidden");
             try { RulerCanvas.Children.Clear(); } catch { }
             try { TrackCanvas.Children.Clear(); } catch { }
@@ -796,15 +1077,24 @@ namespace LibmpvIptvClient
         {
             try
             {
+                double width = TrackCanvas.ActualWidth;
+                var p = e.GetPosition(TrackCanvas);
+
                 if (!_pointerDown)
                 {
-                    UpdateTrackTooltip(e);
+                    // Hover: the dashed cursor snaps onto the ruler step and previews what a click would do.
+                    if (width > 0)
+                    {
+                        var raw = TimelineBandMetrics.TimeAtPercent(_windowStart, _windowSpan,
+                                                                    TimelineBandMetrics.ClampPercent(p.X / width));
+                        _hoverCursorTime = TimelineSegmentActions.SnapHover(raw, _tickMinutes, _windowStart, _windowSpan);
+                        _hoverCursorVisible = true;
+                        UpdateHoverCursor();
+                    }
                     return;
                 }
 
-                double width = TrackCanvas.ActualWidth;
                 if (width <= 0) return;
-                var p = e.GetPosition(TrackCanvas);
                 double dx = p.X - _dragStartX;
                 if (!_dragMoved && Math.Abs(dx) < TimelineBandMetrics.DragThresholdPx) return;
                 _dragMoved = true;
@@ -860,8 +1150,9 @@ namespace LibmpvIptvClient
                         int index = TimelineBandMetrics.FindProgrammeIndexAtPercent(_programmes, _windowStart, _windowSpan, _dragStartPercent);
                         if (index >= 0)
                         {
-                            var programme = _programmes[index];
-                            if (programme.CanPlay) ProgrammeSelected?.Invoke(programme.Start);
+                            // The host re-resolves the verdict with the wall clock at tap time, so a stale push
+                            // can never make the click act on a segment state that has already moved on.
+                            ProgrammeSelected?.Invoke(_programmes[index]);
                         }
                     }
                 }
@@ -883,27 +1174,11 @@ namespace LibmpvIptvClient
 
         void TrackCanvas_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
         {
-            try { TrackCanvas.ClearValue(ToolTipProperty); } catch { }
-        }
-
-        void UpdateTrackTooltip(System.Windows.Input.MouseEventArgs e)
-        {
             try
             {
-                double width = TrackCanvas.ActualWidth;
-                if (width <= 0) return;
-                var p = e.GetPosition(TrackCanvas);
-                var time = TimelineBandMetrics.TimeAtPercent(_windowStart, _windowSpan,
-                                                             TimelineBandMetrics.ClampPercent(p.X / width));
-                int index = TimelineBandMetrics.FindProgrammeIndex(_programmes, time);
-                if (index >= 0 && !string.IsNullOrEmpty(_programmes[index].Name))
-                {
-                    TrackCanvas.ToolTip = _programmes[index].Name + "  " + time.ToString("HH:mm");
-                }
-                else
-                {
-                    TrackCanvas.ToolTip = time.ToString("HH:mm");
-                }
+                TrackCanvas.ClearValue(ToolTipProperty);
+                _hoverCursorVisible = false;
+                HideHoverCursor();
             }
             catch { }
         }
@@ -1015,6 +1290,11 @@ namespace LibmpvIptvClient
         private bool _canPlay = true;
         private bool _isCurrent;
         private bool _isLive;
+        private bool _replayable;
+        private bool _timeshiftable;
+        private bool _wideBlock;
+        private string _badgeText = string.Empty;
+        private Services.TimelineSegmentMode _segmentMode = Services.TimelineSegmentMode.Unavailable;
 
         public DateTime Start { get; set; }
         public DateTime End { get; set; }
@@ -1066,6 +1346,44 @@ namespace LibmpvIptvClient
         /// <summary>Duration proportional width in DIPs; kept for hosts that still lay segments out in a strip.</summary>
         public double CardWidth => TimelineStripMetrics.CardWidth(End - Start);
 
+        /// <summary>Per-segment mode of the last classification pass (live / replay / timeshift / scheduled).</summary>
+        public Services.TimelineSegmentMode SegmentMode
+        {
+            get => _segmentMode;
+            set { if (_segmentMode != value) { _segmentMode = value; OnPropertyChanged(nameof(SegmentMode)); } }
+        }
+
+        /// <summary>Corner badge caption ("回看" / "时移" / "预约"), empty when the segment needs no badge.</summary>
+        public string BadgeText
+        {
+            get => _badgeText;
+            set { if (_badgeText != value) { _badgeText = value; OnPropertyChanged(nameof(BadgeText)); OnPropertyChanged(nameof(HasBadge)); } }
+        }
+
+        /// <summary>True when the corner badge has anything to say.</summary>
+        public bool HasBadge => !string.IsNullOrEmpty(_badgeText);
+
+        /// <summary>True for a past segment that is still inside the channel's replayable span.</summary>
+        public bool Replayable
+        {
+            get => _replayable;
+            set { if (_replayable != value) { _replayable = value; OnPropertyChanged(nameof(Replayable)); } }
+        }
+
+        /// <summary>True for a segment inside the running timeshift buffer.</summary>
+        public bool Timeshiftable
+        {
+            get => _timeshiftable;
+            set { if (_timeshiftable != value) { _timeshiftable = value; OnPropertyChanged(nameof(Timeshiftable)); } }
+        }
+
+        /// <summary>True when the segment is wide enough to wrap its name onto a second line.</summary>
+        public bool WideBlock
+        {
+            get => _wideBlock;
+            set { if (_wideBlock != value) { _wideBlock = value; OnPropertyChanged(nameof(WideBlock)); } }
+        }
+
         public event PropertyChangedEventHandler? PropertyChanged;
 
         void OnPropertyChanged(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
@@ -1101,6 +1419,18 @@ namespace LibmpvIptvClient
 
         /// <summary>Band content identity (channel + programme starts); any change rebuilds the segments.</summary>
         public string Signature { get; set; } = string.Empty;
+
+        /// <summary>Wall clock the segment states were classified against; the control keeps it for labels.</summary>
+        public DateTime Now { get; set; }
+
+        /// <summary>True when the channel has an archive (catchup source or replay url format).</summary>
+        public bool ReplayAvailable { get; set; } = true;
+
+        /// <summary>Oldest instant the channel can still replay; older segments become "scheduled"/unavailable.</summary>
+        public DateTime ReplayFloor { get; set; }
+
+        /// <summary>Localized captions of the four segment states, resolved once per push by the shell.</summary>
+        public Services.TimelineSegmentLabels? SegmentLabels { get; set; }
 
         public static string BuildSignature(IReadOnlyList<TimelineProgramme>? programmes)
         {

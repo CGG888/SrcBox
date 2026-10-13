@@ -520,6 +520,10 @@ namespace LibmpvIptvClient
                 var windowTo = timeshiftActive ? _shell.TimeshiftMax : now;
                 bool catchupAvailable = !string.IsNullOrEmpty(channel.CatchupSource)
                     || (AppSettings.Current.Timeshift.Enabled && !string.IsNullOrEmpty(AppSettings.Current.Timeshift.UrlFormat));
+                // Segment classification inputs: how far back the channel's archive reaches, and the four localized
+                // captions the badges and the hover bubble reuse.
+                var replayFloor = now.AddHours(-ArchiveWindow.ReplayHours);
+                var labels = BuildTimelineSegmentLabels();
 
                 DateTime cursor;
                 bool anchored;
@@ -566,6 +570,10 @@ namespace LibmpvIptvClient
                     Programmes = list,
                     Cursor = cursor,
                     ProgrammeAnchored = anchored,
+                    Now = now,
+                    ReplayAvailable = catchupAvailable,
+                    ReplayFloor = replayFloor,
+                    SegmentLabels = labels,
                     Signature = (channel.TvgId ?? channel.Name ?? string.Empty) + "|" + OverlayTimelineState.BuildSignature(list)
                 });
             }
@@ -573,6 +581,29 @@ namespace LibmpvIptvClient
             {
                 Diagnostics.Logger.Debug($"[Overlay] timeline sync failed: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// Resolves the four segment-state captions once per push, so the timeline control (and its hover bubble)
+        /// never reaches into the resource dictionaries itself. Missing keys fall back to the built-in zh-CN words.
+        /// </summary>
+        static TimelineSegmentLabels BuildTimelineSegmentLabels()
+        {
+            string Pick(string key, string fallback)
+            {
+                try
+                {
+                    var value = System.Windows.Application.Current?.TryFindResource(key) as string;
+                    return string.IsNullOrEmpty(value) ? fallback : value;
+                }
+                catch { return fallback; }
+            }
+
+            return new TimelineSegmentLabels(
+                Pick("EPG_Status_Live", "直播"),
+                Pick("EPG_Status_Playback", "回看"),
+                Pick("EPG_Status_Timeshift", "时移"),
+                Pick("EPG_Status_Scheduled", "预约"));
         }
 
         /// <summary>

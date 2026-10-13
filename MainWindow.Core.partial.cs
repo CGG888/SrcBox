@@ -276,15 +276,22 @@ private void InitializeSourceRatioIcons()
         /// <summary>
         /// Grows the windowed bottom bar for the full timeline and shrinks it back to the classic 64 px for the
         /// compact (no EPG data) state. Fullscreen collapses this bar entirely, so the two states never fight.
+        /// The rhythm is explicit: timeline -> 8 px -> button row (30 px) -> 8 px, which keeps the buttons
+        /// centred between the timeline and the bottom edge instead of hugging it.
         /// </summary>
         private void UpdateWindowedBarHeight()
         {
             try
             {
                 if (BottomBar == null) return;
-                const double chromeHeight = 44; // button row + margins
-                var wanted = TimelineWindowed.IsCompactMode ? 64
-                    : Math.Max(64, TimelineWindowed.RequiredHeight + chromeHeight);
+                const double buttonRowHeight = 30;
+                const double barGap = 8;
+                const double timelineTopMargin = 4;
+                // The button row keeps VerticalAlignment=Center in the star row, so an exact fit is not required:
+                // the height only has to be big enough that the row is never squeezed below its natural size.
+                var wanted = TimelineWindowed.IsCompactMode
+                    ? 64
+                    : Math.Max(64, TimelineWindowed.RequiredHeight + timelineTopMargin + barGap + buttonRowHeight + barGap);
                 if (Math.Abs(BottomBar.Height - wanted) > 0.5) BottomBar.Height = wanted;
             }
             catch { }

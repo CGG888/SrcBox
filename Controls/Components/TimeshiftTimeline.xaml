@@ -52,41 +52,89 @@
 
     <!--
       节目段：宽度由宿主按时间比例（percent）算出后写在 ContentPresenter 上，高度固定 24，
-      保证整条时间线不超过原进度条的高度量级。状态由绑定标志驱动，主题画刷一律 DynamicResource。
+      保证整条时间线不超过原进度条的高度量级。段内两行居中：极小号起播时刻 + 节目名。
+      状态（直播/回看/时移/预约）由绑定标志驱动，主题画刷一律 DynamicResource。
     -->
     <DataTemplate x:Key="TimelineProgrammeTemplate" DataType="{x:Type local:TimelineProgramme}">
-      <Grid x:Name="BlockRoot" Height="18" Margin="0,0,1,0" Cursor="Hand" ToolTip="{Binding TooltipText}">
+      <Grid x:Name="BlockRoot" Height="24" Margin="0,0,1,0" Cursor="Hand" ToolTip="{Binding TooltipText}">
         <Border x:Name="BlockSurface" CornerRadius="3" BorderThickness="1"
                 Background="{DynamicResource CardBackgroundBrush}"
                 BorderBrush="{DynamicResource BorderBrushCommon}"/>
         <Border x:Name="BlockLiveTint" CornerRadius="3" Opacity="0" Background="{DynamicResource StatusTimeshiftBrush}"/>
         <Border x:Name="BlockAccentTint" CornerRadius="3" Opacity="0" Background="{DynamicResource AccentBrush}"/>
+        <!-- 可回看段底部 2px 主色条，与直播段的玫红底边区分开 -->
+        <Rectangle x:Name="BlockReplayBar" Height="2" Opacity="0" VerticalAlignment="Bottom"
+                   Fill="{DynamicResource AccentBrush}"/>
+        <!-- 时移段左侧 3px 竖条 -->
+        <Rectangle x:Name="BlockTimeshiftBar" Width="3" Opacity="0" HorizontalAlignment="Left"
+                   Fill="{DynamicResource StatusTimeshiftBrush}"/>
         <Rectangle x:Name="BlockDash" RadiusX="3" RadiusY="3" StrokeThickness="1" Visibility="Collapsed"
                    Stroke="{DynamicResource TextSecondaryBrush}" StrokeDashArray="2 2"/>
-        <TextBlock x:Name="BlockName" Text="{Binding Name}" Margin="4,0,3,0" VerticalAlignment="Center"
-                   FontSize="10.5" TextTrimming="CharacterEllipsis"
-                   Foreground="{DynamicResource TextPrimaryBrush}"/>
+        <Grid Margin="3,0,3,0">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="9"/>
+            <RowDefinition Height="*"/>
+          </Grid.RowDefinitions>
+          <TextBlock x:Name="BlockTime" Grid.Row="0" Text="{Binding TimeText}" FontSize="8" Opacity="0.55"
+                     VerticalAlignment="Center" HorizontalAlignment="Center" TextAlignment="Center"
+                     FontFamily="Consolas" TextTrimming="CharacterEllipsis"
+                     Foreground="{DynamicResource TextSecondaryBrush}"/>
+          <TextBlock x:Name="BlockName" Grid.Row="1" Text="{Binding Name}" FontSize="10"
+                     VerticalAlignment="Center" HorizontalAlignment="Center" TextAlignment="Center"
+                     TextTrimming="CharacterEllipsis" Foreground="{DynamicResource TextPrimaryBrush}"/>
+        </Grid>
+        <!-- 状态角标：直播段不显示（右上角红点已足够），回看 / 时移 / 预约各一枚 -->
+        <Border x:Name="BlockBadge" CornerRadius="2" Padding="3,0" Margin="0,2,2,0"
+                HorizontalAlignment="Right" VerticalAlignment="Top"
+                Background="{DynamicResource BorderBrushCommon}" Visibility="Collapsed">
+          <TextBlock x:Name="BlockBadgeText" Text="{Binding BadgeText}" FontSize="7.5" FontWeight="SemiBold"
+                     Foreground="{DynamicResource TextPrimaryBrush}"/>
+        </Border>
+        <!-- 当前直播段的右上角红点 -->
+        <Ellipse x:Name="BlockNowDot" Width="5" Height="5" Margin="0,2,3,0" Visibility="Collapsed"
+                 HorizontalAlignment="Right" VerticalAlignment="Top"
+                 Fill="{DynamicResource StatusTimeshiftBrush}"/>
       </Grid>
       <DataTemplate.Triggers>
         <!-- 正在直播的节目 -->
         <DataTrigger Binding="{Binding IsLive}" Value="True">
           <Setter TargetName="BlockLiveTint" Property="Opacity" Value="0.22"/>
           <Setter TargetName="BlockSurface" Property="BorderBrush" Value="{DynamicResource StatusTimeshiftBrush}"/>
+          <Setter TargetName="BlockNowDot" Property="Visibility" Value="Visible"/>
         </DataTrigger>
         <!-- 当前播放游标所在的节目：描边标出，文字保持主色以保证盖在进度填充上仍然可读 -->
         <DataTrigger Binding="{Binding IsCurrent}" Value="True">
           <Setter TargetName="BlockSurface" Property="BorderBrush" Value="{DynamicResource AccentBrush}"/>
+          <Setter TargetName="BlockSurface" Property="BorderThickness" Value="1.5"/>
           <Setter TargetName="BlockAccentTint" Property="Opacity" Value="0.16"/>
           <Setter TargetName="BlockName" Property="Foreground" Value="{DynamicResource TextPrimaryBrush}"/>
           <Setter TargetName="BlockName" Property="FontWeight" Value="SemiBold"/>
         </DataTrigger>
-        <!-- 不可回看：虚线 + 弱化，且不可点击（放在最后以覆盖上面的状态） -->
+        <!-- 可回看：底部主色条；只有过去的节目才需要这枚标记 -->
+        <DataTrigger Binding="{Binding Replayable}" Value="True">
+          <Setter TargetName="BlockReplayBar" Property="Opacity" Value="0.9"/>
+        </DataTrigger>
+        <!-- 时移窗口内的节目：左侧玫红竖条 -->
+        <DataTrigger Binding="{Binding Timeshiftable}" Value="True">
+          <Setter TargetName="BlockTimeshiftBar" Property="Opacity" Value="0.9"/>
+        </DataTrigger>
+        <!-- 宽段（≥140px）允许节目名折成两行 -->
+        <DataTrigger Binding="{Binding WideBlock}" Value="True">
+          <Setter TargetName="BlockName" Property="TextWrapping" Value="Wrap"/>
+        </DataTrigger>
+        <!-- 角标：只有回看 / 时移 / 预约带角标文案 -->
+        <DataTrigger Binding="{Binding HasBadge}" Value="True">
+          <Setter TargetName="BlockBadge" Property="Visibility" Value="Visible"/>
+        </DataTrigger>
+        <!-- 不可点击（未来的预约段、超期段）：虚线 + 弱化，放在最后以覆盖上面的状态 -->
         <DataTrigger Binding="{Binding CanPlay}" Value="False">
           <Setter TargetName="BlockDash" Property="Visibility" Value="Visible"/>
           <Setter TargetName="BlockSurface" Property="Background" Value="Transparent"/>
           <Setter TargetName="BlockSurface" Property="BorderBrush" Value="Transparent"/>
           <Setter TargetName="BlockLiveTint" Property="Opacity" Value="0"/>
           <Setter TargetName="BlockAccentTint" Property="Opacity" Value="0"/>
+          <Setter TargetName="BlockReplayBar" Property="Opacity" Value="0"/>
+          <Setter TargetName="BlockTimeshiftBar" Property="Opacity" Value="0"/>
           <Setter TargetName="BlockName" Property="Foreground" Value="{DynamicResource TextSecondaryBrush}"/>
           <Setter TargetName="BlockName" Property="FontWeight" Value="Normal"/>
           <Setter TargetName="BlockRoot" Property="Opacity" Value="0.55"/>
@@ -137,12 +185,13 @@
                              VerticalAlignment="Center"/>
     </Grid>
 
-    <!-- 节目时间线：16px 标题/翻页行 + 13px 刻度行 + 20px 节目段行 = 49px（原进度条是 20px） -->
+    <!-- 节目时间线：16px 标题/翻页行 + 13px 刻度行 + 1px 分隔线 + 25px 节目段行 = 55px（原进度条是 20px） -->
     <Grid x:Name="Band" Grid.Row="1" Grid.Column="0" Visibility="Collapsed">
       <Grid.RowDefinitions>
         <RowDefinition Height="16"/>
         <RowDefinition Height="13"/>
-        <RowDefinition Height="20"/>
+        <RowDefinition Height="1"/>
+        <RowDefinition Height="25"/>
       </Grid.RowDefinitions>
 
       <Grid Grid.Row="0">
@@ -151,24 +200,35 @@
           <ColumnDefinition Width="*"/>
           <ColumnDefinition Width="Auto"/>
           <ColumnDefinition Width="Auto"/>
+          <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
         <Button x:Name="BtnPrevSegment" Grid.Column="0" Style="{StaticResource TimelineNavButton}"
                 Content="&#x2039;" ToolTip="{DynamicResource Timeline_PrevSegment}" Click="BtnPrevSegment_Click"/>
         <TextBlock x:Name="TxtProgrammeName" Grid.Column="1" Margin="2,0,8,0" VerticalAlignment="Center"
                    FontSize="10.5" FontWeight="SemiBold" TextTrimming="CharacterEllipsis"
                    Foreground="{DynamicResource TextPrimaryBrush}"/>
-        <TextBlock x:Name="TxtWindowRange" Grid.Column="2" VerticalAlignment="Center" Margin="0,0,8,0"
+        <!-- 当前模式角标（直播 / 回看 / 时移），颜色随模式切换 -->
+        <Border x:Name="ModeChip" Grid.Column="2" CornerRadius="2" Padding="4,0" Margin="0,0,8,0"
+                VerticalAlignment="Center" Visibility="Collapsed"
+                Background="{DynamicResource StatusTimeshiftBrush}">
+          <TextBlock x:Name="TxtModeChip" FontSize="9" FontWeight="SemiBold" Foreground="#FFFFFFFF"/>
+        </Border>
+        <TextBlock x:Name="TxtWindowRange" Grid.Column="3" VerticalAlignment="Center" Margin="0,0,8,0"
                    FontSize="10.5" MaxWidth="190" TextTrimming="CharacterEllipsis"
                    Foreground="{DynamicResource TextSecondaryBrush}"/>
-        <Button x:Name="BtnNextSegment" Grid.Column="3" Style="{StaticResource TimelineNavButton}"
+        <Button x:Name="BtnNextSegment" Grid.Column="4" Style="{StaticResource TimelineNavButton}"
                 Content="&#x203A;" ToolTip="{DynamicResource Timeline_NextSegment}" Click="BtnNextSegment_Click"/>
       </Grid>
 
       <!-- 刻度：候选步长 5/10/15/30/60 分钟，取第一个让窗口不超过 12 格的步长 -->
       <Canvas x:Name="RulerCanvas" Grid.Row="1" ClipToBounds="True" IsHitTestVisible="False"/>
 
+      <!-- 刻度与轨道之间的 1px 中性色分隔线，给轨道留出内凹槽的感觉 -->
+      <Border Grid.Row="2" Opacity="0.12" BorderThickness="0,1,0,0"
+              BorderBrush="{DynamicResource BorderBrushCommon}"/>
+
       <!-- 节目段轨道 -->
-      <Grid Grid.Row="2">
+      <Grid Grid.Row="3">
         <Canvas x:Name="TrackCanvas" ClipToBounds="True" Background="Transparent"
                 SizeChanged="TrackCanvas_SizeChanged"
                 PreviewMouseLeftButtonDown="TrackCanvas_MouseLeftButtonDown"
@@ -188,6 +248,27 @@
                      Fill="{DynamicResource AccentBrush}"/>
           <Rectangle x:Name="PlayheadHandle" Width="7" Height="7" RadiusX="1" RadiusY="1" Visibility="Collapsed"
                      Fill="{DynamicResource AccentBrush}"/>
+        </Canvas>
+
+        <!-- 悬停刻度光标 + 结果预告气泡：与轨道同坐标系，气泡向上溢出到刻度区，仅由 code-behind 更新坐标 -->
+        <Canvas x:Name="HoverLayer" ClipToBounds="False" IsHitTestVisible="False">
+          <Line x:Name="HoverCursorLine" StrokeThickness="1" StrokeDashArray="3 3" Visibility="Collapsed"
+                Stroke="{DynamicResource TextSecondaryBrush}"/>
+          <Ellipse x:Name="HoverCursorDot" Width="6" Height="6" Visibility="Collapsed" StrokeThickness="1"
+                   Fill="Transparent" Stroke="{DynamicResource TextSecondaryBrush}"/>
+          <Border x:Name="HoverBubble" Height="13" CornerRadius="3" BorderThickness="1" Padding="5,0"
+                  Visibility="Collapsed" Opacity="0.94"
+                  Background="{DynamicResource CardBackgroundBrush}"
+                  BorderBrush="{DynamicResource BorderBrushCommon}">
+            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+              <TextBlock x:Name="TxtHoverTime" FontSize="8.5" FontFamily="Consolas" Margin="0,0,6,0"
+                         Foreground="{DynamicResource TextPrimaryBrush}"/>
+              <TextBlock x:Name="TxtHoverName" FontSize="9.5" MaxWidth="168" TextTrimming="CharacterEllipsis"
+                         Foreground="{DynamicResource TextPrimaryBrush}"/>
+              <TextBlock x:Name="TxtHoverHint" FontSize="8.5" Margin="6,0,0,0"
+                         Foreground="{DynamicResource TextSecondaryBrush}"/>
+            </StackPanel>
+          </Border>
         </Canvas>
       </Grid>
     </Grid>
