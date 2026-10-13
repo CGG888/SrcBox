@@ -1486,14 +1486,22 @@ body.dark-theme, body.theme-dark { color: var(--neu-text); }
 .ts-scrubber { margin-top: 12px; }
 .ts-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; font-size: 11px; color: var(--neu-text-muted); margin-bottom: 6px; }
 .ts-clock { font-size: 12px; font-weight: 600; color: var(--neu-text); font-variant-numeric: tabular-nums; }
-.ts-track { position: relative; height: 34px; border: none; border-radius: 10px; background: var(--neu-surface); box-shadow: var(--neu-shadow-in-sm); cursor: pointer; overflow: hidden; touch-action: none; }
+/* The meter copies the volume row above it exactly - 20px glyph, 10px gaps, 44px value - so the two
+   bars line up column for column, and the bar itself keeps the volume bar's 12px slab. The row
+   padding widens the touch target so a finger can still grab the thin bar. */
+.ts-meter { display: flex; align-items: center; gap: 10px; padding: 6px 0; }
+.ts-icon { flex: 0 0 auto; width: 20px; height: 20px; fill: var(--neu-text-muted); }
+.ts-time { flex: 0 0 44px; width: 44px; text-align: right; font-size: 12px; font-weight: 600; color: var(--neu-text); font-variant-numeric: tabular-nums; }
+.ts-track { position: relative; flex: 1 1 auto; min-width: 0; height: 12px; border: none; border-radius: 8px; background: var(--neu-surface); box-shadow: var(--neu-shadow-in-sm); cursor: pointer; overflow: hidden; touch-action: none; }
 .ts-track:focus-visible { outline: 2px solid var(--neu-primary); outline-offset: 2px; }
 .ts-axis { position: absolute; inset: 0; }
 .ts-seg { position: absolute; top: 0; bottom: 0; border-left: 1px solid var(--neu-border); }
 .ts-seg.current { background: var(--neu-primary); opacity: 0.15; }
 .ts-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--neu-primary); opacity: 0.3; }
 .ts-knob { position: absolute; top: 0; bottom: 0; left: 0; width: 3px; margin-left: -1px; background: var(--neu-primary); }
-.ts-scale { display: flex; justify-content: space-between; margin-top: 4px; font-size: 10px; color: var(--neu-text-muted); font-variant-numeric: tabular-nums; }
+/* The tick labels sit under the bar only, so they are inset by exactly the glyph column and the value
+   column of the row above: the first and last label line up with the ends of the bar. */
+.ts-scale { display: flex; justify-content: space-between; gap: 4px; margin-top: 4px; padding: 0 54px 0 30px; font-size: 10px; color: var(--neu-text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; }
 /* The EPG band: the same programmes as the track, drawn as a swipeable timeline of readable blocks.
    Each block is as wide as its slot (flex-grow in minutes, with a floor so short items stay legible),
    carries its own start time and title, and the block holding the cursor is highlighted and kept
@@ -1841,12 +1849,16 @@ body.remote-mode .rp-text-btn { min-height: clamp(36px, calc(var(--safe-vh) * 6.
 </div>
 <div class=""ts-scrubber"" id=""tsScrubber"" style=""display:none;"">
 <div class=""ts-head""><span id=""tsLabel""></span><span class=""ts-clock"" id=""tsClock""></span></div>
+<div class=""ts-meter"" id=""tsMeter"">
+<svg class=""icon ts-icon"" viewBox=""0 0 24 24""><path d=""M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z""/></svg>
 <div class=""ts-track"" id=""tsTrack"" role=""slider"" tabindex=""0"" aria-valuemin=""0"" aria-valuemax=""100"" aria-valuenow=""0"">
 <div class=""ts-axis"" id=""tsAxis""></div>
 <div class=""ts-fill"" id=""tsFill""></div>
 <div class=""ts-knob"" id=""tsKnob""></div>
 </div>
-<div class=""ts-scale""><span id=""tsFrom""></span><span id=""tsTo""></span></div>
+<span class=""ts-time"" id=""tsTime""></span>
+</div>
+<div class=""ts-scale"" id=""tsScale""></div>
 <div class=""ts-band"" id=""tsBand""><div class=""ts-band-inner"" id=""tsBandInner""></div></div>
 <div class=""ts-detail""><span class=""ts-detail-main"" id=""tsDetailMain""></span><span class=""ts-detail-sub"" id=""tsDetailSub""></span></div>
 </div>
@@ -2223,11 +2235,32 @@ let tsWindow = { active: false, from: 0, to: 0, position: 0 };
 let tsDragging = false, tsDragSeconds = 0, tsTicker = null;
 
 function tsTotalSeconds() { return Math.max(0, (tsWindow.to - tsWindow.from) / 1000); }
+function tsDateText(ms) { var d = new Date(ms); return (d.getMonth() + 1) + '-' + (d.getDate() < 10 ? '0' : '') + d.getDate(); }
 function tsClockText(ms, withDate) {
   var d = new Date(ms), h = d.getHours(), m = d.getMinutes();
   var hm = (h < 10 ? '0' : '') + h + ':' + (m < 10 ? '0' : '') + m;
   if (!withDate) return hm;
-  return (d.getMonth() + 1) + '-' + (d.getDate() < 10 ? '0' : '') + d.getDate() + ' ' + hm;
+  return tsDateText(ms) + ' ' + hm;
+}
+// Five ticks under the bar. A window of hours is labelled with clock times, a window of days with
+// dates, so the labels stay readable however long the seekable window happens to be.
+var tsScaleKey = null;
+function renderTimeshiftScale() {
+  var scale = document.getElementById('tsScale');
+  if (!scale) return;
+  var key = tsWindow.active ? tsWindow.from + '|' + tsWindow.to : '';
+  if (key === tsScaleKey) return;
+  tsScaleKey = key;
+  scale.innerHTML = '';
+  if (!tsWindow.active || tsWindow.to <= tsWindow.from) return;
+  var span = tsWindow.to - tsWindow.from;
+  var byDate = span >= 36 * 3600 * 1000;
+  for (var i = 0; i < 5; i++) {
+    var at = tsWindow.from + span * i / 4;
+    var tick = document.createElement('span');
+    tick.textContent = byDate ? tsDateText(at) : tsClockText(at, false);
+    scale.appendChild(tick);
+  }
 }
 function tsProgramAt(ms) {
   var found = null;
@@ -2322,6 +2355,23 @@ function renderTimeshiftBand() {
   });
   inner.appendChild(playhead);
 }
+// Swiping the band is the user browsing the timeline, so the automatic centring stays off for five
+// seconds after the last touch and then snaps back to the slot the timeshift cursor is sitting in.
+var tsHoldUntil = 0, tsRecentreTimer = null;
+function tsHoldBand() {
+  tsHoldUntil = Date.now() + 5000;
+  if (tsRecentreTimer) clearTimeout(tsRecentreTimer);
+  tsRecentreTimer = setTimeout(function() {
+    tsRecentreTimer = null;
+    tsHoldUntil = 0;
+    tsCentredBlock = null;
+    if (tsWindow.active) positionPlayhead(tsWindow.from + (tsDragging ? tsDragSeconds : tsWindow.position) * 1000);
+  }, 5100);
+}
+function tsReleaseBand() {
+  tsHoldUntil = 0;
+  if (tsRecentreTimer) { clearTimeout(tsRecentreTimer); tsRecentreTimer = null; }
+}
 // Move the playhead to the cursor and mark the slot it falls in, centring that slot in the band.
 function positionPlayhead(ms) {
   var head = document.getElementById('tsPlayhead');
@@ -2342,6 +2392,7 @@ function positionPlayhead(ms) {
   head.style.left = x + 'px';
   var band = document.getElementById('tsBand');
   if (!band || band.clientWidth === 0 || band.scrollWidth <= band.clientWidth) return;
+  if (Date.now() < tsHoldUntil) return;
   var key = String(current.span.start);
   if (key === tsCentredBlock) return;
   tsCentredBlock = key;
@@ -2358,19 +2409,23 @@ function paintTimeshift(seconds) {
   var atMs = tsWindow.from + seconds * 1000;
   var clock = document.getElementById('tsClock');
   if (clock) clock.textContent = tsClockText(atMs, true);
-  // A timeshift window can span days, so the ends carry the date as well as the time.
-  var fromEl = document.getElementById('tsFrom'); if (fromEl) fromEl.textContent = tsClockText(tsWindow.from, true);
-  var toEl = document.getElementById('tsTo'); if (toEl) toEl.textContent = tsClockText(tsWindow.to, true);
-  // Tie the position to the EPG: name and slot of the programme that runs at the cursor.
+  // The cell beside the bar is the clock column of the row, mirroring the volume percentage.
+  var time = document.getElementById('tsTime');
+  if (time) time.textContent = tsClockText(atMs, false);
+  renderTimeshiftScale();
+  // Tie the position to the EPG: name and slot of the programme that runs at the cursor. The card
+  // under the header repeats it, because while timeshift runs the live programme is not what the
+  // user is watching any more.
   var prog = tsProgramAt(atMs);
-  var main = document.getElementById('tsDetailMain');
+  var s = prog && prog.startISO ? new Date(prog.startISO).getTime() : 0;
+  var e = prog && prog.endISO ? new Date(prog.endISO).getTime() : 0;
+  var name = (prog && prog.name) ? prog.name : (T.ts_program_unknown || '');
+  var main = document.getElementById('tsDetailMain'); if (main) main.textContent = name;
   var sub = document.getElementById('tsDetailSub');
-  if (main) main.textContent = (prog && prog.name) ? prog.name : (T.ts_program_unknown || '');
-  if (sub) {
-    var s = prog && prog.startISO ? new Date(prog.startISO).getTime() : 0;
-    var e = prog && prog.endISO ? new Date(prog.endISO).getTime() : 0;
-    sub.textContent = (s && e) ? tsClockText(s, true) + ' - ' + tsClockText(e, true) : tsClockText(atMs, true);
-  }
+  if (sub) sub.textContent = (s && e) ? tsClockText(s, true) + ' - ' + tsClockText(e, true) : tsClockText(atMs, true);
+  var cardName = document.getElementById('programName'); if (cardName) cardName.textContent = name;
+  var cardTime = document.getElementById('programTime');
+  if (cardTime) cardTime.textContent = (s && e) ? tsClockText(s, false) + '-' + tsClockText(e, false) : '';
   positionPlayhead(atMs);
 }
 function updateTimeshift(t) {
@@ -2410,30 +2465,33 @@ function tsSecondsFromEvent(ev) {
 (function bindTimeshiftScrubber() {
   var track = document.getElementById('tsTrack');
   if (!track) return;
+  // The pointer handlers hang off the whole row, because the bar itself is only as tall as the volume
+  // bar; the maths still measures the bar, so a grab just above or below it lands on the right spot.
+  var meter = document.getElementById('tsMeter') || track;
   function seekToDrag() {
     if (!tsDragging) return;
     tsDragging = false;
     send('seekTimeshift', { seconds: Math.round(tsDragSeconds) });
     setTimeout(loadStatus, 400);
   }
-  track.addEventListener('pointerdown', function(ev) {
+  meter.addEventListener('pointerdown', function(ev) {
     if (!tsWindow.active) return;
     tsDragging = true;
     tsDragSeconds = tsSecondsFromEvent(ev);
     paintTimeshift(tsDragSeconds);
-    if (track.setPointerCapture) { try { track.setPointerCapture(ev.pointerId); } catch (err) { } }
+    if (meter.setPointerCapture) { try { meter.setPointerCapture(ev.pointerId); } catch (err) { } }
     ev.preventDefault();
   });
-  track.addEventListener('pointermove', function(ev) {
+  meter.addEventListener('pointermove', function(ev) {
     if (!tsDragging) return;
     tsDragSeconds = tsSecondsFromEvent(ev);
     paintTimeshift(tsDragSeconds);
     ev.preventDefault();
   });
-  track.addEventListener('pointerup', seekToDrag);
-  track.addEventListener('pointercancel', seekToDrag);
+  meter.addEventListener('pointerup', seekToDrag);
+  meter.addEventListener('pointercancel', seekToDrag);
   // Arrow keys step ten seconds, matching the -10s / +10s buttons beside the track
-  track.addEventListener('keydown', function(ev) {
+  meter.addEventListener('keydown', function(ev) {
     if (!tsWindow.active) return;
     var base = tsWindow.position;
     if (ev.key === 'ArrowLeft') { tsDragSeconds = Math.max(0, base - 10); tsDragging = true; seekToDrag(); }
@@ -2445,17 +2503,26 @@ function tsSecondsFromEvent(ev) {
   // for: the card names the slot, so picking it jumps the timeshift cursor straight there instead of
   // hunting for the right spot on the track.
   var strip = document.getElementById('tsBand');
-  if (strip) strip.addEventListener('click', function(ev) {
-    if (!tsWindow.active) return;
-    var card = ev.target && ev.target.closest ? ev.target.closest('.ts-block[data-start]') : null;
-    if (!card) return;
-    var startMs = Number(card.getAttribute('data-start'));
-    var seconds = Math.max(0, Math.min(tsTotalSeconds(), (startMs - tsWindow.from) / 1000));
-    send('seekTimeshift', { seconds: Math.round(seconds) });
-    tsDragSeconds = seconds;
-    paintTimeshift(seconds);
-    setTimeout(loadStatus, 400);
-  });
+  if (strip) {
+    // Any touch on the band counts as the user browsing it, which pauses the automatic centring.
+    strip.addEventListener('pointerdown', tsHoldBand, { passive: true });
+    strip.addEventListener('touchstart', tsHoldBand, { passive: true });
+    strip.addEventListener('wheel', tsHoldBand, { passive: true });
+    strip.addEventListener('click', function(ev) {
+      if (!tsWindow.active) return;
+      var card = ev.target && ev.target.closest ? ev.target.closest('.ts-block[data-start]') : null;
+      if (!card) return;
+      var startMs = Number(card.getAttribute('data-start'));
+      var seconds = Math.max(0, Math.min(tsTotalSeconds(), (startMs - tsWindow.from) / 1000));
+      send('seekTimeshift', { seconds: Math.round(seconds) });
+      tsDragSeconds = seconds;
+      // Picking a slot is an explicit choice, so the band follows it straight away.
+      tsReleaseBand();
+      tsCentredBlock = null;
+      paintTimeshift(seconds);
+      setTimeout(loadStatus, 400);
+    });
+  }
 })();
 
 // EPG replay/timeshift/remind
