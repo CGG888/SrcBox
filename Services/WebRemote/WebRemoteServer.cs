@@ -978,6 +978,14 @@ self.addEventListener('fetch', function(event) {
                         result = GetStatusCallback?.Invoke() ?? new WebRemoteStatus();
                         break;
 
+                    // The phone reports why its microphone never opened (plain http origin, no recogniser,
+                    // start() error). Without it a silent microphone and an ignored tap look identical from
+                    // the desktop, and the log is the only place this can be read.
+                    case "voiceDiag":
+                        Logger.Warn($"[WebRemote] voiceDiag {message}");
+                        result = new { success = true };
+                        break;
+
                     case "getChannels":
                         var groups = GetChannelsCallback?.Invoke() ?? new List<WebRemoteChannelGroup>();
                         Logger.Debug($"[WebRemote] getChannels returned {groups.Count} groups");
@@ -1993,6 +2001,7 @@ body.remote-mode .rp-text-btn { min-height: clamp(36px, calc(var(--safe-vh) * 6.
 <button class=""voice-mic"" id=""voiceMicBtn"" onclick=""voiceMicTap()"">🎙</button>
 <div class=""voice-status"" id=""voiceStatus""></div>
 <div class=""voice-heard"" id=""voiceHeard""></div>
+<div class=""voice-hint"" id=""voiceHint"" style=""display:none;margin-bottom:10px;""><div id=""voiceHintText"" style=""font-size:12px;color:var(--neu-text-muted);margin-bottom:6px;line-height:1.5;""></div><button type=""button"" class=""voice-option"" id=""voiceHttpsBtn"" style=""display:none;width:100%;text-align:center;"" onclick=""openSecureRemote()""></button></div>
 <div class=""voice-options"" id=""voiceOptions""></div>
 <div class=""voice-row"">
 <input type=""text"" id=""voiceInput"" onkeydown=""if(event.key==='Enter')submitVoiceInput()"" />
@@ -3052,7 +3061,10 @@ var voiceReplyTimeout = null;
 var voiceHandsFree = false;
 var voiceLastOptions = [];
 
-function voiceSupported() { return !!VoiceSR && window.isSecureContext !== false; }
+// The browser is the authority on whether recognition can run. Refusing here on the secure-context flag
+// used to leave the microphone button dead on a plain http phone with no way forward, so we always ask the
+// browser and report what it answers (voiceDiag + the https hint in the panel).
+function voiceSupported() { return !!VoiceSR; }
 
 function voiceWakeWords() {
 var list = (VOICE.wake && VOICE.wake.length) ? VOICE.wake : ['遥控器', '小箱', 'srcbox', 'remote', 'пульт'];
@@ -3117,6 +3129,12 @@ msg = T.voice_offline_hint;
 // The raw code is the only thing that tells 'no microphone' apart from 'no speech service', and it is
 // what the user has to read out when the recognition keeps failing on their phone.
 setVoiceStatus(code ? (msg + ' (' + code + ')') : msg);
+voiceDiag('error', code);
+if (code === 'not-allowed' || code === 'service-not-allowed') voiceRefreshHint();
+};
+rec.onstart = function() {
+// Proof for the log that the phone actually handed the microphone to the page.
+voiceDiag('started', '');
 };
 rec.onend = function() {
 voiceListening = false; voiceMicClass(false);
@@ -3128,9 +3146,10 @@ return rec;
 }
 
 function startVoiceListening() {
-if (!voiceSupported()) { setVoiceStatus(window.isSecureContext === false ? T.voice_secure_needed : T.voice_unsupported); return; }
+voiceDiag('start', voiceHandsFree ? 'hands-free' : 'tap');
+if (!voiceSupported()) { setVoiceStatus(T.voice_unsupported); voiceRefreshHint(); return; }
 var rec = voiceMakeRecognition();
-if (!rec) { setVoiceStatus(T.voice_unsupported); return; }
+if (!rec) { setVoiceStatus(T.voice_unsupported); voiceRefreshHint(); return; }
 rec.lang = voiceLang();
 // Continuous mode only for hands-free: one-shot recognition is what iOS and Android both do reliably.
 rec.continuous = voiceHandsFree;
@@ -3138,6 +3157,8 @@ try { rec.start(); } catch (err) {
 // A recognition that refuses to start (already running, microphone still locked) must not look like a
 // dead button: name the failure instead of returning silently.
 setVoiceStatus(T.voice_error + (err && err.name ? ' (' + err.name + ')' : ''));
+voiceDiag('start-error', err && err.name ? err.name : 'error');
+voiceRefreshHint();
 return;
 }
 voiceListening = true; voiceMicClass(true);
@@ -3183,6 +3204,7 @@ setVoiceStatus(VOICE.enabled === false ? T.voice_unsupported : T.voice_hold);
 setVoiceHeard('');
 renderVoiceOptions([]);
 applyVoiceText();
+voiceRefreshHint();
 // The settings may ask for an always-open microphone; still only start it from this user gesture.
 if (VOICE.handsFree && voiceSupported() && !voiceListening) {
 voiceHandsFree = true; voiceRefreshHandsFree();
@@ -3234,6 +3256,36 @@ if (reply.spoken) { setVoiceStatus(reply.spoken); speakVoice(reply.spoken); }
 else setVoiceStatus(reply.success ? T.voice_hold : T.voice_not_understood);
 renderVoiceOptions(reply.options || []);
 if (reply.executed) loadStatus();
+}
+
+// Reports the phone's real environment (secure origin? recogniser present? which error?) to the server log.
+// A microphone that never opened and a tap the page ignored look identical from the desktop without it.
+function voiceDiag(stage, detail) {
+try {
+send('voiceDiag', {
+stage: stage, detail: detail || '',
+protocol: location.protocol, secure: window.isSecureContext === true,
+sr: typeof VoiceSR, srName: VoiceSR ? (VoiceSR.name || 'anonymous') : '',
+media: !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia),
+httpsPort: HTTPS_PORT
+});
+} catch (e) { }
+}
+
+// A plain http page can never open the microphone in Chrome. Saying so and offering the https switch in the
+// panel is the only route from 'nothing happens' to a working voice button.
+function voiceRefreshHint() {
+var box = document.getElementById('voiceHint');
+if (!box) return;
+if (window.isSecureContext !== false) { box.style.display = 'none'; return; }
+var txt = document.getElementById('voiceHintText');
+if (txt) txt.textContent = T.voice_secure_needed || '';
+var go = document.getElementById('voiceHttpsBtn');
+if (go) {
+if (HTTPS_PORT > 0) { go.textContent = T.install_https_open || 'https'; go.style.display = ''; }
+else go.style.display = 'none';
+}
+box.style.display = '';
 }
 
 // The presets the settings advertise, split out of the examples sentence. A tapped preset runs exactly

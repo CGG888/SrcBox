@@ -106,6 +106,25 @@ namespace LibmpvIptvClient.Tests
             StringAssert.Contains(html, "if (!send('voiceCommand'");
         }
 
+        [TestMethod]
+        public void RemoteHtml_NeverRefusesTheMicrophoneOnAPlainHttpOrigin()
+        {
+            var html = WebRemoteServer.GetRemoteHtml("zh-CN");
+
+            // A phone on a plain http LAN address has to be allowed to try: the browser, not a page-side
+            // flag, decides whether recognition can run, and the only way out (the https switch) has to be
+            // offered right in the panel instead of leaving the microphone button dead.
+            StringAssert.Contains(html, "function voiceSupported() { return !!VoiceSR; }");
+            StringAssert.Contains(html, "id=\"voiceHint\"");
+            StringAssert.Contains(html, "id=\"voiceHttpsBtn\"");
+            StringAssert.Contains(html, "onclick=\"openSecureRemote()\"");
+            StringAssert.Contains(html, "function voiceRefreshHint()");
+            StringAssert.Contains(html, "voiceRefreshHint();");
+            // And the reason the microphone stayed shut has to be readable from the desktop log.
+            StringAssert.Contains(html, "send('voiceDiag'");
+            StringAssert.Contains(html, "voiceDiag('started', '')");
+        }
+
         [DataTestMethod]
         [DataRow("zh-CN")]
         [DataRow("en-US")]
