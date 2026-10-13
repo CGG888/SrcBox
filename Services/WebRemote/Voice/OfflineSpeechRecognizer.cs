@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
+using LibmpvIptvClient.Diagnostics;
 using ManySpeech.AliParaformerAsr;
 
 namespace LibmpvIptvClient.Services.WebRemote.Voice
@@ -77,10 +78,38 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
             {
                 var recognizer = _recognizer ??= Create();
                 var stream = recognizer.CreateOfflineStream();
-                stream.AddSamples(samples);
-                var results = recognizer.GetResults(new List<OfflineStream> { stream });
-                return results.Count == 0 ? "" : CleanTranscript(results[0].Text);
+                try
+                {
+                    stream.AddSamples(samples);
+                    var results = recognizer.GetResults(new List<OfflineStream> { stream });
+                    return results.Count == 0 ? "" : CleanTranscript(results[0].Text);
+                }
+                finally
+                {
+                    // A stream keeps its samples alive; one per sentence would leak a megabyte each time.
+                    try { recognizer.DisposeOfflineStream(stream); } catch { }
+                }
             }
+        }
+
+        /// <summary>
+        /// Loads the engine ahead of the first sentence: the constructor reads a 228 MB model, and paying that
+        /// while the speaker waits is the difference between an instant answer and a two second one.
+        /// </summary>
+        public static void Warm(string? directory = null)
+        {
+            if (!IsReady(directory)) return;
+
+            Task.Run(() =>
+            {
+                try { For(directory).EnsureLoaded(); }
+                catch (Exception ex) { Logger.Error("[Voice] offline speech warm up failed: " + ex.Message); }
+            });
+        }
+
+        private void EnsureLoaded()
+        {
+            lock (_gate) { _recognizer ??= Create(); }
         }
 
         /// <summary>
@@ -108,7 +137,9 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
                 if (!File.Exists(path)) throw new FileNotFoundException("speech model file is missing", path);
             }
 
-            return new OfflineRecognizer(model, config, mvn, tokens);
+            // The engine defaults to one thread; a spoken command is latency sensitive and the box is idle.
+            var threads = Math.Clamp(Environment.ProcessorCount / 2, 1, 4);
+            return new OfflineRecognizer(model, config, mvn, tokens, threadsNum: threads);
         }
 
         /// <summary>16-bit PCM to the normalised floats the front end expects.</summary>

@@ -89,6 +89,10 @@ namespace LibmpvIptvClient.Services.WebRemote
                 // endpoint open to the LAN, so a random one is minted once and kept in the settings.
                 _server.SetVoiceToken(EnsureVoiceToken());
 
+                // Loading the recognition model takes seconds; start it while the page is still connecting so
+                // the first sentence is not the one that pays for it.
+                if (AppSettings.Current.WebRemote.Voice.OfflineEnabled) OfflineSpeechRecognizer.Warm();
+
                 // The HTTPS listener always comes up with the HTTP one: it is what makes PWA install work on a phone.
                 _server.Start(config.HttpPort, config.RequirePassword, config.Password);
                 Logger.Debug($"[WebRemote] Manager initialized on port {config.HttpPort}{(IsTlsAvailable ? " (http + https)" : " (http only)")}");
