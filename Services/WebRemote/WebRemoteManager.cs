@@ -290,7 +290,10 @@ namespace LibmpvIptvClient.Services.WebRemote
                 };
             }
 
-            status.TimeshiftEnabled = AppSettings.Current.Timeshift?.Enabled ?? false;
+            // Report the player's current timeshift mode, not the "Enable Timeshift" setting:
+            // the remote button mirrors IsTimeshiftActive (same as the desktop overlay toggle),
+            // otherwise it would look switched on as soon as the page opens.
+            status.TimeshiftEnabled = _shell.IsTimeshiftActive;
             return status;
         }
 

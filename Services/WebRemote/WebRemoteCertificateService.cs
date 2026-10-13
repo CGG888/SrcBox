@@ -361,40 +361,215 @@ namespace LibmpvIptvClient.Services.WebRemote
 
         /// <summary>
         /// PKCS#12 import strategies, tried in order. The plain exportable import stays first so a healthy
-        /// profile behaves exactly as before; the other two are container backed as well, because SChannel
-        /// refuses an ephemeral key ("the platform does not support ephemeral keys"), and they cover a
-        /// profile whose key container store rejects the default import with
+        /// profile behaves exactly as before. The remaining ones are container backed as well, because
+        /// SChannel refuses an ephemeral key ("the platform does not support ephemeral keys"), and they
+        /// cover a profile whose key container store rejects the default import with
         /// "the specified network password is not correct".
         /// </summary>
-        private static readonly X509KeyStorageFlags[] ImportLadder =
+        private static readonly (string Name, string? Password, X509KeyStorageFlags Flags)[] ImportLadder =
         {
-            X509KeyStorageFlags.Exportable,
-            X509KeyStorageFlags.Exportable | X509KeyStorageFlags.PersistKeySet,
-            X509KeyStorageFlags.DefaultKeySet,
+            ("Exportable", string.Empty, X509KeyStorageFlags.Exportable),
+            ("null password", null, X509KeyStorageFlags.Exportable),
+            ("Exportable|PersistKeySet", string.Empty, X509KeyStorageFlags.Exportable | X509KeyStorageFlags.PersistKeySet),
+            ("DefaultKeySet", string.Empty, X509KeyStorageFlags.DefaultKeySet),
         };
 
         /// <summary>
         /// The only place PKCS#12 material is turned into a certificate. Every strategy is attempted and
-        /// the full path is logged, so a failure on a user machine names the file and the reason instead
-        /// of surfacing as a bare "certificate unavailable".
+        /// the failure is logged with the native error code, so a machine specific problem names the file
+        /// and the reason instead of surfacing as a bare "certificate unavailable".
         /// </summary>
         private static X509Certificate2 ImportPkcs12(byte[] pkcs12, string source)
         {
             Exception? first = null;
-            foreach (var flags in ImportLadder)
+            foreach (var (name, password, flags) in ImportLadder)
             {
                 try
                 {
-                    return new X509Certificate2(pkcs12, "", flags);
+                    var loaded = new X509Certificate2(pkcs12, password, flags);
+                    if (first != null)
+                    {
+                        Logger.Warn($"[WebRemote] Loading {source} needed the '{name}' fallback after {first.GetType().Name}");
+                    }
+
+                    return loaded;
                 }
                 catch (Exception ex)
                 {
                     first ??= ex;
-                    Logger.Debug($"[WebRemote] PKCS#12 import ({flags}) failed for {source}: {ex.GetType().Name}: {ex.Message}");
+                    Logger.Warn($"[WebRemote] PKCS#12 import ({name}) failed for {source}: {ex.GetType().Name} hr=0x{ex.HResult:X8}: {ex.Message}");
                 }
             }
 
+            try
+            {
+                var collection = new X509Certificate2Collection();
+                collection.Import(pkcs12, string.Empty, X509KeyStorageFlags.Exportable);
+                if (collection.Count > 0 && collection[0].HasPrivateKey)
+                {
+                    Logger.Warn($"[WebRemote] Loading {source} needed the certificate collection fallback");
+                    return collection[0];
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn($"[WebRemote] PKCS#12 collection import failed for {source}: {ex.GetType().Name} hr=0x{ex.HResult:X8}: {ex.Message}");
+            }
+
+            DescribeImportFailure(pkcs12, source, first);
             throw new CryptographicException($"Unable to import {source} with any key storage flag: {first?.Message}", first);
+        }
+
+        /// <summary>
+        /// Records what the failing process can and cannot do with PKCS#12 and with the user key store.
+        /// A machine specific failure is otherwise indistinguishable from a corrupted file.
+        /// </summary>
+        private static void DescribeImportFailure(byte[] pkcs12, string source, Exception? first)
+        {
+            try
+            {
+                Logger.Error(
+                    $"[WebRemote] Import diagnostics for {source}: length={pkcs12.Length} " +
+                    $"sha256={Convert.ToHexString(SHA256.HashData(pkcs12))} " +
+                    $"fips={CryptoConfig.AllowOnlyFipsAlgorithms} identity={SafeIdentity()} " +
+                    $"profile={Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)} " +
+                    $"cwd={Environment.CurrentDirectory}");
+            }
+            catch
+            {
+                // Diagnostics must never mask the original failure.
+            }
+
+            try
+            {
+                var certificateOnly = new X509Certificate2(pkcs12);
+                Logger.Error($"[WebRemote] Certificate part parses: subject={certificateOnly.Subject}");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"[WebRemote] Certificate part does not parse: {ex.GetType().Name} hr=0x{ex.HResult:X8}: {ex.Message}");
+            }
+
+            ProbeKeyStore();
+            ProbePasswordProtection();
+
+            if (first != null)
+            {
+                var text = first.ToString();
+                Logger.Error($"[WebRemote] First failure: {(text.Length > 1200 ? text[..1200] : text)}");
+            }
+        }
+
+        /// <summary>Checks whether this process may create a persistent RSA key container.</summary>
+        private static void ProbeKeyStore()
+        {
+            var name = "SrcBoxDiagnostics-" + Guid.NewGuid().ToString("N");
+            try
+            {
+                var parameters = new CngKeyCreationParameters
+                {
+                    ExportPolicy = CngExportPolicies.AllowPlaintextExport,
+                    KeyUsage = CngKeyUsages.AllUsages,
+                    Provider = CngProvider.MicrosoftSoftwareKeyStorageProvider,
+                };
+
+                using var key = CngKey.Create(CngAlgorithm.Rsa, name, parameters);
+                var persisted = CngKey.Exists(name, CngProvider.MicrosoftSoftwareKeyStorageProvider);
+                Logger.Error($"[WebRemote] Key container can be created: name={name} persisted={persisted}");
+                key.Delete();
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"[WebRemote] Key container cannot be created: {ex.GetType().Name} hr=0x{ex.HResult:X8}: {ex.Message}");
+            }
+
+            var keysDirectory = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "Microsoft",
+                "Crypto",
+                "Keys");
+            try
+            {
+                var probe = Path.Combine(keysDirectory, "srcbox-probe-" + Guid.NewGuid().ToString("N") + ".tmp");
+                File.WriteAllText(probe, "probe");
+                File.Delete(probe);
+                Logger.Error($"[WebRemote] Key store directory is writable: {keysDirectory}");
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"[WebRemote] Key store directory is not writable: {keysDirectory}: {ex.GetType().Name} hr=0x{ex.HResult:X8}: {ex.Message}");
+            }
+
+            try
+            {
+                var parameters = new CspParameters(1) { KeyContainerName = name };
+                using var rsa = new RSACryptoServiceProvider(2048, parameters);
+                Logger.Error($"[WebRemote] CAPI key container can be created: {rsa.CspKeyContainerInfo.KeyContainerName}");
+                rsa.PersistKeyInCsp = false;
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"[WebRemote] CAPI key container cannot be created: {ex.GetType().Name} hr=0x{ex.HResult:X8}: {ex.Message}");
+            }
+        }
+
+        /// <summary>
+        /// Separates "this process cannot handle a passwordless PKCS#12" from "this process cannot import
+        /// PKCS#12 at all" by round tripping a freshly created certificate in both flavours.
+        /// </summary>
+        private static void ProbePasswordProtection()
+        {
+            try
+            {
+                using var rsa = RSA.Create(2048);
+                var request = new CertificateRequest("CN=SrcBox Diagnostics", rsa, HashAlgorithmName.SHA256, RSASignaturePadding.Pkcs1);
+                using var certificate = request.CreateSelfSigned(DateTimeOffset.Now.AddDays(-1), DateTimeOffset.Now.AddDays(1));
+
+                foreach (var password in new[] { string.Empty, "srcbox" })
+                {
+                    var flavour = password.Length == 0 ? "empty" : "non-empty";
+                    try
+                    {
+                        var bytes = certificate.Export(X509ContentType.Pfx, password);
+                        using var reloaded = new X509Certificate2(bytes, password, X509KeyStorageFlags.Exportable);
+                        Logger.Error($"[WebRemote] Round trip with a {flavour} password works (hasKey={reloaded.HasPrivateKey})");
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error($"[WebRemote] Round trip with a {flavour} password failed: {ex.GetType().Name} hr=0x{ex.HResult:X8}: {ex.Message}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Logger.Error($"[WebRemote] Password probe could not run: {ex.GetType().Name}: {ex.Message}");
+            }
+        }
+
+        private static string SafeIdentity()
+        {
+            try
+            {
+                using var thread = System.Security.Principal.WindowsIdentity.GetCurrent();
+                using var process = System.Security.Principal.WindowsIdentity.GetCurrent(false);
+                var marks = new List<string>();
+                foreach (var group in thread.Groups)
+                {
+                    var value = group?.Value ?? "";
+                    if (value.StartsWith("S-1-16-", StringComparison.Ordinal) ||
+                        value.StartsWith("S-1-15-2-", StringComparison.Ordinal))
+                    {
+                        marks.Add(value);
+                    }
+                }
+
+                return $"{thread.Name} impersonating={thread.Token != process.Token} level={thread.ImpersonationLevel} " +
+                       $"process={process.Name} marks={string.Join(",", marks)}";
+            }
+            catch (Exception ex)
+            {
+                return $"{Environment.UserName} (token unavailable: {ex.GetType().Name}: {ex.Message})";
+            }
         }
 
         /// <summary>

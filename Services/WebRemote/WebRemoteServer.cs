@@ -620,7 +620,7 @@ namespace LibmpvIptvClient.Services.WebRemote
             {
                 var sw = @"
 // SrcBox Web Remote Service Worker
-var CACHE_NAME = 'srcbox-remote-v7';
+var CACHE_NAME = 'srcbox-remote-v8';
 var STATIC_ASSETS = [
   '/',
   '/manifest.json'
@@ -658,6 +658,28 @@ self.addEventListener('fetch', function(event) {
   var url = event.request.url;
   if (url.includes('/ws') || url.includes('/logo/') || url.includes('/icons/')) return;
 
+  // The page itself is served network-first: a rebuilt remote UI has to reach the phone on the
+  // next refresh, and the cached copy is only the offline fallback. Everything else stays
+  // cache-first so a PWA launch keeps working without the app running.
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request).then(function(networkResponse) {
+        if (networkResponse && networkResponse.status === 200) {
+          var responseClone = networkResponse.clone();
+          caches.open(CACHE_NAME).then(function(cache) {
+            cache.put('/', responseClone);
+          });
+        }
+        return networkResponse;
+      }).catch(function() {
+        return caches.match('/').then(function(cached) {
+          return cached || caches.match(event.request);
+        });
+      })
+    );
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request).then(function(response) {
       if (response) return response;
@@ -671,10 +693,6 @@ self.addEventListener('fetch', function(event) {
         }
         return networkResponse;
       }).catch(function() {
-        // Return cached HTML for navigation requests when offline
-        if (event.request.mode === 'navigate') {
-          return caches.match('/');
-        }
         return new Response('Offline', { status: 503 });
       });
     })
@@ -1263,7 +1281,6 @@ self.addEventListener('fetch', function(event) {
                 .Replace("__PWD_OK__", strings.TryGetValue("pwd_ok", out var t4) ? t4 : "OK")
                 .Replace("__PWD_ERR__", strings.TryGetValue("pwd_error", out var t5) ? t5 : "")
                 .Replace("__TITLE_BAR__", strings.TryGetValue("title", out var t6) ? t6 : "SrcBox")
-                .Replace("__LIVE__", strings.TryGetValue("live_badge", out var t7) ? t7 : "LIVE")
                 .Replace("__THEME__", strings.TryGetValue("theme_dark", out var t8) ? t8 : "")
                 .Replace("__STATUS_STOPPED__", strings.TryGetValue("status_stopped", out var t9) ? t9 : "")
                 .Replace("__BTN_FULLSCREEN__", strings.TryGetValue("btn_fullscreen", out var t10) ? t10 : "")
@@ -1418,7 +1435,6 @@ body.dark-theme, body.theme-dark { color: var(--neu-text); }
 .header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; padding: 8px 12px; background: var(--neu-surface); color: var(--neu-text); border: none; border-radius: var(--neu-radius); box-shadow: var(--neu-shadow-out); }
 .header h1 { flex: 1 1 auto; min-width: 0; font-size: 16px; margin: 0; display: flex; align-items: center; gap: 8px; color: var(--neu-text); }
 .header-title { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.live-badge { flex: 0 0 auto; background: var(--neu-danger); color: var(--neu-primary-fg); padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: bold; animation: pulse 2s infinite; }
 @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.6; } }
 .theme-toggle { background: var(--neu-surface); border: none; border-radius: var(--neu-radius); padding: 8px 12px; cursor: pointer; font-size: 14px; color: var(--neu-text); transition: all 0.2s; box-shadow: var(--neu-shadow-out-sm); touch-action: manipulation; }
 .theme-toggle:hover { box-shadow: var(--neu-shadow-out); }
@@ -1455,8 +1471,8 @@ body.dark-theme, body.theme-dark { color: var(--neu-text); }
 .volume-value { min-width: 44px; text-align: right; font-size: 12px; color: var(--neu-text); font-weight: 600; }
 .channel-section { background: var(--neu-surface); border: none; border-radius: var(--neu-radius); padding: 12px; margin-bottom: 12px; box-shadow: var(--neu-shadow-out); }
 .section-title { font-size: 12px; color: var(--neu-text-muted); margin-bottom: 10px; text-transform: uppercase; letter-spacing: 1px; }
-.channel-grid { display: grid; grid-template-columns: repeat(1, 1fr); gap: 10px; max-height: 320px; overflow-y: auto; }
-.channel-item { background: var(--neu-surface); border: none; border-radius: var(--neu-radius); padding: 10px 12px; text-align: left; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 10px; box-shadow: var(--neu-shadow-out-sm); touch-action: manipulation; }
+.channel-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; max-height: 320px; overflow-y: auto; }
+.channel-item { background: var(--neu-surface); border: none; border-radius: var(--neu-radius); padding: 10px 12px; text-align: left; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 10px; box-shadow: var(--neu-shadow-out-sm); touch-action: manipulation; min-width: 0; }
 .channel-item:hover { box-shadow: var(--neu-shadow-out); }
 .channel-item.active { background: var(--neu-surface); border: none; box-shadow: var(--neu-shadow-in); }
 .channel-item .logo { font-size: 26px; flex-shrink: 0; height: 56px; width: 80px; display: flex; align-items: center; justify-content: center; border-radius: 10px; color: var(--neu-text-muted); }
@@ -1618,7 +1634,6 @@ body.remote-mode .now-playing, body.remote-mode .controls-wrapper, body.remote-m
 .rp-num-display.rp-num-empty { color: var(--neu-text-muted); font-size: 12px; font-weight: 400; letter-spacing: 0; }
 .rp-num-hint { min-height: 18px; margin-bottom: 16px; text-align: center; font-size: 12px; color: var(--neu-text-muted); }
 @media (max-width: 400px) {
-.channel-grid { grid-template-columns: repeat(3, 1fr); }
 .controls { grid-template-columns: repeat(5, 1fr); gap: 4px; }
 .btn { padding: 10px 4px; font-size: 16px; }
 }
@@ -1691,12 +1706,12 @@ body.remote-mode .rp-text-btn { min-height: clamp(36px, calc(var(--safe-vh) * 6.
 </div>
 <div class=""container"">
 <div class=""header"">
-<h1><span class=""header-title"">__TITLE_BAR__</span> <span class=""live-badge"" id=""liveBadge"" style=""display:none;"">__LIVE__</span></h1>
+<h1><span class=""header-title"">__TITLE_BAR__</span></h1>
 <div class=""header-actions"">
 <button class=""view-toggle"" id=""viewToggle"" onclick=""toggleRemoteView()"" data-standard=""__VIEW_STANDARD__"" data-full=""__VIEW_FULL__"">__VIEW_STANDARD__</button>
-<button class=""theme-toggle icon-toggle"" id=""themeToggle"" onclick=""toggleTheme()"" title=""__THEME__"" aria-label=""__THEME__"">🌙</button>
 <button class=""theme-toggle install-toggle"" id=""installFab"" onclick=""showInstallModal()"" style=""display:none;""></button>
 <button class=""theme-toggle icon-toggle"" id=""fsFab"" onclick=""toggleBrowserFullscreen()"" style=""display:none;"">⛶</button>
+<button class=""theme-toggle icon-toggle"" id=""themeToggle"" onclick=""toggleTheme()"" title=""__THEME__"" aria-label=""__THEME__"">🌙</button>
 <button class=""theme-toggle icon-toggle"" id=""voiceFab"" onclick=""toggleVoice()"" style=""display:none;"">🎙</button>
 </div>
 </div>
@@ -2117,7 +2132,7 @@ async function setSpeed(speed) { send('setSpeed', { speed }); await loadStatus()
 
 // Timeshift toggle
 var isTimeshiftEnabled = false;
-function toggleTimeshift() { isTimeshiftEnabled = !isTimeshiftEnabled; send('setTimeshift', { enabled: isTimeshiftEnabled }); updateTimeshiftBtn(); }
+function toggleTimeshift() { send('setTimeshift', { enabled: !isTimeshiftEnabled }); setTimeout(loadStatus, 400); }
 function updateTimeshiftBtn() {
   var btn = document.getElementById('btnTimeshift');
   var path = document.getElementById('timeshiftPath');
@@ -2207,8 +2222,6 @@ el.className = 'now-playing-mode ' + (modeClass[s.mode] || 'mode-stopped');
 document.getElementById('channelName').textContent = (s.channel && s.channel.name) || T.status_stopped;
 document.getElementById('programName').textContent = (s.currentProgram && s.currentProgram.name) || '';
 document.getElementById('programTime').textContent = s.currentProgram ? (s.currentProgram.date + ' ' + s.currentProgram.start + ' - ' + s.currentProgram.end) : '';
-document.getElementById('liveBadge').textContent = T.live_badge;
-document.getElementById('liveBadge').style.display = s.mode === 'Live' ? 'inline' : 'none';
 var rpChannel = document.getElementById('rpChannel'); if (rpChannel) rpChannel.textContent = (s.channel && s.channel.name) || T.status_stopped;
 var rpProgram = document.getElementById('rpProgram'); if (rpProgram) rpProgram.textContent = (s.currentProgram && s.currentProgram.name) || '';
 var rpModeEl = document.getElementById('rpMode');
@@ -2316,13 +2329,24 @@ div.innerHTML = '<div class=""epg-time""><span>' + (p.date ? p.date + ' ' : '') 
 div.onclick = function() { div.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); changeChannel(data.channelId); };
 list.appendChild(div);
 });
+locateInList(list, list.querySelector('.epg-item.current'));
+}
+// Scroll a list so the given item sits inside its own scrollbar. The page scrollbar must stay where
+// it is: opening or refreshing the page may not jump the whole page around.
+function locateInList(list, item) {
+if (!list || !item || list.scrollHeight <= list.clientHeight) return;
+var listRect = list.getBoundingClientRect(); var itemRect = item.getBoundingClientRect();
+var target = list.scrollTop + (itemRect.top - listRect.top) - (list.clientHeight - itemRect.height) / 2;
+list.scrollTop = Math.max(0, Math.min(target, list.scrollHeight - list.clientHeight));
 }
 function updateChannelActive() {
 var items = document.querySelectorAll('.channel-item');
+var active = null;
 for (var i = 0; i < items.length; i++) {
 var el = items[i];
-if (el.dataset.id === currentChannelId) { el.classList.add('active'); el.scrollIntoView({ block: 'center' }); } else el.classList.remove('active');
+if (el.dataset.id === currentChannelId) { el.classList.add('active'); active = el; } else el.classList.remove('active');
 }
+locateInList(document.getElementById('channelGrid'), active);
 }
 async function play() { send('play'); await loadStatus(); }
 async function pause() { send('pause'); await loadStatus(); }
@@ -2361,6 +2385,10 @@ var btn = document.getElementById('viewToggle');
 if (btn) btn.textContent = remoteMode ? (btn.dataset.full || 'Full') : (btn.dataset.standard || 'Remote');
 var rpVolFill = document.getElementById('rpVolFill');
 if (rpVolFill) rpVolFill.style.width = (isMuted ? 0 : currentVolume) + '%';
+// The lists may have been filled while the section was hidden: locate the current entries now that
+// they are visible again. Reading the layout after the class toggle already reflects the new view.
+locateInList(document.getElementById('channelGrid'), document.querySelector('.channel-item.active'));
+locateInList(document.getElementById('epgList'), document.querySelector('.epg-item.current'));
 }
 async function togglePlayPause() { if (isPlayingState) { await pause(); } else { await play(); } }
 async function volumeStep(delta) {
@@ -2725,6 +2753,17 @@ u.lang = voiceLang();
 window.speechSynthesis.speak(u);
 } catch (err) { }
 }
+
+// Opening or refreshing the page must not move the page scrollbar; the channel and EPG lists
+// locate the current entry inside their own scroll area instead (see locateInList).
+if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+window.addEventListener('load', function () { window.scrollTo(0, 0); });
+
+// Restore the theme and the remote/full view before connecting: the saved choice must survive a
+// refresh even when the WebSocket is slow or never opens, otherwise the page flashes the default.
+loadTheme();
+loadRemoteView();
+applyStaticText();
 
 // Initialize the install entry before connecting: a failed WebSocket connect must not hide it.
 applyVoiceText();
