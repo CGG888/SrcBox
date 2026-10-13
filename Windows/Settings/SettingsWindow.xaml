@@ -845,6 +845,16 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                       </Grid.RowDefinitions>
                       <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -877,6 +887,36 @@
 
                       <TextBlock Grid.Row="10" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" TextWrapping="Wrap">
                         <Run Text="{DynamicResource UI_WebRemote_Hint}"/>
+                      </TextBlock>
+
+                      <!-- 语音控制 -->
+                      <CheckBox x:Name="CbWebRemoteVoiceEnabled" Grid.Row="11" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebRemote_VoiceEnable}" Margin="0,16,0,8"/>
+
+                      <CheckBox x:Name="CbWebRemoteVoiceHandsFree" Grid.Row="12" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebRemote_VoiceHandsFree}" Margin="0,0,0,8"/>
+
+                      <CheckBox x:Name="CbWebRemoteVoiceSpeak" Grid.Row="13" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebRemote_VoiceSpeak}" Margin="0,0,0,12"/>
+
+                      <TextBlock Grid.Row="14" Grid.Column="0" Text="{DynamicResource UI_WebRemote_VoiceLang}" VerticalAlignment="Center" Margin="0,0,16,8"/>
+                      <TextBox x:Name="TbWebRemoteVoiceLang" Grid.Row="14" Grid.Column="1" Width="120" Height="24" HorizontalAlignment="Left" Margin="0,0,0,8"/>
+
+                      <TextBlock Grid.Row="15" Grid.Column="0" Text="{DynamicResource UI_WebRemote_VoiceVolumeStep}" VerticalAlignment="Center" Margin="0,0,16,8"/>
+                      <TextBox x:Name="TbWebRemoteVoiceVolumeStep" Grid.Row="15" Grid.Column="1" Width="100" Height="24" HorizontalAlignment="Left" Margin="0,0,0,8"/>
+
+                      <TextBlock Grid.Row="16" Grid.Column="0" Text="{DynamicResource UI_WebRemote_VoiceWakeWords}" VerticalAlignment="Center" Margin="0,0,16,8"/>
+                      <TextBox x:Name="TbWebRemoteVoiceWakeWords" Grid.Row="16" Grid.Column="1" Height="24" Margin="0,0,0,8"/>
+
+                      <TextBlock Grid.Row="17" Grid.Column="0" Text="{DynamicResource UI_WebRemote_VoiceRules}" VerticalAlignment="Top" Margin="0,4,16,8"/>
+                      <TextBox x:Name="TbWebRemoteVoiceRules" Grid.Row="17" Grid.Column="1" Height="90" AcceptsReturn="True" TextWrapping="NoWrap" VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" FontFamily="Consolas" FontSize="11" Margin="0,0,0,4"/>
+
+                      <TextBlock Grid.Row="18" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" TextWrapping="Wrap" Margin="0,0,0,12">
+                        <Run Text="{DynamicResource UI_WebRemote_VoiceRulesHint}"/>
+                      </TextBlock>
+
+                      <TextBlock Grid.Row="19" Grid.Column="0" Text="{DynamicResource UI_WebRemote_VoiceToken}" VerticalAlignment="Center" Margin="0,0,16,8"/>
+                      <TextBox x:Name="TbWebRemoteVoiceToken" Grid.Row="19" Grid.Column="1" Height="24" IsReadOnly="True" Margin="0,0,0,8"/>
+
+                      <TextBlock Grid.Row="20" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" TextWrapping="Wrap">
+                        <Run Text="{DynamicResource UI_WebRemote_VoiceApiHint}"/>
                       </TextBlock>
                     </Grid>
                   </StackPanel>

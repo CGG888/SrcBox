@@ -519,6 +519,16 @@
   <sys:String x:Key="UI_WebRemote_CertRegenerate">Пересоздать сертификат</sys:String>
   <sys:String x:Key="UI_WebRemote_CertHint">Первый раз на телефоне: откройте адрес для установки сертификата и установите его (Android — «Сертификат ЦС»; iPhone — установите профиль и включите полное доверие), затем по подсказке страницы перейдите на HTTPS и добавьте пульт на главный экран. Без сертификата тоже можно: меню браузера «На главный экран», затем кнопка полного экрана в шапке страницы.</sys:String>
   <sys:String x:Key="UI_WebRemote_Hint">Включение поднимает HTTP и HTTPS на одном порту, поэтому браузер телефона в той же локальной сети может управлять плеером по http://IP-ПК:порт или https://IP-ПК:порт.</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceEnable">Включить голосовое управление (на странице пульта появится кнопка микрофона)</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceHandsFree">Активация по слову (страница слушает и ждёт кодовое слово)</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceSpeak">Озвучивать ответы</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceLang">Язык распознавания (пусто — как в системе)</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceVolumeStep">Шаг громкости (1-50)</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceWakeWords">Кодовые слова (разделяйте |)</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceRules">Свои фразы (по одной в строке)</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceRulesHint">Формат: фразы=действие:цель, например «новости=channel:CCTV-13» или «повтор новостей=replay:CCTV-13». Фразы разделяются |; ! в начале — точное совпадение, ~ — регулярное выражение. Действия: channel / selectSource / replay / play / pause / stop / mute / volume / seek / fullscreen / exit.</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceToken">Токен интерфейса (создаётся автоматически)</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceApiHint">Ассистент телефона может вызвать http://IP-ПК:порт/api/voice?text=канал 1&amp;token=токен выше и управлять плеером без открытия страницы. Пустой токен отключает проверку, а адрес принимается только из локальной сети.</sys:String>
   <sys:String x:Key="UI_TabWebRemote">Пульт</sys:String>
   <sys:String x:Key="UI_WebRemote_Access">Подключение по QR</sys:String>
   <sys:String x:Key="UI_WebRemote_Url">Адрес доступа</sys:String>

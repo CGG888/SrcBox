@@ -291,6 +291,16 @@
   <sys:String x:Key="UI_WebRemote_CertRegenerate">Regenerate certificate</sys:String>
   <sys:String x:Key="UI_WebRemote_CertHint">First use on a phone: open the certificate install address and install the certificate (Android: pick "CA certificate"; iPhone: install the profile and then enable full trust), then follow the page prompt to reopen it over HTTPS and add it to your home screen. Without a certificate you can still use the browser menu "Add to Home screen" and then the fullscreen button in the page header.</sys:String>
   <sys:String x:Key="UI_WebRemote_Hint">Enabling serves HTTP and HTTPS on the same port, so a phone browser on the same LAN can control the player at http://PC-IP:port or https://PC-IP:port.</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceEnable">Enable voice control (shows the microphone button on the remote page)</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceHandsFree">Hands-free wake word (the page keeps listening and waits for the wake word)</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceSpeak">Speak replies back</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceLang">Recognition language (empty follows the system)</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceVolumeStep">Volume step (1-50)</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceWakeWords">Wake words (separate with |)</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceRules">Custom phrases (one per line)</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceRulesHint">Format: phrases=action:target, for example "news=channel:CCTV-13" or "replay the news=replay:CCTV-13". Separate phrases with |; a leading ! means exact match and ~ means a regular expression. Actions: channel / selectSource / replay / play / pause / stop / mute / volume / seek / fullscreen / exit.</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceToken">Endpoint token (generated automatically)</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceApiHint">A phone assistant can call http://PC-IP:port/api/voice?text=channel 1&amp;token=the token above to control playback without opening the page. An empty token disables the check, and the endpoint only accepts LAN addresses.</sys:String>
   <sys:String x:Key="UI_TabWebRemote">Remote</sys:String>
   <sys:String x:Key="UI_WebRemote_Access">Scan to connect</sys:String>
   <sys:String x:Key="UI_WebRemote_Url">Access URL</sys:String>

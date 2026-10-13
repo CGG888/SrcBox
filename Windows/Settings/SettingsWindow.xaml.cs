@@ -17,6 +17,7 @@ using LibmpvIptvClient.Architecture.Core;
 using LibmpvIptvClient.Architecture.Presentation.Mvvm.Settings;
 using LibmpvIptvClient.Diagnostics;
 using LibmpvIptvClient.Services.WebRemote;
+using LibmpvIptvClient.Services.WebRemote.Voice;
 namespace LibmpvIptvClient
 {
     public partial class SettingsWindow : Window
@@ -254,6 +255,7 @@ namespace LibmpvIptvClient
                     if (CbWebRemoteShowChannelNumber != null) CbWebRemoteShowChannelNumber.IsChecked = wr.ShowChannelNumber;
                     // The field accepts 5-500; a stored value outside the range is shown clamped
                     if (TbWebRemoteMaxEpgItems != null) TbWebRemoteMaxEpgItems.Text = System.Math.Clamp(wr.MaxEpgItems, 5, 500).ToString();
+                    LoadWebRemoteVoiceUi(wr);
                 }
                 catch { }
 
@@ -528,6 +530,7 @@ namespace LibmpvIptvClient
                 if (CbWebRemoteShowChannelNumber != null) CbWebRemoteShowChannelNumber.IsChecked = wr.ShowChannelNumber;
                 // The field accepts 5-500; a stored value outside the range is shown clamped
                 if (TbWebRemoteMaxEpgItems != null) TbWebRemoteMaxEpgItems.Text = System.Math.Clamp(wr.MaxEpgItems, 5, 500).ToString();
+                LoadWebRemoteVoiceUi(wr);
 
                 RefreshWebRemoteAccessPanel();
 
@@ -1231,8 +1234,52 @@ namespace LibmpvIptvClient
                 ShowEpgList = CbWebRemoteShowEpg?.IsChecked == true,
                 ShowChannelNumber = CbWebRemoteShowChannelNumber?.IsChecked != false,
                 // 5-500 is the range the settings field and the guide document
-                MaxEpgItems = System.Math.Clamp(maxEpgItems, 5, 500)
+                MaxEpgItems = System.Math.Clamp(maxEpgItems, 5, 500),
+                Voice = BuildVoiceConfigFromUi()
             };
+        }
+
+        /// <summary>Reads the voice controls; called by every Web Remote save path.</summary>
+        private VoiceConfig BuildVoiceConfigFromUi()
+        {
+            var step = 10.0;
+            if (!double.TryParse(TbWebRemoteVoiceVolumeStep?.Text?.Trim(), out step)) step = 10.0;
+
+            var wakeWords = (TbWebRemoteVoiceWakeWords?.Text ?? "")
+                .Split(new[] { '|', ',', '，', '、', ';', '；' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(w => w.Trim())
+                .Where(w => w.Length > 0)
+                .Distinct()
+                .ToList();
+
+            return new VoiceConfig
+            {
+                Enabled = CbWebRemoteVoiceEnabled?.IsChecked != false,
+                HandsFree = CbWebRemoteVoiceHandsFree?.IsChecked == true,
+                SpeakBack = CbWebRemoteVoiceSpeak?.IsChecked != false,
+                Lang = TbWebRemoteVoiceLang?.Text?.Trim() ?? "",
+                VolumeStep = System.Math.Clamp(step, 1, 50),
+                WakeWords = wakeWords,
+                CustomRules = VoiceRuleText.Parse(TbWebRemoteVoiceRules?.Text),
+                // The token stays as stored: a shortcut on the phone already carries the issued value.
+                Token = AppSettings.Current?.WebRemote?.Voice?.Token ?? ""
+            };
+        }
+
+        /// <summary>Fills the voice controls of the Web Remote tab. Both settings load paths call this.</summary>
+        private void LoadWebRemoteVoiceUi(WebRemoteConfig wr)
+        {
+            var voice = wr.Voice ?? new VoiceConfig();
+            if (CbWebRemoteVoiceEnabled != null) CbWebRemoteVoiceEnabled.IsChecked = voice.Enabled;
+            if (CbWebRemoteVoiceHandsFree != null) CbWebRemoteVoiceHandsFree.IsChecked = voice.HandsFree;
+            if (CbWebRemoteVoiceSpeak != null) CbWebRemoteVoiceSpeak.IsChecked = voice.SpeakBack;
+            if (TbWebRemoteVoiceLang != null) TbWebRemoteVoiceLang.Text = voice.Lang ?? "";
+            if (TbWebRemoteVoiceVolumeStep != null) TbWebRemoteVoiceVolumeStep.Text = System.Math.Clamp(voice.VolumeStep, 1, 50).ToString();
+            if (TbWebRemoteVoiceWakeWords != null) TbWebRemoteVoiceWakeWords.Text = string.Join("|", voice.WakeWords ?? new List<string>());
+            if (TbWebRemoteVoiceRules != null) TbWebRemoteVoiceRules.Text = VoiceRuleText.Format(voice.CustomRules);
+
+            var token = WebRemoteManager.CurrentVoiceToken;
+            if (TbWebRemoteVoiceToken != null) TbWebRemoteVoiceToken.Text = string.IsNullOrWhiteSpace(token) ? voice.Token ?? "" : token;
         }
 
         /// <summary>Saves and applies the current Web Remote UI state (used when the switch is toggled).</summary>

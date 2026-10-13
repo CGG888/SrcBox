@@ -20,6 +20,21 @@ namespace LibmpvIptvClient.Services.WebRemote
         /// <summary>True when the certificate is loaded, so the same port also answers https.</summary>
         public static bool IsTlsAvailable => _server?.IsTlsAvailable ?? false;
 
+        /// <summary>
+        /// The token GET /api/voice currently expects, for display in the settings tab. Falls back to the
+        /// stored value before the server has started.
+        /// </summary>
+        public static string CurrentVoiceToken
+        {
+            get
+            {
+                var live = _server?.VoiceToken;
+                return string.IsNullOrWhiteSpace(live)
+                    ? AppSettings.Current?.WebRemote?.Voice?.Token ?? ""
+                    : live;
+            }
+        }
+
         public static void Initialize(MainShellViewModel shell)
         {
             _shell = shell;

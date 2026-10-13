@@ -518,6 +518,16 @@
   <sys:String x:Key="UI_WebRemote_CertRegenerate">重新產生憑證</sys:String>
   <sys:String x:Key="UI_WebRemote_CertHint">手機首次使用：先開啟憑證安裝位址安裝憑證（Android 選「CA 憑證」；iPhone 裝描述檔後還須開啟完全信任），再依頁面提示以 HTTPS 開啟，即可安裝到主畫面；不想裝憑證也可用瀏覽器選單「加入主畫面」，再點頁面右上角全螢幕按鈕。</sys:String>
   <sys:String x:Key="UI_WebRemote_Hint">啟用後在同一個埠上同時提供 HTTP 與 HTTPS，同一區域網內的手機瀏覽器可透過 http://電腦IP:埠 或 https://電腦IP:埠 存取來控制播放器。</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceEnable">啟用語音控制（遙控頁面顯示麥克風按鈕）</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceHandsFree">免持喚醒（頁面保持聆聽，需說出喚醒詞）</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceSpeak">語音回讀（播報執行結果）</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceLang">辨識語言（留空跟隨系統）</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceVolumeStep">音量步長 (1-50)</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceWakeWords">喚醒詞（多個以 | 分隔）</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceRules">自訂語意（一行一條）</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceRulesHint">格式：短語=動作:目標，例如「看新聞=channel:CCTV-13」「回看新聞=replay:CCTV-13」。多個短語以 | 分隔；句首加 ! 表示完全符合，加 ~ 表示正規表達式。動作可用 channel / selectSource / replay / play / pause / stop / mute / volume / seek / fullscreen / exit。</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceToken">介面權杖（自動產生）</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceApiHint">手機助理可呼叫 http://電腦IP:埠/api/voice?text=換到1台&amp;token=上面的權杖，實現不開網頁的語音控制；權杖留空則無需驗證（僅限本機網段存取）。</sys:String>
   <sys:String x:Key="UI_TabWebRemote">遙控器</sys:String>
   <sys:String x:Key="UI_WebRemote_Access">掃碼存取</sys:String>
   <sys:String x:Key="UI_WebRemote_Url">存取位址</sys:String>

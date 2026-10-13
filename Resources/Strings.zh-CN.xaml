@@ -339,6 +339,16 @@
   <sys:String x:Key="UI_WebRemote_CertRegenerate">重新生成证书</sys:String>
   <sys:String x:Key="UI_WebRemote_CertHint">手机首次使用：先打开证书安装地址安装证书（Android 选「CA 证书」；iPhone 装描述文件后还需开启完全信任），再按页面提示用 HTTPS 打开即可安装到主屏幕；不想装证书也可用浏览器菜单「添加到主屏幕」，再点页面右上角全屏按钮。</sys:String>
   <sys:String x:Key="UI_WebRemote_Hint">启用后在同一端口上同时提供 HTTP 与 HTTPS，同一局域网内的手机浏览器可通过 http://电脑IP:端口 或 https://电脑IP:端口 访问来控制播放器。</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceEnable">启用语音控制（遥控页面显示麦克风按钮）</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceHandsFree">免提唤醒（页面保持聆听，需说出唤醒词）</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceSpeak">语音回读（播报执行结果）</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceLang">识别语言（留空跟随系统）</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceVolumeStep">音量步长 (1-50)</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceWakeWords">唤醒词（多个用 | 分隔）</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceRules">自定义语义（一行一条）</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceRulesHint">格式：短语=动作:目标，例如「看新闻=channel:CCTV-13」「回看新闻=replay:CCTV-13」。多个短语用 | 分隔；句首加 ! 表示完全匹配，加 ~ 表示正则。动作可用 channel / selectSource / replay / play / pause / stop / mute / volume / seek / fullscreen / exit。</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceToken">接口令牌（自动生成）</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceApiHint">手机助手可调用 http://电脑IP:端口/api/voice?text=换到1台&amp;token=上面的令牌 实现不开网页的语音控制；令牌留空则无需校验（仅限本机网段访问）。</sys:String>
   <sys:String x:Key="UI_TabWebRemote">遥控器</sys:String>
   <sys:String x:Key="UI_WebRemote_Access">扫码访问</sys:String>
   <sys:String x:Key="UI_WebRemote_Url">访问地址</sys:String>
