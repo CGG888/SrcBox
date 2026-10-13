@@ -97,6 +97,9 @@ namespace LibmpvIptvClient.Tests
         [DataRow("看湖南卫视", "hunan")]
         [DataRow("调到东方卫视", "dongfang")]
         [DataRow("换到五台", "cctv5")]      // spoken number
+        [DataRow("放到2台", "cctv2")]       // "放到" is what dictation keeps producing for 换到
+        [DataRow("放到二代", "cctv2")]
+        [DataRow("翻到1台", "cctv1")]
         public void Route_ChannelSentence_SwitchesToTheChannel(string text, string expected)
         {
             var player = new Player();
@@ -117,6 +120,31 @@ namespace LibmpvIptvClient.Tests
             player.Say("上一个频道");
 
             CollectionAssert.AreEqual(new[] { "cctv5", "cctv1" }, player.Switched);
+        }
+
+        [TestMethod]
+        public void Route_BareNextSentence_StepsThroughTheList()
+        {
+            var player = new Player { CurrentId = "cctv2" };
+
+            player.Say("下一个");
+            player.Say("上一个");
+
+            CollectionAssert.AreEqual(new[] { "cctv5", "cctv1" }, player.Switched);
+        }
+
+        [TestMethod]
+        public void Route_NowPlayingSentence_ReadsTheCurrentProgramme()
+        {
+            var player = new Player
+            {
+                Now = new VoiceProgram { Title = "新闻联播", Start = Today.AddHours(19), End = Today.AddHours(19.5) }
+            };
+
+            var reply = player.Say("现在播放");
+
+            Assert.IsTrue(reply.Success);
+            StringAssert.Contains(reply.Spoken, "新闻联播");
         }
 
         [TestMethod]

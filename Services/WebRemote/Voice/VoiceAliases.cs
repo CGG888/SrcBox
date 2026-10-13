@@ -72,7 +72,10 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
         private static readonly string[] Prepositions =
         {
             "到", "成", "为", "至", "去", "回", "换到", "切到", "切换到", "调到", "转到", "换", "切", "看",
-            "换台", "换频道", "频道", "台", "的", "把", "给我", "一下", "吧"
+            "换台", "换频道", "频道", "台", "的", "把", "给我", "一下", "吧",
+            // Dictation hears "台" as 代/带 often enough to matter ("放到二代" for 换到2台); neither word ever
+            // carries channel identity on its own, so both are scaffolding here.
+            "代", "带"
         };
 
         // ---------------------------------------------------------------- public entry points
@@ -264,8 +267,8 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
             patterns.Add(P("seek_forward", VoiceVerb.Seek, @"(快进|前进|前移|skip|вперёд|вперед)(?<num>[0-9]{1,4})?(秒|s|sec|seconds|сек)?", numberGroup: "num"));
 
             // ---- channel step -----------------------------------------------------
-            patterns.Add(P("next", VoiceVerb.ChannelStep, @"(下一个频道|下一频道|下一个台|下个台|下一台|next channel|next|频道加|следующий канал|следующий)", arg: "1"));
-            patterns.Add(P("prev", VoiceVerb.ChannelStep, @"(上一个频道|上一频道|上一个台|上个台|上一台|prev(channel)?|previous|previous channel|频道减|предыдущий канал|предыдущий)", arg: "-1"));
+            patterns.Add(P("next", VoiceVerb.ChannelStep, @"(下一个频道|下一频道|下一个台|下个台|下一台|下一个|下个|下一|next channel|next|频道加|следующий канал|следующий)", arg: "1"));
+            patterns.Add(P("prev", VoiceVerb.ChannelStep, @"(上一个频道|上一频道|上一个台|上个台|上一台|上一个|上个|上一|prev(channel)?|previous|previous channel|频道减|предыдущий канал|предыдущий)", arg: "-1"));
             patterns.Add(P("first", VoiceVerb.ChannelStep, @"(第一个频道|第一个台|首个频道|第一台|first channel|первый канал)", arg: "first"));
             patterns.Add(P("last", VoiceVerb.ChannelStep, @"(最后一个频道|最后一个台|末频道|last channel|последний канал)", arg: "last"));
 
@@ -280,11 +283,13 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
             // ---- EPG --------------------------------------------------------------
             // These sit above "channel_switch" on purpose: "回看昨天的节目" would otherwise be read as
             // "switch to a channel called 回看".
-            patterns.Add(P("epg_now", VoiceVerb.EpgNow, @"(现在(在)?播(什么|啥)?|正在播(什么|啥)|当前(节目|播出)|what'?s on( now)?|what is on|current programme|что (сейчас )?идёт|что сейчас)"));
+            patterns.Add(P("epg_now", VoiceVerb.EpgNow, @"(现在(在)?播(什么|啥)?|现在(在)?播放|正在播放|正在播(什么|啥)|当前(节目|播出)|在播什么|what'?s on( now)?|what is on|current programme|что (сейчас )?идёт|что сейчас)"));
             patterns.Add(P("epg_replay", VoiceVerb.EpgReplay, @"(回看|回放|重播|看回看|replay|watch back|посмотреть|повтор)"));
 
             // ---- channel switch (broadest, must stay last) -----------------------
-            patterns.Add(P("channel_switch", VoiceVerb.SwitchChannel, @"(换到|切到|切换到|调到|转到|换台|换频道|换|切|转|看|播放|switch to|change to|turn to|go to|put on|watch|включи|переключи(сь)? на|поставь)"));
+            // "放到/翻到/拨到" are the verbs dictation keeps producing for 换到; they carry the same channel
+            // argument, and without them the sentence only reaches the fuzzy matcher as noise.
+            patterns.Add(P("channel_switch", VoiceVerb.SwitchChannel, @"(换到|切到|切换到|调到|转到|放到|放进|翻到|翻|拨到|拨|换台|换频道|换|切|转|看|播放|switch to|change to|turn to|go to|put on|watch|включи|переключи(сь)? на|поставь)"));
 
             return patterns.ToArray();
         }
