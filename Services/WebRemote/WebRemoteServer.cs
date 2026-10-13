@@ -378,15 +378,28 @@ namespace LibmpvIptvClient.Services.WebRemote
         /// on the machine to anyone on the LAN.
         /// </summary>
         public static bool IsAllowedLogoPath(string? filePath)
+            => IsServableLogoImage(filePath) && IsInsideAllowedLogoRoot(filePath);
+
+        /// <summary>True when the path is an image type the page can render.</summary>
+        public static bool IsServableLogoImage(string? filePath)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(filePath)) return false;
+                var ext = Path.GetExtension(Path.GetFullPath(filePath)).ToLowerInvariant();
+                return ext is ".png" or ".jpg" or ".jpeg" or ".gif" or ".webp" or ".bmp" or ".ico";
+            }
+            catch { return false; }
+        }
+
+        /// <summary>True when the path lives inside the logo cache or the application directory.</summary>
+        public static bool IsInsideAllowedLogoRoot(string? filePath)
         {
             try
             {
                 if (string.IsNullOrWhiteSpace(filePath)) return false;
 
                 var full = Path.GetFullPath(filePath);
-                var ext = Path.GetExtension(full).ToLowerInvariant();
-                if (ext is not (".png" or ".jpg" or ".jpeg" or ".gif" or ".webp" or ".bmp" or ".ico")) return false;
-
                 foreach (var root in AllowedLogoRoots())
                 {
                     if (string.IsNullOrWhiteSpace(root)) continue;
@@ -427,10 +440,19 @@ namespace LibmpvIptvClient.Services.WebRemote
                 // The endpoint used to serve whatever path the client asked for, so anyone on the LAN could
                 // read arbitrary files (settings, credentials, ...). Only images from the logo cache or the
                 // application directory are served now.
-                if (!IsAllowedLogoPath(filePath))
+                if (!IsInsideAllowedLogoRoot(filePath))
                 {
                     Logger.Warn($"[WebRemote] 拒绝非台标缓存目录的 /logo/ 请求: {filePath}");
                     await SendErrorAsync(stream, "403 Forbidden", ct);
+                    return;
+                }
+
+                // Inside the cache the <sha1>.neg marker records a logo that could not be downloaded; it is
+                // not an image, so it answers "no logo" instead of filling the log with refusals.
+                if (!IsServableLogoImage(filePath))
+                {
+                    Logger.Debug($"[WebRemote] 无台标可服务: {filePath}");
+                    await SendLogoMissingAsync(stream, ct);
                     return;
                 }
 
@@ -463,6 +485,25 @@ namespace LibmpvIptvClient.Services.WebRemote
                 Logger.Error($"[WebRemote] ServeLogo error: {ex.Message}");
             }
             finally { if (tcpClient != null) tcpClient.Close(); }
+        }
+
+        /// <summary>True when a browser voice report describes a failure rather than routine progress.</summary>
+        internal static bool IsVoiceProblem(string? message)
+        {
+            if (string.IsNullOrEmpty(message)) return false;
+            return message.Contains("\"stage\":\"stall\"", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("\"stage\":\"start-error\"", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("\"stage\":\"error\"", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("\"stage\":\"mic\"", StringComparison.OrdinalIgnoreCase)
+                || message.Contains("\"stage\":\"max\"", StringComparison.OrdinalIgnoreCase);
+        }
+
+        /// <summary>Answers "this logo does not exist" without a body, and lets the browser cache the
+        /// failure so a page full of failed logos does not retry them on every refresh.</summary>
+        private async Task SendLogoMissingAsync(Stream stream, CancellationToken ct)
+        {
+            var header = "HTTP/1.1 404 Not Found\r\nContent-Length: 0\r\nCache-Control: max-age=3600\r\nConnection: close\r\n\r\n";
+            await stream.WriteAsync(Encoding.UTF8.GetBytes(header), ct);
         }
 
         private async Task SendErrorAsync(Stream stream, string message, CancellationToken ct)
@@ -1013,9 +1054,11 @@ self.addEventListener('fetch', function(event) {
 
                     // The phone reports why its microphone never opened (plain http origin, no recogniser,
                     // start() error). Without it a silent microphone and an ignored tap look identical from
-                    // the desktop, and the log is the only place this can be read.
+                    // the desktop, and the log is the only place this can be read. Routine progress goes to
+                    // Info instead: a phone that works fine produced ~180 of these lines a day at Warn.
                     case "voiceDiag":
-                        Logger.Warn($"[WebRemote] voiceDiag {message}");
+                        if (IsVoiceProblem(message)) Logger.Warn($"[WebRemote] voiceDiag {message}");
+                        else Logger.Info($"[WebRemote] voiceDiag {message}");
                         result = new { success = true };
                         break;
 

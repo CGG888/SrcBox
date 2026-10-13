@@ -62,24 +62,44 @@ namespace LibmpvIptvClient.Services
                     if (age < Ttl) return hashPath;
                 }
 
-                var allFiles = Directory.GetFiles(dir, "*.*", SearchOption.TopDirectoryOnly)
-                    .Where(f => !Path.GetFileName(f).StartsWith("."))
-                    .ToArray();
+                // The stored file may carry a different extension than the url, so the name is matched
+                // without it - which is also why the negative marker (<sha1>.neg) used to be handed out as
+                // if it were the logo: the web remote then asked the player for a file that is not an image.
+                return FindCachedFile(dir, hash, Ttl);
+            }
+            catch { }
+            return null;
+        }
 
-                foreach (var f in allFiles)
+        /// <summary>
+        /// Looks for a cached logo of <paramref name="hash"/> in <paramref name="dir"/>, ignoring the
+        /// extension of the stored file but never returning the negative marker or an expired entry.
+        /// </summary>
+        internal static string? FindCachedFile(string dir, string hash, TimeSpan ttl)
+        {
+            try
+            {
+                foreach (var file in Directory.GetFiles(dir, "*.*", SearchOption.TopDirectoryOnly))
                 {
-                    var name = Path.GetFileNameWithoutExtension(f);
-                    if (name.Equals(hash, StringComparison.OrdinalIgnoreCase))
-                    {
-                        if (File.Exists(f))
-                        {
-                            return f;
-                        }
-                    }
+                    if (Path.GetFileName(file).StartsWith(".")) continue;
+                    if (!IsUsableLogoFile(file)) continue;
+                    if (!Path.GetFileNameWithoutExtension(file).Equals(hash, StringComparison.OrdinalIgnoreCase)) continue;
+                    if (DateTime.UtcNow - File.GetLastWriteTimeUtc(file) >= ttl) continue;
+                    return file;
                 }
             }
             catch { }
             return null;
+        }
+
+        /// <summary>
+        /// True when a cached file may be shown as a logo. The negative marker next to the images records
+        /// that a logo could not be downloaded; it is not an image and must never be served or decoded.
+        /// </summary>
+        internal static bool IsUsableLogoFile(string? path)
+        {
+            if (string.IsNullOrWhiteSpace(path)) return false;
+            return !Path.GetExtension(path).Equals(NegExt, StringComparison.OrdinalIgnoreCase);
         }
 
         public async Task<string?> GetLogoPathAsync(string channelName, string logoUrl)
