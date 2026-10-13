@@ -19,6 +19,8 @@ namespace LibmpvIptvClient.Tests
         [DataRow("{\"stage\":\"result\",\"detail\":\"换到3台\"}")]
         [DataRow("{\"stage\":\"resample\"}")]
         [DataRow("{\"stage\":\"end\"}")]
+        [DataRow("{\"stage\":\"mic\",\"detail\":\"granted\"}")]
+        [DataRow("{\"stage\":\"upload\",\"detail\":\"max\"}")]
         public void RoutineStagesAreNotProblems(string message)
             => Assert.IsFalse(WebRemoteServer.IsVoiceProblem(message), message);
 
@@ -26,8 +28,9 @@ namespace LibmpvIptvClient.Tests
         [DataRow("{\"stage\":\"stall\",\"detail\":\"12s\"}")]
         [DataRow("{\"stage\":\"start-error\",\"detail\":\"InvalidStateError\"}")]
         [DataRow("{\"stage\":\"error\",\"detail\":\"not-allowed\"}")]
-        [DataRow("{\"stage\":\"mic\",\"detail\":\"granted\"}")]
-        [DataRow("{\"stage\":\"max\"}")]
+        [DataRow("{\"stage\":\"mic\",\"detail\":\"NotAllowedError\"}")]
+        [DataRow("{\"stage\":\"mic\",\"detail\":\"no-mediadevices\"}")]
+        [DataRow("{\"stage\":\"record\",\"detail\":\"max\"}")]
         public void FailureStagesStayWarnings(string message)
             => Assert.IsTrue(WebRemoteServer.IsVoiceProblem(message), message);
 

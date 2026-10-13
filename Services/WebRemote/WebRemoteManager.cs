@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Windows;
 using LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow;
@@ -787,7 +788,9 @@ namespace LibmpvIptvClient.Services.WebRemote
                         Logger.Error($"[WebRemote] DoReplayProgram: channel not found id={channelId}, available={string.Join(",", channels.Select(c => c.Id + "/" + c.TvgId).Take(5))}");
                         return;
                     }
-                    var startTime = DateTime.Parse(start);
+                    // Invariant culture: the page sends an ISO timestamp, and a non Gregorian default
+                    // calendar (Thai Buddhist, for one) would otherwise parse the year as 2569.
+                    var startTime = DateTime.Parse(start, CultureInfo.InvariantCulture);
                     Logger.Info($"[WebRemote] DoReplayProgram: input='{start}', parsed={startTime:yyyy-MM-dd HH:mm:ss} Kind={startTime.Kind}, ToUniversalTime={startTime.ToUniversalTime():yyyy-MM-dd HH:mm:ss}");
                     Logger.Info($"[WebRemote] DoReplayProgram: {channel.Name} at {startTime}, CatchupSource={channel.CatchupSource}, Timeshift.Enabled={AppSettings.Current.Timeshift?.Enabled}, Timeshift.UrlFormat={AppSettings.Current.Timeshift?.UrlFormat}");
                     _shell?.ChannelPlaybackActions.PlayCatchupAt(channel, startTime, keepTimeshiftMode: _shell.IsTimeshiftActive);

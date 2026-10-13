@@ -21,11 +21,20 @@ namespace LibmpvIptvClient.Services.WebRemote
     public class WebRemoteServer : IDisposable
     {
         private TcpListener? _tcpListener;
-        private X509Certificate2? _tlsCertificate;
-        private readonly object _certificateLock = new();
         private CancellationTokenSource? _cts;
         private readonly List<WebSocket> _clients = new();
         private readonly object _clientsLock = new();
+
+        /// <summary>
+        /// One send gate per connection. The receive loop dispatches every message without awaiting it,
+        /// so a voice reply racing the one second status poll reached SendAsync twice at once; the managed
+        /// websocket refuses the second call and that reply never went out. Sends are serialised per
+        /// connection instead of holding up the read loop.
+        /// </summary>
+        private readonly System.Collections.Concurrent.ConcurrentDictionary<WebSocket, SemaphoreSlim> _sendGates = new();
+
+        /// <summary>Timestamp of the last https handshake failure written to the log, throttled below.</summary>
+        private DateTime _lastTlsFailureLoggedUtc = DateTime.MinValue;
 
         public bool IsRunning { get; private set; }
         public int Port { get; private set; }
@@ -51,6 +60,18 @@ namespace LibmpvIptvClient.Services.WebRemote
         /// on its own and its reply watchdog reports the failure instead of waiting forever.
         /// </summary>
         internal const int MaxTextMessageBytes = 4 * 1024 * 1024;
+
+        /// <summary>
+        /// Largest accepted http request head. A client that opens a connection and never sends the blank
+        /// line used to grow the head buffer without bound; anything above this is answered with 431.
+        /// </summary>
+        internal const int MaxRequestHeadBytes = 64 * 1024;
+
+        /// <summary>Path prefix of the channel logo endpoint.</summary>
+        internal const string LogoPathPrefix = "/logo/";
+
+        /// <summary>Request line prefix the logo route is recognised by.</summary>
+        private const string LogoRequestPrefix = "GET " + LogoPathPrefix;
 
         // 密码保护
         private bool _requirePassword;
@@ -169,32 +190,52 @@ namespace LibmpvIptvClient.Services.WebRemote
             }
             _tcpListener?.Stop();
             _tcpListener = null;
-            _tlsCertificate = null;
+            _sendGates.Clear();
             IsRunning = false;
             IsTlsAvailable = false;
             Logger.Debug("[WebRemote] Server stopped");
         }
 
         /// <summary>
-        /// The https certificate, resolved at Start and re-resolved on demand: a profile whose key store
-        /// was unavailable when the app started recovers on the next https visit instead of staying http
-        /// only until the app is restarted.
+        /// The https certificate for new connections, asked from the certificate service on every
+        /// handshake: that service reissues the material when the machine addresses change, which a cached
+        /// certificate here would hide until the app restarted. The service caches the work, so the common
+        /// case is a fingerprint comparison.
         /// </summary>
         private X509Certificate2? EnsureTlsCertificate()
         {
-            var cached = _tlsCertificate;
-            if (cached != null) return cached;
+            if (!WebRemoteCertificateService.TryGetServerCertificate(out var certificate)) return null;
 
-            lock (_certificateLock)
+            IsTlsAvailable = true;
+            return certificate;
+        }
+
+        /// <summary>
+        /// Writes a failed https handshake at most once a minute. A certificate that SChannel refuses (an
+        /// ephemeral key, which is what a process without access to the user key store ends up with) fails
+        /// on every connection, and one line per phone visit buried the rest of the log.
+        /// </summary>
+        private void LogTlsHandshakeFailure(Exception ex)
+        {
+            var now = DateTime.UtcNow;
+            if (now - _lastTlsFailureLoggedUtc < TimeSpan.FromMinutes(1)) return;
+
+            _lastTlsFailureLoggedUtc = now;
+            Logger.Warn($"[WebRemote] https handshake failed, the remote stays http only: {ex.Message}");
+        }
+
+        /// <summary>Sends one text frame, serialised with every other send on the same connection.</summary>
+        private async Task SendTextAsync(WebSocket ws, string payload, CancellationToken ct)
+        {
+            var gate = _sendGates.GetOrAdd(ws, _ => new SemaphoreSlim(1, 1));
+            await gate.WaitAsync(ct);
+            try
             {
-                if (_tlsCertificate != null) return _tlsCertificate;
-
-                if (!WebRemoteCertificateService.TryGetServerCertificate(out var certificate)) return null;
-
-                _tlsCertificate = certificate;
-                IsTlsAvailable = true;
-                Logger.Info("[WebRemote] Certificate obtained for an incoming https client");
-                return certificate;
+                await ws.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(payload)), WebSocketMessageType.Text, true, ct);
+            }
+            finally
+            {
+                gate.Release();
             }
         }
 
@@ -250,13 +291,24 @@ namespace LibmpvIptvClient.Services.WebRemote
                         }
 
                         var ssl = new SslStream(networkStream, false);
-                        await ssl.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
+                        try
                         {
-                            ServerCertificate = certificate,
-                            ClientCertificateRequired = false,
-                            EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
-                            CertificateRevocationCheckMode = X509RevocationMode.NoCheck
-                        }, ct);
+                            await ssl.AuthenticateAsServerAsync(new SslServerAuthenticationOptions
+                            {
+                                ServerCertificate = certificate,
+                                ClientCertificateRequired = false,
+                                EnabledSslProtocols = SslProtocols.Tls12 | SslProtocols.Tls13,
+                                CertificateRevocationCheckMode = X509RevocationMode.NoCheck
+                            }, ct);
+                        }
+                        catch (Exception ex) when (ex is AuthenticationException || ex is IOException)
+                        {
+                            // A certificate whose key could not be stored in the user key store (security
+                            // software or a sandboxed process) is refused by SChannel on every connection.
+                            // One line a minute says so instead of one error per phone visit.
+                            LogTlsHandshakeFailure(ex);
+                            return;
+                        }
                         stream = ssl;
                     }
 
@@ -268,6 +320,12 @@ namespace LibmpvIptvClient.Services.WebRemote
                     while ((read = await stream.ReadAsync(buf, 0, buf.Length)) > 0)
                     {
                         sb.Append(Encoding.UTF8.GetString(buf, 0, read));
+                        if (sb.Length > MaxRequestHeadBytes)
+                        {
+                            Logger.Warn($"[WebRemote] Request head above {MaxRequestHeadBytes} bytes, connection closed");
+                            await SendErrorAsync(stream, "431 Request Header Fields Too Large", ct);
+                            return;
+                        }
                         if (sb.ToString().Contains("\r\n\r\n")) break;
                     }
 
@@ -298,7 +356,7 @@ namespace LibmpvIptvClient.Services.WebRemote
                 // Check if it's a logo request
                 var lines = request.Split(new[] { "\r\n", "\n" }, StringSplitOptions.None);
                 var firstLine = lines.Length > 0 ? lines[0] : "";
-                if (firstLine.StartsWith("GET /logo/"))
+                if (firstLine.StartsWith(LogoRequestPrefix, StringComparison.Ordinal))
                 {
                     await ServeLogoAsync(tcpClient, stream, firstLine, ct);
                     return;
@@ -428,19 +486,50 @@ namespace LibmpvIptvClient.Services.WebRemote
             return new[] { cache, baseDir, exeDir };
         }
 
+        /// <summary>
+        /// The file a /logo/ request asks for, or null when the request line carries no path. The query
+        /// string is dropped: a cache busting suffix used to turn every logo request into a 404 that the
+        /// browser then cached for an hour.
+        /// </summary>
+        internal static string? LogoFilePathFromRequest(string request)
+        {
+            var path = RequestPath(request);
+            if (!path.StartsWith(LogoPathPrefix, StringComparison.Ordinal)) return null;
+
+            var file = Uri.UnescapeDataString(path.Substring(LogoPathPrefix.Length));
+            return file.Length == 0 ? null : file;
+        }
+
+        /// <summary>
+        /// Content type of a logo file. Both bmp and ico pass <see cref="IsServableLogoImage"/>, so they
+        /// need a real image type: browsers no longer sniff images sent as application/octet-stream.
+        /// </summary>
+        internal static string LogoContentType(string filePath)
+        {
+            var ext = Path.GetExtension(filePath).ToLowerInvariant();
+            return ext switch
+            {
+                ".png" => "image/png",
+                ".jpg" or ".jpeg" => "image/jpeg",
+                ".gif" => "image/gif",
+                ".webp" => "image/webp",
+                ".bmp" => "image/bmp",
+                ".ico" => "image/x-icon",
+                _ => "application/octet-stream"
+            };
+        }
+
         private async Task ServeLogoAsync(TcpClient? tcpClient, Stream stream, string request, CancellationToken ct)
         {
             try
             {
                 // Parse: GET /logo/<encoded_path>
-                var parts = request.Split(' ');
-                if (parts.Length < 2)
+                var filePath = LogoFilePathFromRequest(request);
+                if (string.IsNullOrEmpty(filePath))
                 {
                     await SendErrorAsync(stream, "400 Bad Request", ct);
                     return;
                 }
-                var encodedPath = parts[1].Substring("/logo/".Length);
-                var filePath = Uri.UnescapeDataString(encodedPath);
 
                 Logger.Debug($"[WebRemote] Logo request: {filePath}");
 
@@ -470,15 +559,7 @@ namespace LibmpvIptvClient.Services.WebRemote
                     return;
                 }
 
-                var ext = Path.GetExtension(filePath).ToLowerInvariant();
-                var contentType = ext switch
-                {
-                    ".png" => "image/png",
-                    ".jpg" or ".jpeg" => "image/jpeg",
-                    ".gif" => "image/gif",
-                    ".webp" => "image/webp",
-                    _ => "application/octet-stream"
-                };
+                var contentType = LogoContentType(filePath);
 
                 var fileBytes = await File.ReadAllBytesAsync(filePath, ct);
                 var header = $"HTTP/1.1 200 OK\r\nContent-Type: {contentType}\r\nContent-Length: {fileBytes.Length}\r\nCache-Control: max-age=86400\r\nConnection: close\r\n\r\n";
@@ -494,15 +575,29 @@ namespace LibmpvIptvClient.Services.WebRemote
             finally { if (tcpClient != null) tcpClient.Close(); }
         }
 
-        /// <summary>True when a browser voice report describes a failure rather than routine progress.</summary>
+        /// <summary>True when the page reported this voice stage.</summary>
+        internal static bool HasVoiceStage(string message, string stage)
+            => message.Contains($"\"stage\":\"{stage}\"", StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>True when the page attached this detail to its voice report.</summary>
+        internal static bool HasVoiceDetail(string message, string detail)
+            => message.Contains($"\"detail\":\"{detail}\"", StringComparison.OrdinalIgnoreCase);
+
+        /// <summary>
+        /// True when a browser voice report describes a failure rather than routine progress. The mic
+        /// stage is reported both when the permission prompt was granted and when the user refused it, and
+        /// the record stage carries "max" when the 15 second cap truncated the clip.
+        /// </summary>
         internal static bool IsVoiceProblem(string? message)
         {
             if (string.IsNullOrEmpty(message)) return false;
-            return message.Contains("\"stage\":\"stall\"", StringComparison.OrdinalIgnoreCase)
-                || message.Contains("\"stage\":\"start-error\"", StringComparison.OrdinalIgnoreCase)
-                || message.Contains("\"stage\":\"error\"", StringComparison.OrdinalIgnoreCase)
-                || message.Contains("\"stage\":\"mic\"", StringComparison.OrdinalIgnoreCase)
-                || message.Contains("\"stage\":\"max\"", StringComparison.OrdinalIgnoreCase);
+
+            if (HasVoiceStage(message, "mic")) return !HasVoiceDetail(message, "granted");
+            if (HasVoiceStage(message, "record")) return HasVoiceDetail(message, "max");
+
+            return HasVoiceStage(message, "stall")
+                || HasVoiceStage(message, "start-error")
+                || HasVoiceStage(message, "error");
         }
 
         /// <summary>Answers "this logo does not exist" without a body, and lets the browser cache the
@@ -1002,6 +1097,7 @@ self.addEventListener('fetch', function(event) {
                     lock (_clientsLock) { _clients.Remove(ws); }
                     // Force a fresh password prompt on reconnect instead of trusting a stale entry.
                     _authenticatedClients.TryRemove(ws, out _);
+                    _sendGates.TryRemove(ws, out _);
                 }
                 try { tcpClient.Close(); } catch { }
             }
@@ -1025,7 +1121,7 @@ self.addEventListener('fetch', function(event) {
                     {
                         Logger.Warn($"[WebRemote] Unauthorized access attempt: {action}");
                         var unauthorizedResp = JsonSerializer.Serialize(new { error = "Unauthorized", requireAuth = true });
-                        await ws.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(unauthorizedResp)), WebSocketMessageType.Text, true, ct);
+                        await SendTextAsync(ws, unauthorizedResp, ct);
                         return;
                     }
                 }
@@ -1403,7 +1499,7 @@ self.addEventListener('fetch', function(event) {
                 }
 
                 var response = JsonSerializer.Serialize(result, new JsonSerializerOptions { DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull, PropertyNamingPolicy = JsonNamingPolicy.CamelCase });
-                await ws.SendAsync(new ArraySegment<byte>(Encoding.UTF8.GetBytes(response)), WebSocketMessageType.Text, true, ct);
+                await SendTextAsync(ws, response, ct);
             }
             catch (Exception ex)
             {

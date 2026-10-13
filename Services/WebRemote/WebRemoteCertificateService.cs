@@ -20,10 +20,16 @@ namespace LibmpvIptvClient.Services.WebRemote
         private const int ServerCertificateValidityDays = 397;
         private const int RenewBeforeDays = 30;
 
+        /// <summary>How long a failing certificate store is left alone before it is tried again.</summary>
+        private static readonly TimeSpan FailureRetryDelay = TimeSpan.FromSeconds(30);
+
         private static readonly object Gate = new object();
         private static X509Certificate2? _serverCertificate;
         private static X509Certificate2? _rootCertificate;
         private static byte[]? _rootCertificateDer;
+        private static string? _loadedFingerprint;
+        private static DateTime _nextLoadAttemptUtc;
+        private static string? _lastLoadError;
 
         /// <summary>
         /// Folder that holds the CA and server certificate (next to the other local app data).
@@ -204,6 +210,9 @@ namespace LibmpvIptvClient.Services.WebRemote
                 _serverCertificate = null;
                 _rootCertificate = null;
                 _rootCertificateDer = null;
+                _loadedFingerprint = null;
+                _nextLoadAttemptUtc = DateTime.MinValue;
+                _lastLoadError = null;
                 try
                 {
                     if (Directory.Exists(CertificateDirectory)) Directory.Delete(CertificateDirectory, true);
@@ -217,29 +226,52 @@ namespace LibmpvIptvClient.Services.WebRemote
             EnsureLoaded();
         }
 
+        /// <summary>
+        /// Asks the store for the CA and the server certificate, (re)issuing them when anything is
+        /// missing, expired, unusable or no longer covers the current host addresses. The addresses are
+        /// re-read on every call, so a phone that follows a new DHCP lease gets a certificate for it
+        /// without restarting the app. A failing store is retried at most every
+        /// <see cref="FailureRetryDelay"/> instead of on every handshake.
+        /// </summary>
         private static void EnsureLoaded()
         {
-            if (_serverCertificate != null) return;
-
             lock (Gate)
             {
-                if (_serverCertificate != null) return;
+                var fingerprint = CertificateFingerprint();
+                if (_serverCertificate != null && string.Equals(_loadedFingerprint, fingerprint, StringComparison.Ordinal)) return;
 
-                var material = EnsureCore(CertificateDirectory);
-                _rootCertificate = material.Root;
-                _serverCertificate = material.Server;
-                _rootCertificateDer = material.RootDer;
+                if (DateTime.UtcNow < _nextLoadAttemptUtc)
+                {
+                    throw new InvalidOperationException(_lastLoadError ?? "The https certificate is unavailable");
+                }
 
                 try
                 {
-                    File.WriteAllBytes(RootCertificatePath, material.RootDer);
+                    var material = EnsureCore(CertificateDirectory);
+                    _rootCertificate = material.Root;
+                    _serverCertificate = material.Server;
+                    _rootCertificateDer = material.RootDer;
+                    _loadedFingerprint = fingerprint;
+
+                    try
+                    {
+                        File.WriteAllBytes(RootCertificatePath, material.RootDer);
+                    }
+                    catch (Exception ex)
+                    {
+                        Logger.Error($"[WebRemote] Failed to write CA certificate: {ex.Message}");
+                    }
+
+                    Logger.Info($"[WebRemote] HTTPS certificate ready ({material.SubjectCount} SAN entries, expires {material.Server.NotAfter:yyyy-MM-dd})");
                 }
                 catch (Exception ex)
                 {
-                    Logger.Error($"[WebRemote] Failed to write CA certificate: {ex.Message}");
+                    // Without the backoff a refused key store reissued on every handshake and wrote an
+                    // error line each time; the reason is kept for the next caller to see.
+                    _lastLoadError = ex.Message;
+                    _nextLoadAttemptUtc = DateTime.UtcNow.Add(FailureRetryDelay);
+                    throw;
                 }
-
-                Logger.Info($"[WebRemote] HTTPS certificate ready ({material.SubjectCount} SAN entries, expires {material.Server.NotAfter:yyyy-MM-dd})");
             }
         }
 
@@ -252,7 +284,7 @@ namespace LibmpvIptvClient.Services.WebRemote
             Directory.CreateDirectory(directory);
 
             var subjects = CollectSubjects();
-            var fingerprint = string.Join("|", subjects);
+            var fingerprint = CertificateFingerprint(subjects);
             var fingerprintPath = Path.Combine(directory, "subjects.txt");
             var storedFingerprint = ReadText(fingerprintPath);
 
@@ -317,6 +349,16 @@ namespace LibmpvIptvClient.Services.WebRemote
                 .ToList();
         }
 
+        /// <summary>
+        /// Stable identity of the names the server certificate has to cover. Sorted so that the order the
+        /// adapters happen to report their addresses in cannot look like an address change.
+        /// </summary>
+        private static string CertificateFingerprint()
+            => CertificateFingerprint(CollectSubjects());
+
+        private static string CertificateFingerprint(IEnumerable<string> subjects)
+            => string.Join("|", subjects.OrderBy(s => s, StringComparer.OrdinalIgnoreCase));
+
         private static X509Certificate2 CreateRootCertificate()
         {
             using var key = RSA.Create(2048);
@@ -361,10 +403,13 @@ namespace LibmpvIptvClient.Services.WebRemote
 
         /// <summary>
         /// PKCS#12 import strategies, tried in order. The plain exportable import stays first so a healthy
-        /// profile behaves exactly as before. The remaining ones are container backed as well, because
-        /// SChannel refuses an ephemeral key ("the platform does not support ephemeral keys"), and they
-        /// cover a profile whose key container store rejects the default import with
-        /// "the specified network password is not correct".
+        /// profile behaves exactly as before. The container backed ones cover a profile whose key container
+        /// store rejects the default import with "the specified network password is not correct".
+        /// The last one imports the key without touching the user key container at all, which is the only
+        /// strategy left for a process that cannot create a key container ("access denied" from the
+        /// container store); it is last because an imported ephemeral key can serve TLS, while the pristine
+        /// in-memory key of a freshly created certificate cannot ("the platform does not support ephemeral
+        /// keys"), and because the freshly issued certificates are exported before they are imported.
         /// </summary>
         private static readonly (string Name, string? Password, X509KeyStorageFlags Flags)[] ImportLadder =
         {
@@ -372,6 +417,7 @@ namespace LibmpvIptvClient.Services.WebRemote
             ("null password", null, X509KeyStorageFlags.Exportable),
             ("Exportable|PersistKeySet", string.Empty, X509KeyStorageFlags.Exportable | X509KeyStorageFlags.PersistKeySet),
             ("DefaultKeySet", string.Empty, X509KeyStorageFlags.DefaultKeySet),
+            ("EphemeralKeySet", string.Empty, X509KeyStorageFlags.EphemeralKeySet),
         };
 
         /// <summary>
