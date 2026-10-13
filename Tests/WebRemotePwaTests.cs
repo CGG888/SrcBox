@@ -91,8 +91,11 @@ namespace LibmpvIptvClient.Tests
             // and the home indicator.
             Assert.IsTrue(html.Contains(".container { max-width: 100%; margin: 0 auto; padding: 12px; padding-top: calc(12px + env(safe-area-inset-top, 0px)); padding-right: calc(12px + env(safe-area-inset-right, 0px)); padding-bottom: calc(12px + env(safe-area-inset-bottom, 0px))"),
                 "the browser mode container does not reserve the safe areas");
-            Assert.IsTrue(html.Contains("body.remote-mode .container { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: clamp(6px, calc(var(--safe-vh) * 1.2), 12px); padding-top: max(clamp(6px, calc(var(--safe-vh) * 1.2), 12px), env(safe-area-inset-top, 0px))"),
+            Assert.IsTrue(html.Contains("body.remote-mode .container { flex: 1; min-height: 0; display: flex; flex-direction: column; padding-top: max(clamp(6px, calc(var(--safe-vh) * 1.2), 12px), env(safe-area-inset-top, 0px))"),
                 "the standard pad container does not reserve the safe areas");
+            // Sideways the pad keeps the browser gutter, so both modes share one footprint under the header.
+            StringAssert.Contains(html, "padding-right: calc(12px + env(safe-area-inset-right, 0px))");
+            StringAssert.Contains(html, "padding-left: calc(12px + env(safe-area-inset-left, 0px))");
             StringAssert.Contains(html, "max(clamp(6px, calc(var(--safe-vh) * 1.2), 12px), env(safe-area-inset-bottom, 0px))");
             StringAssert.Contains(html, "#passwordOverlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0;");
             StringAssert.Contains(html, "padding-bottom: calc(16px + env(safe-area-inset-bottom, 0px))");

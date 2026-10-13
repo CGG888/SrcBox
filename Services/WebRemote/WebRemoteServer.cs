@@ -1735,7 +1735,10 @@ body.remote-mode { height: 100vh; height: 100dvh; overflow-x: hidden; overflow-y
 /* --safe-vh is 1% of the height the pad can really use: the viewport minus the safe-area insets the
    container reserves, so the whole pad still fits on a notched phone instead of pushing the footer out. */
 @supports (height: 100dvh) { body.remote-mode { --safe-vh: calc((100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)) / 100); } }
-body.remote-mode .container { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: clamp(6px, calc(var(--safe-vh) * 1.2), 12px); padding-top: max(clamp(6px, calc(var(--safe-vh) * 1.2), 12px), env(safe-area-inset-top, 0px)); padding-right: max(clamp(6px, calc(var(--safe-vh) * 1.2), 12px), env(safe-area-inset-right, 0px)); padding-bottom: max(clamp(6px, calc(var(--safe-vh) * 1.2), 12px), env(safe-area-inset-bottom, 0px)); padding-left: max(clamp(6px, calc(var(--safe-vh) * 1.2), 12px), env(safe-area-inset-left, 0px)); }
+/* The pad keeps the full view's horizontal footprint - the same 12px gutter the header sits in - so
+   the standard remote lines up with the header above it; only the vertical padding shrinks with the
+   screen so the whole pad still fits without scrolling. */
+body.remote-mode .container { flex: 1; min-height: 0; display: flex; flex-direction: column; padding-top: max(clamp(6px, calc(var(--safe-vh) * 1.2), 12px), env(safe-area-inset-top, 0px)); padding-right: calc(12px + env(safe-area-inset-right, 0px)); padding-bottom: max(clamp(6px, calc(var(--safe-vh) * 1.2), 12px), env(safe-area-inset-bottom, 0px)); padding-left: calc(12px + env(safe-area-inset-left, 0px)); }
 body.remote-mode .header { flex: 0 0 auto; margin-bottom: clamp(6px, calc(var(--safe-vh) * 1.2), 12px); }
 body.remote-mode .remote-pad { flex: 1; min-height: 0; display: flex; flex-direction: column; justify-content: space-between; gap: clamp(4px, calc(var(--safe-vh) * 0.9), 12px); max-width: none; }
 body.remote-mode .rp-status { padding: clamp(8px, calc(var(--safe-vh) * 1.4), 16px); margin-bottom: 0; }
