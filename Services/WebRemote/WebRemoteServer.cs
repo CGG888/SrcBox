@@ -638,7 +638,7 @@ namespace LibmpvIptvClient.Services.WebRemote
             {
                 var sw = @"
 // SrcBox Web Remote Service Worker
-var CACHE_NAME = 'srcbox-remote-v8';
+var CACHE_NAME = 'srcbox-remote-v9';
 var STATIC_ASSETS = [
   '/',
   '/manifest.json'
@@ -2139,6 +2139,7 @@ body.remote-mode .rp-text-btn { min-height: clamp(36px, calc(var(--safe-vh) * 6.
 <button id=""voiceHandsFree"" onclick=""toggleHandsFree()""></button>
 <span class=""voice-examples"" id=""voiceExamples""></span>
 </div>
+<div class=""voice-help"" id=""voiceHelp"" style=""font-size:12px;color:var(--neu-text-muted);line-height:1.6;margin-top:8px;""></div>
 </div>
 </div>
 
@@ -2204,6 +2205,8 @@ if (input) input.placeholder = T.voice_input_placeholder;
 var examples = T.voice_examples || '';
 var examplesColon = examples.indexOf('：') >= 0 ? examples.indexOf('：') : examples.indexOf(':');
 t('voiceExamples', examplesColon >= 0 ? examples.substring(0, examplesColon + 1) : examples);
+// The panel explains itself: which phrasings the router understands, so the user does not have to guess.
+t('voiceHelp', T.voice_help);
 t('voiceHandsFree', T.voice_handsfree);
 var hf = document.getElementById('voiceHandsFree');
 // Hands-free wake-word listening ran through the browser speech service, which this network cannot
@@ -3592,6 +3595,7 @@ openVoice();
 function openVoice() {
 var ov = document.getElementById('voiceOverlay');
 if (ov) ov.classList.add('show');
+rememberVoiceOpen(true);
 voiceBusy = false;
 voicePending = false;
 setVoiceStatus((VOICE.enabled === false || !voiceRecordingSupported()) ? T.voice_unsupported : T.voice_hold);
@@ -3607,9 +3611,22 @@ voiceRefreshHint();
 function closeVoice() {
 var ov = document.getElementById('voiceOverlay');
 if (ov) ov.classList.remove('show');
+rememberVoiceOpen(false);
 stopVoiceListening();
 voiceCancelCapture();
 if (window.speechSynthesis) { try { window.speechSynthesis.cancel(); } catch (err) { } }
+}
+
+// The panel is a page-side overlay, so its open state is remembered like the theme: a refresh while the
+// user is standing in front of the TV must not make them hunt for the microphone button again.
+function rememberVoiceOpen(open) {
+try { localStorage.setItem('srcbox_voice_open', open ? '1' : '0'); } catch (e) { }
+}
+
+function loadVoiceOpen() {
+var open = false;
+try { open = localStorage.getItem('srcbox_voice_open') === '1'; } catch (e) { open = false; }
+if (open) openVoice();
 }
 
 function submitVoiceInput() {
@@ -3797,12 +3814,13 @@ box.appendChild(b);
 }
 
 // A tapped candidate replays an action the page already implements, so nothing new can execute here.
+// The panel stays open: one command is rarely the only one the user has, and the presets come back.
 function pickVoiceOption(idx) {
 var o = voiceLastOptions[idx];
 if (!o) return;
 if (o.action) send(o.action, o.payload || {});
+setVoiceHeard(o.title || o.id || '');
 renderVoiceOptions([]);
-closeVoice();
 setTimeout(function() { loadStatus(); }, 400);
 }
 
@@ -3829,6 +3847,8 @@ applyStaticText();
 
 // Initialize the install entry before connecting: a failed WebSocket connect must not hide it.
 applyVoiceText();
+// The voice panel restores itself before the socket exists: it only reads page-side state.
+loadVoiceOpen();
 initInstall();
 connect();
 

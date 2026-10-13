@@ -111,6 +111,53 @@ namespace LibmpvIptvClient.Tests
             CollectionAssert.AreEqual(new[] { expected }, player.Switched);
         }
 
+        // Saying the channel name (or its number) on its own is the shortest way to switch: dictation
+        // regularly drops the verb, and the name alone leaves nothing to misread.
+        [DataTestMethod]
+        [DataRow("湖南卫视", "hunan")]
+        [DataRow("东方卫视", "dongfang")]
+        [DataRow("CCTV-5 体育", "cctv5")]
+        public void Route_BareChannelName_SwitchesToThatChannel(string text, string expected)
+        {
+            var player = new Player();
+
+            var reply = player.Say(text);
+
+            Assert.IsTrue(reply.Success, $"not understood: {text}");
+            Assert.IsTrue(reply.Executed, $"did not execute: {text} -> {reply.Spoken}");
+            CollectionAssert.AreEqual(new[] { expected }, player.Switched);
+        }
+
+        [DataTestMethod]
+        [DataRow("7", "hunan")]
+        [DataRow("七", "hunan")]
+        [DataRow("5台", "cctv5")]
+        [DataRow("2频道", "cctv2")]
+        public void Route_BareChannelNumber_SwitchesToThatChannel(string text, string expected)
+        {
+            var player = new Player();
+
+            var reply = player.Say(text);
+
+            Assert.IsTrue(reply.Success, $"not understood: {text}");
+            Assert.IsTrue(reply.Executed, $"did not execute: {text} -> {reply.Spoken}");
+            CollectionAssert.AreEqual(new[] { expected }, player.Switched);
+        }
+
+        [DataTestMethod]
+        [DataRow("今天天气不错")]
+        [DataRow("帮我订一张去北京的机票")]
+        [DataRow("九")]
+        public void Route_UnrelatedSentence_StaysUnrecognised(string text)
+        {
+            var player = new Player();
+
+            var reply = player.Say(text);
+
+            Assert.IsFalse(reply.Executed, $"must not execute: {text} -> {reply.Spoken}");
+            Assert.AreEqual(0, player.Switched.Count, $"must not switch on {text}");
+        }
+
         [TestMethod]
         public void Route_NextAndPreviousChannel_StepThroughTheList()
         {

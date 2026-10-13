@@ -163,8 +163,27 @@ namespace LibmpvIptvClient.Tests
         {
             var strings = WebRemoteStrings.Get(lang);
 
-            foreach (var key in new[] { "voice_title", "voice_listening", "voice_unsupported", "voice_not_understood", "voice_examples", "voice_no_reply" })
+            foreach (var key in new[] { "voice_title", "voice_listening", "voice_unsupported", "voice_not_understood", "voice_examples", "voice_help", "voice_no_reply" })
                 Assert.IsTrue(strings.ContainsKey(key) && !string.IsNullOrWhiteSpace(strings[key]), $"{lang}: {key}");
+        }
+
+        [TestMethod]
+        public void RemoteHtml_ExplainsItselfAndStaysOpenAcrossARefresh()
+        {
+            var html = WebRemoteServer.GetRemoteHtml("zh-CN");
+
+            // The panel tells the user which phrasings work instead of leaving them to guess.
+            StringAssert.Contains(html, "id=\"voiceHelp\"");
+            StringAssert.Contains(html, "t('voiceHelp', T.voice_help);");
+            // A refresh while the user is in front of the TV restores the panel, like the theme and view.
+            StringAssert.Contains(html, "function rememberVoiceOpen(");
+            StringAssert.Contains(html, "function loadVoiceOpen()");
+            StringAssert.Contains(html, "localStorage.setItem('srcbox_voice_open'");
+            StringAssert.Contains(html, "loadVoiceOpen();");
+            // Picking a command leaves the panel open: it closes only through the ✕ button or the toggle.
+            StringAssert.Contains(html, "setVoiceHeard(o.title || o.id || '');");
+            Assert.AreEqual(3, System.Text.RegularExpressions.Regex.Matches(html, @"closeVoice\(\)").Count,
+                "the panel is closed outside the ✕ button and the toggle");
         }
 
         [TestMethod]

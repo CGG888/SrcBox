@@ -42,7 +42,8 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
                 return reply;
             }
 
-            var command = MatchUserRules(context, normalized) ?? MatchBuiltIn(context, normalized);
+            var command = MatchUserRules(context, normalized) ?? MatchBuiltIn(context, normalized)
+                ?? MatchBareTarget(context, normalized);
             if (command == null)
             {
                 reply.Spoken = VoiceAnswer.NotUnderstood(VoiceAnswer.Strings(context.Lang), context.Lang);
@@ -164,6 +165,57 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
                 Rule = ruleName,
                 Options = options
             };
+        }
+
+        /// <summary>
+        /// Last chance before "I did not catch that": the sentence is nothing but a channel name or a channel
+        /// number ("湖南卫视", "3台", "3"). Speaking the name on its own is the shortest way to switch and
+        /// dictation regularly drops the verb for it; a bare number is unambiguous among channel numbers.
+        /// </summary>
+        private static VoiceCommand? MatchBareTarget(VoiceCommandContext context, string normalized)
+        {
+            var compact = VoiceText.Compact(normalized);
+            if (string.IsNullOrEmpty(compact)) return null;
+
+            var numberArg = BareNumberArg(compact);
+            if (numberArg != null)
+            {
+                var channels = SafeList(context.Channels);
+                if (FindByNumber(int.Parse(numberArg, NumberStyles.None, CultureInfo.InvariantCulture), channels) == null)
+                    return null;
+
+                return new VoiceCommand
+                {
+                    Verb = VoiceVerb.SwitchChannel,
+                    Arg = numberArg,
+                    Confidence = 0.7,
+                    Rule = "direct:number"
+                };
+            }
+
+            // Only a strong reading is accepted here: without the verb as a hint, a weak fuzzy match would
+            // turn any unrecognised sentence into a channel switch or a pointless "which channel?".
+            var options = BuildChannelCandidates(compact, context)
+                .Where(option => option.Score >= VoiceFuzzy.AutoExecuteScore)
+                .ToList();
+            if (options.Count == 0) return null;
+
+            return new VoiceCommand
+            {
+                Verb = VoiceVerb.SwitchChannel,
+                Arg = compact,
+                Confidence = 0.7,
+                Rule = "direct:channel",
+                Options = options
+            };
+        }
+
+        /// <summary>"3" and "3台" mean the same channel number; the unit is scaffolding, not part of it.</summary>
+        private static string? BareNumberArg(string compact)
+        {
+            var value = VoiceText.HanToArabicDigits(compact);
+            var match = System.Text.RegularExpressions.Regex.Match(value, @"^([0-9]{1,4})(?:台|频道|套|代|带)?$");
+            return match.Success ? match.Groups[1].Value : null;
         }
 
         private static List<VoiceOption> ResolveOptions(VoiceVerb verb, string arg, VoiceCommandContext context)
