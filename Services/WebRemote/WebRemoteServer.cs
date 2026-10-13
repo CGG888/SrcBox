@@ -1500,43 +1500,33 @@ body.dark-theme, body.theme-dark { color: var(--neu-text); }
 .ts-icon { flex: 0 0 auto; width: 14px; height: 14px; fill: var(--neu-text-muted); }
 .ts-track { position: relative; flex: 1 1 auto; width: 100%; min-width: 0; height: 12px; border: none; border-radius: 8px; background: var(--neu-surface); box-shadow: var(--neu-shadow-in-sm); cursor: pointer; overflow: hidden; touch-action: none; }
 .ts-track:focus-visible { outline: 2px solid var(--neu-primary); outline-offset: 2px; }
-.ts-axis { position: absolute; inset: 0; }
-/* Programme boundaries inside the bar; normally empty because the bar spans a single slot. */
-.ts-slot { position: absolute; top: 0; bottom: 0; background: var(--neu-primary); opacity: 0.16; border-left: 1px solid var(--neu-primary); border-right: 1px solid var(--neu-primary); }
 .ts-fill { position: absolute; left: 0; top: 0; bottom: 0; width: 0; background: var(--neu-primary); opacity: 0.3; }
 .ts-knob { position: absolute; top: 0; bottom: 0; left: 0; width: 3px; margin-left: -1px; background: var(--neu-primary); }
 /* Tick labels span the bar itself, so the first and last label line up with the ends of the bar. */
 .ts-scale { display: flex; justify-content: space-between; gap: 4px; margin-top: 4px; font-size: 10px; color: var(--neu-text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; }
-/* The EPG timeline under the meter: a swipeable EPG ruler over proportional programme blocks, the
-   same shape a TV guide uses. The blocks are laid out by a fixed pixels-per-minute scale (never
-   stretched to fill the viewport), so a 30-minute item really is half the width of an hour, while
-   the ruler above them labels the hours. The block holding the cursor is highlighted, a playhead
-   marks the exact position, a rose line marks the live edge, and tapping a block seeks to its start
-   - so the phone gets both coarse (tap a programme) and fine (drag the meter) control. */
+/* The strip under the meter is the range the archive still offers: every programme the server sent for
+   this channel, laid out left to right as tappable cards. A card's width follows its length but is
+   clamped at both ends, so a half-hour item stays wide enough to read its name and a four-hour film
+   does not push its neighbours off the screen; the card holding the cursor is highlighted, a playhead
+   marks the exact position inside it, and a rose line marks the live edge. Tapping a card seeks to its
+   start - so the phone gets both coarse (tap a programme) and fine (drag the meter) control. */
 .ts-band { position: relative; margin: 10px 0 0; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; touch-action: pan-x; }
 .ts-band::-webkit-scrollbar { display: none; }
-.ts-band-inner { position: relative; height: 96px; border-radius: 12px; background: var(--neu-grad-well); box-shadow: var(--neu-shadow-in); }
-/* The ruler scrolls with the blocks, so a tick always sits over the minute it labels. */
-.ts-ruler-tick { position: absolute; bottom: 0; width: 1px; background: var(--neu-text-muted); opacity: 0.3; }
-.ts-ruler-tick.major { height: 8px; opacity: 0.55; }
-.ts-ruler-tick.minor { height: 4px; }
-.ts-ruler-label { position: absolute; top: 0; font-size: 10px; line-height: 13px; color: var(--neu-text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; transform: translateX(-50%); }
-.ts-ruler-label.major { font-weight: 600; color: var(--neu-text); }
-.ts-ruler { position: absolute; left: 0; top: 0; right: 0; height: 18px; }
-.ts-block { position: absolute; top: 20px; bottom: 0; padding: 6px 8px 8px; border: none; border-radius: 10px; background: var(--neu-grad); color: var(--neu-text); box-shadow: var(--neu-shadow-out-sm); text-align: left; cursor: pointer; touch-action: manipulation; overflow: hidden; display: flex; flex-direction: column; gap: 2px; }
+.ts-band-inner { position: relative; height: 76px; border-radius: 12px; background: var(--neu-grad-well); box-shadow: var(--neu-shadow-in); }
+.ts-block { position: absolute; top: 6px; bottom: 6px; padding: 4px 8px 6px; border: none; border-radius: 10px; background: var(--neu-surface); color: var(--neu-text); box-shadow: var(--neu-shadow-out-sm); text-align: left; cursor: pointer; touch-action: manipulation; overflow: hidden; display: flex; flex-direction: column; gap: 1px; }
 .ts-block.current { background: linear-gradient(180deg, rgba(99, 102, 241, 0.24), rgba(99, 102, 241, 0.08)); box-shadow: inset 0 0 0 1.5px var(--neu-primary); }
 .ts-block-time { font-size: 10px; color: var(--neu-text-muted); font-variant-numeric: tabular-nums; }
-.ts-block-name { font-size: 12px; font-weight: 600; line-height: 1.25; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.ts-block-name { font-size: 12px; font-weight: 600; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .ts-block.current .ts-block-name { color: var(--neu-primary); }
 /* The programme that is on air right now: the same accent as the timeshift cursor, tinted. */
 .ts-block.live { background: linear-gradient(180deg, rgba(56, 189, 248, 0.28), rgba(56, 189, 248, 0.08)); box-shadow: inset 0 0 0 1px rgba(56, 189, 248, 0.55); }
-/* A slot that has not aired yet, or that the operator no longer keeps: part of the scrollable EPG,
+/* A slot that has not aired yet, or that the operator no longer keeps: still part of the schedule,
    drawn dashed because a seek into it would only stop again a few seconds later. */
 .ts-block.out { opacity: 0.55; border: 1px dashed var(--neu-text-muted); background: none; box-shadow: none; }
-.ts-playhead { position: absolute; top: 18px; bottom: 0; width: 2px; margin-left: -1px; background: var(--neu-primary); box-shadow: 0 0 6px var(--neu-primary); pointer-events: none; }
+.ts-playhead { position: absolute; top: 4px; bottom: 4px; width: 2px; margin-left: -1px; background: var(--neu-primary); box-shadow: 0 0 6px var(--neu-primary); pointer-events: none; }
 .ts-playhead::before { content: """"; position: absolute; top: -3px; left: -5px; width: 12px; height: 12px; border-radius: 50%; background: var(--neu-surface); border: 2px solid var(--neu-primary); }
 /* The live edge: where the archive ends. Blocks to its right have not aired yet. */
-.ts-live { position: absolute; top: 18px; bottom: 0; width: 2px; margin-left: -1px; background: #f43f5e; pointer-events: none; }
+.ts-live { position: absolute; top: 4px; bottom: 4px; width: 2px; margin-left: -1px; background: #f43f5e; pointer-events: none; }
 .ts-detail { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 8px; margin-top: 6px; }
 .ts-detail-main { font-size: 13px; font-weight: 600; color: var(--neu-text); }
 .ts-detail-sub { font-size: 11px; color: var(--neu-text-muted); font-variant-numeric: tabular-nums; }
@@ -1875,7 +1865,6 @@ body.remote-mode .rp-text-btn { min-height: clamp(36px, calc(var(--safe-vh) * 6.
 <div class=""ts-head""><span class=""ts-head-left""><svg class=""icon ts-icon"" viewBox=""0 0 24 24""><path d=""M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z""/></svg><span id=""tsLabel""></span></span><span class=""ts-clock"" id=""tsClock""></span></div>
 <div class=""ts-meter"" id=""tsMeter"">
 <div class=""ts-track"" id=""tsTrack"" role=""slider"" tabindex=""0"" aria-valuemin=""0"" aria-valuemax=""100"" aria-valuenow=""0"">
-<div class=""ts-axis"" id=""tsAxis""></div>
 <div class=""ts-fill"" id=""tsFill""></div>
 <div class=""ts-knob"" id=""tsKnob""></div>
 </div>
@@ -2286,9 +2275,9 @@ function tsClockText(ms, withDate) {
   if (!withDate) return hm;
   return tsDateText(ms) + ' ' + hm;
 }
-// Five ticks across the bar. The bar spans the configured timeshift window (the range from the
-// settings), so the labels describe that archive range; a range reaching past twelve hours or across
-// midnight is dated, otherwise the clock alone is enough.
+// Five ticks across the bar. The bar spans the programme the cursor is watching, so the labels describe
+// that programme's run time; a slot reaching past twelve hours or across midnight is dated, otherwise
+// the clock alone is enough.
 var tsScaleKey = null;
 function renderTimeshiftScale(start, end) {
   var scale = document.getElementById('tsScale');
@@ -2331,52 +2320,40 @@ function tsSlotFor(atMs) {
   if (s && e && e > s) return { from: s, to: e };
   return { from: tsWindow.from, to: tsWindow.to };
 }
-// The bar spans the whole configured window, so the axis highlights where the selected programme sits
-// inside that range: the mark is the same span the band below highlights, which keeps the meter, its
-// scale and the strip telling the same story.
-var tsAxisKey = null;
-function renderTimeshiftAxis() {
-  var axis = document.getElementById('tsAxis');
-  if (!axis) return;
-  if (!tsWindow.active || tsWindow.to <= tsWindow.from) { axis.innerHTML = ''; tsAxisKey = null; return; }
-  var slot = tsSlotFor(tsWindow.from + tsWindow.position * 1000);
-  var span = tsWindow.to - tsWindow.from;
-  var key = slot.from + '|' + slot.to + '|' + span;
-  if (key === tsAxisKey) return;
-  tsAxisKey = key;
-  axis.innerHTML = '';
-  if (!(slot.to > slot.from) || span <= 0) return;
-  var left = Math.max(0, (slot.from - tsWindow.from) / span * 100);
-  var right = Math.min(100, (slot.to - tsWindow.from) / span * 100);
-  if (right <= left) return;
-  var seg = document.createElement('div');
-  seg.className = 'ts-slot';
-  seg.style.left = left + '%';
-  seg.style.width = (right - left) + '%';
-  seg.title = tsClockText(slot.from, true) + ' - ' + tsClockText(slot.to, true);
-  axis.appendChild(seg);
+// The timeline under the meter: one card per programme the server sent, i.e. the range the archive
+// still offers for this channel. The cards are laid out left to right and a card's width follows its
+// length between two clamps - a half-hour item is padded up to the readable minimum, a four-hour film
+// is cut back to the maximum - so names stay legible without one programme swallowing the strip. The
+// card holding the cursor is highlighted, a playhead marks the exact position inside it and a rose line
+// marks the live edge; a card that has not aired yet, or that the operator no longer keeps, is dashed
+// and read-only. Rebuilt only when the programme list changes: the live edge moves every second, so
+// everything that follows it is repositioned by renderTimeshiftLive() instead of rebuilding the strip.
+var TS_PX_PER_MIN = 2, TS_MIN_BLOCK_PX = 84, TS_MAX_BLOCK_PX = 220, TS_BLOCK_GAP_PX = 2;
+var tsBandSignature = null, tsBlockSpans = [], tsCentredBlock = null, tsOutKey = null;
+// Horizontal position of an instant, interpolated inside the card that carries it. The cards are not a
+// linear ruler - their widths are clamped - so a timestamp can only be placed through its own card.
+function tsBandPx(ms) {
+  if (!tsBlockSpans.length) return 0;
+  if (ms <= tsBlockSpans[0].start) return 0;
+  var last = tsBlockSpans[tsBlockSpans.length - 1];
+  if (ms >= last.end) return last.left + last.width;
+  for (var i = 0; i < tsBlockSpans.length; i++) {
+    var span = tsBlockSpans[i];
+    if (ms < span.start || ms > span.end) continue;
+    var f = span.end > span.start ? (ms - span.start) / (span.end - span.start) : 0;
+    return span.left + f * span.width;
+  }
+  return last.left + last.width;
 }
-// The timeline under the meter: one block per programme the server sent, laid out at a fixed scale
-// instead of being stretched to the viewport - three pixels per minute makes a half-hour item 90px
-// and an hour 180px, which is what turns the strip into an EPG rather than a row of equal cards. A
-// ruler above the blocks names the hours (prefixing the date whenever the day rolls over), so a strip
-// scrolled days away from the cursor still says where it is. The block holding the cursor is
-// highlighted, a playhead marks the exact position and a rose line marks the live edge; a block that
-// has not aired yet, or that the operator no longer keeps, is dashed and read-only. Rebuilt only when
-// the programme list changes - the live edge moves every second, so everything that follows it is
-// repositioned by renderTimeshiftLive() instead of rebuilding the strip.
-var TS_PX_PER_MIN = 3, TS_MIN_BLOCK_PX = 34;
-var tsBandSignature = null, tsBlockSpans = [], tsCentredBlock = null, tsOutKey = null, tsBandFirstMs = 0;
-function tsBandPx(ms) { return (ms - tsBandFirstMs) / 60000 * TS_PX_PER_MIN; }
 // The live edge moves every second, so its line is repositioned rather than the strip being rebuilt.
 function renderTimeshiftLive() {
   var live = document.getElementById('tsLive');
-  if (live && tsWindow.active && tsBandFirstMs) live.style.left = tsBandPx(tsWindow.to) + 'px';
+  if (live && tsWindow.active && tsBlockSpans.length) live.style.left = tsBandPx(tsWindow.to) + 'px';
 }
 function renderTimeshiftBand() {
   var inner = document.getElementById('tsBandInner');
   if (!inner) return;
-  if (!tsWindow.active || tsWindow.to <= tsWindow.from) { inner.innerHTML = ''; inner.style.width = ''; tsBandSignature = null; tsBlockSpans = []; tsCentredBlock = null; tsBandFirstMs = 0; return; }
+  if (!tsWindow.active || tsWindow.to <= tsWindow.from) { inner.innerHTML = ''; inner.style.width = ''; tsBandSignature = null; tsBlockSpans = []; tsCentredBlock = null; return; }
   // The strip is the selector over the whole EPG the server sent - every programme for the channel,
   // not just the day the cursor is in - so the user can scroll to any of them and tap it. The
   // signature leaves the window out, because the window end moves every second and the strip must not
@@ -2404,45 +2381,15 @@ function renderTimeshiftBand() {
     inner.appendChild(empty);
     return;
   }
-  tsBandFirstMs = new Date(list[0].startISO).getTime();
-  var lastMs = new Date(list[list.length - 1].endISO).getTime();
-  if (!(lastMs > tsBandFirstMs)) return;
-  inner.style.width = Math.ceil(tsBandPx(lastMs)) + 'px';
-  // The ruler's step is chosen so the visible width carries about a dozen ticks: a 390px phone at
-  // three pixels per minute sees roughly two hours, which lands on fifteen minutes.
-  var band = document.getElementById('tsBand');
-  var viewPx = (band && band.clientWidth) ? band.clientWidth : 342;
-  var steps = [5, 10, 15, 30, 60], step = 60;
-  for (var i = 0; i < steps.length; i++) {
-    if (viewPx / TS_PX_PER_MIN / steps[i] <= 12) { step = steps[i]; break; }
-  }
-  var ruler = document.createElement('div');
-  ruler.className = 'ts-ruler';
-  var stepMs = step * 60000;
-  var prevTickDay = null;
-  for (var at = Math.ceil(tsBandFirstMs / stepMs) * stepMs; at < lastMs; at += stepMs) {
-    var d = new Date(at);
-    var major = d.getMinutes() === 0;
-    var tick = document.createElement('div');
-    tick.className = 'ts-ruler-tick ' + (major ? 'major' : 'minor');
-    tick.style.left = tsBandPx(at) + 'px';
-    ruler.appendChild(tick);
-    if (!major) continue;
-    // Whole hours are named, and a label is prefixed with its date when it is the first of its day -
-    // the same convention the blocks use, so the ruler and the strip agree on where the day turns.
-    var dayKey = d.toDateString();
-    var label = document.createElement('div');
-    label.className = 'ts-ruler-label major';
-    label.textContent = (dayKey !== prevTickDay ? tsDateText(at) + ' ' : '') + tsClockText(at, false);
-    label.style.left = tsBandPx(at) + 'px';
-    ruler.appendChild(label);
-    prevTickDay = dayKey;
-  }
-  inner.appendChild(ruler);
-  var prevDay = null;
+  var prevDay = null, cursorPx = 0;
   list.forEach(function(p) {
     var s = new Date(p.startISO).getTime(), e = new Date(p.endISO).getTime();
-    // A block carries the date when its day differs from the one before it (and on the first block),
+    var minutes = (e - s) / 60000;
+    if (!(minutes > 0)) return;
+    // Width follows the run time between the readable minimum and the maximum, so a short item still
+    // shows its name and a long one cannot dwarf the strip.
+    var width = Math.max(TS_MIN_BLOCK_PX, Math.min(TS_MAX_BLOCK_PX, minutes * TS_PX_PER_MIN));
+    // A card carries the date when its day differs from the one before it (and on the first card),
     // exactly like a TV EPG bar.
     var day = new Date(s).toDateString();
     var showDate = prevDay === null || day !== prevDay;
@@ -2450,8 +2397,8 @@ function renderTimeshiftBand() {
     var block = document.createElement('button');
     block.type = 'button';
     block.className = 'ts-block';
-    block.style.left = tsBandPx(s) + 'px';
-    block.style.width = Math.max(TS_MIN_BLOCK_PX, tsBandPx(e) - tsBandPx(s) - 2) + 'px';
+    block.style.left = cursorPx + 'px';
+    block.style.width = width + 'px';
     block.setAttribute('data-start', String(s));
     block.setAttribute('data-end', String(e));
     var time = document.createElement('div');
@@ -2462,13 +2409,15 @@ function renderTimeshiftBand() {
     name.textContent = p.name || '';
     block.appendChild(time);
     block.appendChild(name);
-    // The strip scrolls the whole EPG, but only the archive window can be seeked into: a block is
+    // The strip carries the whole schedule, but only the archive range can be seeked into: a card is
     // read-only when it has not aired yet or when the operator no longer keeps it.
     if (s > tsWindow.to || e < tsWindow.from) block.classList.add('out');
     else if (tsWindow.to >= s && tsWindow.to < e) block.classList.add('live');
     inner.appendChild(block);
-    tsBlockSpans.push({ el: block, start: s, end: e });
+    tsBlockSpans.push({ el: block, start: s, end: e, left: cursorPx, width: width });
+    cursorPx += width + TS_BLOCK_GAP_PX;
   });
+  inner.style.width = Math.max(1, cursorPx - TS_BLOCK_GAP_PX) + 'px';
   var live = document.createElement('div');
   live.className = 'ts-live';
   live.id = 'tsLive';
@@ -2543,17 +2492,18 @@ function positionPlayhead(ms) {
 }
 function paintTimeshift(seconds) {
   var atMs = tsWindow.from + seconds * 1000;
-  // The bar spans the configured timeshift window - the range the settings define - so the fill and
-  // the scale describe how far back in the archive the cursor sits. The band below picks a single
-  // programme and the axis highlight marks that programme on this range.
-  var span = tsWindow.to - tsWindow.from;
-  var pct = span > 0 ? Math.max(0, Math.min(100, (atMs - tsWindow.from) / span * 100)) : 0;
+  // The bar describes the programme the cursor is playing, not the whole archive: the fill, the knob and
+  // the five ticks all measure how far into that programme playback has come, while the strip below is
+  // what sets the seekable range.
+  var slot = tsSlotFor(atMs);
+  var span = slot.to - slot.from;
+  var pct = span > 0 ? Math.max(0, Math.min(100, (atMs - slot.from) / span * 100)) : 0;
   var fill = document.getElementById('tsFill'); if (fill) fill.style.width = pct + '%';
   var knob = document.getElementById('tsKnob'); if (knob) knob.style.left = pct + '%';
   var track = document.getElementById('tsTrack'); if (track) track.setAttribute('aria-valuenow', String(Math.round(pct)));
   var clock = document.getElementById('tsClock');
   if (clock) clock.textContent = tsClockText(atMs, true);
-  renderTimeshiftScale(tsWindow.from, tsWindow.to);
+  renderTimeshiftScale(slot.from, slot.to);
   // Tie the position to the EPG: name and slot of the programme that runs at the cursor. The card
   // under the header repeats it, because while timeshift runs the live programme is not what the
   // user is watching any more.
@@ -2586,7 +2536,6 @@ function updateTimeshift(t) {
   if (box) box.style.display = 'block';
   // The strip scrolls the whole schedule, which the guide's day list does not carry.
   loadTimeshiftEpg();
-  renderTimeshiftAxis();
   renderTimeshiftBand();
   paintTimeshift(tsDragging ? tsDragSeconds : tsWindow.position);
   startTimeshiftTicker();
@@ -2606,9 +2555,11 @@ function tsSecondsFromEvent(ev) {
   var clientX = (ev.clientX === undefined && ev.touches && ev.touches.length) ? ev.touches[0].clientX : ev.clientX;
   var ratio = rect.width > 0 ? (clientX - rect.left) / rect.width : 0;
   ratio = Math.max(0, Math.min(1, ratio));
-  // The bar spans the configured window, so a drag resolves to a position inside that range; the band
-  // below and the -10s / +10s buttons do the finer work.
-  return Math.max(0, Math.min(tsTotalSeconds(), ratio * tsTotalSeconds()));
+  // The bar spans the programme at the cursor, so a drag resolves to a position inside that programme;
+  // the strip below is what moves across the archive, and the -10s / +10s buttons do the finer work.
+  var slot = tsSlotFor(tsWindow.from + tsWindow.position * 1000);
+  var atMs = slot.from + ratio * (slot.to - slot.from);
+  return Math.max(0, Math.min(tsTotalSeconds(), (atMs - tsWindow.from) / 1000));
 }
 (function bindTimeshiftScrubber() {
   var track = document.getElementById('tsTrack');
@@ -2835,7 +2786,6 @@ grid.appendChild(div);
 function renderEpg(data) {
 var list = document.getElementById('epgList'); var channelName = document.getElementById('epgChannelName');
 epgPrograms = data.programs || [];
-renderTimeshiftAxis();
 renderTimeshiftBand();
 if (!data.programs || !data.programs.length) { list.innerHTML = '<div class=""loading"">' + T.epg_empty + '</div>'; return; }
 var channel = channelList.find(function(c) { return c.id === data.channelId; });

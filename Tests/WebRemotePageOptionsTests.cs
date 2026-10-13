@@ -65,13 +65,21 @@ namespace LibmpvIptvClient.Tests
 
             foreach (var marker in new[]
                      {
-                         "id=\"tsScrubber\"", "id=\"tsTrack\"", "id=\"tsAxis\"", "id=\"tsFill\"",
+                         "id=\"tsScrubber\"", "id=\"tsTrack\"", "id=\"tsFill\"", "id=\"tsScale\"",
+                         "id=\"tsBand\"", "id=\"tsBandInner\"", "ts-block",
                          "send('seekTimeshift'", "send('getTimeshift'", "function updateTimeshift(",
-                         "renderTimeshiftAxis"
+                         "renderTimeshiftScale"
                      })
             {
                 Assert.IsTrue(html.Contains(marker), $"remote html is missing {marker}");
             }
+
+            // The bar describes the programme being watched, while the strip below sets the seekable
+            // range: the scale follows the cursor's slot, and a card's width is clamped instead of
+            // following one fixed pixels-per-minute scale that left short items unreadable.
+            StringAssert.Contains(html, "renderTimeshiftScale(slot.from, slot.to)");
+            StringAssert.Contains(html, "TS_MIN_BLOCK_PX = 84");
+            StringAssert.Contains(html, "TS_MAX_BLOCK_PX = 220");
         }
 
         [TestMethod]
