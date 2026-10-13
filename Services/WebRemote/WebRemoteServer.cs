@@ -44,6 +44,14 @@ namespace LibmpvIptvClient.Services.WebRemote
 
         internal static bool LooksLikeTlsHandshake(byte firstByte) => firstByte == TlsHandshakePrefix;
 
+        /// <summary>
+        /// Largest single text websocket message accepted. One 15 s voice upload is roughly 640 KB of
+        /// base64, so this leaves room for a longer clip at a higher device rate while still refusing to
+        /// buffer an unbounded frame. A message above the cap closes the connection; the page reconnects
+        /// on its own and its reply watchdog reports the failure instead of waiting forever.
+        /// </summary>
+        internal const int MaxTextMessageBytes = 4 * 1024 * 1024;
+
         // 密码保护
         private bool _requirePassword;
         private string _password = "";
@@ -86,6 +94,14 @@ namespace LibmpvIptvClient.Services.WebRemote
         /// sentences and the same user rules. A non-empty action runs that action directly.
         /// </summary>
         public Func<VoiceCommandContext, string, string, VoiceCommandReply>? VoiceCommandCallback { get; set; }
+
+        /// <summary>
+        /// Offline speech-to-text seam: audio in, recognised text out (null = recognition failed/unavailable).
+        /// The page uploads one recorded utterance over the same websocket, so the phone needs no online
+        /// speech service and the recognition engine stays outside the server. Wired by WebRemoteManager;
+        /// when it is null the "voiceAudio" action answers with a readable message instead of silence.
+        /// </summary>
+        public Func<VoiceAudioClip, System.Threading.Tasks.Task<string?>>? VoiceAudioCallback { get; set; }
 
         /// <summary>Shared secret for /api/voice; empty disables the endpoint's token check (LAN only).</summary>
         private string _voiceToken = "";
@@ -891,8 +907,11 @@ self.addEventListener('fetch', function(event) {
                 lock (_clientsLock) { _clients.Add(ws); }
                 Logger.Debug($"[WebRemote] WebSocket client connected, state: {ws.State}");
 
-                // Receive messages
+                // Receive messages. One ReceiveAsync call is not one message: an 8 KB buffer only holds a
+                // fragment, and the page uploads about 640 KB of base64 for a 15 s voice recording, so a
+                // text frame has to be reassembled until the transport says EndOfMessage.
                 var receiveBuf = new byte[8192];
+                var messageBuffer = new MemoryStream();
                 while (ws.State == WebSocketState.Open && !ct.IsCancellationRequested)
                 {
                     try
@@ -903,11 +922,25 @@ self.addEventListener('fetch', function(event) {
                             await ws.CloseAsync(WebSocketCloseStatus.NormalClosure, "", ct);
                             break;
                         }
-                        if (result.MessageType == WebSocketMessageType.Text)
+                        if (result.MessageType != WebSocketMessageType.Text)
                         {
-                            var msg = Encoding.UTF8.GetString(receiveBuf, 0, result.Count);
-                            HandleMessage(ws, msg, ct);
+                            // The protocol has no binary frames: drop whatever was collected so a stray
+                            // frame can never be glued onto the next text message.
+                            messageBuffer.SetLength(0);
+                            continue;
                         }
+
+                        messageBuffer.Write(receiveBuf, 0, result.Count);
+                        if (messageBuffer.Length > MaxTextMessageBytes)
+                        {
+                            Logger.Warn($"[WebRemote] WebSocket message above {MaxTextMessageBytes} bytes, closing the connection");
+                            break;
+                        }
+                        if (!result.EndOfMessage) continue;
+
+                        var msg = Encoding.UTF8.GetString(messageBuffer.GetBuffer(), 0, (int)messageBuffer.Length);
+                        messageBuffer.SetLength(0);
+                        HandleMessage(ws, msg, ct);
                     }
                     catch (WebSocketException) { break; }
                     catch (OperationCanceledException) { break; }
@@ -1190,6 +1223,73 @@ self.addEventListener('fetch', function(event) {
                         }
                         break;
 
+                    case "voiceAudio":
+                        {
+                            var audioLang = json.TryGetProperty("lang", out var audioLangElem)
+                                ? audioLangElem.GetString() ?? ""
+                                : "";
+                            if (string.IsNullOrWhiteSpace(audioLang)) audioLang = ParseAcceptLanguage("");
+                            var audioBase64 = json.TryGetProperty("audio", out var audioElem)
+                                ? audioElem.GetString() ?? ""
+                                : "";
+                            var audioRate = json.TryGetProperty("sampleRate", out var audioRateElem)
+                                            && audioRateElem.ValueKind == JsonValueKind.Number
+                                ? audioRateElem.GetInt32()
+                                : VoiceAudioProtocol.DefaultSampleRateHz;
+
+                            var clip = VoiceAudioProtocol.TryDecode(audioBase64, audioRate, audioLang, out var audioError);
+                            if (clip == null)
+                            {
+                                Logger.Warn($"[WebRemote] voiceAudio rejected: {audioError}");
+                                result = VoiceAudioFailure(audioLang, VoicePageString(audioLang, "voice_error",
+                                    "The recording could not be read, please try again"));
+                                break;
+                            }
+
+                            if (VoiceAudioCallback == null)
+                            {
+                                Logger.Warn("[WebRemote] voiceAudio received but no offline recogniser is wired up");
+                                result = VoiceAudioFailure(audioLang, VoicePageString(audioLang, "voice_offline_hint",
+                                    "Offline speech is not enabled"));
+                                break;
+                            }
+
+                            Logger.Debug($"[WebRemote] voiceAudio: {clip.Seconds:0.0}s at {clip.SampleRateHz}Hz ({clip.Lang})");
+                            string? recognised = null;
+                            try
+                            {
+                                recognised = await VoiceAudioCallback(clip);
+                            }
+                            catch (Exception ex)
+                            {
+                                Logger.Error($"[WebRemote] voiceAudio recognition failed: {ex.Message}");
+                            }
+
+                            if (string.IsNullOrWhiteSpace(recognised))
+                            {
+                                result = VoiceAudioFailure(audioLang, VoicePageString(audioLang, "voice_not_understood",
+                                    "I did not catch that."));
+                                break;
+                            }
+
+                            // From here the sentence takes exactly the path a typed one takes, so the grammar,
+                            // the user rules and the candidate menu keep a single implementation.
+                            Logger.Debug($"[WebRemote] voiceAudio recognised: \"{recognised}\"");
+                            if (VoiceCommandCallback == null)
+                            {
+                                result = VoiceAudioFailure(audioLang, VoicePageString(audioLang, "voice_unsupported",
+                                    "Voice control is not available"), recognised);
+                                break;
+                            }
+
+                            var audioContext = new VoiceCommandContext { Text = recognised, Lang = clip.Lang };
+                            // The callback's target parameter is declared non-nullable while the router
+                            // itself accepts null, and a recognised sentence has no target: the '!' keeps
+                            // the frozen null call without adding a warning to the build.
+                            result = VoiceCommandCallback(audioContext, "", null!);
+                        }
+                        break;
+
                     case "getReminders":
                         {
                             var reminders = GetRemindersCallback?.Invoke() ?? new List<WebRemoteReminder>();
@@ -1372,6 +1472,34 @@ self.addEventListener('fetch', function(event) {
             }
             catch { }
             return "zh-CN";
+        }
+
+        /// <summary>
+        /// One string from the web remote's own table, with an English sentence as the fallback so an
+        /// unknown language still explains the failure instead of showing an empty status line.
+        /// </summary>
+        private static string VoicePageString(string lang, string key, string fallback)
+        {
+            return WebRemoteStrings.Get(lang) is { } table
+                   && table.TryGetValue(key, out var value)
+                   && !string.IsNullOrWhiteSpace(value)
+                ? value
+                : fallback;
+        }
+
+        /// <summary>
+        /// A failed voice reply. The page renders it exactly like the answer to a spoken command, so a
+        /// rejected upload leaves the panel on a readable message instead of staying on 'working...'.
+        /// </summary>
+        private static VoiceCommandReply VoiceAudioFailure(string lang, string spoken, string? text = null)
+        {
+            return new VoiceCommandReply
+            {
+                Success = false,
+                Verb = "unknown",
+                Text = text ?? "",
+                Spoken = spoken
+            };
         }
 
         private static string BuildHtmlTemplate()
@@ -1646,7 +1774,7 @@ body.dark-theme, body.theme-dark { color: var(--neu-text); }
 .voice-box { background: var(--neu-surface); border-radius: var(--neu-radius); padding: 18px; width: 100%; max-width: 420px; box-shadow: var(--neu-shadow-out); max-height: calc(100dvh - 32px - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px)); overflow-y: auto; -webkit-overflow-scrolling: touch; box-sizing: border-box; }
 .voice-head { display: flex; align-items: center; justify-content: space-between; font-size: 15px; color: var(--neu-text); margin-bottom: 12px; }
 .voice-x { border: none; background: var(--neu-surface2); color: var(--neu-text); border-radius: 50%; width: 30px; height: 30px; font-size: 14px; cursor: pointer; box-shadow: var(--neu-shadow-out-sm); touch-action: manipulation; }
-.voice-mic { display: block; margin: 4px auto 12px auto; width: 96px; height: 96px; border-radius: 50%; border: none; font-size: 40px; line-height: 1; background: var(--neu-surface); color: var(--neu-text); box-shadow: var(--neu-shadow-out); cursor: pointer; touch-action: manipulation; user-select: none; -webkit-user-select: none; }
+.voice-mic { display: block; margin: 4px auto 12px auto; width: 96px; height: 96px; border-radius: 50%; border: none; font-size: 40px; line-height: 1; background: var(--neu-surface); color: var(--neu-text); box-shadow: var(--neu-shadow-out); cursor: pointer; touch-action: none; user-select: none; -webkit-user-select: none; }
 .voice-mic:active, .voice-mic.listening { box-shadow: var(--neu-shadow-in); }
 .voice-mic.listening { background: var(--neu-primary); color: var(--neu-primary-fg); animation: voicePulse 1.4s ease-in-out infinite; }
 @keyframes voicePulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.06); } }
@@ -1998,7 +2126,7 @@ body.remote-mode .rp-text-btn { min-height: clamp(36px, calc(var(--safe-vh) * 6.
 <span id=""voiceTitle""></span>
 <button class=""voice-x"" onclick=""closeVoice()"">✕</button>
 </div>
-<button class=""voice-mic"" id=""voiceMicBtn"" onclick=""voiceMicTap()"">🎙</button>
+<button class=""voice-mic"" id=""voiceMicBtn"" onpointerdown=""voiceHoldStart(event)"" onpointerup=""voiceHoldEnd(event)"" onpointercancel=""voiceHoldEnd(event)"" onlostpointercapture=""voiceHoldEnd(event)"" onkeydown=""if(event.key===' '||event.key==='Enter')voiceHoldStart(event)"" onkeyup=""if(event.key===' '||event.key==='Enter')voiceHoldEnd(event)"" oncontextmenu=""return false"">🎙</button>
 <div class=""voice-status"" id=""voiceStatus""></div>
 <div class=""voice-heard"" id=""voiceHeard""></div>
 <div class=""voice-hint"" id=""voiceHint"" style=""display:none;margin-bottom:10px;""><div id=""voiceHintText"" style=""font-size:12px;color:var(--neu-text-muted);margin-bottom:6px;line-height:1.5;""></div><button type=""button"" class=""voice-option"" id=""voiceHttpsBtn"" style=""display:none;width:100%;text-align:center;"" onclick=""openSecureRemote()""></button></div>
@@ -2078,9 +2206,11 @@ var examplesColon = examples.indexOf('：') >= 0 ? examples.indexOf('：') : exa
 t('voiceExamples', examplesColon >= 0 ? examples.substring(0, examplesColon + 1) : examples);
 t('voiceHandsFree', T.voice_handsfree);
 var hf = document.getElementById('voiceHandsFree');
-if (hf) hf.className = voiceHandsFree ? 'on' : '';
+// Hands-free wake-word listening ran through the browser speech service, which this network cannot
+// reach: the button is hidden rather than offering a mode that can never start.
+if (hf) { hf.className = ''; hf.style.display = 'none'; }
 var status = document.getElementById('voiceStatus');
-if (status && !voiceBusy) status.textContent = voiceHandsFree ? T.voice_listening : T.voice_hold;
+if (status && !voiceBusy && !voicePending) status.textContent = T.voice_hold;
 }
 
 function connect() {
@@ -3051,12 +3181,15 @@ function doInstall() {
 }
 
 // ---------------------------------------------------------------- voice control
-// Recognition runs on the phone (Web Speech API) and the meaning is resolved by the server, so the
-// grammar, the channel names and the custom rules have exactly one implementation.
+// The phone records one utterance and uploads it; the server resolves the meaning, so the grammar, the
+// channel names and the custom rules keep exactly one implementation. Recognition itself runs on the
+// desktop, because the online speech service the browser engine below needs is unreachable on this
+// network. That engine is kept only as dead code to read the old behaviour against: nothing starts it.
 var VoiceSR = window.SpeechRecognition || window.webkitSpeechRecognition;
 var voiceRec = null;
 var voiceListening = false;
 var voiceBusy = false;
+var voicePending = false;
 var voiceReplyTimeout = null;
 var voiceStallTimeout = null;
 var voiceLastError = '';
@@ -3066,7 +3199,244 @@ var voiceLastOptions = [];
 // The browser is the authority on whether recognition can run. Refusing here on the secure-context flag
 // used to leave the microphone button dead on a plain http phone with no way forward, so we always ask the
 // browser and report what it answers (voiceDiag + the https hint in the panel).
+// This answers for the dormant Web Speech engine only; the recording path asks voiceRecordingSupported().
 function voiceSupported() { return !!VoiceSR; }
+
+// Whether this phone can record at all: microphone access plus the two Web Audio contexts the capture
+// graph and the resampler need. Asked instead of assumed, because a missing microphone and a denied
+// one look exactly alike from the panel.
+function voiceRecordingSupported() {
+var md = navigator.mediaDevices;
+return !!(md && md.getUserMedia && (window.AudioContext || window.webkitAudioContext)
+&& (window.OfflineAudioContext || window.webkitOfflineAudioContext));
+}
+
+// ---------------------------------------------------------------- voice recording (offline upload)
+var VOICE_RATE = 16000;    // rate the recording is resampled to; the server decodes the same number
+var VOICE_MAX_MS = 15000;  // hard cap on one utterance; a longer hold is cut off, not refused
+
+// The capture worklet is inlined as a Blob URL so the remote stays a single page with no extra asset.
+var VOICE_WORKLET_SRC =
+'class SrcBoxVoiceCapture extends AudioWorkletProcessor {' +
+'constructor() { super(); this.buf = new Float32Array(2048); this.n = 0; }' +
+'process(inputs) {' +
+'var ch = inputs[0] && inputs[0][0];' +
+'if (ch && ch.length) {' +
+'if (this.n + ch.length > this.buf.length) { this.port.postMessage(this.buf.slice(0, this.n)); this.n = 0; }' +
+'this.buf.set(ch, this.n); this.n += ch.length;' +
+'}' +
+'return true;' +
+'}' +
+'}' +
+'registerProcessor(""srcbox-voice-capture"", SrcBoxVoiceCapture);';
+
+var voiceCap = {
+active: false, starting: false, releaseRequested: false, mode: '',
+stream: null, ctx: null, source: null, node: null, sink: null, chunks: [], capTimer: null
+};
+
+// Pressing the button records, releasing uploads. The microphone is opened per press, so the first tap
+// on a phone shows the browser's permission prompt instead of failing silently.
+function voiceHoldStart(ev) {
+if (ev && ev.preventDefault) ev.preventDefault();
+if (voicePending) { setVoiceStatus(T.voice_thinking); return; }
+if (voiceCap.active || voiceCap.starting) return;
+var btn = document.getElementById('voiceMicBtn');
+// Capturing the pointer keeps the release on this button even when the finger slides off it, which a
+// long recording on a phone makes very likely.
+try { if (btn && btn.setPointerCapture && ev && ev.pointerId !== undefined) btn.setPointerCapture(ev.pointerId); } catch (e) { }
+voiceStartCapture();
+}
+
+function voiceHoldEnd(ev) {
+if (ev && ev.preventDefault) ev.preventDefault();
+// A release during the permission prompt has to be remembered: the graph only exists afterwards.
+if (voiceCap.starting) { voiceCap.releaseRequested = true; return; }
+if (!voiceCap.active) return;
+voiceStopCapture();
+}
+
+function voiceStartCapture() {
+if (!voiceRecordingSupported()) {
+if (window.isSecureContext === false) { setVoiceStatus(T.voice_secure_needed); voiceRefreshHint(); }
+else { setVoiceStatus(T.voice_unsupported); voiceShowFallbackHint(); }
+return;
+}
+voiceCap.starting = true; voiceCap.releaseRequested = false; voiceCap.chunks = []; voiceCap.mode = '';
+voiceMicClass(true);
+voiceDiag('record', 'start');
+navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } })
+.then(function (stream) { return voiceOpenGraph(stream); })
+.catch(function (err) { voiceCap.starting = false; voiceCaptureFailed(err); });
+}
+
+// Builds the capture graph. The node reaches the destination through a muted gain node: a Web Audio
+// node with no path to the destination is never rendered, and the mute is what keeps the microphone out
+// of the phone's own speaker.
+function voiceOpenGraph(stream) {
+voiceCap.stream = stream;
+var AC = window.AudioContext || window.webkitAudioContext;
+var ctx = new AC();
+voiceCap.ctx = ctx;
+voiceCap.source = ctx.createMediaStreamSource(stream);
+voiceCap.sink = ctx.createGain();
+voiceCap.sink.gain.value = 0;
+voiceCap.sink.connect(ctx.destination);
+var ready = (ctx.state === 'suspended' && ctx.resume) ? ctx.resume() : Promise.resolve();
+return ready.then(function () {
+if (ctx.audioWorklet && ctx.audioWorklet.addModule) {
+var url = URL.createObjectURL(new Blob([VOICE_WORKLET_SRC], { type: 'application/javascript' }));
+return ctx.audioWorklet.addModule(url).then(function () {
+try { URL.revokeObjectURL(url); } catch (e) { }
+var node = new AudioWorkletNode(ctx, 'srcbox-voice-capture');
+node.port.onmessage = function (ev) { voicePushChunk(ev.data); };
+voiceCap.node = node; voiceCap.mode = 'worklet';
+voiceCap.source.connect(node);
+node.connect(voiceCap.sink);
+}).catch(function (err) {
+voiceDiag('worklet', err && err.name ? err.name : 'error');
+voiceAttachScriptProcessor();
+return null;
+});
+}
+voiceAttachScriptProcessor();
+return null;
+}).then(function () {
+if (!voiceCap.mode) { voiceCap.starting = false; voiceCaptureFailed({ name: 'no-audio-node' }); return; }
+voiceCap.starting = false; voiceCap.active = true;
+setVoiceStatus(T.voice_listening);
+voiceArmCap();
+if (voiceCap.releaseRequested) voiceStopCapture();
+});
+}
+
+// Fallback for a browser without AudioWorklet (older iOS Safari): the deprecated ScriptProcessorNode
+// delivers the same mono samples, just on the main thread.
+function voiceAttachScriptProcessor() {
+var ctx = voiceCap.ctx;
+if (!ctx || !ctx.createScriptProcessor || voiceCap.mode) return;
+var node = ctx.createScriptProcessor(2048, 1, 1);
+node.onaudioprocess = function (ev) { voicePushChunk(ev.inputBuffer.getChannelData(0)); };
+voiceCap.node = node; voiceCap.mode = 'script';
+voiceCap.source.connect(node);
+node.connect(voiceCap.sink);
+}
+
+function voicePushChunk(buf) {
+if (!voiceCap.active || !buf || !buf.length) return;
+// A stuck pointer must not grow the recording without bound; the server enforces the same 15 s.
+if (voiceCap.chunks.length > 900) return;
+voiceCap.chunks.push(new Float32Array(buf));
+}
+
+function voiceArmCap() {
+clearTimeout(voiceCap.capTimer);
+voiceCap.capTimer = setTimeout(function () {
+if (!voiceCap.active) return;
+// Reaching the cap uploads what was recorded instead of reporting an error.
+voiceDiag('record', 'max');
+voiceStopCapture();
+}, VOICE_MAX_MS);
+}
+
+function voiceStopCapture() {
+if (!voiceCap.active) return;
+var chunks = voiceCap.chunks;
+var rate = (voiceCap.ctx && voiceCap.ctx.sampleRate) ? voiceCap.ctx.sampleRate : 48000;
+voiceCap.chunks = [];
+voiceTearDown();
+if (!chunks.length) { setVoiceStatus(T.voice_error); return; }
+setVoiceStatus(T.voice_thinking);
+voiceResample(chunks, rate).then(function (samples) {
+voiceSendAudio(samples);
+}).catch(function (err) {
+voiceDiag('resample', err && err.name ? err.name : 'error');
+setVoiceStatus(T.voice_error);
+});
+}
+
+function voiceCancelCapture() {
+voiceCap.releaseRequested = false;
+if (!voiceCap.active && !voiceCap.starting) return;
+voiceCap.chunks = [];
+voiceTearDown();
+}
+
+function voiceTearDown() {
+clearTimeout(voiceCap.capTimer); voiceCap.capTimer = null;
+voiceCap.active = false; voiceCap.starting = false; voiceCap.mode = '';
+try { if (voiceCap.node) voiceCap.node.disconnect(); } catch (e) { }
+try { if (voiceCap.source) voiceCap.source.disconnect(); } catch (e) { }
+try { if (voiceCap.sink) voiceCap.sink.disconnect(); } catch (e) { }
+try { if (voiceCap.ctx && voiceCap.ctx.state !== 'closed') voiceCap.ctx.close(); } catch (e) { }
+try { if (voiceCap.stream) voiceCap.stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) { }
+voiceCap.node = null; voiceCap.source = null; voiceCap.sink = null; voiceCap.ctx = null; voiceCap.stream = null;
+voiceMicClass(false);
+}
+
+// The phone captures at 44.1 or 48 kHz; the recogniser wants 16 kHz mono, so the whole recording is
+// resampled in one offline pass and converted to the 16 bit PCM the websocket carries.
+function voiceResample(chunks, rate) {
+var total = 0, i;
+for (i = 0; i < chunks.length; i++) total += chunks[i].length;
+if (!total) return Promise.reject(new Error('empty'));
+var flat = new Float32Array(total), at = 0;
+for (i = 0; i < chunks.length; i++) { flat.set(chunks[i], at); at += chunks[i].length; }
+var OAC = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+var frames = Math.max(1, Math.min(Math.round(total / rate * VOICE_RATE), VOICE_RATE * VOICE_MAX_MS / 1000));
+var octx = new OAC(1, frames, VOICE_RATE);
+var buf = octx.createBuffer(1, total, rate);
+buf.getChannelData(0).set(flat);
+var src = octx.createBufferSource();
+src.buffer = buf;
+src.connect(octx.destination);
+src.start(0);
+return octx.startRendering().then(function (rendered) {
+var data = rendered.getChannelData(0);
+var out = new Int16Array(data.length);
+for (var j = 0; j < data.length; j++) {
+var v = data[j];
+if (v > 1) v = 1; else if (v < -1) v = -1;
+out[j] = v < 0 ? v * 0x8000 : v * 0x7fff;
+}
+return out;
+});
+}
+
+// One 15 s utterance is roughly 640 KB of base64, which is why the server reassembles the text frame;
+// the log line carries only the size for the same reason.
+function voiceSendAudio(samples) {
+var bytes = new Uint8Array(samples.buffer, samples.byteOffset, samples.byteLength);
+var binary = '';
+for (var i = 0; i < bytes.length; i += 8192) binary += String.fromCharCode.apply(null, bytes.subarray(i, i + 8192));
+voiceDiag('upload', (samples.length / VOICE_RATE).toFixed(1) + 's ' + bytes.length + ' bytes');
+if (!send('voiceAudio', { audio: btoa(binary), sampleRate: VOICE_RATE, lang: voiceLang() })) {
+// The socket reconnects on its own every three seconds; say so instead of swallowing the recording.
+setVoiceStatus(T.connecting);
+return;
+}
+voicePending = true;
+setVoiceStatus(T.voice_thinking);
+clearTimeout(voiceReplyTimeout);
+// Recognition on the desktop may take a few seconds; without this the panel would wait forever.
+voiceReplyTimeout = setTimeout(function () {
+if (!voicePending) return;
+voicePending = false;
+setVoiceStatus(T.voice_no_reply);
+}, 20000);
+}
+
+function voiceCaptureFailed(err) {
+voiceTearDown();
+voiceCap.chunks = [];
+var name = (err && err.name) ? err.name : 'error';
+voiceDiag('mic', name);
+if (window.isSecureContext === false) { setVoiceStatus(T.voice_secure_needed); voiceRefreshHint(); return; }
+// The raw name is what tells a denied microphone apart from a busy one, and it is what the user has to
+// read out when the recording keeps failing on their phone.
+setVoiceStatus(T.voice_error + ' (' + name + ')');
+voiceShowFallbackHint();
+}
 
 function voiceWakeWords() {
 var list = (VOICE.wake && VOICE.wake.length) ? VOICE.wake : ['遥控器', '小箱', 'srcbox', 'remote', 'пульт'];
@@ -3206,16 +3576,10 @@ var b = document.getElementById('voiceHandsFree');
 if (b) b.className = voiceHandsFree ? 'on' : '';
 }
 
-function voiceMicTap() {
-if (voiceListening) { stopVoiceListening(); return; }
-startVoiceListening();
-}
-
 function toggleHandsFree() {
-if (voiceListening) { stopVoiceListening(); return; }
-if (!voiceSupported()) { setVoiceStatus(window.isSecureContext === false ? T.voice_secure_needed : T.voice_unsupported); return; }
-voiceHandsFree = true; voiceRefreshHandsFree();
-startVoiceListening();
+// Wake-word listening ran through the browser speech service; there is nothing here to start it with.
+voiceHandsFree = false; voiceRefreshHandsFree();
+setVoiceStatus(window.isSecureContext === false ? T.voice_secure_needed : T.voice_offline_hint);
 }
 
 function toggleVoice() {
@@ -3229,22 +3593,22 @@ function openVoice() {
 var ov = document.getElementById('voiceOverlay');
 if (ov) ov.classList.add('show');
 voiceBusy = false;
-setVoiceStatus(VOICE.enabled === false ? T.voice_unsupported : T.voice_hold);
+voicePending = false;
+setVoiceStatus((VOICE.enabled === false || !voiceRecordingSupported()) ? T.voice_unsupported : T.voice_hold);
 setVoiceHeard('');
 renderVoiceOptions([]);
 applyVoiceText();
 voiceRefreshHint();
-// The settings may ask for an always-open microphone; still only start it from this user gesture.
-if (VOICE.handsFree && voiceSupported() && !voiceListening) {
-voiceHandsFree = true; voiceRefreshHandsFree();
-startVoiceListening();
-}
+// No microphone is opened here even when the settings ask for hands-free: a recording only ever
+// starts from the press on the microphone button (voiceHoldStart), which is also the user gesture
+// the browser requires before it hands over the microphone.
 }
 
 function closeVoice() {
 var ov = document.getElementById('voiceOverlay');
 if (ov) ov.classList.remove('show');
 stopVoiceListening();
+voiceCancelCapture();
 if (window.speechSynthesis) { try { window.speechSynthesis.cancel(); } catch (err) { } }
 }
 
@@ -3280,7 +3644,11 @@ setVoiceStatus(T.voice_no_reply);
 
 function handleVoiceReply(reply) {
 clearTimeout(voiceReplyTimeout);
+voicePending = false;
 voiceBusy = false;
+// The upload path never went through sendVoice, so the sentence the desktop recognised is only in the
+// reply; showing it is what makes a misheard command visible instead of mysterious.
+if (reply.text) setVoiceHeard(reply.text);
 if (reply.spoken) { setVoiceStatus(reply.spoken); speakVoice(reply.spoken); }
 else setVoiceStatus(reply.success ? T.voice_hold : T.voice_not_understood);
 renderVoiceOptions(reply.options || []);

@@ -166,5 +166,137 @@ namespace LibmpvIptvClient.Tests
             foreach (var key in new[] { "voice_title", "voice_listening", "voice_unsupported", "voice_not_understood", "voice_examples", "voice_no_reply" })
                 Assert.IsTrue(strings.ContainsKey(key) && !string.IsNullOrWhiteSpace(strings[key]), $"{lang}: {key}");
         }
+
+        [TestMethod]
+        public void RemoteHtml_RecordsOnThePhoneAndUploadsInsteadOfUsingWebSpeech()
+        {
+            var html = WebRemoteServer.GetRemoteHtml("zh-CN");
+
+            // The button records and uploads; the browser speech service the old path needed is exactly
+            // what this network cannot reach.
+            StringAssert.Contains(html, "send('voiceAudio'");
+            StringAssert.Contains(html, "function voiceHoldStart(");
+            StringAssert.Contains(html, "function voiceHoldEnd(");
+            StringAssert.Contains(html, "onpointerdown=\"voiceHoldStart(event)\"");
+            StringAssert.Contains(html, "onpointerup=\"voiceHoldEnd(event)\"");
+            StringAssert.Contains(html, "navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } })");
+            // Mono 16 kHz 16 bit PCM is what the desktop decoder expects on the wire.
+            StringAssert.Contains(html, "var VOICE_RATE = 16000;");
+            StringAssert.Contains(html, "var VOICE_MAX_MS = 15000;");
+            StringAssert.Contains(html, "OfflineAudioContext");
+            StringAssert.Contains(html, "new Int16Array(");
+            StringAssert.Contains(html, "btoa(binary)");
+            // AudioWorklet first, ScriptProcessorNode as the fallback for a browser without it.
+            StringAssert.Contains(html, "audioWorklet.addModule(");
+            StringAssert.Contains(html, "registerProcessor(\"srcbox-voice-capture\", SrcBoxVoiceCapture)");
+            StringAssert.Contains(html, "ctx.createScriptProcessor(2048, 1, 1)");
+            // The recognised sentence has to be readable in the panel, not only spoken.
+            StringAssert.Contains(html, "if (reply.text) setVoiceHeard(reply.text);");
+            // The wake-word engine must not be reachable from the button any more.
+            Assert.IsFalse(html.Contains("onclick=\"voiceMicTap()\""), "the microphone button still starts Web Speech");
+        }
+
+        [TestMethod]
+        public void WebSocketTextLimit_HoldsAFullLengthUtterance()
+        {
+            // 15 s of 16 kHz mono PCM is 480000 bytes of little endian samples, about 640 KB once base64
+            // encoded: the websocket has to reassemble that one message instead of dropping it.
+            var base64Bytes = 15 * 16000 * 2 * 4 / 3;
+
+            Assert.IsTrue(WebRemoteServer.MaxTextMessageBytes > base64Bytes,
+                $"limit={WebRemoteServer.MaxTextMessageBytes} needed={base64Bytes}");
+        }
+
+        [TestMethod]
+        public void VoiceAudioProtocol_DecodesValidPcmAndComputesTheClipLength()
+        {
+            var clip = VoiceAudioProtocol.TryDecode(VoiceBase64(16000), 16000, "en-US", out var error);
+
+            Assert.AreEqual("", error);
+            Assert.IsNotNull(clip);
+            Assert.AreEqual(16000, clip!.Samples.Length);
+            Assert.AreEqual(16000, clip.SampleRateHz);
+            Assert.AreEqual("en-US", clip.Lang);
+            Assert.AreEqual(1.0, clip.Seconds, 0.0001);
+            // Little endian 16 bit: the first sample is 0 and sample 999 is 999 in the test signal.
+            Assert.AreEqual(0, clip.Samples[0]);
+            Assert.AreEqual(999, clip.Samples[999]);
+        }
+
+        [TestMethod]
+        public void VoiceAudioProtocol_RejectsBase64ThatIsNotAudio()
+        {
+            Assert.IsNull(VoiceAudioProtocol.TryDecode("not base64!!", 16000, "zh-CN", out var error));
+            Assert.IsFalse(string.IsNullOrWhiteSpace(error));
+        }
+
+        [TestMethod]
+        public void VoiceAudioProtocol_RejectsEmptyAudio()
+        {
+            Assert.IsNull(VoiceAudioProtocol.TryDecode(null, 16000, "zh-CN", out var nullError));
+            Assert.IsFalse(string.IsNullOrWhiteSpace(nullError));
+
+            Assert.IsNull(VoiceAudioProtocol.TryDecode("", 16000, "zh-CN", out var emptyError));
+            Assert.IsFalse(string.IsNullOrWhiteSpace(emptyError));
+
+            // One byte cannot hold a single 16 bit sample: a truncated upload is not a silent recording.
+            var oneByte = System.Convert.ToBase64String(new byte[] { 7 });
+            Assert.IsNull(VoiceAudioProtocol.TryDecode(oneByte, 16000, "zh-CN", out var shortError));
+            Assert.IsFalse(string.IsNullOrWhiteSpace(shortError));
+        }
+
+        [TestMethod]
+        public void VoiceAudioProtocol_TruncatesAClipLongerThanTheHardCap()
+        {
+            var clip = VoiceAudioProtocol.TryDecode(VoiceBase64(16000 * 20), 16000, "zh-CN", out var error);
+
+            // A 20 s upload is a client bug, not bad input: it is cut to the cap without an error.
+            Assert.AreEqual("", error);
+            Assert.IsNotNull(clip);
+            Assert.AreEqual(15, VoiceAudioProtocol.MaxSeconds);
+            Assert.AreEqual(VoiceAudioProtocol.MaxSeconds * 16000, clip!.Samples.Length);
+            Assert.AreEqual(15.0, clip.Seconds, 0.0001);
+        }
+
+        [DataTestMethod]
+        [DataRow(0)]
+        [DataRow(-1)]
+        [DataRow(1)]
+        [DataRow(200000)]
+        public void VoiceAudioProtocol_ReplacesARateNoPhoneCouldReport(int rate)
+        {
+            var clip = VoiceAudioProtocol.TryDecode(VoiceBase64(8000), rate, "  ", out _);
+
+            Assert.IsNotNull(clip);
+            Assert.AreEqual(VoiceAudioProtocol.DefaultSampleRateHz, clip!.SampleRateHz);
+            // No language from the client falls back to the router's own default.
+            Assert.AreEqual("zh-CN", clip.Lang);
+            Assert.AreEqual(8000, clip.Samples.Length);
+            Assert.AreEqual(0.5, clip.Seconds, 0.0001);
+        }
+
+        [TestMethod]
+        public void VoiceAudioClip_DefaultsToAnEmptyMonoClip()
+        {
+            var clip = new VoiceAudioClip();
+
+            Assert.AreEqual(0, clip.Samples.Length);
+            Assert.AreEqual(16000, clip.SampleRateHz);
+            Assert.AreEqual("zh-CN", clip.Lang);
+            Assert.AreEqual(0.0, clip.Seconds, 0.0001);
+        }
+
+        /// <summary>Little endian PCM whose sample i is i % 1000, base64 encoded like the page sends it.</summary>
+        private static string VoiceBase64(int sampleCount)
+        {
+            var bytes = new byte[sampleCount * 2];
+            for (var i = 0; i < sampleCount; i++)
+            {
+                var sample = (short)(i % 1000);
+                bytes[i * 2] = (byte)(sample & 0xFF);
+                bytes[i * 2 + 1] = (byte)((sample >> 8) & 0xFF);
+            }
+            return System.Convert.ToBase64String(bytes);
+        }
     }
 }
