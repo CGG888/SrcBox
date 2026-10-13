@@ -230,7 +230,8 @@
 
       <!-- 刻度行：直播态也可点，点中即跳到该时刻（开启时移或直接回看），故不再屏蔽命中测试 -->
       <Canvas x:Name="RulerCanvas" Grid.Row="1" ClipToBounds="True" Background="Transparent" Cursor="Hand"
-              PreviewMouseLeftButtonDown="RulerCanvas_MouseLeftButtonDown"/>
+              PreviewMouseLeftButtonDown="RulerCanvas_MouseLeftButtonDown"
+              MouseMove="RulerCanvas_MouseMove" MouseLeave="RulerCanvas_MouseLeave"/>
 
       <!-- 刻度与轨道之间的 1px 中性色分隔线，给轨道留出内凹槽的感觉 -->
       <Border Grid.Row="2" Opacity="0.12" BorderThickness="0,1,0,0"

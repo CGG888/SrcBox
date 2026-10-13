@@ -39,6 +39,19 @@ namespace LibmpvIptvClient.Services
         PlayReplay = 3
     }
 
+    /// <summary>What releasing the pointer over the band does: commit a seek, select a segment, or nothing.</summary>
+    public enum TimelineReleaseIntent
+    {
+        /// <summary>A pan moved the visible window; the release has nothing left to commit.</summary>
+        None = 0,
+
+        /// <summary>Previewed seek position: commit it to the player.</summary>
+        Seek = 1,
+
+        /// <summary>A tap on a segment: hand it to the host, which re-resolves the click verdict.</summary>
+        Select = 2
+    }
+
     /// <summary>
     /// The resolved intent behind a click on a programme segment. The decision is pure data so both hosts
     /// (windowed bottom bar and fullscreen overlay) and the unit tests share one implementation.
@@ -180,6 +193,18 @@ namespace LibmpvIptvClient.Services
         /// <summary>Formats a target instant as HH:mm, carrying the date when it runs into another day.</summary>
         public static string FormatClock(DateTime value, DateTime reference)
             => value.Date == reference.Date ? value.ToString("HH:mm") : value.ToString("MM-dd HH:mm");
+
+        /// <summary>
+        /// What releasing the pointer over the band means. A tap always selects the segment under the pointer -
+        /// waiting for the seek drag to arm itself first would swallow every click on a segment that is not
+        /// seekable yet, which is exactly the live state.
+        /// </summary>
+        public static TimelineReleaseIntent ResolveRelease(bool dragIsSeek, bool seekStarted, bool dragMoved)
+        {
+            if (dragIsSeek && seekStarted) return TimelineReleaseIntent.Seek;
+            if (dragMoved) return TimelineReleaseIntent.None; // a pan moved the window; nothing to commit
+            return TimelineReleaseIntent.Select;
+        }
 
         public static string BuildStatusText(string name, string timeText, TimelineSegmentMode mode,
                                              TimelineSegmentLabels? labels = null)

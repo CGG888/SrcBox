@@ -1,6 +1,7 @@
 using System;
 using LibmpvIptvClient;
 using LibmpvIptvClient.Architecture.Presentation.Mvvm.Settings;
+using LibmpvIptvClient.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace LibmpvIptvClient.Tests
@@ -307,6 +308,38 @@ namespace LibmpvIptvClient.Tests
                 "the ladder gets fainter the finer the notch");
             Assert.IsTrue(TimelineBandMetrics.MinorNotchOpacity >= 0.4d,
                 "but the finest notch stays visible rather than fading into the bar");
+        }
+
+        /// <summary>
+        /// The ruler ladder has to stay readable in both palettes: every rung is tall enough to see, and the
+        /// tallest one still leaves the 13 px ruler row's label band alone.
+        /// </summary>
+        [TestMethod]
+        public void RulerLadderStaysVisibleInsideTheRulerRow()
+        {
+            Assert.IsTrue(TimelineBandMetrics.MinorNotchHeight >= 4d, "the minute subdivision must be visible");
+            Assert.IsTrue(TimelineBandMetrics.StepNotchHeight >= 6d, "the plain step must be visible");
+            Assert.IsTrue(TimelineBandMetrics.HalfHourNotchHeight >= 8d, "the half hour notch must be visible");
+            Assert.IsTrue(TimelineBandMetrics.HourNotchHeight >= 10d, "the hour notch must be visible");
+            Assert.IsTrue(TimelineBandMetrics.MinorNotchOpacity >= 0.5d, "the finest rung keeps half its contrast");
+            Assert.IsTrue(TimelineBandMetrics.HourNotchHeight <= 12d,
+                "the tallest notch still fits under the ruler labels inside the 13 px ruler row");
+        }
+
+        /// <summary>
+        /// A tap on a segment always selects it, whether or not the band can seek yet: the seek drag only takes
+        /// over once it has really started, and a pan never selects anything.
+        /// </summary>
+        [DataTestMethod]
+        [DataRow(false, false, false, TimelineReleaseIntent.Select, DisplayName = "a live tap selects the segment")]
+        [DataRow(true, false, false, TimelineReleaseIntent.Select, DisplayName = "a tap in timeshift still selects")]
+        [DataRow(true, true, true, TimelineReleaseIntent.Seek, DisplayName = "a seek drag commits the preview")]
+        [DataRow(false, false, true, TimelineReleaseIntent.None, DisplayName = "a pan commits nothing")]
+        [DataRow(true, false, true, TimelineReleaseIntent.None, DisplayName = "a broken seek drag commits nothing")]
+        public void ReleasingThePointerSelectsEveryTappedSegment(bool dragIsSeek, bool seekStarted, bool dragMoved,
+                                                                TimelineReleaseIntent expected)
+        {
+            Assert.AreEqual(expected, TimelineSegmentActions.ResolveRelease(dragIsSeek, seekStarted, dragMoved));
         }
 
         [TestMethod]

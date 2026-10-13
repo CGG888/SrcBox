@@ -40,17 +40,21 @@ namespace LibmpvIptvClient
         /// <summary>Two minor notches any closer than this smear the ruler into a grey band.</summary>
         public const double MinimumMinorTickSpacing = 8d;
 
-        /// <summary>Ruler ladder, tallest rung first: full hour, half hour, plain step, minute subdivision.</summary>
-        public const double HourNotchHeight = 9d;
-        public const double HalfHourNotchHeight = 7d;
-        public const double StepNotchHeight = 5d;
-        public const double MinorNotchHeight = 3d;
+        /// <summary>
+        /// Ruler ladder, tallest rung first: full hour, half hour, plain step, minute subdivision. The rungs
+        /// stay below the host's 13 px ruler row, so the labels above them keep their own band instead of being
+        /// crossed out by the tallest notch.
+        /// </summary>
+        public const double HourNotchHeight = 10d;
+        public const double HalfHourNotchHeight = 8d;
+        public const double StepNotchHeight = 6d;
+        public const double MinorNotchHeight = 4d;
 
         /// <summary>Opacity of each rung of the ruler ladder, strongest first.</summary>
-        public const double HourNotchOpacity = 0.95d;
-        public const double HalfHourNotchOpacity = 0.75d;
-        public const double StepNotchOpacity = 0.6d;
-        public const double MinorNotchOpacity = 0.45d;
+        public const double HourNotchOpacity = 1d;
+        public const double HalfHourNotchOpacity = 0.9d;
+        public const double StepNotchOpacity = 0.75d;
+        public const double MinorNotchOpacity = 0.55d;
 
         /// <summary>Short programmes still get a clickable sliver at the end of the track.</summary>
         public const double MinimumBlockWidth = 2d;

@@ -562,7 +562,7 @@ namespace LibmpvIptvClient
                         Height = TimelineBandMetrics.MinorNotchHeight,
                         Opacity = TimelineBandMetrics.MinorNotchOpacity
                     };
-                    minor.SetResourceReference(Shape.FillProperty, "BorderBrushCommon");
+                    minor.SetResourceReference(Shape.FillProperty, "TextSecondaryBrush");
                     Canvas.SetLeft(minor, Math.Round(minorX));
                     Canvas.SetTop(minor, height - TimelineBandMetrics.MinorNotchHeight);
                     RulerCanvas.Children.Add(minor);
@@ -574,7 +574,9 @@ namespace LibmpvIptvClient
                 var time = _windowStart.AddMinutes(i * _tickMinutes);
                 double x = TimelineBandMetrics.PercentFor(_windowStart, _windowSpan, time) * width;
 
-                // Graded notches: full hour 9 px, half hour 7 px, plain step 5 px, minute subdivision 3 px.
+                // Graded notches: full hour 10 px, half hour 8 px, plain step 6 px, minute subdivision 4 px.
+                // The taller rungs take the brighter theme brush so both the dark and the light palette keep
+                // the ruler readable instead of fading into the band background.
                 bool onHour = time.Minute == 0;
                 bool onHalfHour = time.Minute == 30;
                 double notchHeight = onHour ? TimelineBandMetrics.HourNotchHeight
@@ -585,7 +587,8 @@ namespace LibmpvIptvClient
                     : TimelineBandMetrics.StepNotchOpacity;
 
                 var notch = new Rectangle { Width = 1, Height = notchHeight, Opacity = notchOpacity };
-                notch.SetResourceReference(Shape.FillProperty, onHour ? "TextPrimaryBrush" : "BorderBrushCommon");
+                notch.SetResourceReference(Shape.FillProperty,
+                                           onHour || onHalfHour ? "TextPrimaryBrush" : "TextSecondaryBrush");
                 Canvas.SetLeft(notch, Math.Round(x));
                 Canvas.SetTop(notch, height - notchHeight);
                 RulerCanvas.Children.Add(notch);
@@ -1110,6 +1113,37 @@ namespace LibmpvIptvClient
             }
         }
 
+        /// <summary>
+        /// The ruler answers the pointer exactly like the track below it: the dashed follower, the dot and the
+        /// bubble are shared, so the time half of the band is never a dead zone.
+        /// </summary>
+        void RulerCanvas_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            try
+            {
+                if (_compactMode || _windowSpan.Ticks <= 0) return;
+                double width = RulerCanvas.ActualWidth;
+                if (width <= 0) return;
+
+                var p = e.GetPosition(RulerCanvas);
+                _hoverCursorTime = TimelineBandMetrics.TimeAtPercent(_windowStart, _windowSpan,
+                                                                     TimelineBandMetrics.ClampPercent(p.X / width));
+                _hoverCursorVisible = true;
+                UpdateHoverCursor();
+            }
+            catch { }
+        }
+
+        void RulerCanvas_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+        {
+            try
+            {
+                _hoverCursorVisible = false;
+                HideHoverCursor();
+            }
+            catch { }
+        }
+
         void TrackCanvas_SizeChanged(object sender, SizeChangedEventArgs e) => Render();
 
         void TrackCanvas_MouseLeftButtonDown(object sender, System.Windows.Input.MouseButtonEventArgs e)
@@ -1195,33 +1229,28 @@ namespace LibmpvIptvClient
                 _pointerDown = false;
                 try { TrackCanvas.ReleaseMouseCapture(); } catch { }
 
-                if (_dragIsSeek)
+                switch (TimelineSegmentActions.ResolveRelease(_dragIsSeek, _seekStarted, _dragMoved))
                 {
-                    if (_seekStarted && _previewTime.HasValue)
-                    {
-                        var target = _previewTime.Value;
-                        _previewTime = null;
-                        SeekValue = MeterSecondsFor(target);
-                        UpdateMarkers();
-                        SeekEnd?.Invoke(SeekValue);
-                    }
-                    else
-                    {
-                        // A tap: select the programme instead of seeking into it.
+                    case TimelineReleaseIntent.Seek:
+                        if (_previewTime.HasValue)
+                        {
+                            var target = _previewTime.Value;
+                            _previewTime = null;
+                            SeekValue = MeterSecondsFor(target);
+                            UpdateMarkers();
+                            SeekEnd?.Invoke(SeekValue);
+                        }
+                        break;
+
+                    case TimelineReleaseIntent.Select:
+                        // A tap: select the programme under the pointer instead of seeking into it. The host
+                        // re-resolves the verdict with the wall clock at tap time, so a stale push can never
+                        // make the click act on a segment state that has already moved on.
                         _previewTime = null;
                         UpdateMarkers();
                         int index = TimelineBandMetrics.FindProgrammeIndexAtPercent(_programmes, _windowStart, _windowSpan, _dragStartPercent);
-                        if (index >= 0)
-                        {
-                            // The host re-resolves the verdict with the wall clock at tap time, so a stale push
-                            // can never make the click act on a segment state that has already moved on.
-                            ProgrammeSelected?.Invoke(_programmes[index]);
-                        }
-                    }
-                }
-                else if (_dragMoved)
-                {
-                    // A pan drag moved the window; the pointer release has nothing left to commit.
+                        if (index >= 0) ProgrammeSelected?.Invoke(_programmes[index]);
+                        break;
                 }
             }
             catch { }
