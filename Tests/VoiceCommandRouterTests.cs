@@ -100,6 +100,8 @@ namespace LibmpvIptvClient.Tests
         [DataRow("放到2台", "cctv2")]       // "放到" is what dictation keeps producing for 换到
         [DataRow("放到二代", "cctv2")]
         [DataRow("翻到1台", "cctv1")]
+        [DataRow("换到2太", "cctv2")]       // the unit comes back as a homophone
+        [DataRow("换到2胎", "cctv2")]
         public void Route_ChannelSentence_SwitchesToTheChannel(string text, string expected)
         {
             var player = new Player();
@@ -133,6 +135,10 @@ namespace LibmpvIptvClient.Tests
         [DataRow("七", "hunan")]
         [DataRow("5台", "cctv5")]
         [DataRow("2频道", "cctv2")]
+        [DataRow("舞台", "cctv5")]          // dictation writes 五 as 舞
+        [DataRow("5胎", "cctv5")]
+        [DataRow("二号", "cctv2")]
+        [DataRow("2个", "cctv2")]
         public void Route_BareChannelNumber_SwitchesToThatChannel(string text, string expected)
         {
             var player = new Player();

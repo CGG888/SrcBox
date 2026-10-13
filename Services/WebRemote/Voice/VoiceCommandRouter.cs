@@ -210,13 +210,31 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
             };
         }
 
-        /// <summary>"3" and "3台" mean the same channel number; the unit is scaffolding, not part of it.</summary>
+        /// <summary>
+        /// Characters dictation writes when it means the unit after a channel number: "6台" comes back as
+        /// "6胎" or "6太", "58台" as "58代", "60台" as "60用", "5台" as "舞台".
+        /// </summary>
+        private const string NumberUnitChars = "台臺檯胎抬苔太态態代带帶戴袋待用套号號个個频頻道";
+
+        private static readonly System.Text.RegularExpressions.Regex BareNumberShape =
+            new System.Text.RegularExpressions.Regex(
+                @"^([0-9]{1,4})(?:[" + NumberUnitChars + @"]{1,2})?$",
+                System.Text.RegularExpressions.RegexOptions.Compiled);
+
+        /// <summary>
+        /// Reads "3", "3台", "3胎" or "舞台" as channel number 3. Only the number carries meaning here, so the
+        /// numeral homophones dictation produces (舞 for 五, 幺 for 一) are folded before the sentence is read
+        /// as digits plus an optional unit.
+        /// </summary>
         private static string? BareNumberArg(string compact)
         {
-            var value = VoiceText.HanToArabicDigits(compact);
-            var match = System.Text.RegularExpressions.Regex.Match(value, @"^([0-9]{1,4})(?:台|频道|套|代|带)?$");
+            var value = VoiceText.HanToArabicDigits(FoldNumberHomophones(compact));
+            var match = BareNumberShape.Match(value);
             return match.Success ? match.Groups[1].Value : null;
         }
+
+        private static string FoldNumberHomophones(string text)
+            => text.Replace('舞', '五').Replace('幺', '一').Replace('妖', '一').Replace('洞', '零');
 
         private static List<VoiceOption> ResolveOptions(VoiceVerb verb, string arg, VoiceCommandContext context)
         {
@@ -379,9 +397,12 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
         {
             number = 0;
             if (string.IsNullOrEmpty(arg)) return false;
-            var value = VoiceText.HanToArabicDigits(arg);
-            return value.Length is > 0 and <= 4 && value.All(char.IsDigit)
-                   && int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out number);
+
+            // Spoken numbers arrive with the unit attached and often with the unit misheard ("换到6胎"),
+            // so the same reading that accepts a bare number accepts the scaffolding around it.
+            var value = BareNumberArg(VoiceText.Compact(arg));
+            if (value == null) return false;
+            return int.TryParse(value, NumberStyles.None, CultureInfo.InvariantCulture, out number);
         }
 
         /// <summary>Resolves a spoken number to a channel: the numbering map first, then prefixed names.</summary>
