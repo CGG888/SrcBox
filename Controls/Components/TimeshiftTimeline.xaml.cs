@@ -195,7 +195,7 @@ namespace LibmpvIptvClient
         public void ResetView()
         {
             if (!_manualWindow) return;
-            _manualWindow = false;
+            DropManualWindow("reset requested");
             Render();
         }
 
@@ -218,7 +218,7 @@ namespace LibmpvIptvClient
                 bool scheduleChanged = !string.Equals(state.Signature, _scheduleSignature, StringComparison.Ordinal);
                 SyncProgrammes(state.Programmes, scheduleChanged);
                 _scheduleSignature = state.Signature ?? string.Empty;
-                if (scheduleChanged) _manualWindow = false;
+                if (scheduleChanged) DropManualWindow("schedule changed");
 
                 _cursor = state.Cursor;
 
@@ -635,7 +635,7 @@ namespace LibmpvIptvClient
             _programmeCache.Clear();
             _scheduleSignature = string.Empty;
             _bandKey = string.Empty;
-            _manualWindow = false;
+            DropManualWindow("band hidden");
             try { RulerCanvas.Children.Clear(); } catch { }
             try { TrackCanvas.Children.Clear(); } catch { }
             try { SliderSeek.Minimum = 0; } catch { }
@@ -734,6 +734,14 @@ namespace LibmpvIptvClient
             _manualAnchor = anchor;
         }
 
+        /// <summary>Leaves the browsing window and lets the band follow the playback cursor again.</summary>
+        void DropManualWindow(string reason)
+        {
+            if (!_manualWindow) return;
+            _manualWindow = false;
+            LibmpvIptvClient.Diagnostics.Logger.Info($"[Timeline] browse window dropped: {reason}");
+        }
+
         void BtnPrevSegment_Click(object sender, RoutedEventArgs e) => PageSegment(-1);
 
         void BtnNextSegment_Click(object sender, RoutedEventArgs e) => PageSegment(1);
@@ -748,6 +756,7 @@ namespace LibmpvIptvClient
             {
                 var anchor = _manualWindow ? _manualAnchor : _cursor;
                 var target = TimelineBandMetrics.PageAnchor(_programmes, anchor, _windowSpan, direction);
+                LibmpvIptvClient.Diagnostics.Logger.Info($"[Timeline] page {direction} anchor={anchor:HH:mm} -> {target:HH:mm}");
                 MarkManualWindow(target);
                 Render();
             }
