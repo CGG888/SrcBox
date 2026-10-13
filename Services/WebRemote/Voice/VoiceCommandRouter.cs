@@ -97,8 +97,8 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
                         {
                             Kind = rule.Kind,
                             Phrases = new List<string> { phrase },
-                            Action = rule.Action,
-                            Target = rule.Target
+                            Action = rule.Action ?? string.Empty,
+                            Target = rule.Target ?? string.Empty
                         };
                         if (VoiceAliases.TryRule(single, normalized, out target)) break;
                     }
