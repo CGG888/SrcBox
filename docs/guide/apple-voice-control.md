@@ -92,7 +92,7 @@ http://192.168.1.100:8899/api/voice?token=你的密钥&text=现在在播什么
    - 方法：**GET**
    - 不要在「请求体」里写任何东西；**也不要再往 URL 里加参数**
 5. 添加动作 **从输入获取字典值**（Get Dictionary Value）：
-   - 获取：**值**；键：**speed** 不行 —— 键填 `spoken`
+   - 获取：**值**；键填 `spoken`（也可以填 `success` / `verb` / `options`）
    - 输入：选「获取 URL 内容」的 **内容**
 6. 添加动作 **朗读文本**（Speak Text）：输入选上一步的 **字典值**，语言选中文。这样手机也会把结果念出来；不方便开声音时删掉它或换成 **显示结果** 即可。
 7. 点顶部名称，把快捷指令改名为一个**好念的触发词**，例如 `遥控器`、`播放器遥控`（用英文 Siri 就说 `Remote`）。
@@ -190,7 +190,7 @@ Siri：（朗读）正在回看 新闻联播
 | `channel_step` | `1` / `-1` / `first` / `last` | 上下/首末台 |
 | `switch_stream`（同 `source`、`next_source`） | 源名或 URL，省略则走下一个源 | 换个线路 |
 | `playlist`（同 `load_m3u`、`m3u`） | 数据源名或 URL | 换频道列表 |
-| `play` / `pause` / `stop` | — | 播放控制 |
+| `play`（同 `resume`） / `pause` / `stop` | — | 播放控制 |
 | `mute`（同 `toggle_mute`） | — | 静音开关 |
 | `volume_set`（同 `volume`） | `40` | 设定音量 |
 | `volume_step`（同 `volume_up`、`volume_down`） | `10` / `-10` | 相对调整 |
@@ -206,6 +206,7 @@ Siri：（朗读）正在回看 新闻联播
   "type": "voice",
   "verb": "channel",
   "rule": "action:channel",
+  "confidence": 1,
   "success": true,
   "executed": true,
   "text": "5",
@@ -217,7 +218,7 @@ Siri：（朗读）正在回看 新闻联播
       "title": "CCTV5",
       "subtitle": "5台 · 央视频",
       "number": 5,
-      "score": 1.0,
+      "score": 1,
       "action": "channel",
       "payload": { "channelId": "cctv5" }
     }
@@ -225,7 +226,8 @@ Siri：（朗读）正在回看 新闻联播
 }
 ```
 
-- `spoken` 就是给你朗读 / 播报的那句话，**快捷指令里绑定它**。
+- `spoken` 就是给你朗读 / 播报的那句话，**快捷指令里绑定它**（JSON 是 camelCase）。
+- `kind` 是数字：`0` 频道、`1` 源、`2` 频道列表、`3` 节目、`4` 播放器动作。
 - 语句有歧义时 `success=true` 而 `executed=false`，`options` 里是候选（最多 12 条），阅读器读到「找到 N 个候选频道，请选择」。手机上不好点选，所以对快捷指令来说**说清楚**（完整台名或频道号）体验最好。
 - `dry=1` 时只返回解析结果和候选，不动播放器，适合做「候选菜单」类快捷指令。
 
