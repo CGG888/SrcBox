@@ -1,0 +1,15 @@
+{
+  "schema": 1,
+  "updated": "2026-10-14",
+  "notes": "The vocabulary packs SrcBox can update on its own, without a new build. The GitHub release voice-pack carries this file; each voice-pack-<version> release carries the packs themselves.",
+  "packs": [
+    {
+      "lang": "zh-CN",
+      "version": "1",
+      "url": "https://github.com/CGG888/SrcBox/releases/download/voice-pack-1/zh-CN.json",
+      "path": "voice/v1/zh-CN.json",
+      "bytes": 11841,
+      "sha256": "17b9ca66e1b9d6d5a15546942eadd4a5e1771bebce0ec4c9acd43943a238b2b5"
+    }
+  ]
+}

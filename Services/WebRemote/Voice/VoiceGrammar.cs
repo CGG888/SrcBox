@@ -331,6 +331,50 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
             return patterns;
         }
 
+        /// <summary>
+        /// The tables in force written out as a pack. The copy published under voice/ in the repository is
+        /// generated from this, and the test suite compares the two, so a word added here has to be published
+        /// as well.
+        /// </summary>
+        internal VoiceGrammarPack AsPack() => new()
+        {
+            Schema = VoiceGrammarPack.CurrentSchema,
+            Lang = Lang,
+            Version = Version,
+            Notes = "The vocabulary SrcBox ships with.",
+            Phrases = Patterns.Select(pattern => new VoiceGrammarPhrase
+            {
+                Name = pattern.Name,
+                Verb = pattern.Verb.ToString(),
+                Pattern = pattern.Matcher.ToString(),
+                NumberGroup = pattern.NumberGroup,
+                RelativeGroup = pattern.RelativeGroup,
+                Arg = pattern.Arg
+            }).ToList(),
+            Prepositions = Prepositions.ToList(),
+            NoiseWords = NoiseWords.ToList(),
+            TimeWords = new VoiceGrammarTimeTable
+            {
+                Day = Day.ToList(),
+                ThisWeek = ThisWeek.ToList(),
+                LastWeek = LastWeek.ToList(),
+                JustNow = JustNow.ToList(),
+                Parts = Parts.Select(part => new VoiceGrammarPart
+                {
+                    Words = part.Words.ToList(),
+                    From = part.From,
+                    To = part.To,
+                    Label = part.Label
+                }).ToList(),
+                Weekdays = Weekdays.Select(weekday => new VoiceGrammarWeekday
+                {
+                    Words = weekday.Words.ToList(),
+                    Day = weekday.Day
+                }).ToList()
+            },
+            Hotwords = Hotwords.ToList()
+        };
+
         // ---------------------------------------------------------------- built-in tables
 
         private static VoiceGrammar BuildBuiltIn() => new()

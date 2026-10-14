@@ -103,7 +103,10 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
             DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
             ReadCommentHandling = JsonCommentHandling.Skip,
             AllowTrailingCommas = true,
-            WriteIndented = true
+            WriteIndented = true,
+
+            // Written out as it reads: a pack is meant to be opened and edited by hand.
+            Encoder = System.Text.Encodings.Web.JavaScriptEncoder.UnsafeRelaxedJsonEscaping
         };
 
         /// <summary>Reads a pack, or explains why it cannot be read.</summary>

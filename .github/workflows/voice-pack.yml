@@ -1,0 +1,91 @@
+name: Voice packs
+
+# The vocabulary travels on its own: this workflow publishes voice/manifest.json as the voice-pack release
+# and the packs themselves under voice-pack-<version>, which is what a running SrcBox installs from.
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'voice/**'
+      - '.github/workflows/voice-pack.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: voice-pack
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Check the manifest against the packs
+        shell: pwsh
+        run: |
+          $manifest = Get-Content 'voice/manifest.json' -Raw | ConvertFrom-Json
+          if ($manifest.schema -ne 1) {
+            Write-Host "##[error]unexpected manifest schema: $($manifest.schema)"
+            exit 1
+          }
+          if (-not $manifest.packs -or $manifest.packs.Count -eq 0) {
+            Write-Host "##[error]the manifest lists no pack"
+            exit 1
+          }
+          foreach ($pack in $manifest.packs) {
+            if (-not (Test-Path $pack.path)) {
+              Write-Host "##[error]$($pack.path) is missing"
+              exit 1
+            }
+            $file = Get-Item $pack.path
+            if ($file.Length -ne $pack.bytes) {
+              Write-Host "##[error]$($pack.path): the manifest says $($pack.bytes) bytes, the file has $($file.Length)"
+              exit 1
+            }
+            $hash = (Get-FileHash $file.FullName -Algorithm SHA256).Hash.ToLowerInvariant()
+            if ($hash -ne $pack.sha256) {
+              Write-Host "##[error]$($pack.path): the manifest checksum is stale, it should be $hash"
+              exit 1
+            }
+            $expected = "voice-pack-$($pack.version)/" + (Split-Path $pack.path -Leaf)
+            if (-not $pack.url.EndsWith($expected)) {
+              Write-Host "##[error]$($pack.path): the url should end with $expected"
+              exit 1
+            }
+            Write-Host "$($pack.lang) $($pack.version): ok"
+          }
+
+      # Marked as a prerelease on purpose: the app looks for its own updates under releases/latest, and the
+      # vocabulary must never be mistaken for a new build of SrcBox.
+      - name: Publish the manifest
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view voice-pack *> $null
+          if ($LASTEXITCODE -ne 0) {
+            gh release create voice-pack --prerelease --title 'Voice packs' --notes 'The manifest that tells SrcBox which vocabulary pack to install. The packs themselves are attached to the voice-pack-<version> releases.'
+          }
+          gh release upload voice-pack voice/manifest.json --clobber
+          Write-Host 'published voice-pack'
+
+      - name: Publish the packs
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $manifest = Get-Content 'voice/manifest.json' -Raw | ConvertFrom-Json
+          foreach ($version in ($manifest.packs | Select-Object -ExpandProperty version -Unique)) {
+            $tag = "voice-pack-$version"
+            $files = $manifest.packs | Where-Object { $_.version -eq $version } | Select-Object -ExpandProperty path
+            gh release view $tag *> $null
+            if ($LASTEXITCODE -ne 0) {
+              gh release create $tag --prerelease --title "Voice pack $version" --notes 'Vocabulary SrcBox installs without a new build. The file names are not translated, so a newer version can always be downloaded over an older one.'
+            }
+            gh release upload $tag $files --clobber
+            Write-Host "published $tag"
+          }

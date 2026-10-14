@@ -1,0 +1,471 @@
+{
+  "schema": 1,
+  "lang": "zh-CN",
+  "version": "1",
+  "updated": "2026-10-14",
+  "notes": "The vocabulary SrcBox ships with.",
+  "phrases": [
+    {
+      "name": "exit",
+      "verb": "Exit",
+      "pattern": "(exit|quit|закрыть|выйти|退出|退出播放|返回|关掉|关闭)",
+      "numberGroup": "",
+      "relativeGroup": "",
+      "arg": ""
+    },
+    {
+      "name": "fullscreen",
+      "verb": "Fullscreen",
+      "pattern": "(fullscreen|full screen|полный экран|全屏|全螢幕)",
+      "numberGroup": "",
+      "relativeGroup": "",
+      "arg": ""
+    },
+    {
+      "name": "pause",
+      "verb": "Pause",
+      "pattern": "(pause|hold on|пауза|暂停|停止播放|先停|暂停一下)",
+      "numberGroup": "",
+      "relativeGroup": "",
+      "arg": ""
+    },
+    {
+      "name": "stop",
+      "verb": "Stop",
+      "pattern": "(^stop$|^стоп$|停止)",
+      "numberGroup": "",
+      "relativeGroup": "",
+      "arg": ""
+    },
+    {
+      "name": "play",
+      "verb": "Play",
+      "pattern": "(^play$|^resume$|^продолжить$|^играть$|^(继续|继续播放|播放|开始播放|开始)$)",
+      "numberGroup": "",
+      "relativeGroup": "",
+      "arg": ""
+    },
+    {
+      "name": "unmute",
+      "verb": "ToggleMute",
+      "pattern": "(unmute|turn on the sound|включи звук|取消静音|打开声音|打开音量|恢复声音|静音关闭)",
+      "numberGroup": "",
+      "relativeGroup": "",
+      "arg": ""
+    },
+    {
+      "name": "mute",
+      "verb": "ToggleMute",
+      "pattern": "(^mute$|mute|^выключи звук$|^静音$|^静音吧$|^关掉声音$)",
+      "numberGroup": "",
+      "relativeGroup": "",
+      "arg": ""
+    },
+    {
+      "name": "volume_step",
+      "verb": "VolumeStep",
+      "pattern": "(?<num>[0-9]{1,3})?(?<rel>大点|大声点|小点|小声点|大声一点|小声一点|大一点|小一点|louder|quieter|громче|тише)(?:声|声音)?",
+      "numberGroup": "num",
+      "relativeGroup": "rel",
+      "arg": ""
+    },
+    {
+      "name": "volume_up",
+      "verb": "VolumeStep",
+      "pattern": "(音量|声音|vol(ume)?|громкость)?(调大|加大|增大|提高|up|increase|увеличь|прибавь)(?<num>[0-9]{1,3})?",
+      "numberGroup": "num",
+      "relativeGroup": "",
+      "arg": ""
+    },
+    {
+      "name": "volume_down",
+      "verb": "VolumeStep",
+      "pattern": "(音量|声音|vol(ume)?|громкость)?(调小|减小|降低|down|decrease|уменьши|убавь)(?<num>[0-9]{1,3})?",
+      "numberGroup": "num",
+      "relativeGroup": "",
+      "arg": ""
+    },
+    {
+      "name": "volume_set",
+      "verb": "VolumeSet",
+      "pattern": "(音量|声音|vol(ume)?|громкость)(?:调(?:到|至|成|为)?|设置(?:为|成)?|设为|设成|到|至|为|is|to|=|：|:)?(?<num>[0-9]{1,3})",
+      "numberGroup": "num",
+      "relativeGroup": "",
+      "arg": ""
+    },
+    {
+      "name": "seek_back",
+      "verb": "Seek",
+      "pattern": "(后退|回退|倒退|rewind|назад)(?<num>[0-9]{1,4})?(秒|s|sec|seconds|сек)?",
+      "numberGroup": "num",
+      "relativeGroup": "",
+      "arg": ""
+    },
+    {
+      "name": "seek_forward",
+      "verb": "Seek",
+      "pattern": "(快进|前进|前移|skip|вперёд|вперед)(?<num>[0-9]{1,4})?(秒|s|sec|seconds|сек)?",
+      "numberGroup": "num",
+      "relativeGroup": "",
+      "arg": ""
+    },
+    {
+      "name": "next",
+      "verb": "ChannelStep",
+      "pattern": "(下一个频道|下一频道|下一个台|下个台|下一台|下一个|下个|下一|next channel|next|频道加|следующий канал|следующий)",
+      "numberGroup": "",
+      "relativeGroup": "",
+      "arg": "1"
+    },
+    {
+      "name": "prev",
+      "verb": "ChannelStep",
+      "pattern": "(上一个频道|上一频道|上一个台|上个台|上一台|上一个|上个|上一|prev(channel)?|previous|previous channel|频道减|предыдущий канал|предыдущий)",
+      "numberGroup": "",
+      "relativeGroup": "",
+      "arg": "-1"
+    },
+    {
+      "name": "first",
+      "verb": "ChannelStep",
+      "pattern": "(第一个频道|第一个台|首个频道|第一台|first channel|первый канал)",
+      "numberGroup": "",
+      "relativeGroup": "",
+      "arg": "first"
+    },
+    {
+      "name": "last",
+      "verb": "ChannelStep",
+      "pattern": "(最后一个频道|最后一个台|末频道|last channel|последний канал)",
+      "numberGroup": "",
+      "relativeGroup": "",
+      "arg": "last"
+    },
+    {
+      "name": "stream_next",
+      "verb": "SwitchStream",
+      "pattern": "(换下一(个)?源|换下一个(流|线路)|下一路|next source|next stream|следующий источник)",
+      "numberGroup": "",
+      "relativeGroup": "",
+      "arg": "next"
+    },
+    {
+      "name": "stream_prev",
+      "verb": "SwitchStream",
+      "pattern": "(换上一(个)?源|上一路|prev(ious)? source|предыдущий источник)",
+      "numberGroup": "",
+      "relativeGroup": "",
+      "arg": "prev"
+    },
+    {
+      "name": "stream",
+      "verb": "SwitchStream",
+      "pattern": "(换(个|一个)?源|切换源|换源|换个线路|换线路|换流|换个流|换地址|change (the )?source|switch (the )?source|смени источник|сменить источник)",
+      "numberGroup": "",
+      "relativeGroup": "",
+      "arg": ""
+    },
+    {
+      "name": "playlist",
+      "verb": "LoadPlaylist",
+      "pattern": "(?<num>[0-9]{1,2})?\\s*(播放列表|频道列表|节目源|数据源|频道数据源|playlist|плейлист)",
+      "numberGroup": "",
+      "relativeGroup": "",
+      "arg": ""
+    },
+    {
+      "name": "epg_now",
+      "verb": "EpgNow",
+      "pattern": "(现在(在)?播(什么|啥)?|现在(在)?播放|正在播放|正在播(什么|啥)|当前(节目|播出)|在播什么|what'?s on( now)?|what is on|current programme|что (сейчас )?идёт|что сейчас)",
+      "numberGroup": "",
+      "relativeGroup": "",
+      "arg": ""
+    },
+    {
+      "name": "epg_replay",
+      "verb": "EpgReplay",
+      "pattern": "(回看|回放|重播|看回看|replay|watch back|посмотреть|повтор)",
+      "numberGroup": "",
+      "relativeGroup": "",
+      "arg": ""
+    },
+    {
+      "name": "channel_switch",
+      "verb": "SwitchChannel",
+      "pattern": "(换到|切到|切换到|调到|转到|放到|放进|翻到|翻|拨到|拨|换台|换频道|换|切|转|看|播放|switch to|change to|turn to|go to|put on|watch|включи|переключи(сь)? на|поставь)",
+      "numberGroup": "",
+      "relativeGroup": "",
+      "arg": ""
+    }
+  ],
+  "prepositions": [
+    "到",
+    "成",
+    "为",
+    "至",
+    "去",
+    "回",
+    "换到",
+    "切到",
+    "切换到",
+    "调到",
+    "转到",
+    "换",
+    "切",
+    "看",
+    "换台",
+    "换频道",
+    "频道",
+    "台",
+    "的",
+    "把",
+    "给我",
+    "一下",
+    "吧",
+    "代",
+    "带"
+  ],
+  "noiseWords": [
+    "回看",
+    "回放",
+    "重播",
+    "今天",
+    "今日",
+    "昨天",
+    "昨日",
+    "前天",
+    "明天",
+    "后天",
+    "本日",
+    "节目",
+    "有什么",
+    "什么",
+    "看一下",
+    "看看",
+    "看",
+    "帮我",
+    "请",
+    "我要",
+    "我想",
+    "在播",
+    "正在把",
+    "现在",
+    "正在",
+    "播",
+    "今晚",
+    "昨天晚上",
+    "晚上",
+    "上午",
+    "下午",
+    "中午",
+    "早上",
+    "凌晨"
+  ],
+  "timeWords": {
+    "day": [
+      "今天",
+      "今日",
+      "本日",
+      "当天",
+      "今天早上",
+      "今天晚上",
+      "昨天",
+      "昨日",
+      "前天",
+      "明天",
+      "后天",
+      "today",
+      "yesterday",
+      "tomorrow",
+      "day before yesterday",
+      "сегодня",
+      "вчера",
+      "позавчера",
+      "завтра"
+    ],
+    "thisWeek": [
+      "本周",
+      "这周",
+      "這個星期",
+      "这个星期",
+      "本星期",
+      "this week",
+      "эта неделя",
+      "на этой неделе"
+    ],
+    "lastWeek": [
+      "上周",
+      "上個星期",
+      "上个星期",
+      "上星期",
+      "last week",
+      "на прошлой неделе"
+    ],
+    "justNow": [
+      "刚才",
+      "刚刚",
+      "方才",
+      "just now",
+      "a moment ago",
+      "только что"
+    ],
+    "parts": [
+      {
+        "words": [
+          "凌晨"
+        ],
+        "from": 0,
+        "to": 6,
+        "label": "凌晨"
+      },
+      {
+        "words": [
+          "早上",
+          "早晨",
+          "上午",
+          "morning",
+          "утром",
+          "утр"
+        ],
+        "from": 6,
+        "to": 12,
+        "label": "上午"
+      },
+      {
+        "words": [
+          "中午",
+          "noon",
+          "полдень"
+        ],
+        "from": 11,
+        "to": 14,
+        "label": "中午"
+      },
+      {
+        "words": [
+          "下午",
+          "afternoon",
+          "днём",
+          "днем"
+        ],
+        "from": 12,
+        "to": 18,
+        "label": "下午"
+      },
+      {
+        "words": [
+          "今晚",
+          "今天晚上",
+          "tonight",
+          "сегодня вечером"
+        ],
+        "from": 18,
+        "to": 24,
+        "label": "晚上"
+      },
+      {
+        "words": [
+          "昨晚",
+          "昨天晚上",
+          "last night",
+          "вчера вечером"
+        ],
+        "from": 18,
+        "to": 24,
+        "label": "晚上"
+      },
+      {
+        "words": [
+          "晚上",
+          "夜里",
+          "夜间",
+          "evening",
+          "night",
+          "вечер",
+          "ночью"
+        ],
+        "from": 18,
+        "to": 24,
+        "label": "晚上"
+      }
+    ],
+    "weekdays": [
+      {
+        "words": [
+          "星期一",
+          "周一",
+          "礼拜一",
+          "monday",
+          "понедельник"
+        ],
+        "day": 1
+      },
+      {
+        "words": [
+          "星期二",
+          "周二",
+          "礼拜二",
+          "tuesday",
+          "вторник"
+        ],
+        "day": 2
+      },
+      {
+        "words": [
+          "星期三",
+          "周三",
+          "礼拜三",
+          "wednesday",
+          "среда",
+          "среду"
+        ],
+        "day": 3
+      },
+      {
+        "words": [
+          "星期四",
+          "周四",
+          "礼拜四",
+          "thursday",
+          "четверг"
+        ],
+        "day": 4
+      },
+      {
+        "words": [
+          "星期五",
+          "周五",
+          "礼拜五",
+          "friday",
+          "пятница",
+          "пятницу"
+        ],
+        "day": 5
+      },
+      {
+        "words": [
+          "星期六",
+          "周六",
+          "礼拜六",
+          "saturday",
+          "суббота",
+          "субботу"
+        ],
+        "day": 6
+      },
+      {
+        "words": [
+          "星期日",
+          "星期天",
+          "周日",
+          "周天",
+          "礼拜天",
+          "sunday",
+          "воскресенье"
+        ],
+        "day": 0
+      }
+    ]
+  },
+  "hotwords": []
+}
