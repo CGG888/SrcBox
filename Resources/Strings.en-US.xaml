@@ -314,6 +314,17 @@
   <sys:String x:Key="UI_WebRemote_VoiceModelDownloading">Downloading {0}%</sys:String>
   <sys:String x:Key="UI_WebRemote_VoiceModelReady">Speech model is ready</sys:String>
   <sys:String x:Key="UI_WebRemote_VoiceModelFailed">Download failed: {0}</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Title">Download the speech model</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Intro">The offline speech model is about {0} MB and is downloaded once.</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Connecting">Connecting...</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Downloading">Downloading ({0}%)</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Verifying">Verifying ({0}%)</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Completed">Download finished</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Failed">Download failed</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Cancelled">Stopped; what arrived is kept and the next attempt continues from it.</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDialog_File">File {0}/{1}: {2}</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Bytes">{0} / {1}</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Rate">avg {0}/s · {1} left</sys:String>
   <sys:String x:Key="UI_WebRemote_VoiceApiHint">A phone assistant can call http://PC-IP:port/api/voice?text=channel 1&amp;token=the token above to control playback without opening the page. An empty token disables the check, and the endpoint only accepts LAN addresses.</sys:String>
   <sys:String x:Key="UI_TabWebRemote">Remote</sys:String>
   <sys:String x:Key="UI_WebRemote_Access">Scan to connect</sys:String>

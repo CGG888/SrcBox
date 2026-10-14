@@ -1317,29 +1317,34 @@ namespace LibmpvIptvClient
         }
 
         /// <summary>
-        /// Downloads the offline model. The button stays disabled while it runs so a second click cannot
-        /// start a competing download into the same files.
+        /// Downloads the offline model through a window that shows its phase, speed and time left. The button
+        /// stays disabled while the window is open so a second click cannot start a competing download into
+        /// the same files; closing the window stops the download and keeps the part that arrived.
         /// </summary>
-        private async void BtnWebRemoteVoiceModelDownload_Click(object sender, RoutedEventArgs e)
+        private void BtnWebRemoteVoiceModelDownload_Click(object sender, RoutedEventArgs e)
         {
             if (BtnWebRemoteVoiceModelDownload == null || TbWebRemoteVoiceModelStatus == null) return;
 
             BtnWebRemoteVoiceModelDownload.IsEnabled = false;
             try
             {
-                var progress = new Progress<double>(percent => TbWebRemoteVoiceModelStatus.Text = string.Format(
-                    Helpers.Localizer.S("UI_WebRemote_VoiceModelDownloading", "下载中 {0}%"), percent));
+                var dialog = new VoiceModelDownloadWindow { Owner = this };
+                dialog.ShowDialog();
 
-                await VoiceModelStore.DownloadAsync(null, progress, System.Threading.CancellationToken.None);
+                if (dialog.Succeeded)
+                {
+                    // Downloading the model is the whole point of the switch, so turning it on saves a step.
+                    if (CbWebRemoteVoiceOffline != null) CbWebRemoteVoiceOffline.IsChecked = true;
+                }
+                else if (!dialog.WasCancelled)
+                {
+                    TbWebRemoteVoiceModelStatus.Text = string.Format(
+                        Helpers.Localizer.S("UI_WebRemote_VoiceModelFailed", "下载失败：{0}"),
+                        dialog.Failure ?? string.Empty);
+                    return;
+                }
 
-                // Downloading the model is the whole point of the switch, so turning it on saves a step.
-                if (CbWebRemoteVoiceOffline != null) CbWebRemoteVoiceOffline.IsChecked = true;
                 RefreshVoiceModelStatus();
-            }
-            catch (Exception ex)
-            {
-                TbWebRemoteVoiceModelStatus.Text = string.Format(
-                    Helpers.Localizer.S("UI_WebRemote_VoiceModelFailed", "下载失败：{0}"), ex.Message);
             }
             finally
             {

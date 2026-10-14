@@ -40,6 +40,79 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
         public string Url => VoiceModelStore.BuildUrl(Name);
     }
 
+    /// <summary>Which part of the download a progress report describes, so the window can say what it does.</summary>
+    public enum VoiceModelPhase
+    {
+        /// <summary>Reaching the model host and reading the first response headers.</summary>
+        Connecting,
+
+        /// <summary>Receiving the bytes of one file.</summary>
+        Downloading,
+
+        /// <summary>Reading back what arrived and hashing it against the published checksum.</summary>
+        Verifying,
+
+        /// <summary>Every file is on disk and verified.</summary>
+        Completed
+    }
+
+    /// <summary>
+    /// One progress report. It carries the numbers a person needs to judge whether the download is healthy -
+    /// how much is done, how fast, how much is left - instead of a bare percentage that sits still for the
+    /// largest file and then jumps.
+    /// </summary>
+    public readonly struct VoiceModelProgress
+    {
+        public VoiceModelProgress(
+            VoiceModelPhase phase,
+            int fileIndex,
+            int fileCount,
+            string fileName,
+            long bytesDone,
+            long bytesTotal,
+            double bytesPerSecond,
+            TimeSpan? remaining,
+            int percent)
+        {
+            Phase = phase;
+            FileIndex = fileIndex;
+            FileCount = fileCount;
+            FileName = fileName;
+            BytesDone = bytesDone;
+            BytesTotal = bytesTotal;
+            BytesPerSecond = bytesPerSecond;
+            Remaining = remaining;
+            Percent = percent;
+        }
+
+        /// <summary>What the run is doing right now.</summary>
+        public VoiceModelPhase Phase { get; }
+
+        /// <summary>1-based index of the file being worked on; equal to the file count once finished.</summary>
+        public int FileIndex { get; }
+
+        /// <summary>How many files the manifest has.</summary>
+        public int FileCount { get; }
+
+        /// <summary>Name of the file being worked on; empty when no single file is current.</summary>
+        public string FileName { get; }
+
+        /// <summary>Bytes of the whole manifest already accounted for.</summary>
+        public long BytesDone { get; }
+
+        /// <summary>Bytes of the whole manifest.</summary>
+        public long BytesTotal { get; }
+
+        /// <summary>Average bytes per second since the run started; 0 until enough time passed.</summary>
+        public double BytesPerSecond { get; }
+
+        /// <summary>Estimated time left, null while no rate is known yet.</summary>
+        public TimeSpan? Remaining { get; }
+
+        /// <summary>Whole percent of the manifest, 0-100.</summary>
+        public int Percent { get; }
+    }
+
     /// <summary>
     /// The offline speech model, fetched once and then kept on disk. The engine assemblies arrive with the
     /// package; only the model is downloaded, and it comes from ModelScope because that is the model host
@@ -133,59 +206,55 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
         }
 
         /// <summary>
-        /// Downloads what is missing into <paramref name="directory"/>, reporting percentage complete.
-        /// A partially written file is resumed through a byte range, so a dropped Wi-Fi connection costs
-        /// only the part that had not arrived.
+        /// Downloads what is missing into <paramref name="directory"/>, reporting the phase, the percentage
+        /// and the speed. A partially written file is resumed through a byte range, so a dropped Wi-Fi
+        /// connection costs only the part that had not arrived.
         /// </summary>
-        public static Task DownloadAsync(string? directory, IProgress<double>? progress, CancellationToken ct) =>
+        public static Task DownloadAsync(string? directory, IProgress<VoiceModelProgress>? progress, CancellationToken ct) =>
             DownloadAsync(Files, Resolve(directory), progress, SharedClient, ct);
 
         /// <summary>
-        /// Hashes every file of the manifest against its published checksum and reports how far it got,
-        /// 0-100. This is the question a directory listing cannot answer: is this really the published model.
+        /// Hashes every file of the manifest against its published checksum and reports how far it got.
+        /// This is the question a directory listing cannot answer: is this really the published model.
         /// </summary>
-        public static Task<bool> VerifyAsync(string? directory, IProgress<double>? progress, CancellationToken ct) =>
+        public static Task<bool> VerifyAsync(string? directory, IProgress<VoiceModelProgress>? progress, CancellationToken ct) =>
             VerifyAsync(Files, Resolve(directory), progress, ct);
 
         /// <summary>The verification itself, over an explicit list so tiny files can stand in for the model.</summary>
         internal static async Task<bool> VerifyAsync(
             IReadOnlyList<VoiceModelFile> files,
             string directory,
-            IProgress<double>? progress,
+            IProgress<VoiceModelProgress>? progress,
             CancellationToken ct)
         {
             var totalBytes = files.Sum(f => f.SizeBytes);
-            long completedBytes = 0;
-            var lastPercent = -1;
+            var report = new ProgressReporter(progress, totalBytes, files.Count);
             var verified = true;
 
-            void Report(long inFile)
-            {
-                if (progress == null || totalBytes <= 0) return;
-                var percent = (int)Math.Clamp((completedBytes + inFile) * 100 / totalBytes, 0, 100);
-                if (percent == lastPercent) return;
-                lastPercent = percent;
-                progress.Report(percent);
-            }
-
-            foreach (var file in files)
+            for (var index = 0; index < files.Count; index++)
             {
                 ct.ThrowIfCancellationRequested();
 
+                var file = files[index];
+                var number = index + 1;
                 var path = Path.Combine(directory, file.Name);
+
+                void Advance(long inFile) => report.Phase(VoiceModelPhase.Verifying, file, number, inFile);
+
+                report.Phase(VoiceModelPhase.Verifying, file, number, 0, force: true);
+
                 // No checksum means the file cannot be verified at all, which is a failure of the check,
                 // not a pass: the shipped manifest always carries one.
                 var matched = file.HasChecksum
                               && FileIsComplete(path, file.SizeBytes)
-                              && await Task.Run(() => FileMatchesChecksum(file, path, Report, ct), ct).ConfigureAwait(false);
+                              && await Task.Run(() => FileMatchesChecksum(file, path, Advance, ct), ct).ConfigureAwait(false);
 
                 if (!matched) verified = false;
 
-                completedBytes += file.SizeBytes;
-                Report(0);
+                report.Complete(file);
             }
 
-            progress?.Report(100);
+            report.Done(files.Count);
             return verified;
         }
 
@@ -210,38 +279,32 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
         internal static async Task DownloadAsync(
             IReadOnlyList<VoiceModelFile> files,
             string directory,
-            IProgress<double>? progress,
+            IProgress<VoiceModelProgress>? progress,
             HttpClient client,
             CancellationToken ct)
         {
             Directory.CreateDirectory(directory);
 
             var totalBytes = files.Sum(f => f.SizeBytes);
-            long completedBytes = 0;
-            var lastPercent = -1;
+            var report = new ProgressReporter(progress, totalBytes, files.Count);
 
-            void Report(long inFile)
-            {
-                if (progress == null || totalBytes <= 0) return;
-                var percent = (int)Math.Clamp((completedBytes + inFile) * 100 / totalBytes, 0, 100);
-                if (percent == lastPercent) return;
-                lastPercent = percent;
-                progress.Report(percent);
-            }
-
-            foreach (var file in files)
+            for (var index = 0; index < files.Count; index++)
             {
                 ct.ThrowIfCancellationRequested();
 
+                var file = files[index];
+                var number = index + 1;
                 var finalPath = Path.Combine(directory, file.Name);
                 if (FileIsComplete(finalPath, file.SizeBytes))
                 {
                     // A file that is already there is hashed anyway: "complete" is only a size, and a
                     // corrupted one is fetched again below instead of loading as a broken model.
-                    if (FileMatchesChecksum(file, finalPath, Report, ct))
+                    void AdvanceExisting(long inFile) => report.Phase(VoiceModelPhase.Verifying, file, number, inFile);
+
+                    report.Phase(VoiceModelPhase.Verifying, file, number, 0, force: true);
+                    if (FileMatchesChecksum(file, finalPath, AdvanceExisting, ct))
                     {
-                        completedBytes += file.SizeBytes;
-                        Report(0);
+                        report.Complete(file);
                         continue;
                     }
                 }
@@ -255,9 +318,7 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
                     if (alreadyThere == 0) TryDelete(partPath);
                 }
 
-                // A checksum mismatch is thrown after the streams are closed, so the partial file is not
-                // locked by the very cleanup that has to remove it.
-                string? checksumFailure = null;
+                report.Phase(VoiceModelPhase.Connecting, file, number, alreadyThere, force: true);
 
                 using (var request = new HttpRequestMessage(HttpMethod.Get, file.Url))
                 {
@@ -276,11 +337,6 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
 
                     response.EnsureSuccessStatusCode();
 
-                    // The checksum is computed while the bytes are written; a resumed file starts from the
-                    // bytes already on disk, so the hash still covers the whole file.
-                    using var checksum = file.HasChecksum ? IncrementalHash.CreateHash(HashAlgorithmName.SHA256) : null;
-                    if (checksum != null && alreadyThere > 0) AppendFileToHash(checksum, partPath, ct);
-
                     var mode = alreadyThere > 0 ? FileMode.Append : FileMode.Create;
                     using var target = new FileStream(partPath, mode, FileAccess.Write, FileShare.None, 81920, true);
                     using var source = await response.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
@@ -293,9 +349,8 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
                         if (read <= 0) break;
 
                         await target.WriteAsync(buffer.AsMemory(0, read), ct).ConfigureAwait(false);
-                        checksum?.AppendData(buffer, 0, read);
                         inFile += read;
-                        Report(inFile - alreadyThere);
+                        report.Phase(VoiceModelPhase.Downloading, file, number, inFile);
                     }
 
                     target.Flush();
@@ -306,34 +361,95 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
                             "model file {0} is {1} bytes, expected {2}",
                             file.Name, inFile, file.SizeBytes));
                     }
-
-                    if (checksum != null)
-                    {
-                        var actual = Convert.ToHexString(checksum.GetHashAndReset()).ToLowerInvariant();
-                        if (!string.Equals(actual, file.Sha256, StringComparison.OrdinalIgnoreCase))
-                        {
-                            // Wrong content cannot be resumed into something right, so the partial file goes.
-                            checksumFailure = string.Format(
-                                CultureInfo.InvariantCulture,
-                                "model file {0} failed its sha256 check (expected {1}, got {2})",
-                                file.Name, file.Sha256, actual);
-                        }
-                    }
                 }
 
-                if (checksumFailure != null)
+                if (file.HasChecksum)
                 {
-                    TryDelete(partPath);
-                    throw new IOException(checksumFailure);
+                    // The bytes are read back and hashed once the file is closed for writing: checking what
+                    // actually landed on disk is a stronger question than hashing the stream in flight, and it
+                    // gives the window a real phase to show instead of a percentage that stops moving. The
+                    // manifest is small enough that reading it twice costs a fraction of a second.
+                    report.Phase(VoiceModelPhase.Verifying, file, number, file.SizeBytes, force: true);
+                    var actual = HashFile(partPath, null, ct);
+                    if (!string.Equals(actual, file.Sha256, StringComparison.OrdinalIgnoreCase))
+                    {
+                        // Wrong content cannot be resumed into something right, so the partial file goes.
+                        TryDelete(partPath);
+                        throw new IOException(string.Format(
+                            CultureInfo.InvariantCulture,
+                            "model file {0} failed its sha256 check (expected {1}, got {2})",
+                            file.Name, file.Sha256, actual));
+                    }
                 }
 
                 TryDelete(finalPath);
                 File.Move(partPath, finalPath);
-                completedBytes += file.SizeBytes;
-                Report(0);
+                report.Complete(file);
             }
 
-            progress?.Report(100);
+            report.Done(files.Count);
+        }
+
+        /// <summary>
+        /// Turns raw byte counts into the reports the progress window shows: the phase, the percent of the whole
+        /// manifest, the average rate and the time left. It exists so the download and the verification pass
+        /// report the same way, and so a report is only raised when something visible changed.
+        /// </summary>
+        private sealed class ProgressReporter
+        {
+            private static readonly TimeSpan Interval = TimeSpan.FromMilliseconds(200);
+
+            private readonly IProgress<VoiceModelProgress>? _progress;
+            private readonly long _totalBytes;
+            private readonly int _fileCount;
+            private readonly System.Diagnostics.Stopwatch _clock = System.Diagnostics.Stopwatch.StartNew();
+
+            private long _completedBytes;
+            private DateTime _lastReportUtc = DateTime.MinValue;
+            private int _lastPercent = -1;
+
+            public ProgressReporter(IProgress<VoiceModelProgress>? progress, long totalBytes, int fileCount)
+            {
+                _progress = progress;
+                _totalBytes = totalBytes;
+                _fileCount = fileCount;
+            }
+
+            /// <summary>Moves the cursor past a file that is finished and verified.</summary>
+            public void Complete(VoiceModelFile file) => _completedBytes += file.SizeBytes;
+
+            /// <summary>
+            /// Reports one file's phase; <paramref name="inFile"/> is how many bytes of that file are accounted
+            /// for. A report is dropped while neither the percent changed nor <see cref="Interval"/> passed.
+            /// </summary>
+            public void Phase(VoiceModelPhase phase, VoiceModelFile? file, int fileIndex, long inFile, bool force = false)
+            {
+                if (_progress == null || _totalBytes <= 0) return;
+
+                var done = _completedBytes + inFile;
+                var percent = (int)Math.Clamp(done * 100 / _totalBytes, 0, 100);
+                var now = DateTime.UtcNow;
+                if (!force && percent == _lastPercent && now - _lastReportUtc < Interval) return;
+
+                _lastPercent = percent;
+                _lastReportUtc = now;
+
+                var seconds = _clock.Elapsed.TotalSeconds;
+                var speed = seconds > 0.5 ? done / seconds : 0;
+                var remaining = speed > 1 && done < _totalBytes
+                    ? TimeSpan.FromSeconds((_totalBytes - done) / speed)
+                    : (TimeSpan?)null;
+
+                _progress.Report(new VoiceModelProgress(
+                    phase, fileIndex, _fileCount, file?.Name ?? string.Empty, done, _totalBytes, speed, remaining, percent));
+            }
+
+            /// <summary>Last report of a run: every byte is on disk and verified.</summary>
+            public void Done(int fileCount)
+            {
+                _completedBytes = _totalBytes;
+                Phase(VoiceModelPhase.Completed, null, fileCount, 0, force: true);
+            }
         }
 
         /// <summary>
@@ -376,20 +492,6 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
             }
 
             return Convert.ToHexString(hash.GetHashAndReset()).ToLowerInvariant();
-        }
-
-        /// <summary>Feeds the bytes already on disk into a running hash, so a resumed download is checked whole.</summary>
-        private static void AppendFileToHash(IncrementalHash hash, string path, CancellationToken ct)
-        {
-            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.Read, 81920, false);
-
-            var buffer = new byte[81920];
-            int count;
-            while ((count = stream.Read(buffer, 0, buffer.Length)) > 0)
-            {
-                ct.ThrowIfCancellationRequested();
-                hash.AppendData(buffer, 0, count);
-            }
         }
 
         private static bool FileIsComplete(string path, long expectedBytes)

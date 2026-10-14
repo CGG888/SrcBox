@@ -542,6 +542,17 @@
   <sys:String x:Key="UI_WebRemote_VoiceModelDownloading">Скачивание {0}%</sys:String>
   <sys:String x:Key="UI_WebRemote_VoiceModelReady">Модель речи готова</sys:String>
   <sys:String x:Key="UI_WebRemote_VoiceModelFailed">Не удалось скачать: {0}</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Title">Загрузка речевой модели</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Intro">Офлайн-модель речи занимает около {0} МБ и скачивается один раз.</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Connecting">Подключение…</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Downloading">Загрузка ({0}%)</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Verifying">Проверка ({0}%)</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Completed">Загрузка завершена</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Failed">Не удалось скачать</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Cancelled">Остановлено: загруженная часть сохранена, следующая попытка продолжит с неё.</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDialog_File">Файл {0}/{1}: {2}</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Bytes">{0} / {1}</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Rate">в среднем {0}/с · осталось {1}</sys:String>
   <sys:String x:Key="UI_WebRemote_VoiceApiHint">Ассистент телефона может вызвать http://IP-ПК:порт/api/voice?text=канал 1&amp;token=токен выше и управлять плеером без открытия страницы. Пустой токен отключает проверку, а адрес принимается только из локальной сети.</sys:String>
   <sys:String x:Key="UI_TabWebRemote">Пульт</sys:String>
   <sys:String x:Key="UI_WebRemote_Access">Подключение по QR</sys:String>

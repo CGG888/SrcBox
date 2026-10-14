@@ -541,6 +541,17 @@
   <sys:String x:Key="UI_WebRemote_VoiceModelDownloading">下載中 {0}%</sys:String>
   <sys:String x:Key="UI_WebRemote_VoiceModelReady">語音模型已就緒</sys:String>
   <sys:String x:Key="UI_WebRemote_VoiceModelFailed">下載失敗：{0}</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Title">下載語音模型</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Intro">離線語音模型約 {0} MB，只需下載一次。</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Connecting">正在連線…</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Downloading">正在下載（{0}%）</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Verifying">正在校驗（{0}%）</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Completed">下載完成</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Failed">下載失敗</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Cancelled">已停止：已下載的部分會保留，下次繼續。</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDialog_File">檔案 {0}/{1}：{2}</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Bytes">{0} / {1}</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Rate">平均 {0}/s · 剩餘 {1}</sys:String>
   <sys:String x:Key="UI_WebRemote_VoiceApiHint">手機助理可呼叫 http://電腦IP:埠/api/voice?text=換到1台&amp;token=上面的權杖，實現不開網頁的語音控制；權杖留空則無需驗證（僅限本機網段存取）。</sys:String>
   <sys:String x:Key="UI_TabWebRemote">遙控器</sys:String>
   <sys:String x:Key="UI_WebRemote_Access">掃碼存取</sys:String>

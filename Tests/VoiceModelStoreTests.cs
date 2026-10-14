@@ -120,17 +120,61 @@ namespace LibmpvIptvClient.Tests
                     new VoiceModelFile("am.mvn", 3)
                 };
                 using var client = new HttpClient(new StubHandler(("tokens.json", new byte[] { 1, 2, 3, 4 }), ("am.mvn", new byte[] { 9, 8, 7 })));
-                var reported = new List<double>();
+                var reported = new List<int>();
 
                 VoiceModelStore
-                    .DownloadAsync(files, dir, new Progress<double>(reported.Add), client, CancellationToken.None)
+                    .DownloadAsync(files, dir, new RecordingProgress(p => reported.Add(p.Percent)), client, CancellationToken.None)
                     .GetAwaiter()
                     .GetResult();
 
                 CollectionAssert.AreEqual(new byte[] { 1, 2, 3, 4 }, File.ReadAllBytes(Path.Combine(dir, "tokens.json")));
                 CollectionAssert.AreEqual(new byte[] { 9, 8, 7 }, File.ReadAllBytes(Path.Combine(dir, "am.mvn")));
                 Assert.IsFalse(File.Exists(Path.Combine(dir, "tokens.json.part")));
-                Assert.AreEqual(100d, reported.Last());
+                Assert.AreEqual(100, reported.Last());
+            }
+            finally
+            {
+                CleanUp(dir);
+            }
+        }
+
+        [TestMethod]
+        public void Download_ReportsEachPhaseOnceInOrderAndEndsAtOneHundredPercent()
+        {
+            var dir = NewDirectory();
+            try
+            {
+                var tokens = new byte[] { 1, 2, 3, 4 };
+                var files = new[] { new VoiceModelFile("tokens.json", tokens.Length, Sha256(tokens)) };
+                using var client = new HttpClient(new StubHandler(("tokens.json", tokens)));
+                var progress = new RecordingProgress();
+
+                VoiceModelStore
+                    .DownloadAsync(files, dir, progress, client, CancellationToken.None)
+                    .GetAwaiter()
+                    .GetResult();
+
+                // The window tells the user which phase it is in, so every phase has to be announced: connect,
+                // receive, check what landed, done.
+                CollectionAssert.AreEqual(
+                    new[]
+                    {
+                        VoiceModelPhase.Connecting,
+                        VoiceModelPhase.Downloading,
+                        VoiceModelPhase.Verifying,
+                        VoiceModelPhase.Completed
+                    },
+                    progress.Reports.Select(p => p.Phase).ToArray());
+
+                var last = progress.Reports.Last();
+                Assert.AreEqual(100, last.Percent);
+                Assert.AreEqual(tokens.Length, last.BytesDone);
+                Assert.AreEqual(tokens.Length, last.BytesTotal);
+
+                var receiving = progress.Reports.First(p => p.Phase == VoiceModelPhase.Downloading);
+                Assert.AreEqual(1, receiving.FileIndex);
+                Assert.AreEqual(1, receiving.FileCount);
+                Assert.AreEqual("tokens.json", receiving.FileName);
             }
             finally
             {
@@ -340,11 +384,56 @@ namespace LibmpvIptvClient.Tests
             }
         }
 
+        [TestMethod]
+        public void Verify_ReportsTheCheckingPhaseAndFinishesAtOneHundredPercent()
+        {
+            var dir = NewDirectory();
+            try
+            {
+                var good = new byte[] { 7, 7, 7 };
+                var file = new VoiceModelFile("tokens.json", 3, Sha256(good));
+                File.WriteAllBytes(Path.Combine(dir, "tokens.json"), good);
+                var progress = new RecordingProgress();
+
+                var verified = VoiceModelStore
+                    .VerifyAsync(new[] { file }, dir, progress, CancellationToken.None)
+                    .GetAwaiter()
+                    .GetResult();
+
+                Assert.IsTrue(verified);
+                Assert.IsTrue(progress.Reports.Count > 0, "checking an installed model still has to report progress");
+                Assert.IsTrue(
+                    progress.Reports.All(p => p.Phase == VoiceModelPhase.Verifying || p.Phase == VoiceModelPhase.Completed),
+                    "the window must be able to say it is checking, not downloading");
+                Assert.AreEqual(100, progress.Reports.Last().Percent);
+            }
+            finally
+            {
+                CleanUp(dir);
+            }
+        }
+
         private static bool Verify(string directory, VoiceModelFile file) =>
             VoiceModelStore
                 .VerifyAsync(new[] { file }, directory, null, CancellationToken.None)
                 .GetAwaiter()
                 .GetResult();
+
+        /// <summary>Records reports on the calling thread; <see cref="Progress{T}"/> would post them instead.</summary>
+        private sealed class RecordingProgress : IProgress<VoiceModelProgress>
+        {
+            private readonly Action<VoiceModelProgress>? _onReport;
+
+            public RecordingProgress(Action<VoiceModelProgress>? onReport = null) => _onReport = onReport;
+
+            public List<VoiceModelProgress> Reports { get; } = new List<VoiceModelProgress>();
+
+            public void Report(VoiceModelProgress value)
+            {
+                Reports.Add(value);
+                _onReport?.Invoke(value);
+            }
+        }
 
         private static string Sha256(byte[] bytes) =>
             Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes)).ToLowerInvariant();
