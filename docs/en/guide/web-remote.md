@@ -214,7 +214,7 @@ Things you can say:
 | `回看今天的新闻联播` | Find that programme in the current channel's guide and play it from the archive |
 | `现在在播什么` | Read out what is on now |
 
-Download the model the first time under **Settings → Web remote → Offline voice** (with progress and retry); wake words, custom phrase rules and the volume step live on the same page.
+The first run only needs the **Settings → Web remote → Offline voice recognition** switch: turning it on asks whether to download the model (about 228 MB) now and then opens a window showing the **phase (connecting / downloading / verifying), percentage, current file, speed and time left**, which can be stopped at any moment — whatever arrived is kept and the next attempt resumes it. Each file is checked against its published **SHA-256**, after which the model is loaded and put through one silent clip: the row says "the speech model is ready, self-check passed" only once that worked. The **Delete model** button next to it frees the disk and the memory and clears the switch. Wake words, custom phrase rules and the volume step live on the same page.
 
 > The phone microphone is only available in a secure context (`https://` or `localhost`): on `http://192.168.x.x` the page reports that it is not a secure context and recording cannot start — install the certificate as described under *HTTPS and Certificates* above and open the page over `https://`.
 
