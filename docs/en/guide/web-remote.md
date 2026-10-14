@@ -216,6 +216,16 @@ Things you can say:
 
 The first run only needs the **Settings → Web remote → Offline voice recognition** switch: turning it on asks whether to download the model (about 228 MB) now and then opens a window showing the **phase (connecting / downloading / verifying), percentage, current file, speed and time left**, which can be stopped at any moment — whatever arrived is kept and the next attempt resumes it. Each file is checked against its published **SHA-256**, after which the model is loaded and put through one silent clip: the row says "the speech model is ready, self-check passed" only once that worked. The **Delete model** button next to it frees the disk and the memory and clears the switch. Wake words, custom phrase rules and the volume step live on the same page.
 
+**Matching settings.** The *Match strictness* row on the same settings page decides how tolerant the sentence matching is:
+
+- **Strictness**: `Loose` lists more candidates (it asks rather than guesses), `Standard` is the default, `Strict` keeps only close matches
+- **Time hint**: how many minutes a programme may start from the hour you said for "replay the 8 pm news" to hit it (60 by default, so the window is 19:00-21:30; `0` means the exact hour)
+- **Understand a spoken date**: with this on you can say "replay the news of October 13" or "last Friday's interview"
+- **Play at once when a replay sentence matches one programme**: turn it off and even a single hit is confirmed first
+- **Extra words to ignore**: words that are wrongly taken as part of a programme title, separated by `|`
+
+**Voice packs (updated on their own).** Everything the app understands — wake words, switching, replay, the way dates and hours are spoken — lives in a **voice pack** that is decoupled from the app version. *Check* pulls the newest pack from GitHub (it is hashed with SHA-256 before it takes effect), *Import…* installs a local JSON file, *Remove* falls back to the built-in vocabulary, and dropping a `pack.json` into `%LOCALAPPDATA%\SrcBox\voice\` works too. A pack holds only words and regular expressions; every pattern runs with a 50 ms timeout and a broken pack falls back to the built-in tables.
+
 > The phone microphone is only available in a secure context (`https://` or `localhost`): on `http://192.168.x.x` the page reports that it is not a secure context and recording cannot start — install the certificate as described under *HTTPS and Certificates* above and open the page over `https://`.
 
 ### Source Management (expandable)

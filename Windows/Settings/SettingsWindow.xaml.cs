@@ -1263,6 +1263,16 @@ namespace LibmpvIptvClient
                 .Distinct()
                 .ToList();
 
+            var hint = VoiceTimeParser.DefaultTimeHintMinutes;
+            if (!int.TryParse(TbWebRemoteVoiceTimeHint?.Text?.Trim(), out hint)) hint = VoiceTimeParser.DefaultTimeHintMinutes;
+
+            var extraNoise = (TbWebRemoteVoiceExtraNoise?.Text ?? "")
+                .Split(new[] { '|', ',', '，', '、', ';', '；' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(w => w.Trim())
+                .Where(w => w.Length > 0)
+                .Distinct()
+                .ToList();
+
             return new VoiceConfig
             {
                 Enabled = CbWebRemoteVoiceEnabled?.IsChecked != false,
@@ -1273,9 +1283,40 @@ namespace LibmpvIptvClient
                 OfflineEnabled = CbWebRemoteVoiceOffline?.IsChecked == true,
                 WakeWords = wakeWords,
                 CustomRules = VoiceRuleText.Parse(TbWebRemoteVoiceRules?.Text),
+                MatchStrictness = SelectedMatchStrictness(),
+                // The window may open this much before or after the spoken hour; an hour is the default.
+                TimeHintMinutes = System.Math.Clamp(hint, 0, 240),
+                ParseCalendarDates = CbWebRemoteVoiceCalendarDates?.IsChecked != false,
+                AutoReplaySingle = CbWebRemoteVoiceAutoReplay?.IsChecked != false,
+                AdditionalNoiseWords = extraNoise,
                 // The token stays as stored: a shortcut on the phone already carries the issued value.
                 Token = AppSettings.Current?.WebRemote?.Voice?.Token ?? ""
             };
+        }
+
+        /// <summary>The strictness the combo box shows; standard when it has not been touched.</summary>
+        private string SelectedMatchStrictness()
+        {
+            var tag = (CbWebRemoteVoiceStrictness?.SelectedItem as ComboBoxItem)?.Tag as string;
+            return string.IsNullOrWhiteSpace(tag) ? "standard" : tag;
+        }
+
+        /// <summary>Points the strictness combo box at one of the three stored names.</summary>
+        private void SelectMatchStrictness(string strictness)
+        {
+            if (CbWebRemoteVoiceStrictness == null) return;
+
+            var wanted = (strictness ?? "").Trim().ToLowerInvariant();
+            foreach (var item in CbWebRemoteVoiceStrictness.Items)
+            {
+                if (item is ComboBoxItem choice && string.Equals(choice.Tag as string, wanted, StringComparison.Ordinal))
+                {
+                    CbWebRemoteVoiceStrictness.SelectedItem = choice;
+                    return;
+                }
+            }
+
+            CbWebRemoteVoiceStrictness.SelectedIndex = 1;
         }
 
         /// <summary>Fills the voice controls of the Web Remote tab. Both settings load paths call this.</summary>
@@ -1289,12 +1330,137 @@ namespace LibmpvIptvClient
             if (TbWebRemoteVoiceVolumeStep != null) TbWebRemoteVoiceVolumeStep.Text = System.Math.Clamp(voice.VolumeStep, 1, 50).ToString();
             if (TbWebRemoteVoiceWakeWords != null) TbWebRemoteVoiceWakeWords.Text = string.Join("|", voice.WakeWords ?? new List<string>());
             if (TbWebRemoteVoiceRules != null) TbWebRemoteVoiceRules.Text = VoiceRuleText.Format(voice.CustomRules);
+            SelectMatchStrictness(voice.MatchStrictness);
+            if (TbWebRemoteVoiceTimeHint != null) TbWebRemoteVoiceTimeHint.Text = System.Math.Clamp(voice.TimeHintMinutes, 0, 240).ToString();
+            if (CbWebRemoteVoiceCalendarDates != null) CbWebRemoteVoiceCalendarDates.IsChecked = voice.ParseCalendarDates;
+            if (CbWebRemoteVoiceAutoReplay != null) CbWebRemoteVoiceAutoReplay.IsChecked = voice.AutoReplaySingle;
+            if (TbWebRemoteVoiceExtraNoise != null) TbWebRemoteVoiceExtraNoise.Text = string.Join("|", voice.AdditionalNoiseWords ?? new List<string>());
 
             var token = WebRemoteManager.CurrentVoiceToken;
             if (TbWebRemoteVoiceToken != null) TbWebRemoteVoiceToken.Text = string.IsNullOrWhiteSpace(token) ? voice.Token ?? "" : token;
             if (CbWebRemoteVoiceOffline != null) SetVoiceOfflineChecked(voice.OfflineEnabled);
 
             RefreshVoiceModelStatus();
+            RefreshVoicePackStatus();
+        }
+
+        /// <summary>Shows which vocabulary is in force and, when a pack failed, why.</summary>
+        private void RefreshVoicePackStatus()
+        {
+            if (TbWebRemoteVoicePackStatus == null) return;
+
+            var error = VoiceGrammar.LastError;
+            if (!string.IsNullOrWhiteSpace(error))
+            {
+                TbWebRemoteVoicePackStatus!.Text = string.Format(
+                    Helpers.Localizer.S("UI_WebRemote_VoicePackImportFailed", "词表包不可用：{0}"), error);
+                return;
+            }
+
+            TbWebRemoteVoicePackStatus!.Text = string.IsNullOrWhiteSpace(VoiceGrammar.InstalledSource)
+                ? string.Format(
+                    Helpers.Localizer.S("UI_WebRemote_VoicePackBuiltIn", "内置词表 v{0}"),
+                    VoiceGrammar.InstalledVersion)
+                : string.Format(
+                    Helpers.Localizer.S("UI_WebRemote_VoicePackInstalled", "词表包 v{0}（{1}）"),
+                    VoiceGrammar.InstalledVersion, VoiceGrammar.InstalledLang);
+        }
+
+        /// <summary>The language whose pack the page offers: what the user typed, else the interface language.</summary>
+        private string PackLanguage()
+        {
+            var lang = TbWebRemoteVoiceLang?.Text?.Trim();
+            return string.IsNullOrWhiteSpace(lang) ? System.Globalization.CultureInfo.CurrentUICulture.Name : lang!;
+        }
+
+        private async void BtnWebRemoteVoicePackCheck_Click(object sender, RoutedEventArgs e)
+        {
+            if (BtnWebRemoteVoicePackCheck == null || TbWebRemoteVoicePackStatus == null) return;
+
+            BtnWebRemoteVoicePackCheck.IsEnabled = false;
+            if (BtnWebRemoteVoicePackImport != null) BtnWebRemoteVoicePackImport.IsEnabled = false;
+            try
+            {
+                TbWebRemoteVoicePackStatus!.Text = Helpers.Localizer.S("UI_WebRemote_VoicePackChecking", "正在检查词表包…");
+                var manifest = await VoiceGrammarPackStore.FetchManifestAsync(
+                    VoiceGrammarPackStore.ManifestUrls(), System.Threading.CancellationToken.None);
+                var entry = VoiceGrammarPackStore.Update(manifest, PackLanguage());
+                if (entry == null)
+                {
+                    RefreshVoicePackStatus();
+                    TbWebRemoteVoicePackStatus!.Text = string.Format(
+                        Helpers.Localizer.S("UI_WebRemote_VoicePackUpToDate", "词表包已是最新（v{0}）"),
+                        VoiceGrammar.InstalledVersion);
+                    return;
+                }
+
+                var ok = await VoiceGrammarPackStore.InstallAsync(entry, null, System.Threading.CancellationToken.None);
+                if (ok)
+                {
+                    RefreshVoicePackStatus();
+                    return;
+                }
+
+                TbWebRemoteVoicePackStatus!.Text = string.Format(
+                    Helpers.Localizer.S("UI_WebRemote_VoicePackFailed", "词表包更新失败：{0}"),
+                    VoiceGrammarPackStore.LastError);
+            }
+            catch (Exception ex)
+            {
+                TbWebRemoteVoicePackStatus!.Text = string.Format(
+                    Helpers.Localizer.S("UI_WebRemote_VoicePackFailed", "词表包更新失败：{0}"), ex.Message);
+            }
+            finally
+            {
+                BtnWebRemoteVoicePackCheck.IsEnabled = true;
+                if (BtnWebRemoteVoicePackImport != null) BtnWebRemoteVoicePackImport.IsEnabled = true;
+            }
+        }
+
+        private void BtnWebRemoteVoicePackImport_Click(object sender, RoutedEventArgs e)
+        {
+            if (TbWebRemoteVoicePackStatus == null) return;
+
+            var dialog = new Microsoft.Win32.OpenFileDialog
+            {
+                Title = Helpers.Localizer.S("UI_WebRemote_VoicePackImportTitle", "选择词表包"),
+                Filter = "JSON (*.json)|*.json",
+                CheckFileExists = true
+            };
+            if (dialog.ShowDialog(this) != true) return;
+
+            if (VoiceGrammarPackStore.InstallFromFile(dialog.FileName))
+            {
+                RefreshVoicePackStatus();
+                TbWebRemoteVoicePackStatus!.Text = string.Format(
+                    Helpers.Localizer.S("UI_WebRemote_VoicePackImported", "已导入词表包 v{0}"),
+                    VoiceGrammar.InstalledVersion);
+                return;
+            }
+
+            TbWebRemoteVoicePackStatus!.Text = string.Format(
+                Helpers.Localizer.S("UI_WebRemote_VoicePackImportFailed", "词表包不可用：{0}"),
+                VoiceGrammarPackStore.LastError);
+        }
+
+        private void BtnWebRemoteVoicePackRemove_Click(object sender, RoutedEventArgs e)
+        {
+            if (TbWebRemoteVoicePackStatus == null) return;
+            if (string.IsNullOrWhiteSpace(VoiceGrammar.InstalledSource))
+            {
+                RefreshVoicePackStatus();
+                return;
+            }
+
+            var answer = ModernMessageBox.Show(
+                this,
+                Helpers.Localizer.S("UI_WebRemote_VoicePackRemoveConfirm", "移除词表包并回到内置词表？"),
+                Helpers.Localizer.S("UI_WebRemote_VoicePackTitle", "词表包"),
+                MessageBoxButton.OKCancel);
+            if (answer != true) return;
+
+            VoiceGrammarPackStore.Remove();
+            TbWebRemoteVoicePackStatus!.Text = Helpers.Localizer.S("UI_WebRemote_VoicePackRemoved", "已回到内置词表");
         }
 
         /// <summary>Shows whether the offline model is on disk; the button next to it fills the gap.</summary>

@@ -870,6 +870,14 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
+                        <RowDefinition Height="Auto"/>
                       </Grid.RowDefinitions>
                       <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto"/>
@@ -934,17 +942,52 @@
                         <Run Text="{DynamicResource UI_WebRemote_VoiceApiHint}"/>
                       </TextBlock>
 
-                      <!-- 离线语音（手机录音，本机识别） -->
-                      <CheckBox x:Name="CbWebRemoteVoiceOffline" Grid.Row="21" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebRemote_VoiceOffline}" Margin="0,16,0,8" Checked="CbWebRemoteVoiceOffline_Changed" Unchecked="CbWebRemoteVoiceOffline_Changed"/>
+                      <!-- 语义匹配 -->
+                      <TextBlock Grid.Row="21" Grid.Column="0" Text="{DynamicResource UI_WebRemote_VoiceStrictness}" VerticalAlignment="Center" Margin="0,0,16,8"/>
+                      <ComboBox x:Name="CbWebRemoteVoiceStrictness" Grid.Row="21" Grid.Column="1" Width="140" Height="24" HorizontalAlignment="Left" Margin="0,0,0,8">
+                        <ComboBoxItem Content="{DynamicResource UI_WebRemote_VoiceStrictnessLoose}" Tag="loose"/>
+                        <ComboBoxItem Content="{DynamicResource UI_WebRemote_VoiceStrictnessStandard}" Tag="standard"/>
+                        <ComboBoxItem Content="{DynamicResource UI_WebRemote_VoiceStrictnessStrict}" Tag="strict"/>
+                      </ComboBox>
 
-                      <StackPanel Grid.Row="22" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,8">
+                      <TextBlock Grid.Row="22" Grid.Column="0" Text="{DynamicResource UI_WebRemote_VoiceTimeHint}" VerticalAlignment="Center" Margin="0,0,16,8"/>
+                      <TextBox x:Name="TbWebRemoteVoiceTimeHint" Grid.Row="22" Grid.Column="1" Width="100" Height="24" HorizontalAlignment="Left" Margin="0,0,0,8"/>
+
+                      <CheckBox x:Name="CbWebRemoteVoiceCalendarDates" Grid.Row="23" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebRemote_VoiceCalendarDates}" Margin="0,0,0,8"/>
+
+                      <CheckBox x:Name="CbWebRemoteVoiceAutoReplay" Grid.Row="24" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebRemote_VoiceAutoReplay}" Margin="0,0,0,8"/>
+
+                      <TextBlock Grid.Row="25" Grid.Column="0" Text="{DynamicResource UI_WebRemote_VoiceExtraNoise}" VerticalAlignment="Center" Margin="0,0,16,8"/>
+                      <TextBox x:Name="TbWebRemoteVoiceExtraNoise" Grid.Row="25" Grid.Column="1" Height="24" Margin="0,0,0,8"/>
+
+                      <TextBlock Grid.Row="26" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" TextWrapping="Wrap" Margin="0,0,0,12">
+                        <Run Text="{DynamicResource UI_WebRemote_VoiceMatchHint}"/>
+                      </TextBlock>
+
+                      <!-- 离线语音（手机录音，本机识别） -->
+                      <CheckBox x:Name="CbWebRemoteVoiceOffline" Grid.Row="27" Grid.ColumnSpan="2" Content="{DynamicResource UI_WebRemote_VoiceOffline}" Margin="0,16,0,8" Checked="CbWebRemoteVoiceOffline_Changed" Unchecked="CbWebRemoteVoiceOffline_Changed"/>
+
+                      <StackPanel Grid.Row="28" Grid.Column="1" Orientation="Horizontal" Margin="0,0,0,8">
                         <TextBlock x:Name="TbWebRemoteVoiceModelStatus" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" VerticalAlignment="Center" MaxWidth="320" TextWrapping="Wrap" Margin="0,0,12,0"/>
                         <Button x:Name="BtnWebRemoteVoiceModelDownload" Content="{DynamicResource UI_WebRemote_VoiceModelDownload}" Height="24" MinWidth="110" VerticalAlignment="Center" HorizontalAlignment="Left" Click="BtnWebRemoteVoiceModelDownload_Click"/>
                         <Button x:Name="BtnWebRemoteVoiceModelDelete" Content="{DynamicResource UI_WebRemote_VoiceModelDelete}" Height="24" MinWidth="90" Margin="8,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left" Click="BtnWebRemoteVoiceModelDelete_Click"/>
                       </StackPanel>
 
-                      <TextBlock Grid.Row="23" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" TextWrapping="Wrap">
+                      <TextBlock Grid.Row="29" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" TextWrapping="Wrap">
                         <Run Text="{DynamicResource UI_WebRemote_VoiceOfflineHint}"/>
+                      </TextBlock>
+
+                      <!-- 词表包（可独立升级） -->
+                      <TextBlock Grid.Row="30" Grid.Column="0" Text="{DynamicResource UI_WebRemote_VoicePackTitle}" VerticalAlignment="Center" Margin="0,12,16,8"/>
+                      <StackPanel Grid.Row="30" Grid.Column="1" Orientation="Horizontal" Margin="0,12,0,8">
+                        <TextBlock x:Name="TbWebRemoteVoicePackStatus" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" VerticalAlignment="Center" MaxWidth="300" TextWrapping="Wrap" Margin="0,0,12,0"/>
+                        <Button x:Name="BtnWebRemoteVoicePackCheck" Content="{DynamicResource UI_WebRemote_VoicePackCheck}" Height="24" MinWidth="90" VerticalAlignment="Center" Click="BtnWebRemoteVoicePackCheck_Click"/>
+                        <Button x:Name="BtnWebRemoteVoicePackImport" Content="{DynamicResource UI_WebRemote_VoicePackImport}" Height="24" MinWidth="70" Margin="8,0,0,0" VerticalAlignment="Center" Click="BtnWebRemoteVoicePackImport_Click"/>
+                        <Button x:Name="BtnWebRemoteVoicePackRemove" Content="{DynamicResource UI_WebRemote_VoicePackRemove}" Height="24" MinWidth="70" Margin="8,0,0,0" VerticalAlignment="Center" Click="BtnWebRemoteVoicePackRemove_Click"/>
+                      </StackPanel>
+
+                      <TextBlock Grid.Row="31" Grid.ColumnSpan="2" Foreground="{DynamicResource TextSecondaryBrush}" FontSize="10" TextWrapping="Wrap">
+                        <Run Text="{DynamicResource UI_WebRemote_VoicePackHint}"/>
                       </TextBlock>
                     </Grid>
                   </StackPanel>
