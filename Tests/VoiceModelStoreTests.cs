@@ -217,6 +217,56 @@ namespace LibmpvIptvClient.Tests
         }
 
         [TestMethod]
+        public void Download_RestartsWhenThePartFileIsAlreadyFull()
+        {
+            var dir = NewDirectory();
+            try
+            {
+                // A part file that holds every byte but never got renamed (the process died in the last
+                // moment) used to be resumed from its end, and a range starting at the end is 416 forever.
+                File.WriteAllBytes(Path.Combine(dir, "tokens.json.part"), new byte[] { 9, 9, 9, 9 });
+                var handler = new StubHandler(("tokens.json", new byte[] { 1, 2, 3, 4 }));
+                using var client = new HttpClient(handler);
+
+                VoiceModelStore
+                    .DownloadAsync(new[] { new VoiceModelFile("tokens.json", 4) }, dir, null, client, CancellationToken.None)
+                    .GetAwaiter()
+                    .GetResult();
+
+                CollectionAssert.AreEqual(new byte[] { 1, 2, 3, 4 }, File.ReadAllBytes(Path.Combine(dir, "tokens.json")));
+                CollectionAssert.AreEqual(new string?[] { null }, handler.Ranges);
+            }
+            finally
+            {
+                CleanUp(dir);
+            }
+        }
+
+        [TestMethod]
+        public void Download_StartsOverWhenTheServerRefusesTheRange()
+        {
+            var dir = NewDirectory();
+            try
+            {
+                File.WriteAllBytes(Path.Combine(dir, "tokens.json.part"), new byte[] { 1, 2 });
+                var handler = new StubHandler(("tokens.json", new byte[] { 1, 2, 3, 4 })) { RejectRanges = true };
+                using var client = new HttpClient(handler);
+
+                VoiceModelStore
+                    .DownloadAsync(new[] { new VoiceModelFile("tokens.json", 4) }, dir, null, client, CancellationToken.None)
+                    .GetAwaiter()
+                    .GetResult();
+
+                CollectionAssert.AreEqual(new string?[] { "bytes=2-", null }, handler.Ranges);
+                CollectionAssert.AreEqual(new byte[] { 1, 2, 3, 4 }, File.ReadAllBytes(Path.Combine(dir, "tokens.json")));
+            }
+            finally
+            {
+                CleanUp(dir);
+            }
+        }
+
+        [TestMethod]
         public void Download_RejectsAShortFile()
         {
             var dir = NewDirectory();
@@ -478,6 +528,9 @@ namespace LibmpvIptvClient.Tests
 
             public List<string?> Ranges { get; } = new List<string?>();
 
+            /// <summary>Answers every ranged request with 416, the way a server that will not resume does.</summary>
+            public bool RejectRanges { get; set; }
+
             protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
             {
                 var query = request.RequestUri!.Query;
@@ -487,6 +540,11 @@ namespace LibmpvIptvClient.Tests
                 var bytes = _files[name];
                 var range = request.Headers.Range;
                 Ranges.Add(range?.ToString());
+
+                if (RejectRanges && range != null)
+                {
+                    return Task.FromResult(new HttpResponseMessage(HttpStatusCode.RequestedRangeNotSatisfiable));
+                }
 
                 if (range?.Ranges.First().From is long from)
                 {

@@ -314,20 +314,41 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
                 if (File.Exists(partPath))
                 {
                     alreadyThere = new FileInfo(partPath).Length;
-                    if (alreadyThere > file.SizeBytes) alreadyThere = 0;
+                    // A part file that already holds every byte would be resumed from its end, and a range that
+                    // starts at the end of a file is answered with 416 for good: start over instead.
+                    if (alreadyThere >= file.SizeBytes) alreadyThere = 0;
                     if (alreadyThere == 0) TryDelete(partPath);
                 }
 
                 report.Phase(VoiceModelPhase.Connecting, file, number, alreadyThere, force: true);
 
-                using (var request = new HttpRequestMessage(HttpMethod.Get, file.Url))
+                HttpResponseMessage response;
                 {
+                    using var request = new HttpRequestMessage(HttpMethod.Get, file.Url);
                     if (alreadyThere > 0) request.Headers.Range = new System.Net.Http.Headers.RangeHeaderValue(alreadyThere, null);
 
-                    using var response = await client
+                    response = await client
                         .SendAsync(request, HttpCompletionOption.ResponseHeadersRead, ct)
                         .ConfigureAwait(false);
+                }
 
+                if (alreadyThere > 0 && response.StatusCode == HttpStatusCode.RequestedRangeNotSatisfiable)
+                {
+                    // The server will not resume from what we have, so that part file is not usable: drop it and
+                    // ask for the whole file again instead of leaving the download broken with a 416.
+                    response.Dispose();
+                    TryDelete(partPath);
+                    alreadyThere = 0;
+                    report.Phase(VoiceModelPhase.Connecting, file, number, 0, force: true);
+
+                    using var retry = new HttpRequestMessage(HttpMethod.Get, file.Url);
+                    response = await client
+                        .SendAsync(retry, HttpCompletionOption.ResponseHeadersRead, ct)
+                        .ConfigureAwait(false);
+                }
+
+                using (response)
+                {
                     // A server that ignores the range starts over; the file then has to start over too.
                     if (alreadyThere > 0 && response.StatusCode != HttpStatusCode.PartialContent)
                     {
