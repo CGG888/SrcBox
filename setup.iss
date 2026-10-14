@@ -2,7 +2,7 @@
 ; SEE THE DOCUMENTATION FOR DETAILS ON CREATING INNO SETUP SCRIPT FILES!
 
 #define MyAppName "SrcBox"
-#define MyAppVersion "1.1.17"
+#define MyAppVersion "1.1.18"
 #define MyAppPublisher "CGG888"
 #define MyAppExeName "SrcBox.exe"
 
