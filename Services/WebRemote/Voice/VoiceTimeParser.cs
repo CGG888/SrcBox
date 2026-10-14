@@ -53,6 +53,10 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
         /// <summary>"8点", "8:30", "20时", "8 h" — a clock time together with its unit.</summary>
         private static readonly Regex Clock = new(@"(?<h>[0-9]{1,2})\s*(?<m>[0-9]{2})?\s*(点|時|时|:|：|h\b|час)", Options);
 
+        /// <summary>The clock plus the half hour that may follow it, for taking the time out of a title.</summary>
+        private static readonly Regex ClockForStripping = new(
+            @"(?<h>[0-9]{1,2})\s*(?<m>[0-9]{2})?\s*(点|時|时|:|：|h\b|час)\s*半?", Options);
+
         /// <summary>
         /// A lone 十 in front of a unit is the number ten ("十点" is 10:00). The shared converter leaves it
         /// alone because it cannot tell a number from a name that is literally called "十".
@@ -142,7 +146,7 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
             value = NormalizeLoneTen(VoiceText.HanToArabicDigits(value));
             value = CalendarDate.Replace(value, " ");
             value = CalendarDayOnly.Replace(value, " ");
-            value = Clock.Replace(value, " ");
+            value = ClockForStripping.Replace(value, " ");
             value = LooseNumber.Replace(value, " ");
             return value.Trim();
         }

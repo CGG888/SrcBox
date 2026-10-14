@@ -108,48 +108,40 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
             value = 0;
             if (string.IsNullOrEmpty(run)) return false;
 
-            var total = 0;
-            var section = 0;
-            var pending = false;
-            var zeroSeen = false;
+            var total = 0;   // everything already closed off by a 万
+            var section = 0; // the section being built, below 万
+            var number = 0;  // digits that have not been given a unit yet
+            var seen = false;
 
             foreach (var c in run)
             {
                 if (TryDigit(c, out var digit))
                 {
-                    if (digit == 0) { zeroSeen = true; continue; }
-                    if (zeroSeen)
-                    {
-                        // 一千零五 => 1005: the digit right after 零 is appended, not multiplied.
-                        section = section * 10 + digit;
-                        zeroSeen = false;
-                        pending = true;
-                        continue;
-                    }
-                    if (pending) section = section * 10 + digit;
-                    else { section = digit; pending = true; }
+                    seen = true;
+                    // 零 is a placeholder ("一千零五"); digits in a row read as one number ("二三" -> 23).
+                    if (digit != 0) number = number == 0 ? digit : number * 10 + digit;
                     continue;
                 }
 
                 var unit = UnitOf(c);
                 if (unit == 0) return false;
+                seen = true;
+
                 if (unit == 10000)
                 {
-                    total = (total + (pending ? section : 1)) * 10000;
+                    total = (total + section + (number == 0 ? 1 : number)) * 10000;
                     section = 0;
-                    pending = false;
-                    zeroSeen = false;
+                    number = 0;
                     continue;
                 }
-                // 十三 => 13: a leading unit means one; afterwards the section is complete.
-                section += (pending ? section : 1) * unit;
-                pending = false;
-                zeroSeen = false;
+
+                // 十三 => 13: a unit with nothing in front of it counts as one.
+                section += (number == 0 ? 1 : number) * unit;
+                number = 0;
             }
 
-            value = total + section;
-            if (value == 0 && run != "零") return false;
-            return true;
+            value = total + section + number;
+            return seen;
         }
 
         private const string SimpleDigits = "零一二三四五六七八九";

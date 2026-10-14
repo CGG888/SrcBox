@@ -91,6 +91,9 @@ namespace LibmpvIptvClient.Tests
 
             var dayOnly = Parse("回看13号的新闻联播");
             Assert.AreEqual(new DateTime(2026, 10, 13), dayOnly.Start);
+
+            var spokenDay = Parse("回看十三号的新闻联播");
+            Assert.AreEqual(new DateTime(2026, 10, 13), spokenDay.Start, "十三 is the thirteenth, not the third");
         }
 
         [TestMethod]
@@ -168,6 +171,15 @@ namespace LibmpvIptvClient.Tests
 
             Assert.IsFalse(stripped.Contains("10"), stripped);
             Assert.IsFalse(stripped.Contains("13"), stripped);
+            StringAssert.Contains(stripped, "新闻联播");
+        }
+
+        [TestMethod]
+        public void StripTimeHints_RemovesTheHalfHourToo()
+        {
+            var stripped = VoiceTimeParser.StripTimeHints("回看昨天晚上八点半的新闻联播");
+
+            Assert.IsFalse(stripped.Contains("半"), stripped);
             StringAssert.Contains(stripped, "新闻联播");
         }
 
