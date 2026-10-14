@@ -47,9 +47,15 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
         private static string _lang = "zh-CN";
         private static VoiceGrammarPack? _pack;
 
-        /// <summary>Where an installed or hand-dropped pack is looked for.</summary>
-        public static string DefaultDirectory { get; } = Path.Combine(
+        private static readonly string DefaultPath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "SrcBox", "voice");
+
+        /// <summary>Where an installed or hand-dropped pack is looked for. Tests point this at a scratch directory.</summary>
+        internal static string? DirectoryOverride { get; set; }
+
+        /// <summary>Where an installed or hand-dropped pack is looked for.</summary>
+        public static string DefaultDirectory =>
+            string.IsNullOrWhiteSpace(DirectoryOverride) ? DefaultPath : DirectoryOverride!;
 
         /// <summary>
         /// Built on first use rather than in a field initializer: the tables below are declared later in the
