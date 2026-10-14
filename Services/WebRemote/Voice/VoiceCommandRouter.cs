@@ -22,20 +22,18 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
         private const int MaxOptions = 12;
         private const int MaxStepSeconds = 600;
 
-        /// <summary>Words a channel name may not absorb when a sentence is split into name + number.</summary>
-        private static readonly string[] NoiseWords =
-        {
-            "回看", "回放", "重播", "今天", "今日", "昨天", "昨日", "前天", "明天", "后天", "本日", "节目",
-            "有什么", "什么", "看一下", "看看", "看", "帮我", "请", "我要", "我想", "在播", "正在把",
-            "现在", "正在", "播", "今晚", "昨天晚上", "晚上", "上午", "下午", "中午", "早上", "凌晨"
-        };
+        /// <summary>
+        /// Words a channel name may not absorb when a sentence is split into name + number. The list lives
+        /// in the grammar, so an installed pack can extend it.
+        /// </summary>
+        private static IReadOnlyList<string> NoiseWords => VoiceGrammar.Current.NoiseWords;
 
         /// <summary>
         /// The same list minus the words that may sit inside a programme title. Cutting "播" out of
         /// "新闻联播" leaves "新闻联", which then scores like an equal against "体育新闻"; a title filter
         /// has no business tearing words apart, only the channel matcher does.
         /// </summary>
-        private static readonly string[] TitleNoiseWords = NoiseWords
+        private static IReadOnlyList<string> TitleNoiseWords => NoiseWords
             .Where(word => word != "播" && word != "看" && word != "回看" && word != "回放" && word != "重播" && word != "在播")
             .ToArray();
 

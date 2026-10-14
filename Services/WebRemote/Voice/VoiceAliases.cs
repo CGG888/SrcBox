@@ -45,31 +45,19 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
     /// </summary>
     internal static class VoiceAliases
     {
-        private sealed class Pattern
-        {
-            public Regex Matcher { get; init; } = null!;
-            public VoiceVerb Verb { get; init; }
-            public string Name { get; init; } = "";
-
-            /// <summary>Group name holding a number the router must read (volume, seek, step).</summary>
-            public string NumberGroup { get; init; } = "";
-
-            /// <summary>Group name holding a relative volume change such as "大点".</summary>
-            public string RelativeGroup { get; init; } = "";
-
-            /// <summary>
-            /// Fixed argument the router needs when the sentence itself carries none: a step direction
-            /// ("next"/"prev" walk the list, "first"/"last" jump to the ends) has no words to scrape,
-            /// so the pattern name is the argument.
-            /// </summary>
-            public string Arg { get; init; } = "";
-        }
-
         private static readonly RegexOptions Options = RegexOptions.IgnoreCase | RegexOptions.CultureInvariant;
 
-        private static readonly Pattern[] Patterns = BuildPatterns();
+        /// <summary>
+        /// The phrasing table in force. A grammar pack replaces it wholesale, which is how a phrasing or a
+        /// translation reaches the user without a new build.
+        /// </summary>
+        private static IReadOnlyList<VoicePattern> Patterns => VoiceGrammar.Current.Patterns;
 
-        private static readonly string[] Prepositions =
+        /// <summary>Scaffolding trimmed off a channel argument; a pack may replace this list too.</summary>
+        private static IReadOnlyList<string> Prepositions => VoiceGrammar.Current.Prepositions;
+
+        /// <summary>The prepositions the built-in table starts from.</summary>
+        internal static string[] BuildBuiltInPrepositions() => new[]
         {
             "到", "成", "为", "至", "去", "回", "换到", "切到", "切换到", "调到", "转到", "换", "切", "看",
             "换台", "换频道", "频道", "台", "的", "把", "给我", "一下", "吧",
@@ -126,7 +114,7 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
                         case RuleKind.Regex:
                             try
                             {
-                                var regex = new Regex(phrase, Options);
+                                var regex = new Regex(phrase, Options, VoiceGrammar.RegexTimeout);
                                 var match = regex.Match(normalized);
                                 if (!match.Success) continue;
                                 target = match.Groups.Count > 1 ? match.Groups[1].Value : (rule.Target ?? "");
@@ -190,7 +178,7 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
 
         // ---------------------------------------------------------------- argument extraction
 
-        private static string ExtractArg(string compact, Pattern pattern, Match match)
+        private static string ExtractArg(string compact, VoicePattern pattern, Match match)
         {
             // A captured number is the argument: "音量 40", "快进 30 秒". For the relative volume forms
             // ("大点声") the number is optional and the direction word is the whole argument.
@@ -241,9 +229,9 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
 
         // ---------------------------------------------------------------- pattern table
 
-        private static Pattern[] BuildPatterns()
+        internal static VoicePattern[] BuildBuiltInPatterns()
         {
-            var patterns = new List<Pattern>();
+            var patterns = new List<VoicePattern>();
 
             // ---- player transport -------------------------------------------------
             patterns.Add(P("exit", VoiceVerb.Exit, @"(exit|quit|закрыть|выйти|退出|退出播放|返回|关掉|关闭)"));
@@ -294,49 +282,38 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
             return patterns.ToArray();
         }
 
-        private static Pattern P(string name, VoiceVerb verb, string pattern,
+        private static VoicePattern P(string name, VoiceVerb verb, string pattern,
             string numberGroup = "", string relativeGroup = "", string arg = "") => new()
         {
             Name = name,
             Verb = verb,
-            Matcher = new Regex(pattern, Options),
+            Matcher = new Regex(pattern, Options, VoiceGrammar.RegexTimeout),
             NumberGroup = numberGroup,
             RelativeGroup = relativeGroup,
             Arg = arg
         };
     }
 
-    /// <summary>Vocabulary the time parser and the alias table agree on.</summary>
+    /// <summary>
+    /// Vocabulary the time parser and the alias table agree on. The words themselves live in
+    /// <see cref="VoiceGrammar"/>, which an installed grammar pack can replace.
+    /// </summary>
     internal static class TimeWords
     {
-        public static readonly string[] Day =
-        {
-            "今天", "今日", "本日", "当天", "今天早上", "今天晚上", "昨天", "昨日", "前天", "明天", "后天",
-            "today", "yesterday", "tomorrow", "day before yesterday",
-            "сегодня", "вчера", "позавчера", "завтра"
-        };
+        public static IReadOnlyList<string> Day => VoiceGrammar.Current.Day;
 
-        public static readonly string[] ThisWeek =
-        {
-            "本周", "这周", "這個星期", "这个星期", "本星期", "this week", "эта неделя", "на этой неделе"
-        };
+        public static IReadOnlyList<string> ThisWeek => VoiceGrammar.Current.ThisWeek;
 
-        public static readonly string[] LastWeek =
-        {
-            "上周", "上個星期", "上个星期", "上星期", "last week", "на прошлой неделе"
-        };
+        public static IReadOnlyList<string> LastWeek => VoiceGrammar.Current.LastWeek;
 
-        public static readonly string[] JustNow =
-        {
-            "刚才", "刚刚", "方才", "just now", "a moment ago", "только что"
-        };
+        public static IReadOnlyList<string> JustNow => VoiceGrammar.Current.JustNow;
 
-        /// <summary>Time-of-day words; part of the scaffolding a replay question is stripped of.</summary>
-        public static readonly string[] Parts =
-        {
-            "凌晨", "早上", "早晨", "上午", "中午", "下午", "晚上", "今晚", "昨晚", "昨天晚上",
-            "夜里", "夜间", "morning", "noon", "afternoon", "evening", "tonight", "last night",
-            "утром", "вечером", "днём", "днем", "ночью"
-        };
+        /// <summary>Every time-of-day word, flat, for the scaffolding a replay question is stripped of.</summary>
+        public static IReadOnlyList<string> Parts => VoiceGrammar.Current.PartWords;
+
+        /// <summary>The parts of the day with the hours they cover, in precedence order.</summary>
+        public static IReadOnlyList<VoiceGrammarPart> PartsOfDay => VoiceGrammar.Current.Parts;
+
+        public static IReadOnlyList<VoiceGrammarWeekday> Weekdays => VoiceGrammar.Current.Weekdays;
     }
 }

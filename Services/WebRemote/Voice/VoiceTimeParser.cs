@@ -62,18 +62,6 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
         /// <summary>A number left over once every unit was removed ("八点三十分" keeps the 30).</summary>
         private static readonly Regex LooseNumber = new(@"(?<![0-9])[0-9]{1,4}(?![0-9])", Options);
 
-        /// <summary>Every spelling of a weekday, in all four languages.</summary>
-        private static readonly (string[] Words, int Day)[] Weekdays =
-        {
-            (new[] { "星期一", "周一", "礼拜一", "monday", "понедельник" }, 1),
-            (new[] { "星期二", "周二", "礼拜二", "tuesday", "вторник" }, 2),
-            (new[] { "星期三", "周三", "礼拜三", "wednesday", "среда", "среду" }, 3),
-            (new[] { "星期四", "周四", "礼拜四", "thursday", "четверг" }, 4),
-            (new[] { "星期五", "周五", "礼拜五", "friday", "пятница", "пятницу" }, 5),
-            (new[] { "星期六", "周六", "礼拜六", "saturday", "суббота", "субботу" }, 6),
-            (new[] { "星期日", "星期天", "周日", "周天", "礼拜天", "sunday", "воскресенье" }, 0)
-        };
-
         public static VoiceTimeWindow Parse(string? text, string? lang, DateTime now) =>
             Parse(text, lang, now, DefaultTimeHintMinutes, true);
 
@@ -148,7 +136,7 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
             value = ReplaceAll(value, TimeWords.ThisWeek);
             value = ReplaceAll(value, TimeWords.LastWeek);
             value = ReplaceAll(value, TimeWords.Parts);
-            foreach (var (words, _) in Weekdays) value = ReplaceAll(value, words);
+            foreach (var weekday in TimeWords.Weekdays) value = ReplaceAll(value, weekday.Words);
             value = value.Replace("上星期", " ", StringComparison.Ordinal).Replace("下星期", " ", StringComparison.Ordinal);
 
             value = NormalizeLoneTen(VoiceText.HanToArabicDigits(value));
@@ -259,9 +247,9 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
         /// <summary>DayOfWeek value (0=Sunday) of the first weekday name in the sentence, else -1.</summary>
         private static int ResolveWeekday(string compact)
         {
-            foreach (var (words, day) in Weekdays)
-                foreach (var word in words)
-                    if (compact.Contains(VoiceText.Compact(word), StringComparison.Ordinal)) return day;
+            foreach (var weekday in TimeWords.Weekdays)
+                foreach (var word in weekday.Words)
+                    if (compact.Contains(VoiceText.Compact(word), StringComparison.Ordinal)) return weekday.Day;
             return -1;
         }
 
@@ -274,13 +262,10 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
 
         private static (int From, int To, string? Label) ResolvePart(string compact)
         {
-            if (compact.Contains("凌晨", StringComparison.Ordinal)) return (0, NightEndHour, "凌晨");
-            if (HasWord(compact, "早上", "早晨", "上午", "morning", "утр")) return (NightEndHour, 12, "上午");
-            if (HasWord(compact, "中午", "noon", "полдень")) return (11, 14, "中午");
-            if (HasWord(compact, "下午", "afternoon", "днём", "днем")) return (12, 18, "下午");
-            if (HasWord(compact, "今晚", "今天晚上", "tonight", "сегодня вечером")) return (18, 24, "晚上");
-            if (HasWord(compact, "昨晚", "昨天晚上", "last night", "вчера вечером")) return (18, 24, "晚上");
-            if (HasWord(compact, "晚上", "夜里", "夜间", "evening", "night", "вечер")) return (18, 24, "晚上");
+            // The table is ordered, so "凌晨" is asked before "早上" and "今天晚上" before "晚上".
+            foreach (var part in TimeWords.PartsOfDay)
+                if (ContainsAny(compact, part.Words))
+                    return (part.From, part.To, string.IsNullOrEmpty(part.Label) ? null : part.Label);
             return (-1, -1, null);
         }
 
