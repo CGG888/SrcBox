@@ -826,6 +826,10 @@ namespace LibmpvIptvClient.Services.WebRemote
             {
                 context.VolumeStep = voice.VolumeStep;
                 context.AutoReplaySingle = voice.AutoReplaySingle;
+                context.MatchStrictness = voice.MatchStrictness;
+                context.TimeHintMinutes = voice.TimeHintMinutes;
+                context.ParseCalendarDates = voice.ParseCalendarDates;
+                context.AdditionalNoiseWords = voice.AdditionalNoiseWords;
                 if (string.IsNullOrWhiteSpace(context.Lang) && !string.IsNullOrWhiteSpace(voice.Lang)) context.Lang = voice.Lang;
             }
 

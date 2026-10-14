@@ -137,6 +137,21 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
         /// <summary>Start a catch-up programme straight away when the sentence matches exactly one.</summary>
         public bool AutoReplaySingle { get; set; } = true;
 
+        /// <summary>Matching strictness the settings ask for: "loose", "standard" (default) or "strict".</summary>
+        public string MatchStrictness { get; set; } = "standard";
+
+        /// <summary>Minutes before a spoken clock time whose programme still counts as a match.</summary>
+        public int TimeHintMinutes { get; set; } = VoiceTimeParser.DefaultTimeHintMinutes;
+
+        /// <summary>Read "10月13号" as a day, instead of leaving it in the programme title.</summary>
+        public bool ParseCalendarDates { get; set; } = true;
+
+        /// <summary>Extra words the settings remove from a leftover programme title.</summary>
+        public IReadOnlyList<string> AdditionalNoiseWords { get; set; } = Array.Empty<string>();
+
+        /// <summary>The two thresholds this sentence is judged with.</summary>
+        public VoiceFuzzy.Profile MatchProfile => VoiceFuzzy.Profile.FromStrictness(MatchStrictness);
+
         public Func<IReadOnlyList<VoiceChannel>>? Channels { get; set; }
         public Func<IReadOnlyList<VoiceStream>>? CurrentStreams { get; set; }
         public Func<IReadOnlyList<VoicePlaylist>>? Playlists { get; set; }

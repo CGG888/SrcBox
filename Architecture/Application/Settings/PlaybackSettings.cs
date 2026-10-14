@@ -569,6 +569,24 @@ namespace LibmpvIptvClient
         /// <summary>Starts a catch-up programme directly when the sentence matches exactly one.</summary>
         public bool AutoReplaySingle { get; set; } = true;
 
+        /// <summary>
+        /// How much of a name the sentence has to share to count as a reading: "loose", "standard" (the
+        /// built-in thresholds) or "strict".
+        /// </summary>
+        public string MatchStrictness { get; set; } = "standard";
+
+        /// <summary>
+        /// How far before the spoken hour a programme may start. "回看20点的新闻联播" means the bulletin
+        /// that started at 19:00, so the window opens this many minutes early.
+        /// </summary>
+        public int TimeHintMinutes { get; set; } = VoiceTimeParser.DefaultTimeHintMinutes;
+
+        /// <summary>Reads "10月13号" and "上周五" as a date instead of quietly using today.</summary>
+        public bool ParseCalendarDates { get; set; } = true;
+
+        /// <summary>Extra words to drop from what the sentence leaves behind as a programme title.</summary>
+        public List<string> AdditionalNoiseWords { get; set; } = new List<string>();
+
         /// <summary>Percent one bare "大声点" moves the volume when the sentence names no amount.</summary>
         public double VolumeStep { get; set; } = 10;
 

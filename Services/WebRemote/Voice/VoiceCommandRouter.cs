@@ -30,6 +30,15 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
             "现在", "正在", "播", "今晚", "昨天晚上", "晚上", "上午", "下午", "中午", "早上", "凌晨"
         };
 
+        /// <summary>
+        /// The same list minus the words that may sit inside a programme title. Cutting "播" out of
+        /// "新闻联播" leaves "新闻联", which then scores like an equal against "体育新闻"; a title filter
+        /// has no business tearing words apart, only the channel matcher does.
+        /// </summary>
+        private static readonly string[] TitleNoiseWords = NoiseWords
+            .Where(word => word != "播" && word != "看" && word != "回看" && word != "回放" && word != "重播" && word != "在播")
+            .ToArray();
+
         public static VoiceCommandReply Route(VoiceCommandContext? context)
         {
             if (context == null) return Fail("", "unknown", "voice_not_understood");
@@ -196,7 +205,7 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
             // Only a strong reading is accepted here: without the verb as a hint, a weak fuzzy match would
             // turn any unrecognised sentence into a channel switch or a pointless "which channel?".
             var options = BuildChannelCandidates(compact, context)
-                .Where(option => option.Score >= VoiceFuzzy.AutoExecuteScore)
+                .Where(option => option.Score >= context.MatchProfile.Auto)
                 .ToList();
             if (options.Count == 0) return null;
 
@@ -324,7 +333,7 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
             var options = command.Options.Count > 0 ? command.Options : BuildChannelCandidates(command.Arg, context);
             if (options.Count == 0) return Fail(context.Text, VerbName(command.Verb), "voice_channel_not_found", command.Arg);
 
-            var winner = PickOption(options);
+            var winner = PickOption(options, context.MatchProfile);
             if (winner != null) return ReplyChannel(ToChannel(winner), strings, context, reply, command);
 
             reply.Success = true;
@@ -427,12 +436,13 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
             if (channels.Count == 0 || string.IsNullOrEmpty(arg)) return new List<VoiceOption>();
 
             // Keep the whole sentence for scoring, but also try the noise-stripped name.
+            var profile = context.MatchProfile;
             var cleaned = VoiceAliases.StripFiller(arg, NoiseWords);
             var scored = new List<(VoiceChannel Channel, double Score)>();
             foreach (var channel in channels)
             {
-                var score = Math.Max(VoiceFuzzy.Score(arg, channel.Name), VoiceFuzzy.Score(cleaned, channel.Name));
-                if (score < VoiceFuzzy.CandidateScore) continue;
+                var score = Math.Max(VoiceFuzzy.Score(arg, channel.Name, profile), VoiceFuzzy.Score(cleaned, channel.Name, profile));
+                if (score < profile.Candidate) continue;
                 scored.Add((channel, score));
             }
 
@@ -466,11 +476,11 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
         };
 
         /// <summary>The single clear winner of a candidate list, or null when the user has to choose.</summary>
-        private static VoiceOption? PickOption(IReadOnlyList<VoiceOption> options)
+        private static VoiceOption? PickOption(IReadOnlyList<VoiceOption> options, VoiceFuzzy.Profile profile)
         {
             if (options.Count == 0) return null;
             var top = options[0];
-            if (top.Score < VoiceFuzzy.AutoExecuteScore) return null;
+            if (top.Score < profile.Auto) return null;
             if (options.Count > 1 && top.Score - options[1].Score < 0.08) return null;
             return top;
         }
@@ -506,7 +516,7 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
             }
 
             var options = command.Options.Count > 0 ? command.Options : BuildStreamCandidates(arg, context);
-            var winner = options.Count == 1 ? options[0] : PickOption(options);
+            var winner = options.Count == 1 ? options[0] : PickOption(options, context.MatchProfile);
             if (winner == null)
             {
                 reply.Options = options;
@@ -547,11 +557,12 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
 
         private static List<VoiceOption> BuildStreamCandidates(string arg, VoiceCommandContext context)
         {
+            var profile = context.MatchProfile;
             var result = new List<VoiceOption>();
             foreach (var stream in SafeList(context.CurrentStreams))
             {
-                var score = string.IsNullOrEmpty(arg) ? 0.7 : VoiceFuzzy.Best(arg, new[] { stream.Name, stream.Extra });
-                if (score < VoiceFuzzy.CandidateScore) continue;
+                var score = string.IsNullOrEmpty(arg) ? 0.7 : VoiceFuzzy.Best(arg, profile, stream.Name, stream.Extra);
+                if (score < profile.Candidate) continue;
                 result.Add(new VoiceOption
                 {
                     Kind = VoiceKind.Stream,
@@ -572,7 +583,7 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
         {
             var strings = VoiceAnswer.Strings(context.Lang);
             var options = command.Options.Count > 0 ? command.Options : BuildPlaylistCandidates(command.Arg, context);
-            var winner = options.Count == 1 ? options[0] : PickOption(options);
+            var winner = options.Count == 1 ? options[0] : PickOption(options, context.MatchProfile);
             if (winner == null)
             {
                 reply.Options = options;
@@ -594,11 +605,12 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
 
         private static List<VoiceOption> BuildPlaylistCandidates(string arg, VoiceCommandContext context)
         {
+            var profile = context.MatchProfile;
             var options = new List<VoiceOption>();
             foreach (var playlist in SafeList(context.Playlists))
             {
-                var score = string.IsNullOrEmpty(arg) ? 0.7 : VoiceFuzzy.Best(arg, new[] { playlist.Name });
-                if (score < VoiceFuzzy.CandidateScore) continue;
+                var score = string.IsNullOrEmpty(arg) ? 0.7 : VoiceFuzzy.Best(arg, profile, playlist.Name);
+                if (score < profile.Candidate) continue;
                 options.Add(new VoiceOption
                 {
                     Kind = VoiceKind.Playlist,
@@ -764,12 +776,13 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
         private static VoiceCommandReply HandleReplay(VoiceCommand command, VoiceCommandContext context, VoiceCommandReply reply)
         {
             var strings = VoiceAnswer.Strings(context.Lang);
-            var window = VoiceTimeParser.Parse(VoiceText.Normalize(context.Text), context.Lang, DateTime.Now);
+            var window = VoiceTimeParser.Parse(VoiceText.Normalize(context.Text), context.Lang, DateTime.Now,
+                context.TimeHintMinutes, context.ParseCalendarDates);
 
             // "回看今天有什么节目" names no channel on purpose — that is a question about every channel,
             // so the search only narrows down when the sentence (or the play state) really picked one.
             var named = TryResolveNamedChannel(command.Arg, context);
-            var title = TitleFromArg(command.Arg);
+            var title = TitleFromArg(command.Arg, context);
 
             // "在 CCTV-1 回看今天的节目" leaves the channel name behind: that is not a programme title,
             // so anything the channel itself is called is cut out of the filter before it is used.
@@ -868,20 +881,38 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
             var programs = SafePrograms(context.CatchupPrograms, channel.Id, window.Start, window.End);
             if (programs.Count == 0) return null;
 
-            if (!string.IsNullOrEmpty(title))
+            // A word that is in no title would filter every programme away, so it is dropped before the
+            // search rather than turning a channel with twelve programmes into "nothing found".
+            var filter = string.IsNullOrEmpty(title) ? "" : BeforeReplaySearch(title!, context);
+            var profile = context.MatchProfile;
+
+            if (filter.Length == 0)
             {
-                var matched = programs
-                    .Where(p => VoiceFuzzy.Score(title, p.Title) >= VoiceFuzzy.CandidateScore || p.Title.Contains(title, StringComparison.Ordinal))
-                    .Select(p => string.IsNullOrEmpty(p.ChannelName) ? WithChannel(p, channel.Name) : p)
-                    .ToList();
-                if (matched.Count == 0) return null;
-                foreach (var program in matched) hits.Add((channel, program));
-                return matched;
+                foreach (var program in programs)
+                    hits.Add((channel, string.IsNullOrEmpty(program.ChannelName) ? WithChannel(program, channel.Name) : program));
+                return programs;
             }
 
-            foreach (var program in programs)
-                hits.Add((channel, string.IsNullOrEmpty(program.ChannelName) ? WithChannel(program, channel.Name) : program));
-            return programs;
+            var matched = programs
+                .Where(p => VoiceFuzzy.Score(filter, p.Title, profile) >= profile.Candidate || p.Title.Contains(filter, StringComparison.Ordinal))
+                .Select(p => string.IsNullOrEmpty(p.ChannelName) ? WithChannel(p, channel.Name) : p)
+                .ToList();
+            if (matched.Count == 0) return null;
+            foreach (var program in matched) hits.Add((channel, program));
+            return matched;
+        }
+
+        /// <summary>
+        /// The last chance to drop a word before it is used as a title filter: the words the settings ban,
+        /// and a filter left empty by them means "no filter" rather than "matches nothing".
+        /// </summary>
+        private static string BeforeReplaySearch(string title, VoiceCommandContext context)
+        {
+            var extra = context.AdditionalNoiseWords;
+            if (extra == null) return title.Trim();
+            foreach (var word in extra)
+                if (!string.IsNullOrWhiteSpace(word)) title = title.Replace(word, " ", StringComparison.Ordinal);
+            return title.Trim();
         }
 
         private static VoiceProgram WithChannel(VoiceProgram program, string channelName) => new()
@@ -946,15 +977,26 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
             .ToList();
 
         /// <summary>What is left of the sentence once the "回看 / 今天" scaffolding is removed.</summary>
-        private static string TitleFromArg(string arg)
+        private static string TitleFromArg(string arg, VoiceCommandContext context)
         {
             if (string.IsNullOrWhiteSpace(arg)) return "";
             var cleaned = VoiceText.Normalize(arg);
-            foreach (var word in NoiseWords)
+            foreach (var word in TitleNoiseWords)
                 cleaned = cleaned.Replace(word, " ", StringComparison.Ordinal);
             foreach (var word in TimeWords.Day) cleaned = cleaned.Replace(word, " ", StringComparison.Ordinal);
             foreach (var word in TimeWords.Parts) cleaned = cleaned.Replace(word, " ", StringComparison.Ordinal);
             cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, "[\\?？。！!，,、的了吗呢啊有没有什么哪些可以能]", " ");
+
+            // Whatever the window already consumed must not be handed to the title filter: "回看20点的
+            // 新闻联播" used to search for "20点 新闻联" and therefore find nothing at all.
+            cleaned = VoiceTimeParser.StripTimeHints(cleaned);
+
+            // Words the settings ban are dropped here too, where what is left is really a title.
+            var extra = context.AdditionalNoiseWords;
+            if (extra != null)
+                foreach (var word in extra)
+                    if (!string.IsNullOrWhiteSpace(word)) cleaned = cleaned.Replace(word, " ", StringComparison.Ordinal);
+
             return cleaned.Trim();
         }
 
@@ -962,7 +1004,8 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
         {
             var channel = ResolveChannelForEpg(arg, context);
             if (channel == null) return new List<VoiceOption>();
-            var window = VoiceTimeParser.Parse(arg, context.Lang, DateTime.Now);
+            var window = VoiceTimeParser.Parse(arg, context.Lang, DateTime.Now,
+                context.TimeHintMinutes, context.ParseCalendarDates);
             return SafePrograms(context.CatchupPrograms, channel.Id, window.Start, window.End)
                 .OrderByDescending(p => p.Start)
                 .Take(MaxOptions)
@@ -1009,11 +1052,12 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
             if (TryNumberArg(cleaned, out var number) && FindByNumber(number, channels) is { } byNumber)
                 return byNumber;
 
+            var profile = context.MatchProfile;
             var best = channels
-                .Select(c => (Channel: c, Score: Math.Max(VoiceFuzzy.Score(cleaned, c.Name), VoiceFuzzy.Score(arg, c.Name))))
+                .Select(c => (Channel: c, Score: Math.Max(VoiceFuzzy.Score(cleaned, c.Name, profile), VoiceFuzzy.Score(arg, c.Name, profile))))
                 .OrderByDescending(pair => pair.Score)
                 .FirstOrDefault();
-            return best.Channel != null && best.Score >= VoiceFuzzy.CandidateScore ? best.Channel : null;
+            return best.Channel != null && best.Score >= profile.Candidate ? best.Channel : null;
         }
 
         /// <summary>The channel to fall back to when a sentence names none.</summary>

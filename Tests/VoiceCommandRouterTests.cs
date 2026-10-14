@@ -406,6 +406,185 @@ namespace LibmpvIptvClient.Tests
             Assert.IsTrue(reply.Spoken.Length > 0);
         }
 
+        // ------------------------------------------------------------ replay combinations
+
+        /// <summary>
+        /// "回看" + a day + a clock time + a programme name + a channel, in any combination: every case below
+        /// is one of the sentences that used to answer with two or three candidates, or with nothing at all.
+        /// </summary>
+        private static Dictionary<string, List<VoiceProgram>> ReplayWeek()
+        {
+            var lastFriday = Today.AddDays(-(((int)Today.DayOfWeek - 5 + 7) % 7)).AddDays(-7);
+            return new Dictionary<string, List<VoiceProgram>>
+            {
+                ["cctv1"] = new()
+                {
+                    new VoiceProgram { Title = "新闻大求真", Start = Today.AddHours(18) },
+                    new VoiceProgram { Title = "新闻联播", Start = Today.AddHours(19) },
+                    new VoiceProgram { Title = "焦点访谈", Start = Today.AddHours(19).AddMinutes(37) },
+                    new VoiceProgram { Title = "新闻联播", Start = Today.AddDays(-1).AddHours(19) },
+                    new VoiceProgram { Title = "新闻联播", Start = lastFriday.AddHours(19) }
+                },
+                ["cctv5"] = new() { new VoiceProgram { Title = "体育新闻", Start = Today.AddHours(18) } },
+                ["hunan"] = new() { new VoiceProgram { Title = "快乐大本营", Start = Today.AddHours(20) } }
+            };
+        }
+
+        [TestMethod]
+        public void Route_ReplayAtASpokenHour_FindsTheProgrammeThatStartedAnHourEarlier()
+        {
+            var player = new Player { Catchup = ReplayWeek() };
+
+            var reply = player.Say("回看20点的新闻联播");
+
+            Assert.IsTrue(reply.Executed, $"expected a direct replay, got: {reply.Spoken}");
+            Assert.AreEqual(1, player.Replays.Count);
+            Assert.AreEqual("新闻联播", player.Replays[0].Title);
+            Assert.AreEqual("cctv1", player.Replays[0].Channel);
+            StringAssert.Contains(player.Replays[0].Start, "T19:00", "20点 must reach the 19:00 programme");
+        }
+
+        [TestMethod]
+        public void Route_ReplayAtAnEveningHour_ReadsItAsTwenty()
+        {
+            var player = new Player { Catchup = ReplayWeek() };
+
+            var reply = player.Say("回看晚上8点的新闻联播");
+
+            Assert.IsTrue(reply.Executed, $"expected a direct replay, got: {reply.Spoken}");
+            StringAssert.Contains(player.Replays[0].Start, "T19:00");
+        }
+
+        [TestMethod]
+        public void Route_ReplayWithSpokenDigits_ReadsTheHour()
+        {
+            var player = new Player { Catchup = ReplayWeek() };
+
+            // Spoken digits together with the part of the day: 晚上八点 is 20:00 as well.
+            var reply = player.Say("回看晚上八点的新闻联播");
+
+            Assert.IsTrue(reply.Executed, $"expected a direct replay, got: {reply.Spoken}");
+            Assert.AreEqual("新闻联播", player.Replays[0].Title);
+            StringAssert.Contains(player.Replays[0].Start, "T19:00");
+        }
+
+        [TestMethod]
+        public void Route_ReplayForToday_DoesNotOfferTheSportsNews()
+        {
+            var player = new Player { Catchup = ReplayWeek() };
+
+            var reply = player.Say("回看今天的新闻联播");
+
+            Assert.IsTrue(reply.Executed, $"体育新闻 must not become a candidate: {reply.Spoken}");
+            Assert.AreEqual(1, player.Replays.Count);
+            Assert.AreEqual("新闻联播", player.Replays[0].Title);
+        }
+
+        [TestMethod]
+        public void Route_ReplayOnACalendarDate_FindsThatDaysProgramme()
+        {
+            var day = Today.AddDays(-3);
+            var player = new Player
+            {
+                Catchup = new Dictionary<string, List<VoiceProgram>>
+                {
+                    ["cctv1"] = new() { new VoiceProgram { Title = "新闻联播", Start = day.AddHours(19) } }
+                }
+            };
+
+            var reply = player.Say($"回看{day.Day}号的新闻联播");
+
+            Assert.IsTrue(reply.Executed, $"expected the date to be used, got: {reply.Spoken}");
+            StringAssert.Contains(player.Replays[0].Start, day.ToString("yyyy-MM-dd"));
+        }
+
+        [TestMethod]
+        public void Route_ReplayForYesterdayEvening_FindsIt()
+        {
+            var player = new Player { Catchup = ReplayWeek() };
+
+            var reply = player.Say("回看昨天晚上八点的新闻联播");
+
+            Assert.IsTrue(reply.Executed, $"expected a direct replay, got: {reply.Spoken}");
+            StringAssert.Contains(player.Replays[0].Start, Today.AddDays(-1).ToString("yyyy-MM-dd"));
+        }
+
+        [TestMethod]
+        public void Route_ReplayForLastFriday_FindsIt()
+        {
+            var player = new Player { Catchup = ReplayWeek() };
+            var lastFriday = Today.AddDays(-(((int)Today.DayOfWeek - 5 + 7) % 7)).AddDays(-7);
+
+            var reply = player.Say("回看上周五的新闻联播");
+
+            Assert.IsTrue(reply.Executed, $"expected a direct replay, got: {reply.Spoken}");
+            StringAssert.Contains(player.Replays[0].Start, lastFriday.ToString("yyyy-MM-dd"));
+        }
+
+        [TestMethod]
+        public void Route_ReplayWithANamedChannelAndAProgramme_SearchesOnlyThatChannel()
+        {
+            var player = new Player { Catchup = ReplayWeek() };
+
+            var reply = player.Say("回看湖南卫视快乐大本营");
+
+            Assert.IsTrue(reply.Executed, $"expected a direct replay, got: {reply.Spoken}");
+            Assert.AreEqual("hunan", player.Replays[0].Channel);
+            Assert.AreEqual("快乐大本营", player.Replays[0].Title);
+        }
+
+        [TestMethod]
+        public void Route_ReplayWithAChannelNumberAndYesterday_StillFindsIt()
+        {
+            var player = new Player { Catchup = ReplayWeek() };
+
+            var reply = player.Say("回看1台昨天晚上的新闻联播");
+
+            Assert.IsTrue(reply.Executed, $"expected a direct replay, got: {reply.Spoken}");
+            StringAssert.Contains(player.Replays[0].Start, Today.AddDays(-1).ToString("yyyy-MM-dd"));
+        }
+
+        [TestMethod]
+        public void Route_ReplaySingleHit_AsksFirstWhenAutoReplayIsOff()
+        {
+            var player = new Player { Catchup = ReplayWeek() };
+            var context = player.Context("回看20点的新闻联播");
+            context.AutoReplaySingle = false;
+
+            var reply = VoiceCommandRouter.Route(context);
+
+            Assert.IsFalse(reply.Executed, "the setting asks the user to confirm the single hit first");
+            Assert.AreEqual(1, reply.Options.Count);
+        }
+
+        [TestMethod]
+        public void Route_ReplayStrictness_MovesWhichProgrammesBecomeCandidates()
+        {
+            var player = new Player { Catchup = ReplayWeek() };
+
+            var standard = player.Context("回看今天的新闻联播");
+            standard.AutoReplaySingle = false;
+            var strict = player.Context("回看今天的新闻联播");
+            strict.AutoReplaySingle = false;
+            strict.MatchStrictness = "strict";
+            var loose = player.Context("回看今天的新闻联播");
+            loose.AutoReplaySingle = false;
+            loose.MatchStrictness = "loose";
+
+            var standardReply = VoiceCommandRouter.Route(standard);
+            var strictReply = VoiceCommandRouter.Route(strict);
+            var looseReply = VoiceCommandRouter.Route(loose);
+
+            Assert.AreEqual(1, standardReply.Options.Count,
+                $"标准 filters 体育新闻 out, got {Describe(standardReply)}");
+            Assert.AreEqual(1, strictReply.Options.Count, $"严格 does the same, got {Describe(strictReply)}");
+            Assert.IsTrue(looseReply.Options.Count > 1,
+                $"宽松 offers the weaker readings instead of hiding them, got {Describe(looseReply)}");
+        }
+
+        private static string Describe(VoiceCommandReply reply) =>
+            $"{reply.Options.Count} option(s) [{string.Join(", ", reply.Options.Select(o => o.Title))}] spoken={reply.Spoken}";
+
         // ------------------------------------------------------------ user rules and fallbacks
 
         [TestMethod]
