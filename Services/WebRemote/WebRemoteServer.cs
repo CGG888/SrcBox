@@ -866,7 +866,7 @@ namespace LibmpvIptvClient.Services.WebRemote
             {
                 var sw = @"
 // SrcBox Web Remote Service Worker
-var CACHE_NAME = 'srcbox-remote-v9';
+var CACHE_NAME = 'srcbox-remote-v10';
 var STATIC_ASSETS = [
   '/',
   '/manifest.json'
@@ -3448,6 +3448,12 @@ return !!(md && md.getUserMedia && (window.AudioContext || window.webkitAudioCon
 // ---------------------------------------------------------------- voice recording (offline upload)
 var VOICE_RATE = 16000;    // rate the recording is resampled to; the server decodes the same number
 var VOICE_MAX_MS = 15000;  // hard cap on one utterance; a longer hold is cut off, not refused
+// Opening the microphone costs a third of a second: the graph stays open for a short while after a
+// command and keeps the audio of the last moment, so a sentence started the instant the button goes
+// down still reaches the recogniser whole. The tail is the same idea at the other end.
+var VOICE_PREROLL_MS = 800;
+var VOICE_TAIL_MS = 200;
+var VOICE_WARM_MS = 30000;
 
 // The capture worklet is inlined as a Blob URL so the remote stays a single page with no extra asset.
 var VOICE_WORKLET_SRC =
@@ -3465,12 +3471,14 @@ var VOICE_WORKLET_SRC =
 'registerProcessor(""srcbox-voice-capture"", SrcBoxVoiceCapture);';
 
 var voiceCap = {
-active: false, starting: false, releaseRequested: false, mode: '',
-stream: null, ctx: null, source: null, node: null, sink: null, chunks: [], capTimer: null
+active: false, starting: false, releaseRequested: false, mode: '', warm: false,
+stream: null, ctx: null, source: null, node: null, sink: null, chunks: [], ring: [],
+capTimer: null, warmTimer: null, tailTimer: null
 };
 
-// Pressing the button records, releasing uploads. The microphone is opened per press, so the first tap
-// on a phone shows the browser's permission prompt instead of failing silently.
+// Pressing the button records, releasing uploads. The first tap on a phone shows the browser's
+// permission prompt; afterwards the graph stays warm between commands, so a press only marks where the
+// sentence begins inside the audio that has already been captured (see voiceKeepWarm and voicePrewarm).
 function voiceHoldStart(ev) {
 if (ev && ev.preventDefault) ev.preventDefault();
 if (voicePending) { setVoiceStatus(T.voice_thinking); return; }
@@ -3496,12 +3504,35 @@ if (window.isSecureContext === false) { setVoiceStatus(T.voice_secure_needed); v
 else { setVoiceStatus(T.voice_unsupported); voiceShowFallbackHint(); }
 return;
 }
-voiceCap.starting = true; voiceCap.releaseRequested = false; voiceCap.chunks = []; voiceCap.mode = '';
+// Warm graph: the recording starts with the audio captured just before the press, so a sentence
+// begun the moment the button goes down does not lose its first word to the microphone spin-up.
+if (voiceCap.warm && voiceCap.mode && voiceCap.ctx && voiceCap.stream) {
+clearTimeout(voiceCap.warmTimer); voiceCap.warmTimer = null;
+voiceCap.warm = false; voiceCap.active = true; voiceCap.releaseRequested = false;
+voiceCap.chunks = voiceCap.ring; voiceCap.ring = [];
+voiceMicClass(true);
+voiceDiag('record', 'start-warm');
+setVoiceStatus(T.voice_listening);
+voiceArmCap();
+return;
+}
+voiceCap.starting = true; voiceCap.releaseRequested = false; voiceCap.chunks = []; voiceCap.ring = []; voiceCap.mode = '';
 voiceMicClass(true);
 voiceDiag('record', 'start');
 navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } })
 .then(function (stream) { return voiceOpenGraph(stream); })
+.then(function () { voiceArmAfterOpen(); })
 .catch(function (err) { voiceCap.starting = false; voiceCaptureFailed(err); });
+}
+
+// What the press path does once the graph is live; the warm path reaches the same state without a
+// microphone prompt, which is why it is not folded into voiceOpenGraph.
+function voiceArmAfterOpen() {
+if (!voiceCap.mode) { voiceCap.starting = false; voiceCaptureFailed({ name: 'no-audio-node' }); return; }
+voiceCap.starting = false; voiceCap.active = true;
+setVoiceStatus(T.voice_listening);
+voiceArmCap();
+if (voiceCap.releaseRequested) voiceStopCapture();
 }
 
 // Builds the capture graph. The node reaches the destination through a muted gain node: a Web Audio
@@ -3535,12 +3566,6 @@ return null;
 }
 voiceAttachScriptProcessor();
 return null;
-}).then(function () {
-if (!voiceCap.mode) { voiceCap.starting = false; voiceCaptureFailed({ name: 'no-audio-node' }); return; }
-voiceCap.starting = false; voiceCap.active = true;
-setVoiceStatus(T.voice_listening);
-voiceArmCap();
-if (voiceCap.releaseRequested) voiceStopCapture();
 });
 }
 
@@ -3557,10 +3582,27 @@ node.connect(voiceCap.sink);
 }
 
 function voicePushChunk(buf) {
-if (!voiceCap.active || !buf || !buf.length) return;
+if (!buf || !buf.length) return;
+if (voiceCap.active) {
 // A stuck pointer must not grow the recording without bound; the server enforces the same 15 s.
 if (voiceCap.chunks.length > 900) return;
 voiceCap.chunks.push(new Float32Array(buf));
+return;
+}
+// A warm graph keeps running: only the last slice is held, which is the pre-roll a press starts from.
+if (!voiceCap.warm) return;
+voiceCap.ring.push(new Float32Array(buf));
+voiceTrimRing();
+}
+
+function voiceTrimRing() {
+var rate = (voiceCap.ctx && voiceCap.ctx.sampleRate) ? voiceCap.ctx.sampleRate : 48000;
+var max = rate * VOICE_PREROLL_MS / 1000, total = 0, i;
+for (i = voiceCap.ring.length - 1; i >= 0; i--) {
+total += voiceCap.ring[i].length;
+if (total > max) break;
+}
+if (i > 0) voiceCap.ring = voiceCap.ring.slice(i + 1);
 }
 
 function voiceArmCap() {
@@ -3574,31 +3616,78 @@ voiceStopCapture();
 }
 
 function voiceStopCapture() {
+if (!voiceCap.active || voiceCap.tailTimer) return;
+// The last syllable is often still in flight when the finger lifts; a short tail costs 200 ms and
+// keeps it in the recording instead of cutting it off.
+voiceDiag('record', 'stop');
+voiceCap.tailTimer = setTimeout(function () {
+voiceCap.tailTimer = null;
+voiceFinishCapture();
+}, VOICE_TAIL_MS);
+}
+
+function voiceFinishCapture() {
 if (!voiceCap.active) return;
 var chunks = voiceCap.chunks;
 var rate = (voiceCap.ctx && voiceCap.ctx.sampleRate) ? voiceCap.ctx.sampleRate : 48000;
-voiceCap.chunks = [];
-voiceTearDown();
-if (!chunks.length) { setVoiceStatus(T.voice_error); return; }
+clearTimeout(voiceCap.capTimer); voiceCap.capTimer = null;
+voiceCap.active = false; voiceCap.chunks = [];
+if (!chunks.length) { setVoiceStatus(T.voice_error); voiceKeepWarm(); return; }
 setVoiceStatus(T.voice_thinking);
 voiceResample(chunks, rate).then(function (samples) {
 voiceSendAudio(samples);
+voiceKeepWarm();
 }).catch(function (err) {
 voiceDiag('resample', err && err.name ? err.name : 'error');
 setVoiceStatus(T.voice_error);
+voiceKeepWarm();
 });
+}
+
+// Holds the microphone and the graph for the next command, then lets go of both after a quiet spell:
+// a phone shows when its microphone is live, and it should not stay live for nobody.
+function voiceKeepWarm() {
+voiceMicClass(false);
+if (!voiceRecordingSupported() || voiceCap.starting || document.hidden) { voiceTearDown(); return; }
+voiceCap.warm = true; voiceCap.ring = [];
+setVoiceStatus(T.voice_hold);
+clearTimeout(voiceCap.warmTimer);
+voiceCap.warmTimer = setTimeout(function () { voiceCap.warmTimer = null; voiceTearDown(); }, VOICE_WARM_MS);
+}
+
+// When this page already holds the microphone permission the graph is opened before the first press,
+// so the first command is not the one paying for the spin-up. Without that permission nothing is
+// asked for here: a press keeps showing the browser's own prompt.
+function voicePrewarm() {
+if (!voiceRecordingSupported() || voiceCap.warm || voiceCap.active || voiceCap.starting) return;
+if (!navigator.permissions || !navigator.permissions.query) return;
+navigator.permissions.query({ name: 'microphone' }).then(function (status) {
+if (!status || status.state !== 'granted') return;
+voiceCap.starting = true;
+navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1, echoCancellation: true, noiseSuppression: true } })
+.then(function (stream) { return voiceOpenGraph(stream); })
+.then(function () {
+voiceCap.starting = false;
+if (!voiceCap.mode) { voiceTearDown(); return; }
+voiceKeepWarm();
+})
+.catch(function () { voiceCap.starting = false; voiceTearDown(); });
+}).catch(function () { });
 }
 
 function voiceCancelCapture() {
 voiceCap.releaseRequested = false;
-if (!voiceCap.active && !voiceCap.starting) return;
+if (!voiceCap.active && !voiceCap.starting && !voiceCap.warm) return;
 voiceCap.chunks = [];
 voiceTearDown();
 }
 
 function voiceTearDown() {
 clearTimeout(voiceCap.capTimer); voiceCap.capTimer = null;
-voiceCap.active = false; voiceCap.starting = false; voiceCap.mode = '';
+clearTimeout(voiceCap.warmTimer); voiceCap.warmTimer = null;
+clearTimeout(voiceCap.tailTimer); voiceCap.tailTimer = null;
+voiceCap.active = false; voiceCap.starting = false; voiceCap.warm = false; voiceCap.mode = '';
+voiceCap.ring = [];
 try { if (voiceCap.node) voiceCap.node.disconnect(); } catch (e) { }
 try { if (voiceCap.source) voiceCap.source.disconnect(); } catch (e) { }
 try { if (voiceCap.sink) voiceCap.sink.disconnect(); } catch (e) { }
@@ -4068,7 +4157,15 @@ window.speechSynthesis.speak(u);
 // Opening or refreshing the page must not move the page scrollbar; the channel and EPG lists
 // locate the current entry inside their own scroll area instead (see locateInList).
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
-window.addEventListener('load', function () { window.scrollTo(0, 0); });
+window.addEventListener('load', function () {
+window.scrollTo(0, 0);
+// The graph keeps the microphone for the next command, so the first press is not the one paying for
+// the spin-up; a hidden page lets go of it at once (the phone's recording indicator should go out).
+voicePrewarm();
+});
+document.addEventListener('visibilitychange', function () {
+if (document.hidden) voiceTearDown();
+});
 
 // Restore the theme and the remote/full view before connecting: the saved choice must survive a
 // refresh even when the WebSocket is slow or never opens, otherwise the page flashes the default.

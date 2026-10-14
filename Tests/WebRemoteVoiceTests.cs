@@ -216,6 +216,27 @@ namespace LibmpvIptvClient.Tests
         }
 
         [TestMethod]
+        public void RemoteHtml_HoldsTheFirstSyllableInsteadOfLosingItToTheMicrophone()
+        {
+            var html = WebRemoteServer.GetRemoteHtml("zh-CN");
+
+            // Opening the microphone costs a third of a second. The graph therefore outlives the command
+            // and keeps the audio from just before the press, so the sentence keeps its first word.
+            StringAssert.Contains(html, "var VOICE_PREROLL_MS = 800;");
+            StringAssert.Contains(html, "var VOICE_TAIL_MS = 200;");
+            StringAssert.Contains(html, "var VOICE_WARM_MS = 30000;");
+            StringAssert.Contains(html, "function voiceKeepWarm()");
+            StringAssert.Contains(html, "function voicePrewarm()");
+            StringAssert.Contains(html, "voiceCap.chunks = voiceCap.ring;");
+            StringAssert.Contains(html, "voiceTrimRing();");
+            // Warmed on load, and let go of at once when the page goes to the background.
+            StringAssert.Contains(html, "voicePrewarm();");
+            StringAssert.Contains(html, "document.addEventListener('visibilitychange'");
+            // The idle timer is what releases a warm graph, so the phone's indicator does not stay on.
+            StringAssert.Contains(html, "voiceCap.warmTimer = setTimeout(function () { voiceCap.warmTimer = null; voiceTearDown(); }, VOICE_WARM_MS);");
+        }
+
+        [TestMethod]
         public void WebSocketTextLimit_HoldsAFullLengthUtterance()
         {
             // 15 s of 16 kHz mono PCM is 480000 bytes of little endian samples, about 640 KB once base64
