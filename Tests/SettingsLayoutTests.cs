@@ -74,8 +74,27 @@ namespace LibmpvIptvClient.Tests
                 .ToList();
 
             CollectionAssert.IsSubsetOf(
-                new[] { "CbWebRemoteVoiceOffline", "TbWebRemoteVoiceModelStatus", "BtnWebRemoteVoiceModelDownload" },
+                new[] { "CbWebRemoteVoiceOffline", "TbWebRemoteVoiceModelStatus", "BtnWebRemoteVoiceModelDownload", "BtnWebRemoteVoiceModelDelete" },
                 names);
+        }
+
+        [TestMethod]
+        public void TheOfflineVoiceSwitchAndItsModelButtonsAreWired()
+        {
+            var root = SettingsDocument();
+
+            var switchBox = root.Descendants()
+                .First(element => (string?)element.Attribute(Xaml + "Name") == "CbWebRemoteVoiceOffline");
+            Assert.AreEqual("CbWebRemoteVoiceOffline_Changed", (string?)switchBox.Attribute("Checked"));
+            Assert.AreEqual("CbWebRemoteVoiceOffline_Changed", (string?)switchBox.Attribute("Unchecked"));
+
+            var download = root.Descendants()
+                .First(element => (string?)element.Attribute(Xaml + "Name") == "BtnWebRemoteVoiceModelDownload");
+            Assert.AreEqual("BtnWebRemoteVoiceModelDownload_Click", (string?)download.Attribute("Click"));
+
+            var delete = root.Descendants()
+                .First(element => (string?)element.Attribute(Xaml + "Name") == "BtnWebRemoteVoiceModelDelete");
+            Assert.AreEqual("BtnWebRemoteVoiceModelDelete_Click", (string?)delete.Attribute("Click"));
         }
     }
 }

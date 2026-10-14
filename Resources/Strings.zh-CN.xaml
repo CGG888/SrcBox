@@ -373,6 +373,12 @@
   <sys:String x:Key="UI_WebRemote_VoiceModelDialog_File">文件 {0}/{1}：{2}</sys:String>
   <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Bytes">{0} / {1}</sys:String>
   <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Rate">平均 {0}/s · 剩余 {1}</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDelete">删除模型</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDeleteConfirm">删除语音模型？以后使用离线语音需要重新下载（约 {0} MB）。</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDownloadPrompt">离线语音需要先下载语音模型（约 {0} MB），现在下载吗？</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelLoading">正在加载语音模型…</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelCheckOk">语音模型已就绪，自检通过</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelCheckFailed">语音模型自检失败：{0}</sys:String>
   <sys:String x:Key="UI_WebRemote_VoiceApiHint">手机助手可调用 http://电脑IP:端口/api/voice?text=换到1台&amp;token=上面的令牌 实现不开网页的语音控制；令牌留空则无需校验（仅限本机网段访问）。</sys:String>
   <sys:String x:Key="UI_TabWebRemote">遥控器</sys:String>
   <sys:String x:Key="UI_WebRemote_Access">扫码访问</sys:String>

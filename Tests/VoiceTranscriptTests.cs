@@ -55,5 +55,37 @@ namespace LibmpvIptvClient.Tests
             Assert.AreEqual(-1f, floats[2], 0.0001f);
             Assert.AreEqual(0, OfflineSpeechRecognizer.ToFloats(System.Array.Empty<short>()).Length);
         }
+
+        [TestMethod]
+        public void Forget_DropsTheWarmEngineSoTheNextCallStartsOver()
+        {
+            var first = OfflineSpeechRecognizer.For(null);
+            Assert.AreSame(first, OfflineSpeechRecognizer.For(null));
+
+            OfflineSpeechRecognizer.Forget();
+
+            Assert.AreNotSame(first, OfflineSpeechRecognizer.For(null));
+        }
+
+        [TestMethod]
+        public void VerifyRunnable_FailsLoudlyWhenTheModelIsNotOnDisk()
+        {
+            var directory = System.IO.Path.Combine(
+                System.IO.Path.GetTempPath(), "srcbox-voice-check-" + System.Guid.NewGuid().ToString("N"));
+            System.IO.Directory.CreateDirectory(directory);
+
+            try
+            {
+                var error = Assert.ThrowsException<System.IO.FileNotFoundException>(
+                    () => OfflineSpeechRecognizer.VerifyRunnable(directory));
+
+                StringAssert.Contains(error.Message, "speech model file is missing");
+            }
+            finally
+            {
+                OfflineSpeechRecognizer.Forget();
+                try { System.IO.Directory.Delete(directory, true); } catch { }
+            }
+        }
     }
 }

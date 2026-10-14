@@ -1292,7 +1292,7 @@ namespace LibmpvIptvClient
 
             var token = WebRemoteManager.CurrentVoiceToken;
             if (TbWebRemoteVoiceToken != null) TbWebRemoteVoiceToken.Text = string.IsNullOrWhiteSpace(token) ? voice.Token ?? "" : token;
-            if (CbWebRemoteVoiceOffline != null) CbWebRemoteVoiceOffline.IsChecked = voice.OfflineEnabled;
+            if (CbWebRemoteVoiceOffline != null) SetVoiceOfflineChecked(voice.OfflineEnabled);
 
             RefreshVoiceModelStatus();
         }
@@ -1317,13 +1317,75 @@ namespace LibmpvIptvClient
         }
 
         /// <summary>
+        /// True while the code, not the user, moves the offline switch: loading the settings must not look
+        /// like somebody asking for a 228 MB download.
+        /// </summary>
+        private bool _suppressVoiceOfflineToggle;
+
+        /// <summary>
+        /// The switch is the entry point for the whole feature: turning it on offers the download when the
+        /// model is missing and loads it once it is there, so nobody has to hunt for a second button.
+        /// </summary>
+        private async void CbWebRemoteVoiceOffline_Changed(object sender, RoutedEventArgs e)
+        {
+            if (_suppressVoiceOfflineToggle) return;
+
+            if (CbWebRemoteVoiceOffline?.IsChecked != true)
+            {
+                // Off: hand the model's memory back instead of leaving a warm session with nothing to do.
+                OfflineSpeechRecognizer.Forget();
+                SaveVoiceSettings();
+                return;
+            }
+
+            if (!VoiceModelStore.IsInstalled(null))
+            {
+                var question = string.Format(
+                    Helpers.Localizer.S("UI_WebRemote_VoiceModelDownloadPrompt", "离线语音需要先下载语音模型（约 {0} MB），现在下载吗？"),
+                    VoiceModelStore.TotalMegabytes);
+                var answer = ModernMessageBox.Show(this, question,
+                    Helpers.Localizer.S("UI_WebRemote_VoiceModelDialog_Title", "语音模型"),
+                    MessageBoxButton.YesNo);
+                if (answer != true || !DownloadVoiceModel())
+                {
+                    SetVoiceOfflineChecked(false);
+                    return;
+                }
+            }
+
+            SetVoiceModelStatus(Helpers.Localizer.S("UI_WebRemote_VoiceModelLoading", "正在加载语音模型…"));
+            await CheckVoiceModelAsync();
+            SaveVoiceSettings();
+        }
+
+        /// <summary>Moves the offline switch without going through the download prompt.</summary>
+        private void SetVoiceOfflineChecked(bool value)
+        {
+            _suppressVoiceOfflineToggle = true;
+            try
+            {
+                if (CbWebRemoteVoiceOffline != null) CbWebRemoteVoiceOffline.IsChecked = value;
+            }
+            finally
+            {
+                _suppressVoiceOfflineToggle = false;
+            }
+        }
+
+        /// <summary>Writes the status line next to the offline model row.</summary>
+        private void SetVoiceModelStatus(string text)
+        {
+            if (TbWebRemoteVoiceModelStatus != null) TbWebRemoteVoiceModelStatus.Text = text;
+        }
+
+        /// <summary>
         /// Downloads the offline model through a window that shows its phase, speed and time left. The button
         /// stays disabled while the window is open so a second click cannot start a competing download into
         /// the same files; closing the window stops the download and keeps the part that arrived.
         /// </summary>
-        private void BtnWebRemoteVoiceModelDownload_Click(object sender, RoutedEventArgs e)
+        private bool DownloadVoiceModel()
         {
-            if (BtnWebRemoteVoiceModelDownload == null || TbWebRemoteVoiceModelStatus == null) return;
+            if (BtnWebRemoteVoiceModelDownload == null || TbWebRemoteVoiceModelStatus == null) return false;
 
             BtnWebRemoteVoiceModelDownload.IsEnabled = false;
             try
@@ -1331,25 +1393,87 @@ namespace LibmpvIptvClient
                 var dialog = new VoiceModelDownloadWindow { Owner = this };
                 dialog.ShowDialog();
 
-                if (dialog.Succeeded)
+                if (dialog.Succeeded) return true;
+                if (!dialog.WasCancelled)
                 {
-                    // Downloading the model is the whole point of the switch, so turning it on saves a step.
-                    if (CbWebRemoteVoiceOffline != null) CbWebRemoteVoiceOffline.IsChecked = true;
-                }
-                else if (!dialog.WasCancelled)
-                {
-                    TbWebRemoteVoiceModelStatus.Text = string.Format(
+                    SetVoiceModelStatus(string.Format(
                         Helpers.Localizer.S("UI_WebRemote_VoiceModelFailed", "下载失败：{0}"),
-                        dialog.Failure ?? string.Empty);
-                    return;
+                        dialog.Failure ?? string.Empty));
+                    return false;
                 }
 
-                RefreshVoiceModelStatus();
+                return VoiceModelStore.IsInstalled(null);
             }
             finally
             {
                 BtnWebRemoteVoiceModelDownload.IsEnabled = true;
+                RefreshVoiceModelStatus();
             }
+        }
+
+        /// <summary>Loads the model and runs one silent clip through it, so "ready" means it really ran.</summary>
+        private async Task CheckVoiceModelAsync()
+        {
+            try
+            {
+                await Task.Run(() => OfflineSpeechRecognizer.VerifyRunnable(null));
+                SetVoiceModelStatus(Helpers.Localizer.S("UI_WebRemote_VoiceModelCheckOk", "语音模型已就绪，自检通过"));
+            }
+            catch (Exception ex)
+            {
+                SetVoiceModelStatus(string.Format(
+                    Helpers.Localizer.S("UI_WebRemote_VoiceModelCheckFailed", "语音模型自检失败：{0}"),
+                    ex.Message));
+            }
+        }
+
+        /// <summary>
+        /// Frees the disk and the memory. The switch cannot stay on once the files are gone, so it is cleared
+        /// and saved right away rather than leaving a setting that promises something that is not there.
+        /// </summary>
+        private void BtnWebRemoteVoiceModelDelete_Click(object sender, RoutedEventArgs e)
+        {
+            if (!VoiceModelStore.IsInstalled(null))
+            {
+                RefreshVoiceModelStatus();
+                return;
+            }
+
+            var question = string.Format(
+                Helpers.Localizer.S("UI_WebRemote_VoiceModelDeleteConfirm", "删除语音模型？以后使用离线语音需要重新下载（约 {0} MB）。"),
+                VoiceModelStore.TotalMegabytes);
+            var answer = ModernMessageBox.Show(this, question,
+                Helpers.Localizer.S("UI_WebRemote_VoiceModelDelete", "删除模型"),
+                MessageBoxButton.YesNo);
+            if (answer != true) return;
+
+            // Let go of the files before deleting them: a warm session holds the 228 MB model open.
+            OfflineSpeechRecognizer.Forget();
+            VoiceModelStore.Delete(null);
+            SetVoiceOfflineChecked(false);
+            SaveVoiceSettings();
+            RefreshVoiceModelStatus();
+        }
+
+        /// <summary>Downloads the model on request, then leaves it loaded and switched on.</summary>
+        private async void BtnWebRemoteVoiceModelDownload_Click(object sender, RoutedEventArgs e)
+        {
+            if (!DownloadVoiceModel()) return;
+
+            SetVoiceOfflineChecked(true);
+            SaveVoiceSettings();
+            SetVoiceModelStatus(Helpers.Localizer.S("UI_WebRemote_VoiceModelLoading", "正在加载语音模型…"));
+            await CheckVoiceModelAsync();
+        }
+
+        /// <summary>
+        /// Persists just the voice settings: the switch saves itself the moment it moves, and going through
+        /// the dialog's save would restart the Web Remote and pop a "settings saved" box for one checkbox.
+        /// </summary>
+        private void SaveVoiceSettings()
+        {
+            AppSettings.Current.WebRemote = BuildWebRemoteConfigFromUi();
+            AppSettings.Current.Save();
         }
 
         /// <summary>Saves and applies the current Web Remote UI state (used when the switch is toggled).</summary>

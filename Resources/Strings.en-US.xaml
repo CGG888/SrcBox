@@ -325,6 +325,12 @@
   <sys:String x:Key="UI_WebRemote_VoiceModelDialog_File">File {0}/{1}: {2}</sys:String>
   <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Bytes">{0} / {1}</sys:String>
   <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Rate">avg {0}/s · {1} left</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDelete">Delete model</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDeleteConfirm">Delete the speech model? Using offline voice again means downloading it once more (about {0} MB).</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDownloadPrompt">Offline voice needs the speech model first (about {0} MB). Download it now?</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelLoading">Loading the speech model…</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelCheckOk">Speech model is ready, self-check passed</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelCheckFailed">Speech model self-check failed: {0}</sys:String>
   <sys:String x:Key="UI_WebRemote_VoiceApiHint">A phone assistant can call http://PC-IP:port/api/voice?text=channel 1&amp;token=the token above to control playback without opening the page. An empty token disables the check, and the endpoint only accepts LAN addresses.</sys:String>
   <sys:String x:Key="UI_TabWebRemote">Remote</sys:String>
   <sys:String x:Key="UI_WebRemote_Access">Scan to connect</sys:String>

@@ -553,6 +553,12 @@
   <sys:String x:Key="UI_WebRemote_VoiceModelDialog_File">Файл {0}/{1}: {2}</sys:String>
   <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Bytes">{0} / {1}</sys:String>
   <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Rate">в среднем {0}/с · осталось {1}</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDelete">Удалить модель</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDeleteConfirm">Удалить модель речи? Для офлайн-голоса её придётся скачать заново (около {0} МБ).</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDownloadPrompt">Для офлайн-голоса сначала нужна модель речи (около {0} МБ). Скачать сейчас?</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelLoading">Загрузка модели речи…</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelCheckOk">Модель речи готова, самопроверка пройдена</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelCheckFailed">Самопроверка модели речи не удалась: {0}</sys:String>
   <sys:String x:Key="UI_WebRemote_VoiceApiHint">Ассистент телефона может вызвать http://IP-ПК:порт/api/voice?text=канал 1&amp;token=токен выше и управлять плеером без открытия страницы. Пустой токен отключает проверку, а адрес принимается только из локальной сети.</sys:String>
   <sys:String x:Key="UI_TabWebRemote">Пульт</sys:String>
   <sys:String x:Key="UI_WebRemote_Access">Подключение по QR</sys:String>

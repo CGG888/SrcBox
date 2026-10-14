@@ -54,6 +54,31 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
             }
         }
 
+        /// <summary>
+        /// Drops the warm engine so its memory goes back to the system: the switch turning off, or the model
+        /// being deleted, both mean the session has nothing left to answer. The next sentence loads it again.
+        /// </summary>
+        public static void Forget()
+        {
+            lock (SharedGate)
+            {
+                _shared?.Dispose();
+                _shared = null;
+                _sharedDirectory = "";
+            }
+        }
+
+        /// <summary>
+        /// Loads the engine and runs one silent clip through it. A throw means the files on disk cannot
+        /// produce a transcript, which is what "ready" has to mean before anybody speaks into a phone.
+        /// </summary>
+        public static void VerifyRunnable(string? directory = null)
+        {
+            var recognizer = For(directory);
+            recognizer.EnsureLoaded();
+            recognizer.Transcribe(new VoiceAudioClip { Samples = new short[4000] });
+        }
+
         /// <summary>True when the engine can run: the model files are on disk.</summary>
         public static bool IsReady(string? directory = null) => VoiceModelStore.IsInstalled(directory);
 

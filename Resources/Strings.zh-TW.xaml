@@ -552,6 +552,12 @@
   <sys:String x:Key="UI_WebRemote_VoiceModelDialog_File">檔案 {0}/{1}：{2}</sys:String>
   <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Bytes">{0} / {1}</sys:String>
   <sys:String x:Key="UI_WebRemote_VoiceModelDialog_Rate">平均 {0}/s · 剩餘 {1}</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDelete">刪除模型</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDeleteConfirm">刪除語音模型？之後使用離線語音需要重新下載（約 {0} MB）。</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelDownloadPrompt">離線語音需要先下載語音模型（約 {0} MB），現在下載嗎？</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelLoading">正在載入語音模型…</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelCheckOk">語音模型已就緒，自檢通過</sys:String>
+  <sys:String x:Key="UI_WebRemote_VoiceModelCheckFailed">語音模型自檢失敗：{0}</sys:String>
   <sys:String x:Key="UI_WebRemote_VoiceApiHint">手機助理可呼叫 http://電腦IP:埠/api/voice?text=換到1台&amp;token=上面的權杖，實現不開網頁的語音控制；權杖留空則無需驗證（僅限本機網段存取）。</sys:String>
   <sys:String x:Key="UI_TabWebRemote">遙控器</sys:String>
   <sys:String x:Key="UI_WebRemote_Access">掃碼存取</sys:String>
