@@ -515,6 +515,34 @@ namespace LibmpvIptvClient.Services.WebRemote.Voice
             }
         }
 
-        private static readonly HttpClient SharedClient = new HttpClient { Timeout = TimeSpan.FromMinutes(60) };
+        /// <summary>
+        /// Name sent with every model request. The LFS endpoint the large file redirects to answers 403
+        /// ("You don't have permission to access the URL on this server") to a request without a
+        /// User-Agent, and HttpClient sends none by default, so the 228 MB file could never arrive.
+        /// </summary>
+        internal const string ModelUserAgent = "SrcBox";
+
+        private static readonly HttpClient SharedClient = CreateSharedClient();
+
+        private static HttpClient CreateSharedClient()
+        {
+            HttpClient? client = null;
+            try
+            {
+                var version = typeof(VoiceModelStore).Assembly.GetName().Version?.ToString(3);
+                client = new HttpClient { Timeout = TimeSpan.FromMinutes(60) };
+                client.DefaultRequestHeaders.UserAgent.ParseAdd(
+                    string.IsNullOrEmpty(version) ? ModelUserAgent : ModelUserAgent + "/" + version);
+                return client;
+            }
+            catch
+            {
+                client?.Dispose();
+                throw;
+            }
+        }
+
+        /// <summary>The shared client, exposed so a test can prove the User-Agent really is set.</summary>
+        internal static HttpClient SharedHttpClient => SharedClient;
     }
 }

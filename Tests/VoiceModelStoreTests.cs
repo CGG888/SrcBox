@@ -49,6 +49,16 @@ namespace LibmpvIptvClient.Tests
         }
 
         [TestMethod]
+        public void TheSharedClientSendsAUserAgent()
+        {
+            // The LFS endpoint the big file redirects to answers 403 to a request without a User-Agent,
+            // and HttpClient sends none by default, so the download could never start without this.
+            StringAssert.StartsWith(
+                VoiceModelStore.SharedHttpClient.DefaultRequestHeaders.UserAgent.ToString(),
+                VoiceModelStore.ModelUserAgent);
+        }
+
+        [TestMethod]
         public void Missing_ReportsEveryFileOfAnEmptyDirectory()
         {
             var dir = NewDirectory();
