@@ -28,6 +28,7 @@
 
 ### 🌐 远程控制
 - [Web 远程控制](./web-remote) - 浏览器远程操控，同一端口同时支持 HTTP 与 HTTPS，可安装到手机主屏幕（PWA）
+- [苹果语音控制](./apple-voice-control) - 用 Siri + 快捷指令免提控制播放器
 - [HTTP/RTSP Header](./http-headers) - 自定义播放参数
 
 ### 🔧 开发参考
