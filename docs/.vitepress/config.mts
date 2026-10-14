@@ -58,7 +58,8 @@ export default defineConfig({
               { text: '回看与时移', link: '/guide/catchup-timeshift' },
               { text: '频道快照预览', link: '/guide/channel-preview' },
               { text: 'Web 远程控制', link: '/guide/web-remote' },
-              { text: '苹果语音控制', link: '/guide/apple-voice-control' }
+              { text: '苹果语音控制', link: '/guide/apple-voice-control' },
+              { text: '安卓语音控制', link: '/guide/android-voice-control' }
             ]
           },
           {
