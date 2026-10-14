@@ -40,7 +40,9 @@ namespace LibmpvIptvClient.Tests
             // The upstream project publishes on GitHub releases and Hugging Face; neither is reachable
             // here, so the download URL must stay on ModelScope.
             Assert.AreEqual(
-                "https://modelscope.cn/api/v1/models/manyeyes/sensevoice-small-wenetspeech-yue-int8-onnx/repo?Revision=master&FilePath=model.int8.onnx",
+                "https://modelscope.cn/api/v1/models/manyeyes/sensevoice-small-wenetspeech-yue-int8-onnx/repo?Revision="
+                + VoiceModelStore.ModelRevision
+                + "&FilePath=model.int8.onnx",
                 VoiceModelStore.Files[0].Url);
 
             StringAssert.Contains(VoiceModelStore.BuildUrl("tokens.txt"), "FilePath=tokens.txt");
@@ -189,6 +191,163 @@ namespace LibmpvIptvClient.Tests
             Assert.AreEqual(VoiceModelStore.DefaultDirectory, VoiceModelStore.Resolve("   "));
             Assert.AreEqual(@"D:\models", VoiceModelStore.Resolve(@" D:\models "));
         }
+
+        [TestMethod]
+        public void Manifest_PublishesALowerCaseSha256ForEveryFile()
+        {
+            foreach (var file in VoiceModelStore.Files)
+            {
+                Assert.IsTrue(file.HasChecksum, file.Name + " has no checksum");
+                Assert.AreEqual(64, file.Sha256.Length, file.Name);
+                StringAssert.Matches(
+                    file.Sha256,
+                    new System.Text.RegularExpressions.Regex("^[0-9a-f]{64}$"),
+                    file.Name + " is not lower case hex");
+            }
+
+            // The file the engine actually loads, against the value the pinned revision publishes.
+            Assert.AreEqual(
+                "d7c9e0f5ca8592826c664c0f913e52a6d914abd2244f256d797c79cac637d684",
+                VoiceModelStore.Files[0].Sha256);
+        }
+
+        [TestMethod]
+        public void Revision_IsPinnedToACommitInsteadOfMaster()
+        {
+            // Master would let an upstream re-upload swap the model under a fixed checksum.
+            Assert.AreNotEqual("master", VoiceModelStore.ModelRevision);
+            Assert.AreEqual(40, VoiceModelStore.ModelRevision.Length);
+        }
+
+        [TestMethod]
+        public void Download_AcceptsAFileWhoseChecksumMatches()
+        {
+            var dir = NewDirectory();
+            try
+            {
+                var bytes = new byte[] { 1, 2, 3, 4 };
+                using var client = new HttpClient(new StubHandler(("tokens.json", bytes)));
+
+                VoiceModelStore
+                    .DownloadAsync(
+                        new[] { new VoiceModelFile("tokens.json", 4, Sha256(bytes)) },
+                        dir, null, client, CancellationToken.None)
+                    .GetAwaiter()
+                    .GetResult();
+
+                CollectionAssert.AreEqual(bytes, File.ReadAllBytes(Path.Combine(dir, "tokens.json")));
+            }
+            finally
+            {
+                CleanUp(dir);
+            }
+        }
+
+        [TestMethod]
+        public void Download_RejectsAFileWhoseChecksumDoesNotMatch()
+        {
+            var dir = NewDirectory();
+            try
+            {
+                using var client = new HttpClient(new StubHandler(("tokens.json", new byte[] { 1, 2, 3, 4 })));
+
+                var error = Assert.ThrowsException<IOException>(() => VoiceModelStore
+                    .DownloadAsync(
+                        new[] { new VoiceModelFile("tokens.json", 4, Sha256(new byte[] { 9, 9, 9, 9 })) },
+                        dir, null, client, CancellationToken.None)
+                    .GetAwaiter()
+                    .GetResult());
+
+                StringAssert.Contains(error.Message, "sha256");
+                Assert.IsFalse(File.Exists(Path.Combine(dir, "tokens.json")));
+                Assert.IsFalse(File.Exists(Path.Combine(dir, "tokens.json.part")));
+            }
+            finally
+            {
+                CleanUp(dir);
+            }
+        }
+
+        [TestMethod]
+        public void Download_ChecksAResumedFileAsOneWholeFile()
+        {
+            var dir = NewDirectory();
+            try
+            {
+                var full = new byte[] { 1, 2, 3, 4, 5 };
+                File.WriteAllBytes(Path.Combine(dir, "tokens.json.part"), new byte[] { 1, 2 });
+                var handler = new StubHandler(("tokens.json", full));
+                using var client = new HttpClient(handler);
+
+                VoiceModelStore
+                    .DownloadAsync(new[] { new VoiceModelFile("tokens.json", 5, Sha256(full)) }, dir, null, client, CancellationToken.None)
+                    .GetAwaiter()
+                    .GetResult();
+
+                CollectionAssert.AreEqual(new[] { "bytes=2-" }, handler.Ranges);
+                CollectionAssert.AreEqual(full, File.ReadAllBytes(Path.Combine(dir, "tokens.json")));
+            }
+            finally
+            {
+                CleanUp(dir);
+            }
+        }
+
+        [TestMethod]
+        public void Download_FetchesACompleteLookingFileAgainWhenItsBytesAreWrong()
+        {
+            // Repairing a damaged model is the point of the check: the size is right, the bytes are not.
+            var dir = NewDirectory();
+            try
+            {
+                var good = new byte[] { 1, 2, 3, 4 };
+                File.WriteAllBytes(Path.Combine(dir, "tokens.json"), new byte[] { 4, 3, 2, 1 });
+                using var client = new HttpClient(new StubHandler(("tokens.json", good)));
+
+                VoiceModelStore
+                    .DownloadAsync(new[] { new VoiceModelFile("tokens.json", 4, Sha256(good)) }, dir, null, client, CancellationToken.None)
+                    .GetAwaiter()
+                    .GetResult();
+
+                CollectionAssert.AreEqual(good, File.ReadAllBytes(Path.Combine(dir, "tokens.json")));
+            }
+            finally
+            {
+                CleanUp(dir);
+            }
+        }
+
+        [TestMethod]
+        public void Verify_RejectsAMissingOrMismatchedFileAndAcceptsTheRightBytes()
+        {
+            var dir = NewDirectory();
+            try
+            {
+                var good = new byte[] { 7, 7, 7 };
+                var file = new VoiceModelFile("tokens.json", 3, Sha256(good));
+
+                Assert.IsFalse(Verify(dir, file), "a missing file must not verify");
+
+                File.WriteAllBytes(Path.Combine(dir, "tokens.json"), new byte[] { 8, 8, 8 });
+                Assert.IsFalse(Verify(dir, file), "wrong bytes of the right size must not verify");
+
+                File.WriteAllBytes(Path.Combine(dir, "tokens.json"), good);
+                Assert.IsTrue(Verify(dir, file));
+            }
+            finally
+            {
+                CleanUp(dir);
+            }
+        }
+
+        private static bool Verify(string directory, VoiceModelFile file) =>
+            VoiceModelStore
+                .VerifyAsync(new[] { file }, directory, null, CancellationToken.None)
+                .GetAwaiter()
+                .GetResult();
+
+        private static string Sha256(byte[] bytes) =>
+            Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes)).ToLowerInvariant();
 
         private static string NewDirectory()
         {
