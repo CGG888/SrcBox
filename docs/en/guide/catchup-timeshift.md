@@ -147,6 +147,34 @@ https://example.com/live/index.m3u8
 https://example.com/live/index.m3u8
 ```
 
+### 6) Kodi / APTV / TV Live common vocabulary
+
+SrcBox also understands the placeholder set documented for Kodi (pvr.iptvsimple), so a `catchup-source` copied from APTV / TV Live / IPTV-org lists works directly. The Chongqing Unicom case in issue #6 was written as `?time={utc}` following the Kodi docs, but at the time `{utc}` was left inside the request verbatim, which the server of course rejected.
+
+- Start time (UTC Unix seconds, 10 digits): `{utc}`, `${start}`
+- End time (UTC Unix seconds, 10 digits): `{utcend}`, `${end}`
+- Current time (UTC Unix seconds, 10 digits): `{lutc}`, `${now}`
+- Year/month/day/hour/minute/second of the start time (local time): `{Y}`, `{m}`, `{d}`, `{H}`, `{M}`, `{S}`
+- Duration divided by X: `{duration:X}` (e.g. `{duration:60}` gives minutes)
+- Current time minus start time, divided by X: `{offset:X}` (e.g. `{offset:60}` gives minutes)
+
+Notes:
+
+- `{utc:FORMAT}` / `{utcend:FORMAT}` / `${start:FORMAT}` / `${end:FORMAT}` are all supported. Written in the Kodi dialect (only `Y m d H M S`, e.g. `{utc:YmdHM}`) they are translated with Kodi semantics; written as a .NET format (e.g. `${utc:yyyyMMddHHmmss}`) they are used as-is.
+- In the two dialects `m` / `M` mean the opposite (Kodi's `m` is month and `M` is minute, .NET is the reverse), so when mixing them prefer the .NET `yyyyMMdd…` form.
+- In SrcBox `{timestamp}` means the **start time** (historical behavior, as this page has always documented); Kodi's `{timestamp}` means the current time, so for the current time write `{lutc}` or `${now}`.
+- `{catchup-id}` (XMLTV program-level ID) is not supported yet.
+
+Common forms:
+
+```text
+?time={utc}
+?utc={utc}&utcend={utcend}
+?t={Y}-{m}-{d}T{H}:{M}:{S}
+?start={utc:YmdHM}&end=${end:Ymd-H-M}
+?offset={offset:60}&duration={duration:60}
+```
+
 ## Common template examples
 
 ### HTTP unicast (HLS m3u8, UTC + `T`)
@@ -169,6 +197,38 @@ rtsp://example.com/live.smil
 #EXTINF:-1 tvg-name="Demo" catchup="default" catchup-source="https://example.com/live/stream?starttime=${(b)yyyyMMddHHmmss}&endtime=${(e)yyyyMMddHHmmss}",Demo
 https://example.com/live/stream
 ```
+
+## Common format presets (Settings page)
+
+Settings → Replay settings / Timeshift settings now has a "Common formats" drop-down: selecting one fills the template into "Replay address format" / "Timeshift address format", and you can still edit it manually. Every preset is a "parameter segment only" and is appended to that channel's live URL automatically; when the channel carries its own `catchup-source` (per-channel configuration) that takes priority, and the preset only serves as a global fallback.
+
+- **playseek begin-end (local time, common for ZTE/PLTV)**: `?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}`
+- **playseek begin-end (UTC time)**: `?playseek=${utc:yyyyMMddHHmmss}-${utcend:yyyyMMddHHmmss}`
+- **playseek begin-end (Unix seconds)**: `?playseek=${timestamp}-${end_timestamp}`
+- **Single Unix timestamp (common for Kodi/APTV)**: `?time={utc}`
+- **starttime/endtime (UTC + T, common for Huawei/Mobaihe)**: `?starttime=${(b)yyyyMMdd|UTC}T${(b)HHmmss|UTC}&endtime=${(e)yyyyMMdd|UTC}T${(e)HHmmss|UTC}`
+- **starttime/endtime (local time)**: `?starttime=${(b)yyyyMMddHHmmss}&endtime=${(e)yyyyMMddHHmmss}`
+- **start/end (Unix seconds)**: `?start=${timestamp}&end=${end_timestamp}`
+- **start + duration (Unix seconds)**: `?start=${timestamp}&duration=${duration}`
+
+Just try them one by one until catchup works; there is no need to change the m3u.
+
+## RTSP unicast catchup (ZTE / PLTV, etc.)
+
+Whether RTSP unicast (for example `rtsp://IP:8089/04000001/<32-digit ID>`) can be replayed depends on the server; the player is only responsible for appending the time parameters to the URL.
+
+- When the playlist already has a `catchup-source` (the Guangxi Unicom case):
+
+  ```m3u
+  #EXTINF:-1 tvg-name="CCTV1" catchup="append" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",CCTV-1
+  rtsp://103.251.96.219/PLTV/88888888/224/3221225656/xxxx.smil?zoneoffset=480&accountinfo=XXXXX&GuardEncType=2
+  ```
+
+  When the live URL already carries `?`, parameters are joined with `&`, and authentication parameters are preserved as-is.
+
+- When the playlist has no catchup tag at all (the Chongqing Unicom case): go to the settings page and try the "Common formats" above one by one; the recommended order is `playseek begin-end (local time)` → `single Unix timestamp` → `starttime/endtime (UTC + T)`.
+- While replaying/timeshifting, dragging the progress bar **re-requests the replay URL for the new time point** (an RTSP replay stream cannot be seeked inside the player); when a channel has no EPG data the progress bar uses the requested replay window as its range, so it can still be dragged.
+
 ## Priority and Override
 
 - Channel `catchup-source` → builds the base URL and time placeholders (recommended per channel).
@@ -183,7 +243,6 @@ https://example.com/live/stream
   - Try enabling Time Override and pick the closest layout/encoding;
   - Or file an issue (with examples). We will evaluate adding presets or more generic customization.
 - Issues: https://github.com/CGG888/SrcBox/issues
-```
 
 ## More placeholder examples (richer formats)
 

@@ -144,6 +144,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 }
 
                 _shell.CurrentChannel = ch;
+                _shell.ArchiveWindowEnd = null;   // live playback has no archive window behind the meter
                 _shell.CurrentSources = _shell.SourceLoader.BuildSourcesForChannel(ch, _shell.Channels);
                 _shell.CurrentUrl = url;
 
@@ -539,6 +540,10 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 
                 _shell.CurrentPlayingProgram = prog;
 
+                // Range of the progress bar until the next request; the programme end is what the relay
+                // was asked for, so the meter keeps describing that window.
+                _shell.ArchiveWindowEnd = prog.End;
+
                 try
                 {
                     _shell.DispatchPlaybackEvent(new StartReplayPlayback(
@@ -712,6 +717,9 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 // Anchor the playback position to the requested start time: mpv's time-pos is
                 // relative to this instant, which is not necessarily the program start after a seek.
                 _shell.PlaybackFocusTime = start;
+                // ... and remember the far end of the requested window, so the meter stays draggable
+                // even when the channel has no EPG data and mpv reports no duration at all.
+                _shell.ArchiveWindowEnd = end;
                 
                 try
                 {
@@ -759,13 +767,19 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 return;
             }
 
-            if (_shell.PlaybackMode == PlaybackMode.Replay && _shell.CurrentChannel != null && _shell.CurrentPlayingProgram != null)
+            if (_shell.PlaybackMode == PlaybackMode.Replay && _shell.CurrentChannel != null
+                && _shell.TryGetArchiveInterval(out var intervalStart, out var intervalEnd))
             {
-                // The meter is programme-relative in replay: the shell computes it as "wall clock of the
-                // playing frame minus the programme start", so the inverse is the programme start plus the
+                // The meter is interval relative in replay: the shell computes it as "wall clock of the
+                // playing frame minus the interval start", so the inverse is the interval start plus the
                 // value. It stays correct after a seek because the value already carries the distance
-                // between the stream anchor (PlaybackFocusTime) and the programme start.
-                var target = _shell.CurrentPlayingProgram.Start.AddSeconds(secs);
+                // between the stream anchor (PlaybackFocusTime) and the interval start. A relay served
+                // archive (RTSP/PLTV playseek) cannot be seeked inside mpv, so a replay drag must always
+                // re-request the url - before, a channel without EPG data fell through to a relative mpv
+                // seek and the drag did nothing at all.
+                var target = intervalStart.AddSeconds(secs);
+                if (target >= intervalEnd) target = intervalEnd.AddSeconds(-1);
+                if (target < intervalStart) target = intervalStart;
                 try { LibmpvIptvClient.Diagnostics.Logger.Info($"回看定位到 {target:yyyy-MM-dd HH:mm:ss}"); } catch { }
                 PlayCatchupAt(_shell.CurrentChannel, target);
                 return;

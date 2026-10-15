@@ -124,6 +124,34 @@ https://example.com/live/index.m3u8
 https://example.com/live/index.m3u8
 ```
 
+### 5) Общие плейсхолдеры Kodi / APTV / TV Live
+
+SrcBox также понимает набор плейсхолдеров из документации Kodi (pvr.iptvsimple) — `catchup-source` из списков APTV / TV Live / IPTV-org можно переносить сюда как есть. В issue #6 пример с China Unicom Chongqing был записан по документации Kodi как `?time={utc}`, и тогда `{utc}` остался в запросе как есть — сервер, разумеется, его не принял.
+
+- Время начала (Unix-секунды UTC, 10 знаков): `{utc}`, `${start}`
+- Время окончания (Unix-секунды UTC, 10 знаков): `{utcend}`, `${end}`
+- Текущее время (Unix-секунды UTC, 10 знаков): `{lutc}`, `${now}`
+- Год/месяц/день/час/минута/секунда времени начала (местное время): `{Y}`, `{m}`, `{d}`, `{H}`, `{M}`, `{S}`
+- Длительность, делённая на X: `{duration:X}` (например `{duration:60}` — минуты)
+- Разница между текущим и начальным временем, делённая на X: `{offset:X}` (например `{offset:60}` — минуты)
+
+Примечания:
+
+- `{utc:FORMAT}` / `{utcend:FORMAT}` / `${start:FORMAT}` / `${end:FORMAT}` поддерживаются. Запись в диалекте Kodi (только `Y m d H M S`, например `{utc:YmdHM}`) переводится по смыслу Kodi; запись в формате .NET (например `${utc:yyyyMMddHHmmss}`) используется как есть.
+- В этих двух диалектах `m` / `M` означают противоположное (в Kodi `m` — месяц, `M` — минуты; в .NET наоборот), поэтому при смешивании лучше сразу писать по-.NET: `yyyyMMdd…`.
+- `{timestamp}` в SrcBox означает **время начала** (историческое поведение, так и написано в этой документации); в Kodi `{timestamp}` означает текущее время, поэтому для текущего времени пишите `{lutc}` или `${now}`.
+- `{catchup-id}` (ID программы XMLTV) пока не поддерживается.
+
+Типичные записи:
+
+```text
+?time={utc}
+?utc={utc}&utcend={utcend}
+?t={Y}-{m}-{d}T{H}:{M}:{S}
+?start={utc:YmdHM}&end=${end:Ymd-H-M}
+?offset={offset:60}&duration={duration:60}
+```
+
 ## Примеры шаблонов
 
 ### HTTP unicast (HLS m3u8, UTC + `T`)
@@ -146,6 +174,37 @@ rtsp://example.com/live.smil
 #EXTINF:-1 tvg-name="Demo" catchup="default" catchup-source="https://example.com/live/stream?starttime=${(b)yyyyMMddHHmmss}&endtime=${(e)yyyyMMddHHmmss}",Demo
 https://example.com/live/stream
 ```
+
+## Пресеты частых форматов (страница настроек)
+
+В разделе Настройки → Настройки записи / Настройки таймшифта появился выпадающий список «Частые форматы»: при выборе шаблон подставляется в «Формат URL записи» / «Формат URL таймшифта», после чего его всё ещё можно изменить вручную. Все пресеты — это только «строка параметров», они автоматически дописываются к адресу трансляции канала; если у канала есть свой `catchup-source` (настройка для каждого канала), его приоритет выше, а пресет служит лишь глобальным fallback.
+
+- **playseek начало-конец (местное время, часто у ZTE/PLTV)**: `?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}`
+- **playseek начало-конец (UTC)**: `?playseek=${utc:yyyyMMddHHmmss}-${utcend:yyyyMMddHHmmss}`
+- **playseek начало-конец (Unix-секунды)**: `?playseek=${timestamp}-${end_timestamp}`
+- **один Unix-таймстамп (часто у Kodi/APTV)**: `?time={utc}`
+- **starttime/endtime (UTC с `T`, часто у Huawei/Mobaihe)**: `?starttime=${(b)yyyyMMdd|UTC}T${(b)HHmmss|UTC}&endtime=${(e)yyyyMMdd|UTC}T${(e)HHmmss|UTC}`
+- **starttime/endtime (местное время)**: `?starttime=${(b)yyyyMMddHHmmss}&endtime=${(e)yyyyMMddHHmmss}`
+- **start/end (Unix-секунды)**: `?start=${timestamp}&end=${end_timestamp}`
+- **start + duration (Unix-секунды)**: `?start=${timestamp}&duration=${duration}`
+
+Просто перебирайте их по очереди, пока архив не заработает; менять m3u при этом не нужно.
+
+## Архив RTSP unicast (ZTE / PLTV и т. п.)
+
+Возможность архива для RTSP unicast (например `rtsp://IP:8089/04000001/<32-значный ID>`) зависит от сервера; плеер лишь дописывает временные параметры к адресу.
+
+- Если в списке уже есть `catchup-source` (случай China Unicom Guangxi):
+
+  ```m3u
+  #EXTINF:-1 tvg-name="CCTV1" catchup="append" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",CCTV-1
+  rtsp://103.251.96.219/PLTV/88888888/224/3221225656/xxxx.smil?zoneoffset=480&accountinfo=XXXXX&GuardEncType=2
+  ```
+
+  Если в адресе трансляции уже есть `?`, параметры присоединяются через `&`, а параметры авторизации сохраняются как есть.
+
+- Если в списке нет ни одного тега архива (случай China Unicom Chongqing): на странице настроек перебирайте «Частые форматы» по очереди; рекомендуемый порядок — `playseek начало-конец (местное время)` → `один Unix-таймстамп` → `starttime/endtime (UTC с T)`.
+- При архиве/timeshift перетаскивание ползунка **заново запрашивает URL архива на новую точку времени** (поток архива по RTSP невозможно перемотать внутри плеера); если у канала нет данных EPG, ползунок берёт за диапазон окно запрошенного архива, поэтому перетаскивание всё равно работает.
 
 ## Приоритет и переопределение
 

@@ -157,6 +157,34 @@ https://example.com/live/index.m3u8
 https://example.com/live/index.m3u8
 ```
 
+### 6）Kodi / APTV / TV Live 通用词汇
+
+SrcBox 也认 Kodi（pvr.iptvsimple）文档里的那套占位符，APTV / TV Live / IPTV-org 列表里的 `catchup-source` 可以直接抄过来。issue #6 里重庆联通的案例就是按 Kodi 文档写 `?time={utc}`，当时 `{utc}` 原样留在了请求里，服务端当然不认。
+
+- 开始时间（UTC Unix 秒，10 位）：`{utc}`、`${start}`
+- 结束时间（UTC Unix 秒，10 位）：`{utcend}`、`${end}`
+- 当前时间（UTC Unix 秒，10 位）：`{lutc}`、`${now}`
+- 开始时间的年月日时分秒（本地时间）：`{Y}`、`{m}`、`{d}`、`{H}`、`{M}`、`{S}`
+- 时长除以 X：`{duration:X}`（如 `{duration:60}` 得到分钟）
+- 当前时间与开始时间之差除以 X：`{offset:X}`（如 `{offset:60}` 得到分钟）
+
+说明：
+
+- `{utc:FORMAT}` / `{utcend:FORMAT}` / `${start:FORMAT}` / `${end:FORMAT}` 都支持。写成 Kodi 方言（只用 `Y m d H M S`，如 `{utc:YmdHM}`）按 Kodi 含义翻译；写成 .NET 格式（如 `${utc:yyyyMMddHHmmss}`）原样使用。
+- 两套方言里 `m` / `M` 的含义相反（Kodi 的 `m` 是月、`M` 是分，.NET 反之），混写时建议直接用 `yyyyMMdd…` 的 .NET 写法。
+- `{timestamp}` 在 SrcBox 里表示**开始时间**（历史行为，本文档一直这么写）；Kodi 的 `{timestamp}` 表示当前时间，需要当前时间请写 `{lutc}` 或 `${now}`。
+- `{catchup-id}`（XMLTV 节目级 ID）暂不支持。
+
+常见写法：
+
+```text
+?time={utc}
+?utc={utc}&utcend={utcend}
+?t={Y}-{m}-{d}T{H}:{M}:{S}
+?start={utc:YmdHM}&end=${end:Ymd-H-M}
+?offset={offset:60}&duration={duration:60}
+```
+
 ## 常用模板示例
 
 ### HTTP 单播（HLS m3u8，UTC + T）
@@ -178,6 +206,38 @@ rtsp://example.com/live.smil
 ```m3u
 #EXTINF:-1 tvg-name="示例频道" catchup="default" catchup-source="https://example.com/live/stream?starttime=${(b)yyyyMMddHHmmss}&endtime=${(e)yyyyMMddHHmmss}",示例频道
 https://example.com/live/stream
+```
+
+## 常用格式预设（设置页）
+
+设置 → 回放设置 / 时移设置 里新增了「常用格式」下拉框：选中即把模板填进「回看地址格式」/「时移地址格式」，仍可手动修改。预设全部是「仅参数段」，会自动拼到该频道的直播地址后；频道自带 `catchup-source` 时（每频道独立配置）优先级更高，预设只作为全局兜底。
+
+- **playseek 开始-结束（本地时间，中兴/PLTV 常用）**：`?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}`
+- **playseek 开始-结束（UTC 时间）**：`?playseek=${utc:yyyyMMddHHmmss}-${utcend:yyyyMMddHHmmss}`
+- **playseek 开始-结束（Unix 秒）**：`?playseek=${timestamp}-${end_timestamp}`
+- **单个 Unix 时间戳（Kodi/APTV 常用）**：`?time={utc}`
+- **starttime/endtime（UTC + T，华为/魔百和常用）**：`?starttime=${(b)yyyyMMdd|UTC}T${(b)HHmmss|UTC}&endtime=${(e)yyyyMMdd|UTC}T${(e)HHmmss|UTC}`
+- **starttime/endtime（本地时间）**：`?starttime=${(b)yyyyMMddHHmmss}&endtime=${(e)yyyyMMddHHmmss}`
+- **start/end（Unix 秒）**：`?start=${timestamp}&end=${end_timestamp}`
+- **start + duration（Unix 秒）**：`?start=${timestamp}&duration=${duration}`
+
+逐个试到能回看为止即可，不需要改动 m3u。
+
+## RTSP 单播回看（中兴 / PLTV 等）
+
+RTSP 单播（例如 `rtsp://IP:8089/04000001/<32 位 ID>`）能不能回看取决于服务端，播放器只负责把时间参数拼到地址上。
+
+- 列表里已经有 `catchup-source` 时（广西联通这类）：
+
+  ```m3u
+  #EXTINF:-1 tvg-name="CCTV1" catchup="append" catchup-source="?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}",CCTV-1
+  rtsp://103.251.96.219/PLTV/88888888/224/3221225656/xxxx.smil?zoneoffset=480&accountinfo=XXXXX&GuardEncType=2
+  ```
+
+  直播地址已带 `?` 时参数用 `&` 拼接，鉴权参数原样保留。
+
+- 列表里没有任何回看标签时（重庆联通这类）：到设置页用上面的「常用格式」逐个试，建议顺序是 `playseek 开始-结束（本地时间）` → `单个 Unix 时间戳` → `starttime/endtime（UTC + T）`。
+- 回看/时移时拖动进度条会**按新时间点重新请求回看地址**（RTSP 回看流无法在播放器内部 seek）；频道没有 EPG 数据时，进度条以本次请求的回看窗口为量程，因此同样可以拖动。
 
 ## 优先级与覆盖
 
@@ -193,7 +253,6 @@ https://example.com/live/stream
   - 可在设置页启用“时间覆盖”选择最接近的布局与编码进行适配；
   - 或到 Issues 提交需求（附示例与说明），我们会评估加入预设或提供更通用的自定义能力。
 - 提交地址：https://github.com/CGG888/SrcBox/issues
-```
 
 ## 更多写法示例（丰富格式）
 

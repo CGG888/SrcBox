@@ -8,18 +8,32 @@ namespace LibmpvIptvClient.Controls
     public partial class TimeshiftDrawer : UserControl
     {
         private TimeshiftConfig _config;
+        private bool _suppressPresetChange;
 
         public TimeshiftDrawer()
         {
             InitializeComponent();
+            CatchupFormatPresetUi.Fill(CbPreset);
         }
 
         public void Load(TimeshiftConfig config)
         {
             _config = config;
-            CbEnabled.IsChecked = config.Enabled;
-            TbUrlFormat.Text = config.UrlFormat;
-            SldDuration.Value = Math.Max(1, Math.Min(168, config.DurationHours));
+            _suppressPresetChange = true;
+            try
+            {
+                CbEnabled.IsChecked = config.Enabled;
+                TbUrlFormat.Text = config.UrlFormat;
+                SldDuration.Value = Math.Max(1, Math.Min(168, config.DurationHours));
+                CatchupFormatPresetUi.SelectMatching(CbPreset, config.UrlFormat);
+            }
+            finally { _suppressPresetChange = false; }
+        }
+
+        private void Preset_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_suppressPresetChange) return;
+            if (CatchupFormatPresetUi.TemplateOf(CbPreset) is string template) TbUrlFormat.Text = template;
         }
 
         public void Save(TimeshiftConfig config)

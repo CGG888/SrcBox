@@ -360,7 +360,17 @@
   <sys:String x:Key="UI_Playback_Desc">Параметры функции записи (catch-up)</sys:String>
   <sys:String x:Key="UI_Playback_UrlFormat">Формат URL записи</sys:String>
   <sys:String x:Key="UI_Playback_UrlFormat_Tip">{id} - ID канала</sys:String>
-  <sys:String x:Key="UI_Playback_UrlFormat_Note">Можно указать полный URL или только строку параметров (напр. ?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}); если указаны только параметры, они будут автоматически добавлены к URL прямого эфира канала. Поддерживаются плейсхолдеры ${(b)...} / ${(e)...} / {utc:...} / {utcend:...}.</sys:String>
+  <sys:String x:Key="UI_Playback_UrlFormat_Note">Можно указать полный URL или только строку параметров (напр. ?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}); если указаны только параметры, они будут автоматически добавлены к URL прямого эфира канала. Поддерживаются плейсхолдеры ${(b)...} / ${(e)...} / {utc:...} / {utcend:...} / {utc} / {utcend} / {lutc} / ${timestamp} / {Y}-{m}-{d} {H}:{M}:{S} / {duration:X}.</sys:String>
+  <sys:String x:Key="UI_Catchup_Preset">Частые форматы</sys:String>
+  <sys:String x:Key="UI_Catchup_Preset_Tip">Выбор заполняет поле формата URL ниже; его можно изменить вручную. Работает и для HTTP, и для RTSP юникаста.</sys:String>
+  <sys:String x:Key="UI_Catchup_Preset_playseek_local">playseek начало-конец (местное время, часто у ZTE/PLTV)</sys:String>
+  <sys:String x:Key="UI_Catchup_Preset_playseek_utc">playseek начало-конец (UTC)</sys:String>
+  <sys:String x:Key="UI_Catchup_Preset_playseek_unix">playseek начало-конец (Unix-секунды)</sys:String>
+  <sys:String x:Key="UI_Catchup_Preset_utc_only">один Unix-таймстамп (часто у Kodi/APTV)</sys:String>
+  <sys:String x:Key="UI_Catchup_Preset_starttime_utc_t">starttime/endtime (UTC с T, часто у Huawei)</sys:String>
+  <sys:String x:Key="UI_Catchup_Preset_starttime_local">starttime/endtime (местное время)</sys:String>
+  <sys:String x:Key="UI_Catchup_Preset_start_end_unix">start/end (Unix-секунды)</sys:String>
+  <sys:String x:Key="UI_Catchup_Preset_start_duration">start + duration (Unix-секунды)</sys:String>
   <sys:String x:Key="UI_Playback_Duration">Глубина архива (часы)</sys:String>
   <sys:String x:Key="UI_Playback_Duration_Note">Доступный период архива</sys:String>
   <sys:String x:Key="UI_Replay_AppendEpgTime">Добавлять параметр epg_time</sys:String>
@@ -371,7 +381,7 @@
   <sys:String x:Key="UI_Timeshift_Desc">Параметры сдвига времени</sys:String>
   <sys:String x:Key="UI_Timeshift_UrlFormat">Формат URL таймшифта</sys:String>
   <sys:String x:Key="UI_Timeshift_UrlFormat_Tip">{id} - ID канала</sys:String>
-  <sys:String x:Key="UI_Timeshift_UrlFormat_Note">Можно указать полный URL или только строку параметров (напр. ?starttime=${(b)yyyyMMddHHmmss}&amp;endtime=${(e)yyyyMMddHHmmss}); если указаны только параметры, они будут автоматически добавлены к URL прямого эфира канала. Поддерживаются плейсхолдеры ${(b)...} / ${(e)...} / {utc:...} / {utcend:...}.</sys:String>
+  <sys:String x:Key="UI_Timeshift_UrlFormat_Note">Можно указать полный URL или только строку параметров (напр. ?starttime=${(b)yyyyMMddHHmmss}&amp;endtime=${(e)yyyyMMddHHmmss}); если указаны только параметры, они будут автоматически добавлены к URL прямого эфира канала. Поддерживаются плейсхолдеры ${(b)...} / ${(e)...} / {utc:...} / {utcend:...} / {utc} / {utcend} / {lutc} / ${timestamp} / {Y}-{m}-{d} {H}:{M}:{S} / {duration:X}.</sys:String>
   <sys:String x:Key="UI_Timeshift_Duration">Глубина таймшифта (часы)</sys:String>
   <sys:String x:Key="UI_Timeshift_Duration_Note">Доступный период сдвига</sys:String>
   <sys:String x:Key="UI_Timeshift_AppendEpgTime">Добавлять параметр epg_time</sys:String>

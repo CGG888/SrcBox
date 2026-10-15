@@ -10,6 +10,11 @@
         <!-- Switch -->
         <CheckBox x:Name="CbEnabled" Content="{DynamicResource UI_EnableTimeshift}" IsChecked="True" Margin="0,0,0,24"/>
         
+        <!-- Format presets -->
+        <TextBlock Text="{DynamicResource UI_Catchup_Preset}" FontWeight="SemiBold" Margin="0,0,0,8"/>
+        <ComboBox x:Name="CbPreset" Margin="0,0,0,4" SelectionChanged="Preset_SelectionChanged"/>
+        <TextBlock Text="{DynamicResource UI_Catchup_Preset_Tip}" FontSize="12" Foreground="{DynamicResource TextSecondaryBrush}" Margin="0,0,0,16" TextWrapping="Wrap"/>
+
         <!-- URL Format -->
         <TextBlock Text="{DynamicResource UI_Timeshift_UrlFormat}" FontWeight="SemiBold" Margin="0,0,0,8"/>
         <TextBox x:Name="TbUrlFormat" Height="24" Padding="4" ToolTip="{DynamicResource UI_Timeshift_UrlFormat_Tip}"/>

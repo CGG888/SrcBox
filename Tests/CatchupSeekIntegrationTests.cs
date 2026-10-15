@@ -177,6 +177,65 @@ namespace LibmpvIptvClient.Tests
                 "越过缓存右端的拖动必须落在右端: " + engine.Played[0]);
         }
 
+        // ---------------- 无 EPG 节目的回看流（issue #6, 广西联通 RTSP 单播） ----------------
+        // 这类回看流由中转服务按 playseek 窗口切片，mpv 内部不能 seek。没有 EPG 节目时旧的实现会退化成
+        // mpv 相对 seek，拖动进度条完全没有反应；正确做法是像有节目时一样重发回看地址。
+
+        [TestMethod]
+        public void ReplaySeek_WithoutEpgProgramme_ReRequestsTheArchiveUrl()
+        {
+            var engine = new FakePlayerEngine();
+            var shell = MakeShell(engine, out var channel);
+            shell.CurrentPlayingProgram = null;
+            shell.PlaybackMode = PlaybackMode.Replay;
+            shell.PlaybackFocusTime = ProgStart;              // 本次回看流的起点
+            shell.ArchiveWindowEnd = ProgEnd;                 // 本次请求的窗口末端
+            engine.Played.Clear();
+
+            shell.ChannelPlaybackActions.SeekToMeterValue(15 * 60);
+
+            Assert.AreEqual(1, engine.Played.Count, "拖动必须重发回看地址");
+            Assert.AreEqual(0, engine.RelativeSeeks.Count, "没有节目时也不得退化成 mpv 相对 seek");
+            Assert.AreEqual(0, engine.AbsoluteSeeks.Count, "没有节目时也不得对回看流做 mpv 绝对 seek");
+            StringAssert.Contains(engine.Played[0], "starttime=" + ExpectedUtc(ProgStart.AddMinutes(15)));
+            Assert.IsNotNull(channel);
+        }
+
+        [TestMethod]
+        public void ReplaySeek_WithoutEpgProgramme_ClampsToTheRequestedWindow()
+        {
+            var engine = new FakePlayerEngine();
+            var shell = MakeShell(engine, out _);
+            shell.PlaybackMode = PlaybackMode.Replay;
+            shell.PlaybackFocusTime = ProgStart;
+            shell.ArchiveWindowEnd = ProgEnd;
+            engine.Played.Clear();
+
+            shell.ChannelPlaybackActions.SeekToMeterValue((ProgEnd - ProgStart).TotalSeconds + 600);
+
+            Assert.AreEqual(1, engine.Played.Count);
+            // 窗口右端减一秒：拖过末端时不能请求尚未产生/超出窗口的时段。
+            StringAssert.Contains(engine.Played[0], "starttime=" + ExpectedUtc(ProgEnd.AddSeconds(-1)));
+        }
+
+        [TestMethod]
+        public void ReplayTick_WithoutEpgProgramme_UsesTheRequestedWindowAsTheMeterRange()
+        {
+            var engine = new FakePlayerEngine();
+            var shell = MakeShell(engine, out _);
+            shell.CurrentPlayingProgram = null;
+            shell.PlaybackMode = PlaybackMode.Replay;
+            shell.PlaybackFocusTime = ProgStart;
+            shell.ArchiveWindowEnd = ProgEnd;
+
+            shell.HandlePlaybackTick(120, null, false);
+
+            Assert.AreEqual((ProgEnd - ProgStart).TotalSeconds, shell.SeekMaximum, 0.01, "量程应为请求的回看窗口");
+            Assert.AreEqual(120, shell.SeekValue, 0.01);
+            Assert.AreEqual("2:00", shell.ElapsedTimeText);
+            Assert.AreEqual("1:00:00", shell.DurationText);
+        }
+
         // ---------------- rtp2httpd (stackia/rtp2httpd) ----------------        // 直播地址是 rtp2httpd 的 /rtsp/<上游>:554/... 代理地址，catchup-source 是"纯参数段
         // playseek"，只有把它拼到直播地址上，rtp2httpd 才会返回回看流（否则退回直播）。
 

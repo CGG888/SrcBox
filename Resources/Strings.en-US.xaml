@@ -466,7 +466,17 @@
   <sys:String x:Key="UI_Playback_Desc">Configure replay functionality</sys:String>
   <sys:String x:Key="UI_Playback_UrlFormat">Replay URL Format</sys:String>
   <sys:String x:Key="UI_Playback_UrlFormat_Tip">{id} represents Channel ID</sys:String>
-  <sys:String x:Key="UI_Playback_UrlFormat_Note">You can enter a full URL or a parameter-only segment (e.g. ?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}); parameter-only will be auto-appended to the channel's live URL. Supports ${(b)...} / ${(e)...} / {utc:...} / {utcend:...} placeholders.</sys:String>
+  <sys:String x:Key="UI_Playback_UrlFormat_Note">You can enter a full URL or a parameter-only segment (e.g. ?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}); parameter-only will be auto-appended to the channel's live URL. Supports placeholders ${(b)...} / ${(e)...} / {utc:...} / {utcend:...} / {utc} / {utcend} / {lutc} / ${timestamp} / {Y}-{m}-{d} {H}:{M}:{S} / {duration:X}</sys:String>
+  <sys:String x:Key="UI_Catchup_Preset">Common formats</sys:String>
+  <sys:String x:Key="UI_Catchup_Preset_Tip">Choosing one fills in the URL format below; you can still edit it by hand. Works for both HTTP and RTSP unicast.</sys:String>
+  <sys:String x:Key="UI_Catchup_Preset_playseek_local">playseek start-end (local time, common on ZTE/PLTV portals)</sys:String>
+  <sys:String x:Key="UI_Catchup_Preset_playseek_utc">playseek start-end (UTC)</sys:String>
+  <sys:String x:Key="UI_Catchup_Preset_playseek_unix">playseek start-end (Unix seconds)</sys:String>
+  <sys:String x:Key="UI_Catchup_Preset_utc_only">single Unix timestamp (common on Kodi/APTV)</sys:String>
+  <sys:String x:Key="UI_Catchup_Preset_starttime_utc_t">starttime/endtime (UTC with T, common on Huawei portals)</sys:String>
+  <sys:String x:Key="UI_Catchup_Preset_starttime_local">starttime/endtime (local time)</sys:String>
+  <sys:String x:Key="UI_Catchup_Preset_start_end_unix">start/end (Unix seconds)</sys:String>
+  <sys:String x:Key="UI_Catchup_Preset_start_duration">start + duration (Unix seconds)</sys:String>
   <sys:String x:Key="UI_Playback_Duration">Replay Range (Hours)</sys:String>
   <sys:String x:Key="UI_Playback_Duration_Note">Time span for replay availability</sys:String>
   <sys:String x:Key="UI_Replay_AppendEpgTime">Append epg_time parameter</sys:String>
@@ -477,7 +487,7 @@
   <sys:String x:Key="UI_Timeshift_Desc">Configure live timeshift</sys:String>
   <sys:String x:Key="UI_Timeshift_UrlFormat">Timeshift URL Format</sys:String>
   <sys:String x:Key="UI_Timeshift_UrlFormat_Tip">{id} represents Channel ID</sys:String>
-  <sys:String x:Key="UI_Timeshift_UrlFormat_Note">You can enter a full URL or a parameter-only segment (e.g. ?starttime=${(b)yyyyMMddHHmmss}&amp;endtime=${(e)yyyyMMddHHmmss}); parameter-only will be auto-appended to the channel's live URL. Supports ${(b)...} / ${(e)...} / {utc:...} / {utcend:...} placeholders.</sys:String>
+  <sys:String x:Key="UI_Timeshift_UrlFormat_Note">You can enter a full URL or a parameter-only segment (e.g. ?starttime=${(b)yyyyMMddHHmmss}&amp;endtime=${(e)yyyyMMddHHmmss}); parameter-only will be auto-appended to the channel's live URL. Supports placeholders ${(b)...} / ${(e)...} / {utc:...} / {utcend:...} / {utc} / {utcend} / {lutc} / ${timestamp} / {Y}-{m}-{d} {H}:{M}:{S} / {duration:X}</sys:String>
   <sys:String x:Key="UI_Timeshift_Duration">Timeshift Range (Hours)</sys:String>
   <sys:String x:Key="UI_Timeshift_Duration_Note">Time span for timeshift availability</sys:String>
   <sys:String x:Key="UI_Timeshift_AppendEpgTime">Append epg_time parameter</sys:String>

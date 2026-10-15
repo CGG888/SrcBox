@@ -285,16 +285,17 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                     }
                 }
             }
-            else if (PlaybackMode == PlaybackMode.Replay && CurrentPlayingProgram != null && ArchiveAnchor.HasValue)
+            else if (PlaybackMode == PlaybackMode.Replay && ArchiveAnchor.HasValue && TryGetArchiveInterval(out var intervalStart, out var intervalEnd))
             {
                 // Replay: the loaded stream starts at the requested seek time, so mpv's time-pos is
-                // relative to that instant. The progress bar must describe the *program* interval
-                // instead: the left label moves inside the program while the right label keeps the
-                // program length (before, the right label shrank after every seek because it showed
-                // the remaining window reported by mpv).
-                var program = CurrentPlayingProgram!;
-                var total = Math.Max(1, (program.End - program.Start).TotalSeconds);
-                var pos = Math.Max(0, Math.Min(total, (ArchiveAnchor!.Value - program.Start).TotalSeconds + CurrentTimePos));
+                // relative to that instant. The progress bar must describe the *archive interval*
+                // instead: the left label moves inside it while the right label keeps its length (before,
+                // the right label shrank after every seek because it showed the remaining window reported
+                // by mpv). The interval is the playing programme when the EPG has one, and otherwise the
+                // window that was requested: an RTSP/PLTV catchup stream reports no usable duration, so
+                // without that fallback the meter stayed empty and could not be dragged at all.
+                var total = Math.Max(1, (intervalEnd - intervalStart).TotalSeconds);
+                var pos = Math.Max(0, Math.Min(total, (ArchiveAnchor!.Value - intervalStart).TotalSeconds + CurrentTimePos));
 
                 if (!IsSeeking)
                 {
@@ -1145,6 +1146,37 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
         {
             get => _playbackFocusTime;
             set => SetProperty(ref _playbackFocusTime, value);
+        }
+
+        /// <summary>
+        /// End of the archive window that <see cref="PlaybackFocusTime"/> starts. It is the programme end
+        /// when the replay request came from the EPG, and otherwise (RTSP/PLTV channels without EPG, or a
+        /// timeshift drag) the window end that was actually requested. The progress bar uses it as a
+        /// fallback range so such a stream stays draggable even when mpv reports no duration.
+        /// </summary>
+        public DateTime? ArchiveWindowEnd { get; set; }
+
+        /// <summary>
+        /// Wall-clock interval the archive meter covers: the playing programme when there is one, else the
+        /// window of the last catchup request.
+        /// </summary>
+        public bool TryGetArchiveInterval(out DateTime start, out DateTime end)
+        {
+            start = default;
+            end = default;
+            if (CurrentPlayingProgram != null && CurrentPlayingProgram.End > CurrentPlayingProgram.Start)
+            {
+                start = CurrentPlayingProgram.Start;
+                end = CurrentPlayingProgram.End;
+                return true;
+            }
+            if (ArchiveAnchor.HasValue && ArchiveWindowEnd.HasValue && ArchiveWindowEnd.Value > ArchiveAnchor.Value)
+            {
+                start = ArchiveAnchor.Value;
+                end = ArchiveWindowEnd.Value;
+                return true;
+            }
+            return false;
         }
 
         private System.Windows.Media.Brush _playbackStatusBrush = System.Windows.Media.Brushes.White;

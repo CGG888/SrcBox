@@ -377,7 +377,17 @@
   <sys:String x:Key="UI_Playback_Desc">設定回看功能參數</sys:String>
   <sys:String x:Key="UI_Playback_UrlFormat">回看位址格式</sys:String>
   <sys:String x:Key="UI_Playback_UrlFormat_Tip">{id} 代表頻道ID</sys:String>
-  <sys:String x:Key="UI_Playback_UrlFormat_Note">可填完整URL或僅參數段（如 ?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}）；僅參數段會自動拼接到頻道直播位址後。支援 ${(b)...} / ${(e)...} / {utc:...} / {utcend:...}。</sys:String>
+  <sys:String x:Key="UI_Playback_UrlFormat_Note">可填完整URL或僅參數段（如 ?playseek=${(b)yyyyMMddHHmmss}-${(e)yyyyMMddHHmmss}）；僅參數段會自動拼接到頻道直播位址後。支援 ${(b)...} / ${(e)...} / {utc:...} / {utcend:...} / {utc} / {utcend} / {lutc} / ${timestamp} / {Y}-{m}-{d} {H}:{M}:{S} / {duration:X}</sys:String>
+  <sys:String x:Key="UI_Catchup_Preset">常用格式</sys:String>
+  <sys:String x:Key="UI_Catchup_Preset_Tip">選擇後會自動填入下方位址格式，仍可手動修改；HTTP 單播與 RTSP 單播皆適用。</sys:String>
+  <sys:String x:Key="UI_Catchup_Preset_playseek_local">playseek 開始-結束（本地時間，中興/PLTV 常用）</sys:String>
+  <sys:String x:Key="UI_Catchup_Preset_playseek_utc">playseek 開始-結束（UTC 時間）</sys:String>
+  <sys:String x:Key="UI_Catchup_Preset_playseek_unix">playseek 開始-結束（Unix 秒）</sys:String>
+  <sys:String x:Key="UI_Catchup_Preset_utc_only">單一 Unix 時間戳（Kodi/APTV 常用）</sys:String>
+  <sys:String x:Key="UI_Catchup_Preset_starttime_utc_t">starttime/endtime（UTC + T，華為/魔百和常用）</sys:String>
+  <sys:String x:Key="UI_Catchup_Preset_starttime_local">starttime/endtime（本地時間）</sys:String>
+  <sys:String x:Key="UI_Catchup_Preset_start_end_unix">start/end（Unix 秒）</sys:String>
+  <sys:String x:Key="UI_Catchup_Preset_start_duration">start + duration（Unix 秒）</sys:String>
   <sys:String x:Key="UI_Playback_Duration">回看範圍 (小時)</sys:String>
   <sys:String x:Key="UI_Playback_Duration_Note">設定支援回看的跨度</sys:String>
   <sys:String x:Key="UI_Replay_AppendEpgTime">追加 epg_time 參數</sys:String>
@@ -388,7 +398,7 @@
   <sys:String x:Key="UI_Timeshift_Desc">設定直播時移參數</sys:String>
   <sys:String x:Key="UI_Timeshift_UrlFormat">時移位址格式</sys:String>
   <sys:String x:Key="UI_Timeshift_UrlFormat_Tip">{id} 代表頻道ID</sys:String>
-  <sys:String x:Key="UI_Timeshift_UrlFormat_Note">可填完整URL或僅參數段（如 ?starttime=${(b)yyyyMMddHHmmss}&amp;endtime=${(e)yyyyMMddHHmmss}）；僅參數段會自動拼接到頻道直播位址後。支援 ${(b)...} / ${(e)...} / {utc:...} / {utcend:...}。</sys:String>
+  <sys:String x:Key="UI_Timeshift_UrlFormat_Note">可填完整URL或僅參數段（如 ?starttime=${(b)yyyyMMddHHmmss}&amp;endtime=${(e)yyyyMMddHHmmss}）；僅參數段會自動拼接到頻道直播位址後。支援 ${(b)...} / ${(e)...} / {utc:...} / {utcend:...} / {utc} / {utcend} / {lutc} / ${timestamp} / {Y}-{m}-{d} {H}:{M}:{S} / {duration:X}</sys:String>
   <sys:String x:Key="UI_Timeshift_Duration">時移範圍 (小時)</sys:String>
   <sys:String x:Key="UI_Timeshift_Duration_Note">設定支援時移的跨度</sys:String>
   <sys:String x:Key="UI_Timeshift_AppendEpgTime">追加 epg_time 參數</sys:String>

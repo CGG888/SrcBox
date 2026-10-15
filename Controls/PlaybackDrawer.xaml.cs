@@ -8,19 +8,35 @@ namespace LibmpvIptvClient.Controls
     public partial class PlaybackDrawer : UserControl
     {
         private ReplayConfig _config;
+        private bool _suppressPresetChange;
 
         public PlaybackDrawer()
         {
             InitializeComponent();
+            CatchupFormatPresetUi.Fill(CbPreset);
         }
 
         public void Load(ReplayConfig config)
         {
             _config = config;
-            CbEnabled.IsChecked = config.Enabled;
-            TbUrlFormat.Text = config.UrlFormat;
-            SldDuration.Value = Math.Max(1, Math.Min(168, config.DurationHours));
-            CbAppendEpgTime.IsChecked = config.AppendEpgTime;
+            _suppressPresetChange = true;
+            try
+            {
+                CbEnabled.IsChecked = config.Enabled;
+                TbUrlFormat.Text = config.UrlFormat;
+                SldDuration.Value = Math.Max(1, Math.Min(168, config.DurationHours));
+                CbAppendEpgTime.IsChecked = config.AppendEpgTime;
+                // Only highlight a saved template that is one of the presets; a hand written one stays
+                // untouched (and is never overwritten by the selection).
+                CatchupFormatPresetUi.SelectMatching(CbPreset, config.UrlFormat);
+            }
+            finally { _suppressPresetChange = false; }
+        }
+
+        private void Preset_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_suppressPresetChange) return;
+            if (CatchupFormatPresetUi.TemplateOf(CbPreset) is string template) TbUrlFormat.Text = template;
         }
 
         public void Save(ReplayConfig config)

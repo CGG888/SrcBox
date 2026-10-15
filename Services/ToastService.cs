@@ -24,7 +24,7 @@ namespace LibmpvIptvClient.Services
         }
         public static void ShowReminder(string channelId, string channelName, string program, DateTime startLocal, string? logoPath, bool isDue)
         {
-            System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+            System.Windows.Application.Current?.Dispatcher?.BeginInvoke(() =>
             {
                 var owner = Helpers.OwnerWindowResolver.MainWindow as System.Windows.Window;
                 var win = new ReminderToastWindow(channelId, channelName, program, startLocal, logoPath, isDue, null, null, false);
@@ -35,7 +35,7 @@ namespace LibmpvIptvClient.Services
         }
         public static void ShowPlayAppointment(string channelId, string channelName, string program, DateTime startLocal, string? logoPath, string? playMode = null, int? countdownSec = null)
         {
-            System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+            System.Windows.Application.Current?.Dispatcher?.BeginInvoke(() =>
             {
                 var owner = Helpers.OwnerWindowResolver.MainWindow as System.Windows.Window;
                 var win = new ReminderToastWindow(channelId, channelName, program, startLocal, logoPath, true, null, null, true, playMode ?? "default", countdownSec);
@@ -47,7 +47,7 @@ namespace LibmpvIptvClient.Services
         }
         public static void ShowRecordingAppointment(string channelId, string channelName, string program, DateTime startLocal, string? logoPath, string recordType, string? playMode = null, int? countdownSec = null)
         {
-            System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+            System.Windows.Application.Current?.Dispatcher?.BeginInvoke(() =>
             {
                 var owner = Helpers.OwnerWindowResolver.MainWindow as System.Windows.Window;
                 bool isRecordBack = string.Equals(recordType, "back", StringComparison.OrdinalIgnoreCase);
@@ -60,7 +60,7 @@ namespace LibmpvIptvClient.Services
         }
         public static void ShowRecordingCompletion(string channelId, string channelName, string? program, string? logoPath, string recordType, string? filePath, string? sizeLabel)
         {
-            System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+            System.Windows.Application.Current?.Dispatcher?.BeginInvoke(() =>
             {
                 var owner = Helpers.OwnerWindowResolver.MainWindow as System.Windows.Window;
                 bool isRecordBack = string.Equals(recordType, "back", StringComparison.OrdinalIgnoreCase);
@@ -76,7 +76,7 @@ namespace LibmpvIptvClient.Services
         }
         public static void ShowSimple(ToastKind kind, string title, string? subtitle = null, string? logoPath = null, int? autoHideMs = null)
         {
-            System.Windows.Application.Current?.Dispatcher?.Invoke(() =>
+            System.Windows.Application.Current?.Dispatcher?.BeginInvoke(() =>
             {
                 var now = DateTime.Now;
                 string status = kind switch
