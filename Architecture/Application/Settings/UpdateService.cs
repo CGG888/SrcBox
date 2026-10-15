@@ -102,32 +102,26 @@ public class GithubUpdateService : IUpdateService
 
     private async Task<ReleaseInfo?> FetchLatestReleaseAsync(string apiUrl, bool useCdn, CancellationToken cancellationToken)
     {
-        var urls = new List<string> { apiUrl };
-        
+        var mirrors = AppSettings.Current.UpdateCdnMirrors;
+
         if (useCdn)
         {
-            var cdnList = AppSettings.Current.UpdateCdnMirrors ?? new List<string>();
             try
             {
-                if (cdnList.Count == 0)
+                if (mirrors == null || mirrors.Count == 0)
                 {
-                    var cdnFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "docs", "cdn.md");
-                    if (File.Exists(cdnFile))
+                    mirrors = new List<string>(CdnMirrorList.Load());
+                    if (mirrors.Count > 0)
                     {
-                        foreach (var line in File.ReadAllLines(cdnFile))
-                        {
-                            var p = line.Trim();
-                            if (p.StartsWith("http")) cdnList.Add(p);
-                        }
+                        AppSettings.Current.UpdateCdnMirrors = mirrors;
+                        AppSettings.Current.Save();
                     }
-                    AppSettings.Current.UpdateCdnMirrors = cdnList;
-                    AppSettings.Current.Save();
                 }
-                foreach (var p in cdnList)
-                    urls.Add(p.TrimEnd('/') + "/" + apiUrl);
             }
             catch { }
         }
+
+        var urls = BuildCandidateUrls(apiUrl, useCdn ? mirrors : null);
 
         foreach (var url in urls)
         {
@@ -171,5 +165,23 @@ public class GithubUpdateService : IUpdateService
             catch { }
         }
         return null;
+    }
+
+    /// <summary>
+    /// Request order of one release lookup: the API itself first, then every mirror prefix with the API
+    /// url appended (gh-proxy style: <c>https://gh-proxy.org/https://api.github.com/...</c>).
+    /// </summary>
+    internal static List<string> BuildCandidateUrls(string apiUrl, IEnumerable<string>? mirrors)
+    {
+        var urls = new List<string> { apiUrl };
+        if (mirrors == null) return urls;
+
+        foreach (var mirror in mirrors)
+        {
+            var prefix = (mirror ?? "").Trim().TrimEnd('/');
+            if (prefix.Length == 0) continue;
+            urls.Add(prefix + "/" + apiUrl);
+        }
+        return urls;
     }
 }

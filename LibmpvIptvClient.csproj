@@ -67,5 +67,8 @@
     <EmbeddedResource Include="docs\public\pwa\icon-512.png" LogicalName="SrcBox.Pwa.icon-512.png" />
     <EmbeddedResource Include="docs\public\pwa\maskable-512.png" LogicalName="SrcBox.Pwa.maskable-512.png" />
     <EmbeddedResource Include="docs\public\pwa\apple-touch-icon-180.png" LogicalName="SrcBox.Pwa.apple-touch-icon-180.png" />
+    <!-- gh-proxy mirrors used when api.github.com is blocked or rate limited. The copy under docs/public
+         is only published to the documentation site, it never reached an installed build. -->
+    <EmbeddedResource Include="docs\public\screenshots\cdn.md" LogicalName="SrcBox.CdnMirrors.md" />
   </ItemGroup>
 </Project>

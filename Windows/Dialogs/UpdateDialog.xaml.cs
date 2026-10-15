@@ -48,14 +48,12 @@ namespace LibmpvIptvClient
                 var cdnList = LibmpvIptvClient.AppSettings.Current.UpdateCdnMirrors ?? new System.Collections.Generic.List<string>();
                 if (cdnList.Count == 0)
                 {
-                    var cdnFile = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "docs", "screenshots", "cdn.md");
-                    if (File.Exists(cdnFile))
+                    // The shipped mirror list lives inside the assembly; the old code looked for a file the
+                    // published build never contained, so the CDN entries never showed up here either.
+                    cdnList = new System.Collections.Generic.List<string>(
+                        LibmpvIptvClient.Architecture.Application.Settings.CdnMirrorList.Load());
+                    if (cdnList.Count > 0)
                     {
-                        foreach (var line in File.ReadAllLines(cdnFile))
-                        {
-                            var t = line.Trim();
-                            if (t.StartsWith("http")) cdnList.Add(t);
-                        }
                         LibmpvIptvClient.AppSettings.Current.UpdateCdnMirrors = cdnList;
                         LibmpvIptvClient.AppSettings.Current.Save();
                     }
