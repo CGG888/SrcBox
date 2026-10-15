@@ -11,9 +11,9 @@
     <ApplicationManifest>app.manifest</ApplicationManifest>
     <Product>SrcBox</Product>
     <AssemblyTitle>SrcBox</AssemblyTitle>
-    <Version>1.1.19</Version>
-    <AssemblyVersion>1.1.19.0</AssemblyVersion>
-    <FileVersion>1.1.19.0</FileVersion>
+    <Version>1.1.20</Version>
+    <AssemblyVersion>1.1.20.0</AssemblyVersion>
+    <FileVersion>1.1.20.0</FileVersion>
     <GenerateProgramFile>false</GenerateProgramFile>
     <DisableWinExeConsoleOutput>true</DisableWinExeConsoleOutput>
   </PropertyGroup>

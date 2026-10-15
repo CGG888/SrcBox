@@ -264,6 +264,8 @@ namespace LibmpvIptvClient
         // Newer version the last successful check found ("" = up to date): keeps the title-bar dot
         // lit across restarts until the update is installed.
         public string KnownNewerVersion { get; set; } = "";
+        // 调试模式（F1 调试窗口里的开关）：持久化后重启才会挂上 mpv 自身日志文件与 RTSP 探测
+        public bool DebugLoggingEnabled { get; set; } = false;
         // M3U 缓存设置
         public bool EnableM3uCache { get; set; } = true;
         public double M3uCacheTtlHours { get; set; } = 12;

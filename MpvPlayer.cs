@@ -20,8 +20,40 @@ namespace LibmpvIptvClient
             _handle = mpv_create();
         }
         public void SetSettings(PlaybackSettings s) { _settings = s; }
+
+        /// <summary>
+        /// Mirrors mpv's own log into a file when the debug mode is on, so a stream that never starts can
+        /// be diagnosed from the FFmpeg/demuxer messages (which player-side log lines cannot show). Must run
+        /// before mpv_initialize: log-file/msg-level are start-up options.
+        /// </summary>
+        void EnableDebugLogIfRequested()
+        {
+            try
+            {
+                if (!Logger.DebugEnabled) return;
+
+                var dir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
+                System.IO.Directory.CreateDirectory(dir);
+                var path = System.IO.Path.Combine(dir, $"mpv-{DateTime.Now:yyyyMMdd}.log");
+
+                var rc = mpv_set_option_string(_handle, "log-file", path);
+                if (rc < 0)
+                {
+                    Logger.Warn($"[mpv] 无法启用 mpv 日志文件 (rc={rc})");
+                    return;
+                }
+
+                mpv_set_option_string(_handle, "msg-level", "all=v");
+                Logger.Info($"[mpv] 调试日志已开启: {path}（反馈播放问题时请一并附上）");
+            }
+            catch (Exception ex)
+            {
+                Logger.Warn($"[mpv] 调试日志设置失败: {ex.Message}");
+            }
+        }
         public void Initialize()
         {
+            EnableDebugLogIfRequested();
             mpv_initialize(_handle);
             SetFlag("keep-open", true);
             SetFlag("idle", true);
@@ -657,6 +689,9 @@ namespace LibmpvIptvClient
         static extern IntPtr mpv_create();
         [DllImport("libmpv-2.dll", CallingConvention = CallingConvention.Cdecl)]
         static extern int mpv_initialize(IntPtr ctx);
+        // Start-up options (must be set before mpv_initialize): used for the debug log file.
+        [DllImport("libmpv-2.dll", CallingConvention = CallingConvention.Cdecl)]
+        static extern int mpv_set_option_string(IntPtr ctx, [MarshalAs(UnmanagedType.LPUTF8Str)] string name, [MarshalAs(UnmanagedType.LPUTF8Str)] string data);
         [DllImport("libmpv-2.dll", CallingConvention = CallingConvention.Cdecl)]
         static extern int mpv_set_property(IntPtr ctx, [MarshalAs(UnmanagedType.LPUTF8Str)] string name, mpv_format format, byte[] data);
         [DllImport("libmpv-2.dll", CallingConvention = CallingConvention.Cdecl)]

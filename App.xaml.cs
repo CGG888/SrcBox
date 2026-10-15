@@ -62,6 +62,12 @@ namespace LibmpvIptvClient
                     {
                         LibmpvIptvClient.Diagnostics.Logger.DebugEnabled = true;
                     }
+                    // A debug mode switched on in the F1 window is remembered: mpv's own log file and the
+                    // RTSP archive probe attach while starting up, so the restart has to keep it on.
+                    else if (AppSettings.Current?.DebugLoggingEnabled == true)
+                    {
+                        LibmpvIptvClient.Diagnostics.Logger.DebugEnabled = true;
+                    }
 
                     LibmpvIptvClient.Diagnostics.Logger.InitializeFileLogging(logDir);
                     CleanupOldLogs(logDir, 7);

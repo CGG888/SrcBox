@@ -15,6 +15,7 @@ namespace LibmpvIptvClient
         public DebugWindow()
         {
             InitializeComponent();
+            _isDebugMode = LibmpvIptvClient.AppSettings.Current.DebugLoggingEnabled || Logger.DebugEnabled;
             Logger.OnMessage += OnLog;
             Closed += OnClosed;
             PreviewKeyDown += OnPreviewKeyDown;
@@ -81,6 +82,15 @@ namespace LibmpvIptvClient
             _isDebugMode = !_isDebugMode;
             Logger.DebugEnabled = _isDebugMode;
             UpdateDebugButton();
+
+            // Remembered across restarts: mpv's own log file and the RTSP archive probe only attach while
+            // starting up, so a user who needs to send those files must not have to set an env var.
+            try
+            {
+                LibmpvIptvClient.AppSettings.Current.DebugLoggingEnabled = _isDebugMode;
+                LibmpvIptvClient.AppSettings.Current.Save();
+            }
+            catch { }
 
             var status = _isDebugMode ? "开启" : "关闭";
             Logger.Info($"[App] Debug模式 {status}");

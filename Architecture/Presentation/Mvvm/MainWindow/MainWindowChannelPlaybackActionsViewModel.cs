@@ -529,6 +529,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 
                 LibmpvIptvClient.Diagnostics.Logger.Info($"[Replay] 开始回看: {prog.Title} ({prog.Start:HH:mm}-{prog.End:HH:mm}), URL: {url}");
                 url = ApplyExtraPlaybackQuery(url);
+                ProbeArchiveUrl(url);
             _shell.PlayerEngine.Play(url);
                 _shell.CurrentUrl = url;
                 RequestVideoShow?.Invoke();
@@ -690,6 +691,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
                 
                 LibmpvIptvClient.Diagnostics.Logger.Info($"[Replay] Start Replay - Channel: {ch.Name}, Time: {start:yyyy-MM-dd HH:mm:ss}, URL: {url}");
                 url = ApplyExtraPlaybackQuery(url);
+                ProbeArchiveUrl(url);
             _shell.PlayerEngine.Play(url);
                 _shell.CurrentUrl = url;
                 LibmpvIptvClient.Diagnostics.Logger.Info($"[Replay] After Play - CurrentPlayingProgram={_shell.CurrentPlayingProgram?.Title ?? "null"}");
@@ -797,6 +799,24 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow
 
         private string ProcessUrlPlaceholders(string url, DateTime start, DateTime end, bool appendEpgTime)
             => LibmpvIptvClient.Services.UrlPlaceholderExpander.Expand(url, start, end, appendEpgTime);
+
+        /// <summary>
+        /// Debug-only: asks the relay what it thinks of an archive url before mpv opens it, so a stream that
+        /// stays black can be told apart from a url the server refuses. Outside the debug mode this does
+        /// nothing at all (no extra traffic, no delay).
+        /// </summary>
+        void ProbeArchiveUrl(string url)
+        {
+            try
+            {
+                if (!LibmpvIptvClient.Diagnostics.Logger.DebugEnabled) return;
+                if (!url.StartsWith("rtsp://", StringComparison.OrdinalIgnoreCase)) return;
+
+                var verdict = LibmpvIptvClient.Services.RtspUrlProbe.Describe(url);
+                LibmpvIptvClient.Diagnostics.Logger.Info($"[Replay] RTSP 探测: {verdict}");
+            }
+            catch { }
+        }
 
         /// <summary>
         /// Resolves the url used for replay/timeshift playback through

@@ -15,6 +15,9 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
         /// <summary>The stream the first-frame clock currently belongs to.</summary>
         private string _playbackUrl = "";
 
+        /// <summary>True once the current stream was re-requested because it showed no picture.</summary>
+        private bool _retriedForPicture;
+
         public MainWindowPlaybackTickManager(MainWindow window, MainShellViewModel shell, MainWindowOverlayManager overlayManager)
         {
             _window = window;
@@ -41,6 +44,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                     {
                         _playbackUrl = url;
                         _window.FirstFrameLoggedForManager = false;
+                        _retriedForPicture = false;
                         _window.PlayStartTimeForManager = url.Length == 0 ? default : DateTime.Now;
                     }
 
@@ -52,7 +56,18 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                     if (!_window.FirstFrameLoggedForManager && _window.PlayStartTimeForManager != default)
                     {
                         var waited = (DateTime.Now - _window.PlayStartTimeForManager).TotalSeconds;
-                        if (waited > Math.Max(3, AppSettings.Current.SourceTimeoutSec))
+                        var limit = PlaybackStartRetryPolicy.WaitSeconds(AppSettings.Current.SourceTimeoutSec);
+
+                        if (PlaybackStartRetryPolicy.ShouldRetryArchive(IsArchivePlayback(), _retriedForPicture, waited, AppSettings.Current.SourceTimeoutSec))
+                        {
+                            // Ask the relay for the very same window once more before calling the stream dead:
+                            // a second session regularly plays where the first one stayed silent.
+                            _retriedForPicture = true;
+                            Logger.Warn($"[Playback] 归档起播 {waited:0.#}s 未见画面，重试一次 URL={url}");
+                            try { _shell.PlayerEngine?.Play(url); } catch { }
+                            _window.PlayStartTimeForManager = DateTime.Now;
+                        }
+                        else if (waited > limit)
                         {
                             Logger.Warn($"[Playback] 起播{waited:0.#}s未见画面 time-pos={_window.PlayerInterop.GetTimePos() ?? 0:0.##} URL={_shell.CurrentUrl}");
                             _window.FirstFrameLoggedForManager = true;
@@ -67,6 +82,10 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             }
             catch { }
         }
+
+        /// <summary>True while an archive window (replay or timeshift) is what the player was asked to open.</summary>
+        private bool IsArchivePlayback()
+            => _shell.PlaybackMode == PlaybackMode.Replay || _shell.PlaybackMode == PlaybackMode.Timeshift;
 
         public void OnTick(object? sender, EventArgs e)
         {
