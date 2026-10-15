@@ -17,6 +17,9 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
         private readonly MainWindow _window;
         private readonly MainShellViewModel _shell;
 
+        /// <summary>Guards against a second check inside one process; the check itself runs on every launch.</summary>
+        private bool _updateCheckStarted;
+
         public MainWindowStartupManager(MainWindow window, MainShellViewModel shell)
         {
             _window = window;
@@ -89,35 +92,30 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
         }
 
         /// <summary>
-        /// Starts the silent version check in the background. Throttled by
-        /// <see cref="MainWindowUpdateBadgeActionsViewModel.CheckInterval"/>, it never prompts
-        /// the user and never blocks startup; a newer release only lights the title-bar badge.
+        /// Runs the silent version check on every launch, in the background. It never prompts the user and
+        /// never blocks startup; a newer release lights the title-bar badge. A daily throttle used to skip
+        /// the check, which kept a release that appeared right after the previous check invisible until the
+        /// next day, so the check is no longer gated by time.
         /// </summary>
         public void StartBackgroundUpdateCheck()
         {
+            if (_updateCheckStarted) return;
+            _updateCheckStarted = true;
+
             try
             {
                 var service = ResolveUpdateService();
                 var currentVersion = service.GetCurrentVersion();
 
-                // An update found earlier stays visible: the daily throttle must not hide a release
-                // the user has not installed yet.
+                // An update found earlier stays visible: this launch's lookup may fail (offline, blocked,
+                // rate limited) and must not hide a release the user has not installed yet.
                 RestoreKnownUpdate(currentVersion);
-
-                if (!MainWindowUpdateBadgeActionsViewModel.IsCheckDue(
-                        AppSettings.Current.LastUpdateCheckUtc,
-                        AppSettings.Current.LastUpdateCheckVersion,
-                        currentVersion,
-                        DateTime.UtcNow))
-                {
-                    return;
-                }
 
                 _ = RunUpdateCheckAsync(service);
             }
             catch (Exception ex)
             {
-                try { Logger.Debug("[Update] 启动检查跳过: " + ex.Message); } catch { }
+                try { Logger.Debug("[Update] 启动检查异常: " + ex.Message); } catch { }
             }
         }
 
@@ -144,10 +142,16 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
         {
             try
             {
+                // Let the startup I/O settle (channel list, EPG download, logo warmup) before competing
+                // with it: the check is invisible until it finds something, and the first seconds of a
+                // launch are the busiest - a lookup squeezed into them used to time out.
+                await System.Threading.Tasks.Task.Delay(TimeSpan.FromSeconds(3)).ConfigureAwait(false);
+
                 var result = await service.CheckForUpdatesAsync(useCdn: true).ConfigureAwait(false);
 
-                // Record the attempt only when the check really answered: an offline or blocked
-                // machine must retry on the next launch instead of staying silent for a whole day.
+                // Only a real answer rewrites the remembered state: a failed lookup (offline, blocked,
+                // rate limited) must keep the release found earlier instead of clearing the badge. The
+                // two timestamps stay as diagnostics for the settings page and for support.
                 if (result.ReleaseInfo != null)
                 {
                     try

@@ -1,11 +1,13 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Net.Http;
+using System.Reflection;
 using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.IO;
-using System;
-using System.Reflection;
+using LibmpvIptvClient.Diagnostics;
 
 namespace LibmpvIptvClient.Architecture.Application.Settings;
 
@@ -34,11 +36,35 @@ public interface IUpdateService
 
 public class GithubUpdateService : IUpdateService
 {
-    private readonly HttpClient _httpClient;
+    /// <summary>Release endpoint every source below is built from.</summary>
+    internal const string LatestReleaseApiUrl = "https://api.github.com/repos/CGG888/SrcBox/releases/latest";
 
-    public GithubUpdateService(HttpClient httpClient)
+    private readonly HttpClient _httpClient;
+    private readonly Func<HttpClient> _directClientFactory;
+
+    public GithubUpdateService(HttpClient httpClient) : this(httpClient, CreateDirectClient)
+    {
+    }
+
+    /// <summary>Test seam: the client used for the proxy-less retry pass.</summary>
+    internal GithubUpdateService(HttpClient httpClient, Func<HttpClient> directClientFactory)
     {
         _httpClient = httpClient;
+        _directClientFactory = directClientFactory;
+    }
+
+    /// <summary>Plain client without the system proxy, for the retry after every source failed.</summary>
+    internal static HttpClient CreateDirectClient()
+    {
+        var handler = new SocketsHttpHandler
+        {
+            UseProxy = false,
+            AllowAutoRedirect = true,
+            ConnectTimeout = TimeSpan.FromSeconds(10)
+        };
+        var client = new HttpClient(handler) { Timeout = TimeSpan.FromSeconds(15) };
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("SrcBox/UpdateCheck");
+        return client;
     }
 
     public string GetCurrentVersion()
@@ -67,18 +93,37 @@ public class GithubUpdateService : IUpdateService
             _httpClient.DefaultRequestHeaders.Accept.ParseAdd("application/vnd.github+json");
 
             var currentVersion = GetCurrentVersion();
-            var latest = await FetchLatestReleaseAsync("https://api.github.com/repos/CGG888/SrcBox/releases/latest", useCdn, cancellationToken);
-            
+            var attempts = new List<string>();
+
+            var latest = await FetchLatestReleaseAsync(_httpClient, LatestReleaseApiUrl, useCdn, cancellationToken, attempts);
+
+            // The shared client routes through the system (WinINET) proxy, and a local proxy that is down
+            // or half configured breaks every source while a plain connection still works. A total failure
+            // is therefore retried once without a proxy before the check is called failed.
             if (latest == null)
             {
+                using var direct = _directClientFactory();
+                latest = await FetchLatestReleaseAsync(direct, LatestReleaseApiUrl, false, cancellationToken, attempts);
+            }
+
+            if (latest == null)
+            {
+                Logger.Info("[Update] 检查失败: " + string.Join("; ", attempts));
                 return new UpdateCheckResult(false, currentVersion, null, "Failed to fetch release info");
             }
 
+            if (attempts.Count > 0)
+                Logger.Debug("[Update] 已回退到镜像: " + string.Join("; ", attempts));
+
             var isNewer = IsNewer(latest.Version, currentVersion);
+            Logger.Info(isNewer
+                ? $"[Update] 发现新版本 {latest.Version}（当前 {currentVersion}）"
+                : $"[Update] 已是最新版本 {currentVersion}");
             return new UpdateCheckResult(isNewer, currentVersion, latest, string.Empty);
         }
         catch (Exception ex)
         {
+            Logger.Info("[Update] 检查异常: " + ex.Message);
             return new UpdateCheckResult(false, GetCurrentVersion(), null, ex.Message);
         }
     }
@@ -100,7 +145,8 @@ public class GithubUpdateService : IUpdateService
         catch { return false; }
     }
 
-    private async Task<ReleaseInfo?> FetchLatestReleaseAsync(string apiUrl, bool useCdn, CancellationToken cancellationToken)
+    private async Task<ReleaseInfo?> FetchLatestReleaseAsync(HttpClient client, string apiUrl, bool useCdn,
+        CancellationToken cancellationToken, List<string> attempts)
     {
         var mirrors = AppSettings.Current.UpdateCdnMirrors;
 
@@ -125,6 +171,7 @@ public class GithubUpdateService : IUpdateService
 
         foreach (var url in urls)
         {
+            var host = HostOf(url);
             try
             {
                 // Create a separate CTS for each request to avoid sharing the parent token if it's long-lived
@@ -132,8 +179,13 @@ public class GithubUpdateService : IUpdateService
                 using var requestCts = new CancellationTokenSource(TimeSpan.FromSeconds(8));
                 using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, requestCts.Token);
                 
-                using var resp = await _httpClient.GetAsync(url, linkedCts.Token);
-                if (!resp.IsSuccessStatusCode) continue;
+                using var resp = await client.GetAsync(url, linkedCts.Token);
+                if (!resp.IsSuccessStatusCode)
+                {
+                    // A blocked or rate limited source is worth reporting when the whole check fails.
+                    attempts.Add($"{host}={(int)resp.StatusCode}");
+                    continue;
+                }
                 
                 var json = await resp.Content.ReadAsStringAsync(linkedCts.Token);
                 using var doc = JsonDocument.Parse(json);
@@ -162,9 +214,24 @@ public class GithubUpdateService : IUpdateService
                 var ver = (tag ?? root.GetProperty("name").GetString() ?? "").Trim().TrimStart('v', 'V');
                 return new ReleaseInfo { Version = ver, Notes = body ?? "", DownloadUrl = assetUrl, FileName = assetName };
             }
-            catch { }
+            catch (Exception ex)
+            {
+                attempts.Add($"{host}={Shorten(ex)}");
+            }
         }
         return null;
+    }
+
+    /// <summary>Host of a candidate url, used only for the diagnostic line.</summary>
+    static string HostOf(string url)
+    {
+        try { return new Uri(url).Host; } catch { return url; }
+    }
+
+    static string Shorten(Exception ex)
+    {
+        var message = (ex.InnerException ?? ex).Message.Replace("\r", " ").Replace("\n", " ");
+        return ex is TaskCanceledException || ex is OperationCanceledException ? "超时" : message;
     }
 
     /// <summary>

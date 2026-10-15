@@ -7,7 +7,9 @@ namespace LibmpvIptvClient.Tests
 {
     /// <summary>
     /// The new-version badge on the title bar / fullscreen top overlay: it lights up only for a real
-    /// newer release, and the background check runs at most once per day.
+    /// newer release. The background check runs on every launch (it used to be throttled to one check
+    /// per day, which hid a release that appeared right after the previous check), so the badge rules
+    /// here are the whole contract.
     /// </summary>
     [TestClass]
     public class UpdateBadgeTests
@@ -24,34 +26,6 @@ namespace LibmpvIptvClient.Tests
         static UpdateCheckResult NotNewer()
         {
             return new UpdateCheckResult(false, "2.0.0", null, "");
-        }
-
-        [TestMethod]
-        public void NeverChecked_IsDue()
-        {
-            Assert.IsTrue(MainWindowUpdateBadgeActionsViewModel.IsCheckDue(null, DateTime.UtcNow));
-        }
-
-        [TestMethod]
-        public void CheckedWithinTheInterval_IsNotDue()
-        {
-            var now = DateTime.UtcNow;
-            Assert.IsFalse(MainWindowUpdateBadgeActionsViewModel.IsCheckDue(now.AddHours(-23), now));
-        }
-
-        [TestMethod]
-        public void CheckedBeforeTheInterval_IsDue()
-        {
-            var now = DateTime.UtcNow;
-            Assert.IsTrue(MainWindowUpdateBadgeActionsViewModel.IsCheckDue(now.AddHours(-25), now));
-        }
-
-        [TestMethod]
-        public void CheckedExactlyAtTheInterval_IsDue()
-        {
-            var now = DateTime.UtcNow;
-            Assert.IsTrue(MainWindowUpdateBadgeActionsViewModel.IsCheckDue(
-                now - MainWindowUpdateBadgeActionsViewModel.CheckInterval, now));
         }
 
         [TestMethod]
@@ -90,36 +64,6 @@ namespace LibmpvIptvClient.Tests
             Assert.IsFalse(vm.Apply(new UpdateCheckResult(true, "1.0.0", null, "")));
             Assert.IsFalse(vm.HasNewVersion);
             Assert.AreEqual(0, changed);
-        }
-
-        [TestMethod]
-        public void VersionChangedSinceTheLastCheck_IsDueEvenWithinTheInterval()
-        {
-            var now = DateTime.UtcNow;
-            Assert.IsTrue(MainWindowUpdateBadgeActionsViewModel.IsCheckDue(now.AddHours(-1), "1.1.15", "1.1.16", now));
-        }
-
-        [TestMethod]
-        public void SameVersionWithinTheInterval_IsNotDue()
-        {
-            var now = DateTime.UtcNow;
-            Assert.IsFalse(MainWindowUpdateBadgeActionsViewModel.IsCheckDue(now.AddHours(-1), "1.1.15", "1.1.15", now));
-        }
-
-        [TestMethod]
-        public void UnknownLastCheckVersion_IsDue()
-        {
-            var now = DateTime.UtcNow;
-            Assert.IsTrue(MainWindowUpdateBadgeActionsViewModel.IsCheckDue(now.AddHours(-1), null, "1.1.15", now));
-            Assert.IsTrue(MainWindowUpdateBadgeActionsViewModel.IsCheckDue(now.AddHours(-1), "", "1.1.15", now));
-        }
-
-        [TestMethod]
-        public void MissingCurrentVersion_FallsBackToTheTimeInterval()
-        {
-            var now = DateTime.UtcNow;
-            Assert.IsFalse(MainWindowUpdateBadgeActionsViewModel.IsCheckDue(now.AddHours(-1), "1.1.15", "", now));
-            Assert.IsTrue(MainWindowUpdateBadgeActionsViewModel.IsCheckDue(now.AddHours(-25), "1.1.15", "", now));
         }
 
         [TestMethod]

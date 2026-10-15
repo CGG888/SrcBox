@@ -5,13 +5,11 @@ namespace LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow;
 
 /// <summary>
 /// Holds the "a newer release exists" state shown as a dot next to the SrcBox title button.
-/// The check itself runs silently in the background (see MainWindowStartupManager).
+/// The check itself runs silently in the background on every launch (see
+/// <c>MainWindowStartupManager.StartBackgroundUpdateCheck</c>).
 /// </summary>
 public sealed class MainWindowUpdateBadgeActionsViewModel : ViewModelBase
 {
-    /// <summary>Minimum delay between two background checks.</summary>
-    public static readonly TimeSpan CheckInterval = TimeSpan.FromHours(24);
-
     private bool _hasNewVersion;
 
     public bool HasNewVersion
@@ -66,17 +64,4 @@ public sealed class MainWindowUpdateBadgeActionsViewModel : ViewModelBase
         Changed?.Invoke();
         return true;
     }
-
-    /// <summary>True when no check ran yet or the last one is older than <see cref="CheckInterval"/>.</summary>
-    public static bool IsCheckDue(DateTime? lastCheckUtc, DateTime nowUtc)
-        => lastCheckUtc == null || nowUtc - lastCheckUtc.Value >= CheckInterval;
-
-    /// <summary>
-    /// True when a check is due for the given app version: never checked, checked with another
-    /// version (for example right after an update was installed), or the interval has elapsed.
-    /// </summary>
-    public static bool IsCheckDue(DateTime? lastCheckUtc, string? lastCheckVersion, string? currentVersion, DateTime nowUtc)
-        => (!string.IsNullOrEmpty(currentVersion) &&
-            !string.Equals(lastCheckVersion, currentVersion, StringComparison.Ordinal))
-           || IsCheckDue(lastCheckUtc, nowUtc);
 }
