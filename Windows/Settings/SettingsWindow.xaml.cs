@@ -713,7 +713,7 @@ namespace LibmpvIptvClient
                     var testSettings = AppSettings.Current;
                     testSettings.HttpHeaders = ReadHttpHeaderFormState();
 
-                    using var player = new LibmpvIptvClient.MpvInterop();
+                    using var player = new LibmpvIptvClient.MpvInterop("test-http");
                     player.Create();
                     player.SetSettings(testSettings);
                     player.Initialize();
@@ -757,7 +757,7 @@ namespace LibmpvIptvClient
                     var testSettings = AppSettings.Current;
                     testSettings.HttpHeaders = ReadHttpHeaderFormState();
 
-                    using var player = new LibmpvIptvClient.MpvInterop();
+                    using var player = new LibmpvIptvClient.MpvInterop("test-rtsp");
                     player.Create();
                     player.SetSettings(testSettings);
                     player.Initialize();

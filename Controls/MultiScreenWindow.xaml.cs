@@ -499,7 +499,7 @@ namespace LibmpvIptvClient.Controls
 
             for (int i = 0; i < _screenCount; i++)
             {
-                var mpv = new MpvInterop();
+                var mpv = new MpvInterop($"multi{i + 1}");
                 mpv.Create();
                 mpv.SetSettings(AppSettings.Current);
                 mpv.SetWid(_panels[i].Handle);

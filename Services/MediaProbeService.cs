@@ -8,7 +8,7 @@ namespace LibmpvIptvClient.Services
         public static async Task<TimeSpan?> ProbeDurationAsync(string localPath)
         {
             if (string.IsNullOrWhiteSpace(localPath)) return null;
-            var mpv = new LibmpvIptvClient.MpvInterop();
+            var mpv = new LibmpvIptvClient.MpvInterop("probe");
             try
             {
                 mpv.Create();

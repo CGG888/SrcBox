@@ -482,7 +482,7 @@ namespace LibmpvIptvClient
 
         IPlayerEngine InitializePlayer()
         {
-            _mpv = new MpvInterop();
+            _mpv = new MpvInterop("main");
             _mpv.Create();
             _mpv.SetSettings(AppSettings.Current);
             var hwnd = new WindowInteropHelper(this).Handle;

@@ -5,6 +5,7 @@ using System.Linq;
 using LibmpvIptvClient;
 using LibmpvIptvClient.Architecture.Presentation.Mvvm.MainWindow;
 using LibmpvIptvClient.Architecture.Presentation.Mvvm.Settings;
+using LibmpvIptvClient.Architecture.Presentation.View;
 using LibmpvIptvClient.Models;
 using LibmpvIptvClient.Services;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -174,6 +175,41 @@ namespace LibmpvIptvClient.Tests
                 AppSettings.Current.RememberChannelSource = originalFlag;
                 try { Directory.Delete(tempDir, true); } catch { }
             }
+        }
+        [TestMethod]
+        public void SavingThePlaybackTab_ReachesTheLiveMemorySwitches()
+        {
+            // The window builds a fresh settings object from the form and the apply step copies it onto the
+            // live settings - that copy list used to miss these three flags, so unchecking one in
+            // Settings -> Playback was silently discarded while the checkbox looked saved (issue #6).
+            var viewModel = new SettingsPlaybackViewModel();
+            var form = viewModel.BuildFormState(new PlaybackSettings
+            {
+                AutoLoadLastSource = false,
+                RememberChannelPerPlaylist = false,
+                RememberChannelSource = false
+            });
+
+            var built = new PlaybackSettings();
+            viewModel.UpdateSettings(built, form);
+
+            var live = new PlaybackSettings();
+            MainWindowSettingsManager.ApplyMemorySwitches(live, built);
+
+            Assert.IsFalse(live.AutoLoadLastSource);
+            Assert.IsFalse(live.RememberChannelPerPlaylist);
+            Assert.IsFalse(live.RememberChannelSource);
+        }
+
+        [TestMethod]
+        public void ApplyMemorySwitches_LeavesTheRestOfTheSettingsAlone()
+        {
+            var live = new PlaybackSettings { Decoder = "nvdec", CacheSecs = 7 };
+
+            MainWindowSettingsManager.ApplyMemorySwitches(live, new PlaybackSettings { AutoLoadLastSource = false });
+
+            Assert.AreEqual("nvdec", live.Decoder);
+            Assert.AreEqual(7, live.CacheSecs);
         }
     }
 }

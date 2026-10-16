@@ -126,15 +126,7 @@ namespace LibmpvIptvClient
                     return;
                 }
 
-                var files = Directory.GetFiles(logDir, "SrcBox-*.log");
-                if (files.Length == 0)
-                {
-                    WinDialog.Show("没有找到日志文件", "导出失败", MessageBoxButton.OK, MessageBoxImage.Warning);
-                    return;
-                }
-
-                var latestLog = Logger.GetLatestLogFile();
-                if (string.IsNullOrEmpty(latestLog) || !File.Exists(latestLog))
+                if (Directory.GetFiles(logDir, "SrcBox-*.log").Length == 0)
                 {
                     WinDialog.Show("没有找到日志文件", "导出失败", MessageBoxButton.OK, MessageBoxImage.Warning);
                     return;
@@ -142,15 +134,30 @@ namespace LibmpvIptvClient
 
                 var saveDialog = new Microsoft.Win32.SaveFileDialog
                 {
-                    Filter = "日志文件 (*.log)|*.log|所有文件 (*.*)|*.*",
-                    FileName = $"SrcBox-{DateTime.Now:yyyyMMdd}.log",
+                    // One zip instead of one file: a playback report needs the player log *and* the newest mpv
+                    // logs (mpv-*-main-*.log names the RTSP session that stayed silent), and users kept sending
+                    // only the first one.
+                    Filter = "日志压缩包 (*.zip)|*.zip|所有文件 (*.*)|*.*",
+                    FileName = $"SrcBox-logs-{DateTime.Now:yyyyMMdd-HHmmss}.zip",
                     Title = "导出日志"
                 };
 
                 if (saveDialog.ShowDialog() == true)
                 {
-                    File.Copy(latestLog, saveDialog.FileName, true);
-                    WinDialog.Show($"日志已导出到:\n{saveDialog.FileName}", "导出成功", MessageBoxButton.OK, MessageBoxImage.Information);
+                    var count = Diagnostics.LogBundleExporter.Build(
+                        saveDialog.FileName,
+                        logDir,
+                        Logger.GetLatestLogFile(),
+                        Logger.GetLatestDebugLogFile());
+
+                    if (count == 0)
+                    {
+                        WinDialog.Show("没有找到日志文件", "导出失败", MessageBoxButton.OK, MessageBoxImage.Warning);
+                        return;
+                    }
+
+                    WinDialog.Show($"已打包 {count} 个日志文件到:\n{saveDialog.FileName}\n\n反馈播放问题时把整个 zip 发到 issue 即可。",
+                        "导出成功", MessageBoxButton.OK, MessageBoxImage.Information);
                 }
             }
             catch (Exception ex)

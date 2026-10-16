@@ -119,5 +119,68 @@ namespace LibmpvIptvClient.Tests
             Assert.IsFalse(string.IsNullOrWhiteSpace(verdict));
             Assert.IsFalse(verdict.Contains("RTSP/1.0"));
         }
+
+        /// <summary>
+        /// Portal that answers the first DESCRIBE with a redirect to itself and the second one with SDP,
+        /// like the Huawei style entry server that points at the node owning the asset.
+        /// </summary>
+        static int StartRedirectingPortal(string locationQuery, out Thread thread)
+        {
+            var listener = new TcpListener(IPAddress.Loopback, 0);
+            listener.Start();
+            var port = ((IPEndPoint)listener.LocalEndpoint).Port;
+            var t = new Thread(() =>
+            {
+                try
+                {
+                    for (var i = 0; i < 2; i++)
+                    {
+                        using var client = listener.AcceptTcpClient();
+                        using var stream = client.GetStream();
+                        var buffer = new byte[1024];
+                        stream.Read(buffer, 0, buffer.Length);
+                        var response = i == 0
+                            ? $"RTSP/1.0 302 Moved Temporarily\r\nServer: HWServer/1.0\r\nCSeq: 1\r\nLocation: rtsp://127.0.0.1:{port}/node.smil{locationQuery}\r\n\r\n"
+                            : "RTSP/1.0 200 OK\r\nServer: HWServer/1.0\r\nContent-Type: application/sdp\r\nCSeq: 1\r\n\r\nv=0\r\n";
+                        var bytes = Encoding.ASCII.GetBytes(response);
+                        stream.Write(bytes, 0, bytes.Length);
+                        stream.Flush();
+                        Thread.Sleep(50);
+                    }
+                }
+                catch { }
+                finally { try { listener.Stop(); } catch { } }
+            }) { IsBackground = true };
+            t.Start();
+            thread = t;
+            return port;
+        }
+
+        [TestMethod]
+        public void Describe_FollowsARedirectThatKeepsTheArchiveWindow()
+        {
+            var port = StartRedirectingPortal("?playseek=20261015220000-20261015223600", out var thread);
+
+            var verdict = RtspUrlProbe.Describe($"rtsp://127.0.0.1:{port}/PLTV/x.smil?playseek=20261015220000-20261015223600");
+
+            thread.Join(3000);
+            StringAssert.Contains(verdict, "302");
+            StringAssert.Contains(verdict, "200 OK");
+            StringAssert.Contains(verdict, "SDP=yes");
+            Assert.IsFalse(verdict.Contains("重定向丢弃"), "the redirect kept playseek, so nothing was dropped");
+        }
+
+        [TestMethod]
+        public void Describe_FlagsARedirectThatDroppedTheArchiveWindow()
+        {
+            // A redirected url without playseek serves live tv, not the archived programme - the one thing
+            // the player cannot recover from, so the probe has to say it out loud.
+            var port = StartRedirectingPortal("?from=2&hms_devid=184", out var thread);
+
+            var verdict = RtspUrlProbe.Describe($"rtsp://127.0.0.1:{port}/PLTV/x.smil?playseek=20261015220000-20261015223600");
+
+            thread.Join(3000);
+            StringAssert.Contains(verdict, "重定向丢弃 playseek");
+        }
     }
 }

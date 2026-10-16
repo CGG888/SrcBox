@@ -54,6 +54,19 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             if (triggerUpdateCheck) { try { dlg.TriggerUpdateCheck(); } catch { } }
         }
 
+        /// <summary>
+        /// Copies the three "remember / resume" switches that the playback form owns onto the live settings.
+        /// They used to be missing from the copy list, so unchecking one looked saved (the form was rebuilt
+        /// from the untouched value next time the window opened) while the behaviour never changed.
+        /// </summary>
+        internal static void ApplyMemorySwitches(PlaybackSettings target, PlaybackSettings source)
+        {
+            if (target == null || source == null) return;
+            target.AutoLoadLastSource = source.AutoLoadLastSource;
+            target.RememberChannelPerPlaylist = source.RememberChannelPerPlaylist;
+            target.RememberChannelSource = source.RememberChannelSource;
+        }
+
         private void ApplySettings(PlaybackSettings settings)
         {
             double? resumePos = null;
@@ -87,6 +100,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
             AppSettings.Current.Decoder = settings.Decoder;
             AppSettings.Current.CacheSecs = settings.CacheSecs;
             AppSettings.Current.SeekBar = settings.SeekBar;
+            ApplyMemorySwitches(AppSettings.Current, settings);
             AppSettings.Current.DemuxerMaxBytesMiB = settings.DemuxerMaxBytesMiB;
             AppSettings.Current.DemuxerMaxBackBytesMiB = settings.DemuxerMaxBackBytesMiB;
             AppSettings.Current.FccPrefetchCount = settings.FccPrefetchCount;

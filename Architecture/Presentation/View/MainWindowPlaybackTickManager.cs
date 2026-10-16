@@ -15,8 +15,8 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
         /// <summary>The stream the first-frame clock currently belongs to.</summary>
         private string _playbackUrl = "";
 
-        /// <summary>True once the current stream was re-requested because it showed no picture.</summary>
-        private bool _retriedForPicture;
+        /// <summary>Sessions already opened for the current archive window (the first request counts as one).</summary>
+        private int _archiveAttempts = 1;
 
         public MainWindowPlaybackTickManager(MainWindow window, MainShellViewModel shell, MainWindowOverlayManager overlayManager)
         {
@@ -44,7 +44,7 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                     {
                         _playbackUrl = url;
                         _window.FirstFrameLoggedForManager = false;
-                        _retriedForPicture = false;
+                        _archiveAttempts = 1;
                         _window.PlayStartTimeForManager = url.Length == 0 ? default : DateTime.Now;
                     }
 
@@ -58,12 +58,12 @@ namespace LibmpvIptvClient.Architecture.Presentation.View
                         var waited = (DateTime.Now - _window.PlayStartTimeForManager).TotalSeconds;
                         var limit = PlaybackStartRetryPolicy.WaitSeconds(AppSettings.Current.SourceTimeoutSec);
 
-                        if (PlaybackStartRetryPolicy.ShouldRetryArchive(IsArchivePlayback(), _retriedForPicture, waited, AppSettings.Current.SourceTimeoutSec))
+                        if (PlaybackStartRetryPolicy.ShouldRetryArchive(IsArchivePlayback(), _archiveAttempts, waited, AppSettings.Current.SourceTimeoutSec))
                         {
-                            // Ask the relay for the very same window once more before calling the stream dead:
-                            // a second session regularly plays where the first one stayed silent.
-                            _retriedForPicture = true;
-                            Logger.Warn($"[Playback] 归档起播 {waited:0.#}s 未见画面，重试一次 URL={url}");
+                            // Ask the relay for the very same window again before calling the stream dead: the
+                            // server regularly stays silent for the first session or two and then plays.
+                            _archiveAttempts++;
+                            Logger.Warn($"[Playback] 归档起播 {waited:0.#}s 未见画面，第 {_archiveAttempts}/{PlaybackStartRetryPolicy.MaxArchiveAttempts} 次请求 URL={url}");
                             try { _shell.PlayerEngine?.Play(url); } catch { }
                             _window.PlayStartTimeForManager = DateTime.Now;
                         }

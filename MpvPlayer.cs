@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
 using LibmpvIptvClient.Diagnostics;
@@ -12,6 +13,18 @@ namespace LibmpvIptvClient
         IntPtr _handle = IntPtr.Zero;
         PlaybackSettings _settings = AppSettings.Current;
         private bool _recordingMode = false;
+
+        /// <summary>Labels this instance's debug log; a playback log can then be told apart from a test/probe one.</summary>
+        private readonly string _logTag;
+
+        /// <summary>Serial number inside this process, so two instances started in the same second stay separate.</summary>
+        private static int _logSequence;
+
+        /// <param name="logTag">Short label for the mpv debug log file name (main / test-rtsp / probe / multi).</param>
+        public MpvInterop(string logTag = "player")
+        {
+            _logTag = string.IsNullOrWhiteSpace(logTag) ? "player" : logTag;
+        }
         // URL of the playlist entry mpv currently prefetches (immediate next entry).
         private string? _prefetchedNextUrl;
         public void SetRecordingMode(bool recording) { _recordingMode = recording; }
@@ -25,6 +38,10 @@ namespace LibmpvIptvClient
         /// Mirrors mpv's own log into a file when the debug mode is on, so a stream that never starts can
         /// be diagnosed from the FFmpeg/demuxer messages (which player-side log lines cannot show). Must run
         /// before mpv_initialize: log-file/msg-level are start-up options.
+        ///
+        /// Every instance writes to its own file: they used to share "mpv-yyyyMMdd.log", and opening that
+        /// path truncates it, so a settings test player or a duration probe discarded the main player's log -
+        /// precisely the session needed to explain an archive that never shows a picture.
         /// </summary>
         void EnableDebugLogIfRequested()
         {
@@ -34,7 +51,8 @@ namespace LibmpvIptvClient
 
                 var dir = System.IO.Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "logs");
                 System.IO.Directory.CreateDirectory(dir);
-                var path = System.IO.Path.Combine(dir, $"mpv-{DateTime.Now:yyyyMMdd}.log");
+                var seq = System.Threading.Interlocked.Increment(ref _logSequence);
+                var path = BuildDebugLogPath(dir, _logTag, DateTime.Now, seq);
 
                 var rc = mpv_set_option_string(_handle, "log-file", path);
                 if (rc < 0)
@@ -43,13 +61,40 @@ namespace LibmpvIptvClient
                     return;
                 }
 
-                mpv_set_option_string(_handle, "msg-level", "all=v");
-                Logger.Info($"[mpv] 调试日志已开启: {path}（反馈播放问题时请一并附上）");
+                // Verbose everywhere except the video/filter/audio plumbing, whose SPIR-V and filter-graph
+                // dumps are megabytes of noise and hide the RTSP/FFmpeg lines this log exists for.
+                mpv_set_option_string(_handle, "msg-level", "all=v,vo=warn,vf=warn,af=warn,ao=warn,osd=warn");
+                PruneMpvLogs(dir);
+                Logger.Info($"[mpv] 调试日志已开启: {path}（反馈播放问题时请附上 logs 下最新的 mpv-*.log 与 SrcBox-*.log）");
             }
             catch (Exception ex)
             {
                 Logger.Warn($"[mpv] 调试日志设置失败: {ex.Message}");
             }
+        }
+
+        /// <summary>
+        /// One file per instance: a shared name meant the last instance to start truncated whatever the
+        /// others had already written, and the log of the playback under investigation was the one lost.
+        /// </summary>
+        internal static string BuildDebugLogPath(string dir, string logTag, DateTime now, int sequence)
+            => System.IO.Path.Combine(dir, $"mpv-{now:yyyyMMdd-HHmmss}-{logTag}-{sequence}.log");
+
+        /// <summary>Verbose mpv logs add up fast; keep only the newest handful of them.</summary>
+        internal static void PruneMpvLogs(string dir, int keep = 12)
+        {
+            try
+            {
+                var stale = System.IO.Directory.GetFiles(dir, "mpv-*.log")
+                    .Select(f => new System.IO.FileInfo(f))
+                    .OrderByDescending(f => f.LastWriteTimeUtc)
+                    .Skip(keep);
+                foreach (var file in stale)
+                {
+                    try { file.Delete(); } catch { }
+                }
+            }
+            catch { }
         }
         public void Initialize()
         {
